@@ -6,7 +6,7 @@ on:
       - feature/20261003-atendimento-fallback-backend
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -23,8 +23,16 @@ jobs:
         run: flutter pub get
       - name: Generate localizations
         run: flutter gen-l10n
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed lib/data/models/atendimento_mobile_assets_model.dart lib/data/models/gestao_mobile_assets_model.dart lib/core/services/perfil_negocio_service.dart lib/presentation/controllers/gestao_mobile_assets_context_controller.dart lib/presentation/screens/atendimento_mobile_screen.dart lib/presentation/screens/gestao_mobile_screen.dart lib/presentation/models/mobile_business_visual_assets.dart test/data/models/atendimento_mobile_assets_model_test.dart test/data/models/gestao_mobile_assets_model_test.dart test/presentation/models/mobile_business_visual_assets_test.dart
+      - name: Format changed files
+        run: |
+          dart format lib/data/models/atendimento_mobile_assets_model.dart lib/data/models/gestao_mobile_assets_model.dart lib/core/services/perfil_negocio_service.dart lib/presentation/controllers/gestao_mobile_assets_context_controller.dart lib/presentation/screens/atendimento_mobile_screen.dart lib/presentation/screens/gestao_mobile_screen.dart lib/presentation/models/mobile_business_visual_assets.dart test/data/models/atendimento_mobile_assets_model_test.dart test/data/models/gestao_mobile_assets_model_test.dart test/presentation/models/mobile_business_visual_assets_test.dart
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib/data/models/atendimento_mobile_assets_model.dart lib/data/models/gestao_mobile_assets_model.dart lib/core/services/perfil_negocio_service.dart lib/presentation/controllers/gestao_mobile_assets_context_controller.dart lib/presentation/screens/atendimento_mobile_screen.dart lib/presentation/screens/gestao_mobile_screen.dart lib/presentation/models/mobile_business_visual_assets.dart test/data/models/atendimento_mobile_assets_model_test.dart test/data/models/gestao_mobile_assets_model_test.dart test/presentation/models/mobile_business_visual_assets_test.dart
+            git commit -m "style: formata assets remotos mobile"
+            git push origin HEAD:feature/20261003-atendimento-fallback-backend
+          fi
       - name: Analyze changed files
         run: flutter analyze lib/data/models/atendimento_mobile_assets_model.dart lib/data/models/gestao_mobile_assets_model.dart lib/core/services/perfil_negocio_service.dart lib/presentation/controllers/gestao_mobile_assets_context_controller.dart lib/presentation/screens/atendimento_mobile_screen.dart lib/presentation/screens/gestao_mobile_screen.dart lib/presentation/models/mobile_business_visual_assets.dart
       - name: Run focused tests
