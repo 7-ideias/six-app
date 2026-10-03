@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/perfil_negocio_service.dart';
+import 'package:sixpos/data/models/atendimento_mobile_assets_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
@@ -18,7 +19,6 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
-import 'package:sixpos/presentation/models/atendimento_mobile_business_assets.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
@@ -79,7 +79,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   final NotificacaoService _notificacoes = NotificacaoService();
   final PerfilNegocioService _perfilNegocioService = PerfilNegocioService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
-  AtendimentoMobileBusinessAssets? _businessAssets;
+  AtendimentoMobileAssetsModel? _businessAssets;
   int _businessAssetsLoadGeneration = 0;
   String? _businessAssetsEmpresaId;
 
@@ -142,28 +142,18 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     final int generation = ++_businessAssetsLoadGeneration;
     try {
       final String empresaId = await _perfilNegocioService.empresaAtual();
-      final perfilEmpresa = await _perfilNegocioService.buscar(empresaId);
+      final AtendimentoMobileAssetsModel resolved =
+          await _perfilNegocioService.atendimentoMobileAssets(empresaId);
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
 
-      final AtendimentoMobileBusinessAssets? resolved =
-          perfilEmpresa.configurado
-              ? AtendimentoMobileBusinessAssets.fromPerfil(
-                perfilEmpresa.perfil,
-              )
-              : null;
-
+      final int fallbacks =
+          resolved.assets.where((item) => item.imagemFallback).length;
       debugPrint(
-        '[AtendimentoMobile] Perfil empresa=$empresaId '
-        'segmento=${perfilEmpresa.perfil.segmentoPrincipal} '
-        'subsegmento=${perfilEmpresa.perfil.subsegmento} '
-        'assets=${resolved?.profileFolder ?? 'fallback-local'}',
+        '[AtendimentoMobile] Assets backend empresa=$empresaId '
+        'segmento=${resolved.perfilNegocio.perfil.segmentoPrincipal} '
+        'subsegmento=${resolved.perfilNegocio.perfil.subsegmento} '
+        'fallbacks=$fallbacks/${resolved.assets.length}',
       );
-
-      final bool mesmaEmpresa = _businessAssetsEmpresaId == empresaId;
-      final bool mesmoPerfil =
-          _businessAssets?.profileFolder == resolved?.profileFolder;
-
-      if (mesmaEmpresa && mesmoPerfil) return;
 
       setState(() {
         _businessAssetsEmpresaId = empresaId;
@@ -172,7 +162,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     } catch (error) {
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
       debugPrint(
-        '[AtendimentoMobile] Falha ao carregar perfil contextual: $error',
+        '[AtendimentoMobile] Falha ao carregar assets do backend: $error',
       );
       if (_businessAssets != null || _businessAssetsEmpresaId != null) {
         setState(() {
@@ -193,13 +183,19 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     });
   }
 
-  String? _businessImageUrl(AtendimentoMobileBusinessAsset asset) {
+  AtendimentoMobileAssetModel? _businessAsset(
+    AtendimentoMobileAssetSlot slot,
+  ) {
     if (kIsWeb) return null;
-    return _businessAssets?.url(asset);
+    return _businessAssets?.asset(slot);
   }
 
-  bool get _useContextualFullCard =>
-      !kIsWeb && (_businessAssets?.usesFullCard ?? false);
+  String? _businessImageUrl(AtendimentoMobileAssetSlot slot) =>
+      _businessAsset(slot)?.imagemUrl;
+
+  bool _businessImageFullCard(AtendimentoMobileAssetSlot slot) =>
+      _businessAsset(slot)?.modoExibicao ==
+      AtendimentoMobileAssetDisplayMode.fullCard;
 
   String _txt(String key, String fallback) =>
       context.t(key, fallback: fallback);
@@ -366,9 +362,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             assetContorno: _saleAssetContorno,
             assetAcento: _saleAssetAcento,
             contextualImageUrl: _businessImageUrl(
-              AtendimentoMobileBusinessAsset.vendas,
+              AtendimentoMobileAssetSlot.vendas,
             ),
-            contextualImageFullCard: _useContextualFullCard,
+            contextualImageFullCard: _businessImageFullCard(
+              AtendimentoMobileAssetSlot.vendas,
+            ),
             accentColor: visual.saleAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -383,9 +381,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             assetContorno: _serviceAssetContorno,
             assetAcento: _serviceAssetAcento,
             contextualImageUrl: _businessImageUrl(
-              AtendimentoMobileBusinessAsset.servicos,
+              AtendimentoMobileAssetSlot.servicos,
             ),
-            contextualImageFullCard: _useContextualFullCard,
+            contextualImageFullCard: _businessImageFullCard(
+              AtendimentoMobileAssetSlot.servicos,
+            ),
             accentColor: visual.serviceAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: SixMobilePalette.brandViolet,
@@ -400,9 +400,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             assetContorno: _receiveAssetContorno,
             assetAcento: _receiveAssetAcento,
             contextualImageUrl: _businessImageUrl(
-              AtendimentoMobileBusinessAsset.receber,
+              AtendimentoMobileAssetSlot.receber,
             ),
-            contextualImageFullCard: _useContextualFullCard,
+            contextualImageFullCard: _businessImageFullCard(
+              AtendimentoMobileAssetSlot.receber,
+            ),
             accentColor: visual.receiveAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -417,9 +419,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             assetContorno: _cashAssetContorno,
             assetAcento: _cashAssetAcento,
             contextualImageUrl: _businessImageUrl(
-              AtendimentoMobileBusinessAsset.operacoesCaixa,
+              AtendimentoMobileAssetSlot.operacoesCaixa,
             ),
-            contextualImageFullCard: _useContextualFullCard,
+            contextualImageFullCard: _businessImageFullCard(
+              AtendimentoMobileAssetSlot.operacoesCaixa,
+            ),
             accentColor: visual.cashAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: visual.cashGradientEnd,
@@ -434,9 +438,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             assetContorno: _returnAssetContorno,
             assetAcento: _returnAssetAcento,
             contextualImageUrl: _businessImageUrl(
-              AtendimentoMobileBusinessAsset.devolucao,
+              AtendimentoMobileAssetSlot.devolucao,
             ),
-            contextualImageFullCard: _useContextualFullCard,
+            contextualImageFullCard: _businessImageFullCard(
+              AtendimentoMobileAssetSlot.devolucao,
+            ),
             accentColor: visual.returnAccent,
             brandStart: visual.returnAccent,
             brandEnd: visual.returnGradientEnd,
