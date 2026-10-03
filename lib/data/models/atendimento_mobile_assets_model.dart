@@ -25,10 +25,12 @@ enum AtendimentoMobileAssetDisplayMode {
   const AtendimentoMobileAssetDisplayMode(this.backendCode);
   final String backendCode;
 
-  static AtendimentoMobileAssetDisplayMode fromBackend(String? value) =>
-      value == 'FULL_CARD'
-          ? AtendimentoMobileAssetDisplayMode.fullCard
-          : AtendimentoMobileAssetDisplayMode.contain;
+  static AtendimentoMobileAssetDisplayMode? fromBackend(String? value) {
+    for (final AtendimentoMobileAssetDisplayMode mode in values) {
+      if (mode.backendCode == value) return mode;
+    }
+    return null;
+  }
 }
 
 class AtendimentoMobileAssetModel {
@@ -49,9 +51,13 @@ class AtendimentoMobileAssetModel {
   factory AtendimentoMobileAssetModel.fromJson(Map<String, dynamic> json) {
     final AtendimentoMobileAssetSlot? slot =
         AtendimentoMobileAssetSlot.fromBackend(json['slot']?.toString());
+    final AtendimentoMobileAssetDisplayMode? modoExibicao =
+        AtendimentoMobileAssetDisplayMode.fromBackend(
+          json['modoExibicao']?.toString(),
+        );
     final String? imagemUrl = _https(json['imagemUrl']);
 
-    if (slot == null || imagemUrl == null) {
+    if (slot == null || modoExibicao == null || imagemUrl == null) {
       throw const FormatException('Asset de Atendimento Mobile inválido.');
     }
 
@@ -59,9 +65,7 @@ class AtendimentoMobileAssetModel {
       id: json['id']?.toString() ?? slot.backendCode,
       slot: slot,
       imagemUrl: imagemUrl,
-      modoExibicao: AtendimentoMobileAssetDisplayMode.fromBackend(
-        json['modoExibicao']?.toString(),
-      ),
+      modoExibicao: modoExibicao,
       imagemFallback: json['imagemFallback'] == true,
     );
   }
