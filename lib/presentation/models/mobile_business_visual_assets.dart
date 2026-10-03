@@ -10,17 +10,6 @@ enum VendasMobileBusinessAsset {
   final String fileName;
 }
 
-enum GestaoMobileBusinessAsset {
-  hero('hero-v1.webp'),
-  pessoas('pessoas-v1.webp'),
-  catalogo('catalogo-v1.webp'),
-  financeiro('financeiro-v1.webp'),
-  configuracoes('configuracoes-v1.webp');
-
-  const GestaoMobileBusinessAsset(this.fileName);
-  final String fileName;
-}
-
 class MobileBusinessVisualAssets {
   const MobileBusinessVisualAssets._(this.profileFolder);
 
@@ -44,9 +33,6 @@ class MobileBusinessVisualAssets {
 
   String vendasUrl(VendasMobileBusinessAsset asset) =>
       _url('vendas', asset.fileName);
-
-  String gestaoUrl(GestaoMobileBusinessAsset asset) =>
-      _url('gestao', asset.fileName);
 
   String _url(String area, String fileName) {
     final String base = AppConfig.assetsBaseUrl.replaceFirst(
