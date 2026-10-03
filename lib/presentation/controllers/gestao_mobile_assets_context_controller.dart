@@ -37,8 +37,8 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     final int generation = ++_generation;
     try {
       final String empresaId = await _perfilNegocioService.empresaAtual();
-      final GestaoMobileAssetsModel resolved =
-          await _perfilNegocioService.gestaoMobileAssets(empresaId);
+      final GestaoMobileAssetsModel resolved = await _perfilNegocioService
+          .gestaoMobileAssets(empresaId);
 
       if (_disposed || generation != _generation) return;
 
