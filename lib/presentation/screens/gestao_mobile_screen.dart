@@ -18,12 +18,12 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/controllers/mobile_business_visual_context_controller.dart';
+import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
-import 'package:sixpos/presentation/models/mobile_business_visual_assets.dart';
+import 'package:sixpos/data/models/gestao_mobile_assets_model.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -95,7 +95,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   final NotificacaoService _notificacaoService = NotificacaoService();
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
-  late final MobileBusinessVisualContextController _businessVisuals;
+  late final GestaoMobileAssetsContextController _businessVisuals;
   List<GestaoMobileCardPreferencia> _ordemCardsGestaoMobile =
       List<GestaoMobileCardPreferencia>.of(GestaoMobileCardPreferencia.values);
   bool _ordemAlteradaNestaSessao = false;
@@ -113,7 +113,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     _notificacaoService.addListener(_onNotificacoesChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _businessVisuals =
-        MobileBusinessVisualContextController(debugLabel: 'GestaoMobile')
+        GestaoMobileAssetsContextController()
           ..addListener(_onBusinessVisualsChanged)
           ..initialize();
     unawaited(_restaurarOrdemCardsGestaoMobile());
@@ -134,8 +134,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     if (mounted) setState(() {});
   }
 
-  String? _gestaoImageUrl(GestaoMobileBusinessAsset asset) =>
-      _businessVisuals.assets?.gestaoUrl(asset);
+  String? _gestaoImageUrl(GestaoMobileAssetSlot slot) =>
+      _businessVisuals.assets?.asset(slot)?.imagemUrl;
 
   Future<void> _restaurarOrdemCardsGestaoMobile() async {
     final PreferenciasIndividuaisDoUsuarioModel? preferenciasCache =
@@ -373,7 +373,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             delay: Duration(milliseconds: 40),
             child: _GestaoHubIntroCard(
               backgroundImageUrl: _gestaoImageUrl(
-                GestaoMobileBusinessAsset.hero,
+                GestaoMobileAssetSlot.hero,
               ),
               title: context.t(
                 'gestao.hub.title',
@@ -477,7 +477,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
         assetContorno: _catalogAssetContorno,
         assetAcento: _catalogAssetAcento,
-        backgroundImageUrl: _gestaoImageUrl(GestaoMobileBusinessAsset.catalogo),
+        backgroundImageUrl: _gestaoImageUrl(GestaoMobileAssetSlot.catalogo),
         accentColor: catalogAccent,
         brandStart: SixMobilePalette.brandCyan,
         brandEnd: SixMobilePalette.brandBlue,
@@ -493,7 +493,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
         assetContorno: _peopleAssetContorno,
         assetAcento: _peopleAssetAcento,
-        backgroundImageUrl: _gestaoImageUrl(GestaoMobileBusinessAsset.pessoas),
+        backgroundImageUrl: _gestaoImageUrl(GestaoMobileAssetSlot.pessoas),
         accentColor: peopleAccent,
         brandStart: SixMobilePalette.brandBlue,
         brandEnd: SixMobilePalette.brandViolet,
@@ -510,7 +510,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         assetContorno: _financeAssetContorno,
         assetAcento: _financeAssetAcento,
         backgroundImageUrl: _gestaoImageUrl(
-          GestaoMobileBusinessAsset.financeiro,
+          GestaoMobileAssetSlot.financeiro,
         ),
         accentColor: financeAccent,
         brandStart: SixMobilePalette.brandCyan,
@@ -528,7 +528,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         assetContorno: _settingsAssetContorno,
         assetAcento: _settingsAssetAcento,
         backgroundImageUrl: _gestaoImageUrl(
-          GestaoMobileBusinessAsset.configuracoes,
+          GestaoMobileAssetSlot.configuracoes,
         ),
         accentColor: settingsAccent,
         brandStart: SixMobilePalette.brandBlue,
