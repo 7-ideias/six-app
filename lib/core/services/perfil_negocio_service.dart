@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../data/models/atendimento_mobile_assets_model.dart';
 import '../../data/models/gestao_mobile_assets_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/models/perfil_negocio_model.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
@@ -53,6 +54,10 @@ class PerfilNegocioService {
   Future<GestaoMobileAssetsModel> gestaoMobileAssets(String empresaId) async =>
       GestaoMobileAssetsModel.fromJson(
         await _request('GET', '/gestao-mobile/assets', empresaId),
+      );
+  Future<WebHeaderAssetsModel> webHeaderAssets(String empresaId) async =>
+      WebHeaderAssetsModel.fromJson(
+        await _request('GET', '/web-header/assets', empresaId),
       );
 
   Future<PerfilNegocioEmpresaModel> salvar(

@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/etiqueta/etiqueta_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web/six_web_animated_dialog.dart';
 import '../components/web_dashboard_widgets.dart';
+import '../controllers/web_header_assets_context_controller.dart';
 import '../theme/web_theme_tokens.dart';
 import 'colaborador_convite_web_body.dart';
 
@@ -35,6 +37,7 @@ class _ColaboradoresUsuarioListPageState
     extends State<ColaboradoresUsuarioListPage> {
   late final ColaboradorUsuarioApiClient _api;
   late final EtiquetaService _etiquetaService;
+  late final WebHeaderAssetsContextController _headerAssets;
   final TextEditingController _search = TextEditingController();
 
   bool _loading = false;
@@ -64,13 +67,24 @@ class _ColaboradoresUsuarioListPageState
     super.initState();
     _api = widget.apiClient ?? HttpColaboradorUsuarioApiClient();
     _etiquetaService = widget.etiquetaService ?? EtiquetaService();
+    _headerAssets =
+        WebHeaderAssetsContextController()
+          ..addListener(_onHeaderAssetsChanged)
+          ..initialize();
     _reload();
   }
 
   @override
   void dispose() {
     _search.dispose();
+    _headerAssets
+      ..removeListener(_onHeaderAssetsChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onHeaderAssetsChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _reload() async {
@@ -431,6 +445,10 @@ class _ColaboradoresUsuarioListPageState
         'colaboradores.webSubtitle',
         'Gestão de colaboradores, convites, contatos e permissões de acesso por comércio.',
       ),
+      backgroundImageUrl:
+          _headerAssets.assets
+              ?.asset(WebHeaderAssetPage.colaboradores)
+              ?.imagemUrl,
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(

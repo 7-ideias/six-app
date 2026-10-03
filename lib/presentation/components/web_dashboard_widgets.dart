@@ -11,6 +11,7 @@ class SixWebDashboardHeader extends StatelessWidget {
     required this.subtitle,
     required this.actions,
     this.onBack,
+    this.backgroundImageUrl,
   });
 
   final IconData icon;
@@ -18,72 +19,239 @@ class SixWebDashboardHeader extends StatelessWidget {
   final String subtitle;
   final List<Widget> actions;
   final VoidCallback? onBack;
+  final String? backgroundImageUrl;
+
+  bool get _hasBackgroundImage =>
+      backgroundImageUrl != null && backgroundImageUrl!.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    if (!_hasBackgroundImage) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted,
+          border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+        ),
+        child: _content(context, theme, tokens),
+      );
+    }
+
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+      margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+      height: 190,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: tokens.surfaceMuted,
-        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: tokens.info.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(icon, color: tokens.info, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              ...actions,
-              if (onBack != null)
-                IconButton.filledTonal(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-            ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tokens.cardBorder),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          Image.network(
+            backgroundImageUrl!,
+            fit: BoxFit.cover,
+            alignment: const Alignment(0.18, -0.52),
+            filterQuality: FilterQuality.high,
+            errorBuilder: (
+              BuildContext context,
+              Object error,
+              StackTrace? stackTrace,
+            ) {
+              debugPrint(
+                '[SixWebDashboardHeader] falha ao carregar imagem '
+                'url=$backgroundImageUrl error=$error',
+              );
+              return ColoredBox(color: tokens.surfaceMuted);
+            },
+            loadingBuilder: (
+              BuildContext context,
+              Widget child,
+              ImageChunkEvent? loadingProgress,
+            ) {
+              return loadingProgress == null
+                  ? child
+                  : ColoredBox(color: tokens.surfaceMuted);
+            },
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: const <double>[0, 0.36, 0.67, 0.86, 1],
+                colors: <Color>[
+                  tokens.surfaceMuted.withValues(alpha: isDark ? 0.98 : 0.96),
+                  tokens.surfaceMuted.withValues(alpha: isDark ? 0.92 : 0.87),
+                  tokens.surfaceMuted.withValues(alpha: isDark ? 0.32 : 0.20),
+                  tokens.surfaceMuted.withValues(alpha: isDark ? 0.18 : 0.12),
+                  tokens.surfaceMuted.withValues(alpha: isDark ? 0.92 : 0.86),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+            child: _content(context, theme, tokens, contextual: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    ThemeData theme,
+    WebThemeTokens tokens, {
+    bool contextual = false,
+  }) {
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color titleColor =
+        contextual
+            ? (isDark ? Colors.white : tokens.primaryText)
+            : tokens.primaryText;
+    final Color subtitleColor =
+        contextual
+            ? (isDark
+                ? Colors.white.withValues(alpha: 0.84)
+                : tokens.secondaryText)
+            : tokens.secondaryText;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 780;
+        final Widget leading = Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color:
+                contextual
+                    ? (isDark
+                        ? Colors.black.withValues(alpha: 0.24)
+                        : Colors.white.withValues(alpha: 0.72))
+                    : tokens.info.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border:
+                contextual
+                    ? Border.all(
+                      color:
+                          isDark
+                              ? Colors.white.withValues(alpha: 0.14)
+                              : tokens.cardBorder,
+                    )
+                    : null,
+          ),
+          child: Icon(
+            icon,
+            color:
+                contextual
+                    ? (isDark ? Colors.white : tokens.info)
+                    : tokens.info,
+            size: 28,
+          ),
+        );
+
+        final Widget texts = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: titleColor,
+                fontWeight: FontWeight.w900,
+                shadows:
+                    contextual
+                        ? const <Shadow>[
+                          Shadow(color: Color(0x99000000), blurRadius: 10),
+                        ]
+                        : const <Shadow>[],
+              ),
+            ),
+            const SizedBox(height: 4),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 650),
+              child: Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: subtitleColor,
+                  height: 1.35,
+                  fontWeight: contextual ? FontWeight.w600 : null,
+                  shadows:
+                      contextual
+                          ? const <Shadow>[
+                            Shadow(color: Color(0x8A000000), blurRadius: 8),
+                          ]
+                          : const <Shadow>[],
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final Widget actionWrap = Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            ...actions,
+            if (onBack != null)
+              IconButton.filledTonal(
+                tooltip: 'Fechar',
+                onPressed: onBack,
+                icon: const Icon(Icons.close_rounded),
+              ),
+          ],
+        );
+
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  leading,
+                  const SizedBox(width: 16),
+                  Expanded(child: texts),
+                ],
+              ),
+              if (actions.isNotEmpty || onBack != null) ...<Widget>[
+                const SizedBox(height: 16),
+                Align(alignment: Alignment.centerRight, child: actionWrap),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            leading,
+            const SizedBox(width: 16),
+            Expanded(child: texts),
+            const SizedBox(width: 20),
+            Flexible(child: actionWrap),
+          ],
+        );
+      },
     );
   }
 }

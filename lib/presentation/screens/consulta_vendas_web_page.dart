@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/consulta_vendas_models.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../../data/services/vendas/consulta_vendas_api_client.dart';
@@ -17,6 +18,7 @@ import '../../providers/usuario_provider.dart';
 import '../components/six_backend_loading.dart';
 import '../components/web/six_web_multi_select_field.dart';
 import '../components/web/six_web_select_field.dart';
+import '../controllers/web_header_assets_context_controller.dart';
 import '../theme/web_theme_tokens.dart';
 
 class ConsultaVendasWebPage extends StatefulWidget {
@@ -128,6 +130,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   late final ConsultaVendasApiClient _api;
   late final Future<List<ColaboradorUsuarioResumo>> Function()
   _vendedoresLoader;
+  late final WebHeaderAssetsContextController _headerAssets;
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
@@ -160,6 +163,10 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpConsultaVendasApiClient();
+    _headerAssets =
+        WebHeaderAssetsContextController()
+          ..addListener(_onHeaderAssetsChanged)
+          ..initialize();
     _vendedoresLoader =
         widget.vendedoresLoader ??
         () => HttpDesempenhoColaboradorApiClient().listarParticipantes(
@@ -231,7 +238,14 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     _buscaController.dispose();
     _valorMinimoController.dispose();
     _valorMaximoController.dispose();
+    _headerAssets
+      ..removeListener(_onHeaderAssetsChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onHeaderAssetsChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _carregar({int? pagina}) async {
@@ -725,6 +739,21 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     bool compacto,
   ) {
     final ThemeData theme = Theme.of(context);
+    final String? backgroundImageUrl =
+        _headerAssets.assets?.asset(WebHeaderAssetPage.vendas)?.imagemUrl;
+    final bool contextual =
+        backgroundImageUrl != null && backgroundImageUrl.isNotEmpty;
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color headerTitleColor =
+        contextual
+            ? (isDark ? Colors.white : tokens.primaryText)
+            : tokens.primaryText;
+    final Color headerSubtitleColor =
+        contextual
+            ? (isDark
+                ? Colors.white.withValues(alpha: 0.84)
+                : tokens.secondaryText)
+            : tokens.secondaryText;
     final Widget titulo = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -737,8 +766,14 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             es: 'Ventas',
           ),
           style: theme.textTheme.headlineSmall?.copyWith(
-            color: tokens.primaryText,
+            color: headerTitleColor,
             fontWeight: FontWeight.w900,
+            shadows:
+                contextual
+                    ? const <Shadow>[
+                      Shadow(color: Color(0x99000000), blurRadius: 10),
+                    ]
+                    : const <Shadow>[],
           ),
         ),
         const SizedBox(height: 6),
@@ -754,8 +789,14 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                 'Consulte, filtre y acompañe todo el ciclo de ventas de este comercio.',
           ),
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: tokens.secondaryText,
+            color: headerSubtitleColor,
             fontWeight: FontWeight.w600,
+            shadows:
+                contextual
+                    ? const <Shadow>[
+                      Shadow(color: Color(0x80000000), blurRadius: 8),
+                    ]
+                    : const <Shadow>[],
           ),
         ),
       ],
@@ -806,6 +847,8 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     return _SurfaceCard(
       tokens: tokens,
       padding: const EdgeInsets.all(18),
+      backgroundImageUrl: backgroundImageUrl,
+      contextualHero: contextual,
       child:
           compacto
               ? Column(
@@ -1543,25 +1586,103 @@ class _SurfaceCard extends StatelessWidget {
     required this.tokens,
     required this.child,
     required this.padding,
+    this.backgroundImageUrl,
+    this.contextualHero = false,
   });
 
   final WebThemeTokens tokens;
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final String? backgroundImageUrl;
+  final bool contextualHero;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
+    final bool hasImage =
+        contextualHero &&
+        backgroundImageUrl != null &&
+        backgroundImageUrl!.trim().isNotEmpty;
+
+    if (!hasImage) {
+      return AnimatedContainer(
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
+        width: double.infinity,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: tokens.cardBackground,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: child,
+      );
+    }
+
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       width: double.infinity,
-      padding: padding,
+      height: 188,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: tokens.cardBorder),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: child,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          Image.network(
+            backgroundImageUrl!,
+            fit: BoxFit.cover,
+            alignment: const Alignment(0.20, -0.52),
+            filterQuality: FilterQuality.high,
+            errorBuilder: (
+              BuildContext context,
+              Object error,
+              StackTrace? stackTrace,
+            ) {
+              debugPrint(
+                '[ConsultaVendasWeb] falha ao carregar header '
+                'url=$backgroundImageUrl error=$error',
+              );
+              return ColoredBox(color: tokens.cardBackground);
+            },
+            loadingBuilder: (
+              BuildContext context,
+              Widget image,
+              ImageChunkEvent? loadingProgress,
+            ) {
+              return loadingProgress == null
+                  ? image
+                  : ColoredBox(color: tokens.cardBackground);
+            },
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: const <double>[0, 0.38, 0.68, 0.86, 1],
+                colors: <Color>[
+                  tokens.cardBackground.withValues(alpha: 0.98),
+                  tokens.cardBackground.withValues(alpha: 0.91),
+                  tokens.cardBackground.withValues(alpha: 0.30),
+                  tokens.cardBackground.withValues(alpha: 0.18),
+                  tokens.cardBackground.withValues(alpha: 0.90),
+                ],
+              ),
+            ),
+          ),
+          Padding(padding: padding, child: child),
+        ],
+      ),
     );
   }
 }
