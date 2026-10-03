@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../data/models/atendimento_mobile_assets_model.dart';
+import '../../data/models/gestao_mobile_assets_model.dart';
 import '../../data/models/perfil_negocio_model.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
@@ -49,6 +50,10 @@ class PerfilNegocioService {
   ) async => AtendimentoMobileAssetsModel.fromJson(
     await _request('GET', '/atendimento-mobile/assets', empresaId),
   );
+  Future<GestaoMobileAssetsModel> gestaoMobileAssets(String empresaId) async =>
+      GestaoMobileAssetsModel.fromJson(
+        await _request('GET', '/gestao-mobile/assets', empresaId),
+      );
 
   Future<PerfilNegocioEmpresaModel> salvar(
     String empresaId,
