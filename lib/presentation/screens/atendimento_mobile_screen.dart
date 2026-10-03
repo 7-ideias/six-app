@@ -142,8 +142,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     final int generation = ++_businessAssetsLoadGeneration;
     try {
       final String empresaId = await _perfilNegocioService.empresaAtual();
-      final AtendimentoMobileAssetsModel resolved =
-          await _perfilNegocioService.atendimentoMobileAssets(empresaId);
+      final AtendimentoMobileAssetsModel resolved = await _perfilNegocioService
+          .atendimentoMobileAssets(empresaId);
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
 
       final int fallbacks =
@@ -183,9 +183,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     });
   }
 
-  AtendimentoMobileAssetModel? _businessAsset(
-    AtendimentoMobileAssetSlot slot,
-  ) {
+  AtendimentoMobileAssetModel? _businessAsset(AtendimentoMobileAssetSlot slot) {
     if (kIsWeb) return null;
     return _businessAssets?.asset(slot);
   }
@@ -843,9 +841,7 @@ class _ContextualFullCardContent extends StatelessWidget {
         constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
     final bool compact = compactWidth || textScale >= 1.22;
     final double titleSize =
-        _isPrimary
-            ? (compact ? 13.4 : 15.4)
-            : (compact ? 10.2 : 11.2);
+        _isPrimary ? (compact ? 13.4 : 15.4) : (compact ? 10.2 : 11.2);
     final String url = data.contextualImageUrl!;
 
     final Widget localFallback = DecoratedBox(
@@ -892,9 +888,7 @@ class _ContextualFullCardContent extends StatelessWidget {
       children: <Widget>[
         Image.network(
           url,
-          key: ValueKey<String>(
-            'atendimento-contextual-fullcard-${data.id}',
-          ),
+          key: ValueKey<String>('atendimento-contextual-fullcard-${data.id}'),
           fit: BoxFit.cover,
           alignment: Alignment.center,
           filterQuality: FilterQuality.high,
