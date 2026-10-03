@@ -43,11 +43,6 @@ void main() {
       'https://assets.sixappback.com/mobile/automotivo/vendas/vendas-v1.webp'
       '?rev=20261001-vendas-gestao',
     );
-    expect(
-      assets.gestaoUrl(GestaoMobileBusinessAsset.catalogo),
-      'https://assets.sixappback.com/mobile/automotivo/gestao/catalogo-v1.webp'
-      '?rev=20261001-vendas-gestao',
-    );
   });
 
   test('perfil sem arte mantém fallback local', () {
