@@ -23,8 +23,9 @@ class PerfilNegocioService {
 
   Future<String> empresaAtual() async {
     final id = await _auth.getEmpresaId();
-    if (id == null || id.trim().isEmpty)
+    if (id == null || id.trim().isEmpty) {
       throw const PerfilNegocioException(401);
+    }
     return id;
   }
 
@@ -62,8 +63,12 @@ class PerfilNegocioService {
     String empresaId, [
     Map<String, dynamic>? body,
   ]) async {
-    if (await empresaAtual() != empresaId)
-      throw const PerfilNegocioException(409, 'CONTEXTO_EMPRESA_ALTERADO');
+    if (await empresaAtual() != empresaId) {
+      throw const PerfilNegocioException(
+        409,
+        'CONTEXTO_EMPRESA_ALTERADO',
+      );
+    }
     final token = await _auth.getAccessToken();
     if (token == null || token.isEmpty) throw const PerfilNegocioException(401);
     final headers = <String, String>{
@@ -89,17 +94,19 @@ class PerfilNegocioService {
       String? code;
       try {
         final dynamic error = jsonDecode(utf8.decode(response.bodyBytes));
-        if (error is Map)
+        if (error is Map) {
           code =
               (error['codigo'] ?? error['code'] ?? error['reason'])?.toString();
+        }
       } catch (_) {
         // Não exibir HTML, stacktrace ou texto cru do servidor ao usuário.
       }
       throw PerfilNegocioException(response.statusCode, code);
     }
     final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    if (decoded is! Map<String, dynamic>)
+    if (decoded is! Map<String, dynamic>) {
       throw const PerfilNegocioException(0, 'RESPOSTA_INVALIDA');
+    }
     return decoded;
   }
 
