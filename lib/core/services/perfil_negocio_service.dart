@@ -85,8 +85,9 @@ class PerfilNegocioService {
       throw const PerfilNegocioException(0, 'TIMEOUT');
     }
     // Uma resposta da empresa anterior nunca substitui o contexto atualmente selecionado.
-    if (await empresaAtual() != empresaId)
+    if (await empresaAtual() != empresaId) {
       throw const PerfilNegocioException(409, 'CONTEXTO_EMPRESA_ALTERADO');
+    }
     if (response.statusCode != 200) {
       String? code;
       try {
