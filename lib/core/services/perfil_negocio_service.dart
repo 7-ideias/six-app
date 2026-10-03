@@ -64,10 +64,7 @@ class PerfilNegocioService {
     Map<String, dynamic>? body,
   ]) async {
     if (await empresaAtual() != empresaId) {
-      throw const PerfilNegocioException(
-        409,
-        'CONTEXTO_EMPRESA_ALTERADO',
-      );
+      throw const PerfilNegocioException(409, 'CONTEXTO_EMPRESA_ALTERADO');
     }
     final token = await _auth.getAccessToken();
     if (token == null || token.isEmpty) throw const PerfilNegocioException(401);
