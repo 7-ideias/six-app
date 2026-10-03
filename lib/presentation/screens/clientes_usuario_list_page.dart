@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/controllers/web_header_assets_context_controller.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_web_dialog.dart';
@@ -28,6 +30,7 @@ class ClientesUsuarioListPage extends StatefulWidget {
 
 class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   late final ClienteUsuarioApiClient _api;
+  late final WebHeaderAssetsContextController _headerAssets;
   final TextEditingController _search = TextEditingController();
   final NumberFormat _money = NumberFormat.currency(
     locale: 'pt_BR',
@@ -63,13 +66,24 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpClienteUsuarioApiClient();
+    _headerAssets =
+        WebHeaderAssetsContextController()
+          ..addListener(_onHeaderAssetsChanged)
+          ..initialize();
     _reload();
   }
 
   @override
   void dispose() {
     _search.dispose();
+    _headerAssets
+      ..removeListener(_onHeaderAssetsChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onHeaderAssetsChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _reload() async {
@@ -194,6 +208,8 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
       title: 'Clientes',
       subtitle:
           'Resumo da base de clientes, fiado, contatos e relacionamento comercial.',
+      backgroundImageUrl:
+          _headerAssets.assets?.asset(WebHeaderAssetPage.clientes)?.imagemUrl,
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(
