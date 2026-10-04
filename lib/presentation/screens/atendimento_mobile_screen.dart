@@ -377,25 +377,39 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                 ),
               ),
               SizedBox(height: 16),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 95),
-                child: _AtendimentoActionsRow(
-                  actions: actions.take(2).toList(growable: false),
+              if (_businessAssetsLoading) ...<Widget>[
+                _AtendimentoActionsShimmerRow(
+                  itemCount: 2,
                   prominence: _AtendimentoActionProminence.primary,
                   heightBoost: sizing.primaryRowExtraHeight,
-                  onReorder: _ordemCardsController.reordenar,
                 ),
-              ),
-              SizedBox(height: 12),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 130),
-                child: _AtendimentoActionsRow(
-                  actions: actions.skip(2).toList(growable: false),
+                const SizedBox(height: 12),
+                _AtendimentoActionsShimmerRow(
+                  itemCount: 3,
                   prominence: _AtendimentoActionProminence.compact,
                   heightBoost: sizing.compactRowExtraHeight,
-                  onReorder: _ordemCardsController.reordenar,
                 ),
-              ),
+              ] else ...<Widget>[
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: 95),
+                  child: _AtendimentoActionsRow(
+                    actions: actions.take(2).toList(growable: false),
+                    prominence: _AtendimentoActionProminence.primary,
+                    heightBoost: sizing.primaryRowExtraHeight,
+                    onReorder: _ordemCardsController.reordenar,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: 130),
+                  child: _AtendimentoActionsRow(
+                    actions: actions.skip(2).toList(growable: false),
+                    prominence: _AtendimentoActionProminence.compact,
+                    heightBoost: sizing.compactRowExtraHeight,
+                    onReorder: _ordemCardsController.reordenar,
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -687,6 +701,59 @@ class _AtendimentoLayoutSizing {
     return _AtendimentoLayoutSizing(
       primaryRowExtraHeight: extraHeight * 0.54,
       compactRowExtraHeight: extraHeight * 0.46,
+    );
+  }
+}
+
+class _AtendimentoActionsShimmerRow extends StatelessWidget {
+  const _AtendimentoActionsShimmerRow({
+    required this.itemCount,
+    required this.prominence,
+    this.heightBoost = 0,
+  });
+
+  final int itemCount;
+  final _AtendimentoActionProminence prominence;
+  final double heightBoost;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double textScale = MediaQuery.textScalerOf(context).scale(1);
+        final double gap =
+            prominence == _AtendimentoActionProminence.primary ? 12 : 8;
+        final double scaleExtra =
+            (textScale - 1).clamp(0.0, 0.8).toDouble();
+        final double baseHeight =
+            prominence == _AtendimentoActionProminence.primary
+                ? 190 + (scaleExtra * 82)
+                : 146 + (scaleExtra * 58);
+        final double cardHeight = baseHeight + heightBoost;
+        final double cardWidth =
+            (constraints.maxWidth - (gap * (itemCount - 1))) / itemCount;
+
+        return SizedBox(
+          height: cardHeight,
+          child: Row(
+            children: <Widget>[
+              for (int index = 0; index < itemCount; index += 1) ...<Widget>[
+                if (index > 0) SizedBox(width: gap),
+                SizedBox(
+                  width: cardWidth,
+                  child: SixVisualAssetShimmer(
+                    height: cardHeight,
+                    borderRadius:
+                        prominence == _AtendimentoActionProminence.primary
+                            ? 22
+                            : 18,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -989,7 +1056,9 @@ class _ContextualFullCardContent extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.center,
           filterQuality: FilterQuality.high,
-          placeholder: localFallback,
+          placeholder: const SixVisualAssetShimmer(
+            borderRadius: 0,
+          ),
           errorBuilder: (
             BuildContext context,
             Object error,
@@ -1293,7 +1362,11 @@ class _ActionIllustration extends StatelessWidget {
       height: imageSize,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
-      placeholder: fallback,
+      placeholder: SixVisualAssetShimmer(
+        width: imageSize,
+        height: imageSize,
+        borderRadius: 999,
+      ),
       errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
         debugPrint(
           '[AtendimentoMobile] Falha ao carregar imagem contextual '

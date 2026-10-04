@@ -165,7 +165,9 @@ class _BannerCard extends StatelessWidget {
               SixCachedNetworkImage(
                 imageUrl: imageUrl!,
                 fit: BoxFit.cover,
-                placeholder: _fallback(context),
+                placeholder: const SixVisualAssetShimmer(
+                  borderRadius: 22,
+                ),
                 errorBuilder: (_, __, ___) => _fallback(context),
               )
             else
