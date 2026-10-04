@@ -173,13 +173,7 @@ class VisualAssetSyncService {
     );
   }
 
-  bool _isVersion(String value) => RegExp(r'^\d{12}(String incoming, String? current) {
-    if (!_isVersion(incoming)) return false;
-    if (current == null || !_isVersion(current)) return true;
-    return incoming.compareTo(current) > 0;
-  }
-}
-).hasMatch(value);
+  bool _isVersion(String value) => RegExp(r'^\d{12}$').hasMatch(value);
 
   bool _isEnvironment(String value) =>
       value == 'DEV' || value == 'LIVE';

@@ -1502,7 +1502,6 @@ class _UploadAssetDialog extends StatefulWidget {
     required this.service,
     required this.slot,
     required this.scope,
-    required this.backendEnvironment,
     required this.company,
     required this.segment,
     required this.subsegment,
@@ -1511,7 +1510,6 @@ class _UploadAssetDialog extends StatefulWidget {
   final AdminVisualAssetsService service;
   final AdminVisualAssetSlotPanel slot;
   final String scope;
-  final String backendEnvironment;
   final AdminVisualAssetCompany? company;
   final String? segment;
   final String? subsegment;
@@ -1796,6 +1794,7 @@ class _AssetHistoryDialog extends StatefulWidget {
     required this.service,
     required this.slot,
     required this.scope,
+    required this.backendEnvironment,
     required this.company,
     required this.segment,
     required this.subsegment,
@@ -1804,6 +1803,7 @@ class _AssetHistoryDialog extends StatefulWidget {
   final AdminVisualAssetsService service;
   final AdminVisualAssetSlotPanel slot;
   final String scope;
+  final String backendEnvironment;
   final AdminVisualAssetCompany? company;
   final String? segment;
   final String? subsegment;
