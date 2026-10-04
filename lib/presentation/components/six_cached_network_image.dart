@@ -20,7 +20,7 @@ class SixCachedNetworkImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit? fit;
-  final AlignmentGeometry alignment;
+  final Alignment alignment;
   final FilterQuality filterQuality;
   final Widget? placeholder;
   final ImageErrorWidgetBuilder? errorBuilder;
