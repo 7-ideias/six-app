@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/services/perfil_negocio_change_service.dart';
 import '../core/services/perfil_negocio_service.dart';
 import '../core/services/visual_asset_manifest_cache_service.dart';
 import '../core/services/visual_asset_sync_service.dart';
@@ -19,7 +20,12 @@ class HomeBannersProvider extends ChangeNotifier {
            manifestCacheService ?? VisualAssetManifestCacheService.instance {
     _assetSubscription = _assetSyncService.changes.listen((_) {
       if (_disposed) return;
-      unawaited(carregar(force: true));
+      unawaited(_reloadWithShimmer());
+    });
+    _profileSubscription =
+        PerfilNegocioChangeService.instance.changes.listen((String companyId) {
+      if (_disposed) return;
+      unawaited(_onProfileChanged(companyId));
     });
   }
 
@@ -27,6 +33,7 @@ class HomeBannersProvider extends ChangeNotifier {
   final VisualAssetSyncService _assetSyncService;
   final VisualAssetManifestCacheService _manifestCacheService;
   StreamSubscription<void>? _assetSubscription;
+  StreamSubscription<String>? _profileSubscription;
   HomeBannersModel? _dados;
   String? _empresaId;
   bool _carregando = false;
@@ -37,6 +44,33 @@ class HomeBannersProvider extends ChangeNotifier {
   HomeBannersModel? get dados => _dados;
   bool get carregando => _carregando;
   String? get erro => _erro;
+
+  Future<void> _onProfileChanged(String companyId) async {
+    final String current = await _service.empresaAtual();
+    if (_disposed || current != companyId) return;
+
+    ++_geracao;
+    _empresaId = companyId;
+    _dados = null;
+    _erro = null;
+    _carregando = true;
+    _notify();
+    await _manifestCacheService.remove(
+      kind: 'home_mobile',
+      companyId: companyId,
+    );
+    await carregar(force: true);
+  }
+
+  Future<void> _reloadWithShimmer() async {
+    if (_disposed) return;
+    final String companyId = await _service.empresaAtual();
+    _dados = null;
+    _erro = null;
+    _carregando = true;
+    _notify();
+    await carregar(force: true);
+  }
 
   Future<void> carregar({bool force = false}) async {
     final int geracao = ++_geracao;
@@ -147,6 +181,8 @@ class HomeBannersProvider extends ChangeNotifier {
     ++_geracao;
     _assetSubscription?.cancel();
     _assetSubscription = null;
+    _profileSubscription?.cancel();
+    _profileSubscription = null;
     _service.dispose();
     super.dispose();
   }

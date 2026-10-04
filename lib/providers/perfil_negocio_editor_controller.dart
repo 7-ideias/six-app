@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/services/perfil_negocio_change_service.dart';
 import '../core/services/perfil_negocio_service.dart';
 import '../data/models/perfil_negocio_model.dart';
 
@@ -188,6 +189,7 @@ class PerfilNegocioEditorController extends ChangeNotifier {
           await _service.salvar(empresaId, request);
       if (_disposed) return false;
       estado = salvo;
+      PerfilNegocioChangeService.instance.notifyChanged(empresaId);
       return true;
     } catch (error) {
       if (!_disposed) erro = _erroKey(error);

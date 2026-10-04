@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
+import 'package:sixpos/core/services/perfil_negocio_change_service.dart';
 import 'package:sixpos/core/services/perfil_negocio_service.dart';
 import 'package:sixpos/core/services/visual_asset_sync_service.dart';
 import 'package:sixpos/core/services/visual_asset_manifest_cache_service.dart';
@@ -22,6 +23,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_car
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/components/six_cached_network_image.dart';
+import 'package:sixpos/presentation/components/six_visual_asset_shimmer.dart';
 import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
@@ -88,7 +90,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   final VisualAssetManifestCacheService _manifestCache =
       VisualAssetManifestCacheService.instance;
   StreamSubscription<void>? _assetSyncSubscription;
+  StreamSubscription<String>? _profileSubscription;
   AtendimentoMobileAssetsModel? _businessAssets;
+  bool _businessAssetsLoading = false;
   int _businessAssetsLoadGeneration = 0;
   String? _businessAssetsEmpresaId;
 
@@ -123,7 +127,13 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       _empresaProvider.addListener(_onEmpresaChanged);
       _assetSyncSubscription = _assetSync.changes.listen((_) {
         if (mounted) {
-          unawaited(_carregarImagensDoPerfil());
+          unawaited(_reloadBusinessAssetsWithShimmer());
+        }
+      });
+      _profileSubscription =
+          PerfilNegocioChangeService.instance.changes.listen((String companyId) {
+        if (mounted) {
+          unawaited(_onBusinessProfileChanged(companyId));
         }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -143,6 +153,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     ++_businessAssetsLoadGeneration;
     _assetSyncSubscription?.cancel();
     _assetSyncSubscription = null;
+    _profileSubscription?.cancel();
+    _profileSubscription = null;
     _perfilNegocioService.dispose();
     _ordemCardsController
       ..removeListener(_aoAlterarOrdemDosCards)
@@ -184,8 +196,29 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
     final bool versionChanged = await _assetSync.initialize();
     if (mounted && (!restored || versionChanged)) {
-      await _carregarImagensDoPerfil();
+      await _reloadBusinessAssetsWithShimmer();
     }
+  }
+
+  Future<void> _onBusinessProfileChanged(String companyId) async {
+    final String current = await _perfilNegocioService.empresaAtual();
+    if (!mounted || current != companyId) return;
+    await _manifestCache.remove(
+      kind: 'atendimento_mobile',
+      companyId: companyId,
+    );
+    await _reloadBusinessAssetsWithShimmer();
+  }
+
+  Future<void> _reloadBusinessAssetsWithShimmer() async {
+    if (!mounted || kIsWeb) return;
+    ++_businessAssetsLoadGeneration;
+    setState(() {
+      _businessAssets = null;
+      _businessAssetsEmpresaId = null;
+      _businessAssetsLoading = true;
+    });
+    await _carregarImagensDoPerfil();
   }
 
   Future<void> _carregarImagensDoPerfil() async {
@@ -223,27 +256,26 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       setState(() {
         _businessAssetsEmpresaId = empresaId;
         _businessAssets = resolved;
+        _businessAssetsLoading = false;
       });
     } catch (error) {
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
       debugPrint(
         '[AtendimentoMobile] Falha ao carregar assets do backend: $error',
       );
-      if (_businessAssets != null || _businessAssetsEmpresaId != null) {
-        setState(() {
-          _businessAssets = null;
-          _businessAssetsEmpresaId = null;
-        });
-      }
+      setState(() {
+        _businessAssets = null;
+        _businessAssetsEmpresaId = null;
+        _businessAssetsLoading = false;
+      });
     }
   }
 
   void _onEmpresaChanged() {
     if (!mounted || kIsWeb) return;
-    _businessAssetsEmpresaId = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(_inicializarImagensGerenciadas());
+        unawaited(_reloadBusinessAssetsWithShimmer());
       }
     });
   }
