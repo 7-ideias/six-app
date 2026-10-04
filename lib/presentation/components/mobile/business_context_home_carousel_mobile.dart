@@ -6,6 +6,7 @@ import '../../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../../l10n/perfil_negocio_texts.dart';
 import '../../../providers/home_banners_provider.dart';
 import '../perfil_negocio_icons.dart';
+import '../six_cached_network_image.dart';
 import '../six_backend_loading.dart';
 
 class BusinessContextHomeCarouselMobile extends StatelessWidget {
@@ -131,16 +132,11 @@ class _BannerCard extends StatelessWidget {
           fit: StackFit.expand,
           children: <Widget>[
             if (imageUrl != null)
-              Image.network(
-                imageUrl!,
+              SixCachedNetworkImage(
+                imageUrl: imageUrl!,
                 fit: BoxFit.cover,
+                placeholder: _fallback(context),
                 errorBuilder: (_, __, ___) => _fallback(context),
-                loadingBuilder: (
-                  BuildContext context,
-                  Widget child,
-                  ImageChunkEvent? event,
-                ) =>
-                    event == null ? child : _fallback(context),
               )
             else
               _fallback(context),

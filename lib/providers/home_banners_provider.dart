@@ -1,13 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../core/services/perfil_negocio_service.dart';
+import '../core/services/visual_asset_sync_service.dart';
 import '../data/models/perfil_negocio_model.dart';
 
 class HomeBannersProvider extends ChangeNotifier {
-  HomeBannersProvider({PerfilNegocioService? service})
-      : _service = service ?? PerfilNegocioService();
+  HomeBannersProvider({
+    PerfilNegocioService? service,
+    VisualAssetSyncService? assetSyncService,
+  }) : _service = service ?? PerfilNegocioService(),
+       _assetSyncService =
+           assetSyncService ?? VisualAssetSyncService.instance {
+    _assetSubscription = _assetSyncService.changes.listen((_) {
+      if (_disposed) return;
+      unawaited(carregar(force: true));
+    });
+    unawaited(_assetSyncService.initialize());
+  }
 
   final PerfilNegocioService _service;
+  final VisualAssetSyncService _assetSyncService;
+  StreamSubscription<void>? _assetSubscription;
   HomeBannersModel? _dados;
   String? _empresaId;
   bool _carregando = false;
@@ -79,6 +94,8 @@ class HomeBannersProvider extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     ++_geracao;
+    _assetSubscription?.cancel();
+    _assetSubscription = null;
     _service.dispose();
     super.dispose();
   }
