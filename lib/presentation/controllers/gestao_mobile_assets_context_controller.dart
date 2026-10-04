@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../core/services/perfil_negocio_service.dart';
+import '../../core/services/visual_asset_sync_service.dart';
 import '../../data/models/gestao_mobile_assets_model.dart';
 import '../../providers/empresa_provider.dart';
 
@@ -10,11 +11,17 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
   GestaoMobileAssetsContextController({
     PerfilNegocioService? perfilNegocioService,
     EmpresaProvider? empresaProvider,
+    VisualAssetSyncService? visualAssetSyncService,
   }) : _perfilNegocioService = perfilNegocioService ?? PerfilNegocioService(),
-       _empresaProvider = empresaProvider ?? EmpresaProvider();
+       _empresaProvider = empresaProvider ?? EmpresaProvider(),
+       _visualAssetSyncService =
+           visualAssetSyncService ?? VisualAssetSyncService.instance;
 
   final PerfilNegocioService _perfilNegocioService;
   final EmpresaProvider _empresaProvider;
+  final VisualAssetSyncService _visualAssetSyncService;
+
+  StreamSubscription<void>? _assetSyncSubscription;
 
   GestaoMobileAssetsModel? _assets;
   String? _empresaId;
@@ -28,7 +35,14 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     if (_initialized || _disposed || kIsWeb) return;
     _initialized = true;
     _empresaProvider.addListener(_onEmpresaChanged);
-    scheduleMicrotask(refresh);
+    _assetSyncSubscription = _visualAssetSyncService.changes.listen((_) {
+      if (_disposed || kIsWeb) return;
+      unawaited(refresh());
+    });
+    scheduleMicrotask(() async {
+      await _visualAssetSyncService.initialize();
+      await refresh();
+    });
   }
 
   Future<void> refresh() async {
@@ -78,6 +92,7 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
       return;
     }
 
+    unawaited(_visualAssetSyncService.synchronize());
     scheduleMicrotask(refresh);
   }
 
@@ -89,6 +104,8 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     if (_initialized && !kIsWeb) {
       _empresaProvider.removeListener(_onEmpresaChanged);
     }
+    _assetSyncSubscription?.cancel();
+    _assetSyncSubscription = null;
     _perfilNegocioService.dispose();
     super.dispose();
   }

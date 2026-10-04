@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/services/admin_visual_assets_service.dart';
 import '../../core/services/auth_service.dart';
-import '../../l10n/perfil_negocio_texts.dart';
+import '../../data/models/admin_visual_assets_models.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
@@ -24,171 +30,225 @@ class AdminVisualAssetsWebPage extends StatefulWidget {
 }
 
 class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
-  static const String _semSubsegmento = '__SEM_SUBSEGMENTO__';
-
   final AuthService _authService = AuthService();
-  final TextEditingController _buscaController = TextEditingController();
+  final AdminVisualAssetsService _service = AdminVisualAssetsService();
 
-  bool _verificandoAcesso = true;
-  bool _saindo = false;
+  bool _checkingAccess = true;
+  bool _loading = false;
+  bool _forcing = false;
+  bool _loggingOut = false;
   String? _userName;
   String? _userEmail;
-  String? _segmento;
-  String? _subsegmento;
-  AdminVisualAssetSlot? _slot;
-  AdminVisualAssetStatus? _status;
+  String? _error;
+  String _scope = 'GLOBAL';
+  String? _companyId;
+  String? _segment;
+  String? _subsegment;
+  List<AdminVisualAssetCompany> _companies =
+      const <AdminVisualAssetCompany>[];
+  AdminVisualAssetPanel? _panel;
+
+  AdminVisualAssetCompany? get _selectedCompany {
+    for (final AdminVisualAssetCompany company in _companies) {
+      if (company.id == _companyId) return company;
+    }
+    return null;
+  }
 
   @override
   void initState() {
     super.initState();
-    _carregarUsuario();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _validarSuper());
+    unawaited(_loadUser());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _validateSuper());
   }
 
   @override
   void dispose() {
-    _buscaController.dispose();
+    _service.dispose();
     super.dispose();
   }
 
-  Future<void> _validarSuper() async {
+  Future<void> _loadUser() async {
+    final String? email = await _authService.getUserEmail();
+    if (!mounted) return;
+    setState(() {
+      _userEmail = email;
+      _userName = _displayName(email);
+    });
+  }
+
+  Future<void> _validateSuper() async {
     final ColaboradorAutorizacoesProvider provider =
         context.read<ColaboradorAutorizacoesProvider>();
     await provider.carregarAutorizacoesDoUsuarioLogado(force: true);
     if (!mounted) return;
 
     if (!provider.ehSuperUsuario) {
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/app', (Route<dynamic> route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/app',
+        (Route<dynamic> route) => false,
+      );
       return;
     }
 
-    setState(() => _verificandoAcesso = false);
+    setState(() => _checkingAccess = false);
+    await _reload(loadCompanies: true);
   }
 
-  Future<void> _carregarUsuario() async {
-    final String? email = await _authService.getUserEmail();
-    if (!mounted) return;
+  Future<void> _reload({bool loadCompanies = false}) async {
+    if (_loading) return;
     setState(() {
-      _userEmail = email;
-      _userName = _nomeExibicaoPorEmail(email);
+      _loading = true;
+      _error = null;
     });
+
+    try {
+      List<AdminVisualAssetCompany> companies = _companies;
+      if (loadCompanies || companies.isEmpty) {
+        companies = await _service.companies();
+      }
+      String? companyId = _companyId;
+      if (_scope == 'EMPRESA' &&
+          (companyId == null ||
+              !companies.any((AdminVisualAssetCompany c) => c.id == companyId))) {
+        companyId = companies.isEmpty ? null : companies.first.id;
+      }
+
+      final AdminVisualAssetPanel panel = await _service.panel(
+        scope: _scope,
+        companyId: _scope == 'EMPRESA' ? companyId : null,
+        segment: _scope == 'GLOBAL' ? _segment : null,
+        subsegment: _scope == 'GLOBAL' ? _subsegment : null,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _companies = companies;
+        _companyId = companyId;
+        _panel = panel;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = _cleanError(error));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _changeScope(String scope) async {
+    if (_scope == scope) return;
+    setState(() {
+      _scope = scope;
+      _error = null;
+    });
+    await _reload();
+  }
+
+  Future<void> _forceRefresh() async {
+    final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => _VisualAssetsDialogTheme(
+            child: AlertDialog(
+            title: Text(texts.forceTitle),
+            content: Text(texts.forceDescription),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(texts.cancel),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: Icon(Icons.sync_rounded),
+                label: Text(texts.force),
+              ),
+            ],
+          ),
+        ),
+      ) ??
+        false;
+    if (!confirmed || !mounted) return;
+
+    setState(() => _forcing = true);
+    try {
+      await _service.forceRefresh();
+      await _reload();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(texts.forceSuccess)),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = _cleanError(error));
+      }
+    } finally {
+      if (mounted) setState(() => _forcing = false);
+    }
+  }
+
+  Future<void> _upload(AdminVisualAssetSlotPanel slot) async {
+    final bool? changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => _UploadAssetDialog(
+        service: _service,
+        slot: slot,
+        scope: _scope,
+        company: _selectedCompany,
+        segment: _scope == 'GLOBAL' ? _segment : null,
+        subsegment: _scope == 'GLOBAL' ? _subsegment : null,
+      ),
+    );
+    if (changed == true) await _reload();
+  }
+
+  Future<void> _showHistory(AdminVisualAssetSlotPanel slot) async {
+    final bool? changed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => _AssetHistoryDialog(
+        service: _service,
+        slot: slot,
+        scope: _scope,
+        backendEnvironment: _panel?.environment ?? 'DEV',
+        company: _selectedCompany,
+        segment: _scope == 'GLOBAL' ? _segment : null,
+        subsegment: _scope == 'GLOBAL' ? _subsegment : null,
+      ),
+    );
+    if (changed == true) await _reload();
   }
 
   Future<void> _logout() async {
-    if (_saindo) return;
-    setState(() => _saindo = true);
+    if (_loggingOut) return;
+    setState(() => _loggingOut = true);
     try {
       await _authService.logout();
     } finally {
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/admin',
+        (Route<dynamic> route) => false,
+      );
     }
   }
-
-  void _limparFiltros() {
-    _buscaController.clear();
-    setState(() {
-      _segmento = null;
-      _subsegmento = null;
-      _slot = null;
-      _status = null;
-    });
-  }
-
-  List<AdminVisualAssetRecord> get _filtrados {
-    final String busca = _buscaController.text.trim().toLowerCase();
-
-    return AdminVisualAssetsCatalog.records.where((record) {
-      if (_segmento != null && record.contexto.segmento != _segmento) {
-        return false;
-      }
-      if (_subsegmento != null) {
-        if (_subsegmento == _semSubsegmento) {
-          if (record.contexto.subsegmento != null) return false;
-        } else if (record.contexto.subsegmento != _subsegmento) {
-          return false;
-        }
-      }
-      if (_slot != null && record.slot != _slot) return false;
-      if (_status != null && record.status != _status) return false;
-
-      if (busca.isEmpty) return true;
-      final String haystack = <String>[
-        record.contexto.segmento,
-        record.contexto.subsegmento ?? '',
-        record.slot.name,
-        record.profileFolder ?? '',
-        record.imageUrl ?? '',
-      ].join(' ').toLowerCase();
-      return haystack.contains(busca);
-    }).toList(growable: false);
-  }
-
-  int get _disponiveis => AdminVisualAssetsCatalog.records
-      .where((record) => record.status == AdminVisualAssetStatus.disponivel)
-      .length;
-
-  int get _planejados => AdminVisualAssetsCatalog.records.length - _disponiveis;
 
   @override
   Widget build(BuildContext context) {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
-
-    if (_verificandoAcesso) {
-      final Widget loading = Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: AdminSurfaceCard(
-            child: Padding(
-              padding: const EdgeInsets.all(26),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 18),
-                  Text(
-                    texts.checkingAccess,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AdminPalette.bodyText,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-      if (widget.embeddedInMainShell) {
-        return ColoredBox(
-          color: AdminPalette.background,
-          child: loading,
-        );
-      }
-      return Scaffold(
-        backgroundColor: AdminPalette.background,
-        body: loading,
-      );
+    if (_checkingAccess) {
+      return _loadingAccess(texts);
     }
 
-    final ColaboradorAutorizacoesProvider autorizacoes =
+    final ColaboradorAutorizacoesProvider auth =
         context.watch<ColaboradorAutorizacoesProvider>();
-    if (!autorizacoes.ehSuperUsuario) {
-      return const SizedBox.shrink();
-    }
+    if (!auth.ehSuperUsuario) return const SizedBox.shrink();
 
-    final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
-    final List<AdminVisualAssetRecord> records = _filtrados;
-    final Widget content = _buildPanel(texts, records);
-
+    final Widget content = _buildContent(texts);
     if (widget.embeddedInMainShell) {
       return ColoredBox(
-        color: AdminPalette.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AdminSpacing.xl),
           child: content,
@@ -197,647 +257,379 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     }
 
     return AdminNavigationShell(
-      texts: portalTexts,
+      texts: AdminPortalTexts.of(context),
       userInfo: AdminPortalUserInfo(
         name: _userName,
         email: _userEmail,
-        profileType: autorizacoes.tipoPerfilUnificado,
+        profileType: auth.tipoPerfilUnificado,
       ),
       currentRoute: '/admin/imagens-contextuais',
       pageTitle: texts.title,
       onLogout: _logout,
-      onRefresh: () => setState(() {}),
-      refreshing: false,
-      loggingOut: _saindo,
+      onRefresh: () => _reload(loadCompanies: true),
+      refreshing: _loading,
+      loggingOut: _loggingOut,
       child: content,
     );
   }
 
-  Widget _buildPanel(
-    _VisualAssetsTexts texts,
-    List<AdminVisualAssetRecord> records,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _buildHeader(texts, records),
-        const SizedBox(height: AdminSpacing.lg),
-        _buildFilters(texts),
-        const SizedBox(height: AdminSpacing.lg),
-        _buildLegend(texts),
-        const SizedBox(height: AdminSpacing.lg),
-        if (records.isEmpty)
-          _buildEmpty(texts)
-        else
-          _buildGrid(texts, records),
-      ],
+  Widget _loadingAccess(_VisualAssetsTexts texts) {
+    final Widget loading = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: _VisualAssetsSurfaceCard(
+          child: Padding(
+            padding: const EdgeInsets.all(26),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const CircularProgressIndicator(),
+                const SizedBox(height: 18),
+                Text(
+                  texts.checkingAccess,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
+    if (widget.embeddedInMainShell) {
+      return ColoredBox(color: Theme.of(context).scaffoldBackgroundColor, child: loading);
+    }
+    return Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: loading);
   }
 
-  Widget _buildHeader(
-    _VisualAssetsTexts texts,
-    List<AdminVisualAssetRecord> records,
-  ) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 760;
-        final Widget intro = Column(
+  Widget _buildContent(_VisualAssetsTexts texts) {
+    final AdminVisualAssetPanel? panel = _panel;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              texts.eyebrow,
-              style: const TextStyle(
-                color: AdminPalette.mutedText,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              texts.title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AdminPalette.dark,
-                letterSpacing: -0.7,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Text(
-                texts.subtitle,
-                style: const TextStyle(
-                  color: AdminPalette.bodyText,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  height: 1.45,
-                ),
-              ),
-            ),
-          ],
-        );
-
-        final Widget counters = Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: compact ? WrapAlignment.start : WrapAlignment.end,
-          children: <Widget>[
-            _SummaryPill(
-              icon: Icons.filter_alt_rounded,
-              label: texts.filtered,
-              value: records.length.toString(),
-            ),
-            _SummaryPill(
-              icon: Icons.image_rounded,
-              label: texts.available,
-              value: _disponiveis.toString(),
-              emphasized: true,
-            ),
-            _SummaryPill(
-              icon: Icons.hourglass_empty_rounded,
-              label: texts.planned,
-              value: _planejados.toString(),
-            ),
-          ],
-        );
-
-        if (compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              intro,
-              const SizedBox(height: 18),
-              counters,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            Expanded(child: intro),
-            const SizedBox(width: 24),
-            Flexible(child: counters),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildFilters(_VisualAssetsTexts texts) {
-    final List<String> subsegmentos =
-        AdminVisualAssetsCatalog.subsegmentosDe(_segmento);
-
-    return Container(
-      padding: const EdgeInsets.all(AdminSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x07000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(Icons.tune_rounded, color: AdminPalette.dark),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  texts.filters,
-                  style: const TextStyle(
-                    color: AdminPalette.dark,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    texts.eyebrow.toUpperCase(),
+                    style: TextStyle(
+                      color: AdminPalette.success,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    texts.title,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    texts.subtitle,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 20),
+            FilledButton.tonalIcon(
+              onPressed: _forcing ? null : _forceRefresh,
+              icon: _forcing
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.sync_rounded),
+              label: Text(texts.force),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        _VisualAssetsSurfaceCard(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              children: <Widget>[
+                _ScopeSelector(
+                  value: _scope,
+                  onChanged: _loading ? null : _changeScope,
+                  texts: texts,
                 ),
-              ),
-              TextButton.icon(
-                onPressed: _limparFiltros,
-                icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
-                label: Text(texts.clearFilters),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool compact = constraints.maxWidth < 820;
-              final double width =
-                  compact
-                      ? constraints.maxWidth
-                      : (constraints.maxWidth - 36) / 4;
-
-              final List<Widget> filters = <Widget>[
-                SizedBox(
-                  width: width,
-                  child: _FilterSelect<String>(
-                    label: texts.segment,
-                    value: _segmento,
-                    placeholder: texts.all,
-                    items:
-                        AdminVisualAssetsCatalog.segmentos.keys
-                            .map(
-                              (String code) => _FilterOption<String>(
-                                value: code,
-                                label: perfilNegocioText(
-                                  context,
-                                  'segment.$code',
-                                ),
-                              ),
-                            )
-                            .toList(growable: false),
-                    onChanged: (String? value) {
-                      setState(() {
-                        _segmento = value;
-                        _subsegmento = null;
-                      });
+                if (_scope == 'EMPRESA')
+                  _AdminVisualSelectField<String?>(
+                    width: 310,
+                    label: texts.company,
+                    icon: Icons.storefront_rounded,
+                    value: _companyId,
+                    options: _companies
+                        .map(
+                          (AdminVisualAssetCompany company) =>
+                              _AdminVisualSelectOption<String?>(
+                            value: company.id,
+                            label: '${company.name} · ${company.timeZone}',
+                          ),
+                        )
+                        .toList(growable: false),
+                    enabled: !_loading && _companies.isNotEmpty,
+                    onSelected: (String? value) {
+                      setState(() => _companyId = value);
+                      unawaited(_reload());
                     },
                   ),
-                ),
-                SizedBox(
-                  width: width,
-                  child: _FilterSelect<String>(
-                    label: texts.specialty,
-                    value: _subsegmento,
-                    placeholder: texts.all,
-                    enabled: _segmento != null,
-                    items: <_FilterOption<String>>[
-                      _FilterOption<String>(
-                        value: _semSubsegmento,
-                        label: texts.noSpecialty,
+                if (_scope == 'GLOBAL') ...<Widget>[
+                  _AdminVisualSelectField<String?>(
+                    width: 250,
+                    label: texts.segment,
+                    icon: Icons.category_rounded,
+                    value: _segment,
+                    options: <_AdminVisualSelectOption<String?>>[
+                      _AdminVisualSelectOption<String?>(
+                        value: null,
+                        label: texts.globalDefault,
                       ),
-                      ...subsegmentos.map(
-                        (String code) => _FilterOption<String>(
-                          value: code,
-                          label: perfilNegocioText(context, 'sub.$code'),
+                      ...AdminVisualAssetsCatalog.segmentos.keys.map(
+                        (String segment) =>
+                            _AdminVisualSelectOption<String?>(
+                          value: segment,
+                          label: _prettyCode(segment),
                         ),
                       ),
                     ],
-                    onChanged: (String? value) {
-                      setState(() => _subsegmento = value);
+                    enabled: !_loading,
+                    onSelected: (String? value) {
+                      setState(() {
+                        _segment = value;
+                        _subsegment = null;
+                      });
+                      unawaited(_reload());
                     },
                   ),
-                ),
-                SizedBox(
-                  width: width,
-                  child: _FilterSelect<AdminVisualAssetSlot>(
-                    label: texts.cta,
-                    value: _slot,
-                    placeholder: texts.all,
-                    items:
-                        AdminVisualAssetSlot.values
-                            .map(
-                              (AdminVisualAssetSlot slot) =>
-                                  _FilterOption<AdminVisualAssetSlot>(
-                                    value: slot,
-                                    label: texts.slot(slot),
-                                  ),
-                            )
-                            .toList(growable: false),
-                    onChanged: (AdminVisualAssetSlot? value) {
-                      setState(() => _slot = value);
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: width,
-                  child: _FilterSelect<AdminVisualAssetStatus>(
-                    label: texts.status,
-                    value: _status,
-                    placeholder: texts.all,
-                    items:
-                        AdminVisualAssetStatus.values
-                            .map(
-                              (AdminVisualAssetStatus status) =>
-                                  _FilterOption<AdminVisualAssetStatus>(
-                                    value: status,
-                                    label: texts.statusLabel(status),
-                                  ),
-                            )
-                            .toList(growable: false),
-                    onChanged: (AdminVisualAssetStatus? value) {
-                      setState(() => _status = value);
-                    },
-                  ),
-                ),
-              ];
-
-              return Wrap(spacing: 12, runSpacing: 12, children: filters);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _buscaController,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: texts.searchHint,
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon:
-                  _buscaController.text.isEmpty
-                      ? null
-                      : IconButton(
-                        tooltip: texts.clearSearch,
-                        onPressed: () {
-                          _buscaController.clear();
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.close_rounded),
+                  _AdminVisualSelectField<String?>(
+                    width: 250,
+                    label: texts.specialty,
+                    icon: Icons.auto_awesome_motion_rounded,
+                    value: _subsegment,
+                    options: <_AdminVisualSelectOption<String?>>[
+                      _AdminVisualSelectOption<String?>(
+                        value: null,
+                        label: texts.noSpecialty,
                       ),
-              filled: true,
-              fillColor: AdminPalette.softSurface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AdminRadius.md),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AdminRadius.md),
-                borderSide: const BorderSide(color: AdminPalette.border),
-              ),
+                      ...AdminVisualAssetsCatalog.subsegmentosDe(_segment).map(
+                        (String sub) => _AdminVisualSelectOption<String?>(
+                          value: sub,
+                          label: _prettyCode(sub),
+                        ),
+                      ),
+                    ],
+                    enabled: _segment != null && !_loading,
+                    onSelected: (String? value) {
+                      setState(() => _subsegment = value);
+                      unawaited(_reload());
+                    },
+                  ),
+                ],
+                _VersionBadge(
+                  version: panel?.assetsVersion ?? '—',
+                  texts: texts,
+                ),
+                _EnvironmentBadge(
+                  environment: panel?.environment ?? '—',
+                  texts: texts,
+                ),
+              ],
             ),
+          ),
+        ),
+        if (panel?.environment == 'DEV') ...<Widget>[
+          const SizedBox(height: 14),
+          _EnvironmentNotice(texts: texts),
+        ],
+        if (_error != null) ...<Widget>[
+          const SizedBox(height: 14),
+          _ErrorBanner(
+            message: _error!,
+            retry: () => _reload(loadCompanies: true),
           ),
         ],
-      ),
+        const SizedBox(height: 20),
+        if (_loading && panel == null)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 80),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_scope == 'EMPRESA' && _selectedCompany == null)
+          _EmptyState(
+            icon: Icons.storefront_outlined,
+            title: texts.noCompanies,
+            subtitle: texts.noCompaniesSubtitle,
+          )
+        else if (panel != null) ...<Widget>[
+          _PlatformSection(
+            title: 'Web',
+            icon: Icons.language_rounded,
+            slots: panel.slots
+                .where((AdminVisualAssetSlotPanel slot) => slot.platform == 'WEB')
+                .toList(growable: false),
+            companyScope: _scope == 'EMPRESA',
+            texts: texts,
+            onUpload: _upload,
+            onHistory: _showHistory,
+          ),
+          const SizedBox(height: 24),
+          _PlatformSection(
+            title: 'Mobile',
+            icon: Icons.phone_iphone_rounded,
+            slots: panel.slots
+                .where(
+                  (AdminVisualAssetSlotPanel slot) => slot.platform == 'MOBILE',
+                )
+                .toList(growable: false),
+            companyScope: _scope == 'EMPRESA',
+            texts: texts,
+            onUpload: _upload,
+            onHistory: _showHistory,
+          ),
+        ],
+      ],
     );
-  }
-
-  Widget _buildLegend(_VisualAssetsTexts texts) {
-    return AdminSurfaceCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AdminSpacing.lg),
-        child: Wrap(
-          spacing: 18,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            Text(
-              texts.screenLabel,
-              style: const TextStyle(
-                color: AdminPalette.dark,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            _StatusChip(
-              icon: Icons.phone_iphone_rounded,
-              label: texts.mobileAttendance,
-              tone: _ChipTone.neutral,
-            ),
-            _StatusChip(
-              icon: Icons.crop_free_rounded,
-              label: texts.fullCard,
-              tone: _ChipTone.success,
-            ),
-            _StatusChip(
-              icon: Icons.widgets_outlined,
-              label: texts.contextualIcon,
-              tone: _ChipTone.info,
-            ),
-            _StatusChip(
-              icon: Icons.hourglass_empty_rounded,
-              label: texts.notCreatedYet,
-              tone: _ChipTone.warning,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGrid(
-    _VisualAssetsTexts texts,
-    List<AdminVisualAssetRecord> records,
-  ) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns =
-            constraints.maxWidth >= 1180
-                ? 4
-                : constraints.maxWidth >= 860
-                ? 3
-                : constraints.maxWidth >= 560
-                ? 2
-                : 1;
-        final double gap = 14;
-        final double width =
-            (constraints.maxWidth - gap * (columns - 1)) / columns;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children:
-              records
-                  .map(
-                    (AdminVisualAssetRecord record) => SizedBox(
-                      width: width,
-                      child: _AssetCard(record: record, texts: texts),
-                    ),
-                  )
-                  .toList(growable: false),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmpty(_VisualAssetsTexts texts) {
-    return AdminSurfaceCard(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-        child: Column(
-          children: <Widget>[
-            const Icon(
-              Icons.image_search_rounded,
-              size: 42,
-              color: AdminPalette.mutedText,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              texts.emptyTitle,
-              style: const TextStyle(
-                color: AdminPalette.dark,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              texts.emptySubtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AdminPalette.bodyText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String? _nomeExibicaoPorEmail(String? email) {
-    final String normalized = email?.trim() ?? '';
-    if (normalized.isEmpty || !normalized.contains('@')) return null;
-    final String prefix =
-        normalized
-            .split('@')
-            .first
-            .replaceAll('.', ' ')
-            .replaceAll('_', ' ')
-            .trim();
-    if (prefix.isEmpty) return null;
-    return prefix
-        .split(RegExp(r'\s+'))
-        .where((String part) => part.isNotEmpty)
-        .map(
-          (String part) =>
-              '${part.characters.first.toUpperCase()}${part.characters.skip(1).join().toLowerCase()}',
-        )
-        .join(' ');
   }
 }
 
-class _AssetCard extends StatelessWidget {
-  const _AssetCard({required this.record, required this.texts});
+class _VisualAssetsDialogTheme extends StatelessWidget {
+  const _VisualAssetsDialogTheme({required this.child});
 
-  final AdminVisualAssetRecord record;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData base = Theme.of(context);
+    final bool dark = base.brightness == Brightness.dark;
+    final ColorScheme colors = base.colorScheme;
+
+    return Theme(
+      data: base.copyWith(
+        dialogTheme: base.dialogTheme.copyWith(
+          backgroundColor: dark
+              ? colors.surfaceContainerHigh
+              : colors.surface,
+          surfaceTintColor: Colors.transparent,
+        ),
+        inputDecorationTheme: base.inputDecorationTheme.copyWith(
+          filled: true,
+          fillColor: dark
+              ? colors.surfaceContainerHighest
+              : colors.surfaceContainerLowest,
+          labelStyle: TextStyle(color: colors.onSurfaceVariant),
+          helperStyle: TextStyle(color: colors.onSurfaceVariant),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: colors.outlineVariant),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: colors.outlineVariant),
+          ),
+        ),
+        dividerColor: colors.outlineVariant,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _VisualAssetsSurfaceCard extends StatelessWidget {
+  const _VisualAssetsSurfaceCard({
+    required this.child,
+    this.compact = false,
+  });
+
+  final Widget child;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark
+            ? colors.surfaceContainer
+            : colors.surface,
+        borderRadius: BorderRadius.circular(AdminRadius.xl),
+        border: Border.all(color: colors.outlineVariant),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: theme.shadowColor.withValues(
+              alpha: dark ? 0.28 : 0.05,
+            ),
+            blurRadius: dark ? 28 : 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 16 : 22),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ScopeSelector extends StatelessWidget {
+  const _ScopeSelector({
+    required this.value,
+    required this.onChanged,
+    required this.texts,
+  });
+
+  final String value;
+  final ValueChanged<String>? onChanged;
   final _VisualAssetsTexts texts;
 
   @override
   Widget build(BuildContext context) {
-    final bool available = record.status == AdminVisualAssetStatus.disponivel;
-    final String title = perfilNegocioText(
-      context,
-      'segment.${record.contexto.segmento}',
-    );
-    final String specialty =
-        record.contexto.subsegmento == null
-            ? texts.noSpecialty
-            : perfilNegocioText(
-              context,
-              'sub.${record.contexto.subsegmento}',
-            );
-
     return Container(
-      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          AspectRatio(
-            aspectRatio: 4 / 5,
-            child:
-                available && record.imageUrl != null
-                    ? ColoredBox(
-                      color: AdminPalette.softSurface,
-                      child: Padding(
-                        padding:
-                            record.fullCard
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.all(28),
-                        child: Image.network(
-                          record.imageUrl!,
-                          fit:
-                              record.fullCard
-                                  ? BoxFit.cover
-                                  : BoxFit.contain,
-                          filterQuality: FilterQuality.high,
-                          errorBuilder:
-                              (_, __, ___) => _AssetPlaceholder(
-                                icon: Icons.broken_image_outlined,
-                                label: texts.imageError,
-                                available: false,
-                              ),
-                        ),
-                      ),
-                    )
-                    : _AssetPlaceholder(
-                      icon: Icons.add_photo_alternate_outlined,
-                      label: texts.notCreatedYet,
-                      available: false,
-                    ),
+          _ScopeOption(
+            icon: Icons.public_rounded,
+            label: texts.global,
+            selected: value == 'GLOBAL',
+            enabled: onChanged != null,
+            onTap: () => onChanged?.call('GLOBAL'),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        texts.slot(record.slot),
-                        style: const TextStyle(
-                          color: AdminPalette.dark,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _StatusChip(
-                      icon:
-                          available
-                              ? Icons.check_circle_rounded
-                              : Icons.schedule_rounded,
-                      label: texts.statusLabel(record.status),
-                      tone:
-                          available
-                              ? _ChipTone.success
-                              : _ChipTone.warning,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AdminPalette.dark,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  specialty,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AdminPalette.mutedText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 7,
-                  children: <Widget>[
-                    _StatusChip(
-                      icon: Icons.phone_iphone_rounded,
-                      label: texts.mobile,
-                      tone: _ChipTone.neutral,
-                    ),
-                    if (available)
-                      _StatusChip(
-                        icon:
-                            record.fullCard
-                                ? Icons.crop_free_rounded
-                                : Icons.widgets_outlined,
-                        label:
-                            record.fullCard
-                                ? texts.fullCard
-                                : texts.contextualIcon,
-                        tone:
-                            record.fullCard
-                                ? _ChipTone.success
-                                : _ChipTone.info,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (available && record.imageUrl != null) ...<Widget>[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AdminPalette.softSurface,
-                      borderRadius: BorderRadius.circular(AdminRadius.md),
-                    ),
-                    child: SelectableText(
-                      record.imageUrl!,
-                      maxLines: 3,
-                      style: const TextStyle(
-                        color: AdminPalette.bodyText,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            await Clipboard.setData(
-                              ClipboardData(text: record.imageUrl!),
-                            );
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(texts.copied)),
-                            );
-                          },
-                          icon: const Icon(Icons.copy_rounded, size: 17),
-                          label: Text(texts.copyUrl),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else
-                  Text(
-                    texts.plannedHint,
-                    style: const TextStyle(
-                      color: AdminPalette.bodyText,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-              ],
-            ),
+          const SizedBox(width: 4),
+          _ScopeOption(
+            icon: Icons.storefront_rounded,
+            label: texts.company,
+            selected: value == 'EMPRESA',
+            enabled: onChanged != null,
+            onTap: () => onChanged?.call('EMPRESA'),
           ),
         ],
       ),
@@ -845,275 +637,1659 @@ class _AssetCard extends StatelessWidget {
   }
 }
 
-class _AssetPlaceholder extends StatelessWidget {
-  const _AssetPlaceholder({
+class _ScopeOption extends StatefulWidget {
+  const _ScopeOption({
     required this.icon,
     required this.label,
-    required this.available,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final bool available;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_ScopeOption> createState() => _ScopeOptionState();
+}
+
+class _ScopeOptionState extends State<_ScopeOption> {
+  bool _hovering = false;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            AdminPalette.softSurface,
-            Color(0xFFE8EEF6),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 38, color: AdminPalette.mutedText),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AdminPalette.mutedText,
-                  fontWeight: FontWeight.w800,
+    final bool active = widget.selected || _hovering;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: AnimatedOpacity(
+        duration: AdminMotion.fast,
+        opacity: widget.enabled ? 1 : 0.55,
+        child: AnimatedContainer(
+          duration: AdminMotion.fast,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: widget.selected
+                ? Theme.of(context).colorScheme.primary
+                : active
+                    ? Theme.of(context).colorScheme.surfaceContainerHigh
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(AdminRadius.md),
+            boxShadow: active
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: Theme.of(context).shadowColor.withValues(alpha: 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AdminRadius.md),
+              onTap: widget.enabled ? widget.onTap : null,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      widget.icon,
+                      size: 18,
+                      color: widget.selected
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: widget.selected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SummaryPill extends StatelessWidget {
-  const _SummaryPill({
-    required this.icon,
-    required this.label,
+class _AdminVisualSelectOption<T> {
+  const _AdminVisualSelectOption({
     required this.value,
-    this.emphasized = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-      decoration: BoxDecoration(
-        color:
-            emphasized ? AdminPalette.activeGreen : AdminPalette.softSurface,
-        borderRadius: BorderRadius.circular(AdminRadius.md),
-        border: Border.all(
-          color:
-              emphasized
-                  ? AdminPalette.activeGreen
-                  : AdminPalette.border,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 17, color: AdminPalette.dark),
-          const SizedBox(width: 7),
-          Text(
-            '$label: $value',
-            style: const TextStyle(
-              color: AdminPalette.dark,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _ChipTone { neutral, success, info, warning }
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.icon,
     required this.label,
-    required this.tone,
   });
-
-  final IconData icon;
-  final String label;
-  final _ChipTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final (Color background, Color foreground) = switch (tone) {
-      _ChipTone.success => (AdminPalette.activeGreen, AdminPalette.dark),
-      _ChipTone.info => (
-        const Color(0xFFE8F1FF),
-        const Color(0xFF145BFF),
-      ),
-      _ChipTone.warning => (
-        const Color(0xFFFFF2D9),
-        const Color(0xFF8A5A00),
-      ),
-      _ChipTone.neutral => (
-        AdminPalette.softSurface,
-        AdminPalette.bodyText,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 13, color: foreground),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: foreground,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterOption<T> {
-  const _FilterOption({required this.value, required this.label});
 
   final T value;
   final String label;
 }
 
-class _FilterSelect<T> extends StatelessWidget {
-  const _FilterSelect({
+class _AdminVisualSelectField<T> extends StatefulWidget {
+  const _AdminVisualSelectField({
     required this.label,
     required this.value,
-    required this.placeholder,
-    required this.items,
-    required this.onChanged,
+    required this.options,
+    required this.onSelected,
+    required this.icon,
+    this.width = 260,
     this.enabled = true,
   });
 
   final String label;
-  final T? value;
-  final String placeholder;
-  final List<_FilterOption<T>> items;
-  final ValueChanged<T?> onChanged;
+  final T value;
+  final List<_AdminVisualSelectOption<T>> options;
+  final ValueChanged<T> onSelected;
+  final IconData icon;
+  final double width;
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) {
-    final _FilterOption<T>? selected =
-        value == null
-            ? null
-            : items.cast<_FilterOption<T>?>().firstWhere(
-              (_FilterOption<T>? item) => item?.value == value,
-              orElse: () => null,
-            );
+  State<_AdminVisualSelectField<T>> createState() =>
+      _AdminVisualSelectFieldState<T>();
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: const TextStyle(
-            color: AdminPalette.mutedText,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 6),
-        PopupMenuButton<T?>(
-          enabled: enabled,
-          tooltip: label,
-          onSelected: onChanged,
-          itemBuilder:
-              (BuildContext context) => <PopupMenuEntry<T?>>[
-                PopupMenuItem<T?>(
-                  value: null,
-                  onTap: () => onChanged(null),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        value == null
-                            ? Icons.check_rounded
-                            : Icons.circle_outlined,
-                        size: 17,
+class _AdminVisualSelectFieldState<T>
+    extends State<_AdminVisualSelectField<T>> {
+  bool _hovering = false;
+  bool _open = false;
+
+  _AdminVisualSelectOption<T> get _selectedOption {
+    for (final _AdminVisualSelectOption<T> option in widget.options) {
+      if (option.value == widget.value) return option;
+    }
+    return widget.options.isNotEmpty
+        ? widget.options.first
+        : _AdminVisualSelectOption<T>(value: widget.value, label: '—');
+  }
+
+  Future<void> _showOptions() async {
+    if (!widget.enabled || widget.options.isEmpty) return;
+
+    final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null || overlayBox == null) return;
+
+    final Offset offset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final Size size = fieldBox.size;
+
+    setState(() => _open = true);
+    final _AdminVisualSelectOption<T>? selected =
+        await showMenu<_AdminVisualSelectOption<T>>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height + 8,
+        overlayBox.size.width - offset.dx - size.width,
+        0,
+      ),
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      elevation: 10,
+      constraints: BoxConstraints(minWidth: size.width, maxWidth: size.width),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AdminRadius.lg),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      items: widget.options
+          .map(
+            (_AdminVisualSelectOption<T> option) =>
+                PopupMenuItem<_AdminVisualSelectOption<T>>(
+              value: option,
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              child: _AdminVisualSelectMenuItem(
+                label: option.label,
+                selected: option.value == widget.value,
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected.value != widget.value) {
+      widget.onSelected(selected.value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _AdminVisualSelectOption<T> selected = _selectedOption;
+    final bool active = widget.enabled && (_hovering || _open);
+
+    return SizedBox(
+      width: widget.width,
+      child: Semantics(
+        button: true,
+        enabled: widget.enabled,
+        label: widget.label,
+        value: selected.label,
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovering = true),
+          onExit: (_) => setState(() => _hovering = false),
+          child: AnimatedOpacity(
+            duration: AdminMotion.fast,
+            opacity: widget.enabled ? 1 : 0.58,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AdminRadius.lg),
+                onTap: widget.enabled ? _showOptions : null,
+                child: Tooltip(
+                  message: '${widget.label}: ${selected.label}',
+                  waitDuration: const Duration(milliseconds: 450),
+                  child: AnimatedContainer(
+                    duration: AdminMotion.fast,
+                    curve: Curves.easeOutCubic,
+                    constraints: const BoxConstraints(minHeight: 58),
+                    padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Theme.of(context).colorScheme.surfaceContainerHigh
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AdminRadius.lg),
+                      border: Border.all(
+                        color: active
+                            ? AdminPalette.success
+                            : Theme.of(context).colorScheme.outlineVariant,
+                        width: active ? 1.3 : 1,
                       ),
-                      const SizedBox(width: 8),
-                      Text(placeholder),
-                    ],
-                  ),
-                ),
-                ...items.map(
-                  (_FilterOption<T> item) => PopupMenuItem<T?>(
-                    value: item.value,
+                      boxShadow: active
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color:
+                                    Theme.of(context).shadowColor.withValues(alpha: 0.08),
+                                blurRadius: 18,
+                                offset: const Offset(0, 9),
+                              ),
+                            ]
+                          : null,
+                    ),
                     child: Row(
                       children: <Widget>[
                         Icon(
-                          value == item.value
-                              ? Icons.check_rounded
-                              : Icons.circle_outlined,
-                          size: 17,
+                          widget.icon,
+                          size: 18,
+                          color: active
+                              ? AdminPalette.success
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                widget.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                selected.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(item.label)),
+                        AnimatedRotation(
+                          turns: _open ? 0.5 : 0,
+                          duration: AdminMotion.fast,
+                          curve: Curves.easeOutCubic,
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: active
+                                ? AdminPalette.success
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ],
-          child: Opacity(
-            opacity: enabled ? 1 : 0.55,
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 13),
-              decoration: BoxDecoration(
-                color: AdminPalette.softSurface,
-                borderRadius: BorderRadius.circular(AdminRadius.md),
-                border: Border.all(color: AdminPalette.border),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      selected?.label ?? placeholder,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AdminPalette.dark,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: AdminPalette.mutedText,
-                  ),
-                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AdminVisualSelectMenuItem extends StatelessWidget {
+  const _AdminVisualSelectMenuItem({
+    required this.label,
+    required this.selected,
+  });
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: selected
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.32)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(
+          color: selected ? AdminPalette.success : Colors.transparent,
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 18,
+            color: selected ? AdminPalette.success : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VersionBadge extends StatelessWidget {
+  const _VersionBadge({required this.version, required this.texts});
+
+  final String version;
+  final _VisualAssetsTexts texts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.memory_rounded,
+            size: 17,
+            color: AdminPalette.success,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${texts.version}: $version',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnvironmentBadge extends StatelessWidget {
+  const _EnvironmentBadge({
+    required this.environment,
+    required this.texts,
+  });
+
+  final String environment;
+  final _VisualAssetsTexts texts;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool live = environment == 'LIVE';
+    final Color color = live ? AdminPalette.success : AdminPalette.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.42)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            live ? Icons.cloud_done_rounded : Icons.science_rounded,
+            size: 17,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${texts.environment}: $environment',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnvironmentNotice extends StatelessWidget {
+  const _EnvironmentNotice({required this.texts});
+
+  final _VisualAssetsTexts texts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: AdminPalette.warning.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(
+          color: AdminPalette.warning.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.science_rounded,
+            color: AdminPalette.warning,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              texts.devNotice,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlatformSection extends StatelessWidget {
+  const _PlatformSection({
+    required this.title,
+    required this.icon,
+    required this.slots,
+    required this.companyScope,
+    required this.texts,
+    required this.onUpload,
+    required this.onHistory,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<AdminVisualAssetSlotPanel> slots;
+  final bool companyScope;
+  final _VisualAssetsTexts texts;
+  final ValueChanged<AdminVisualAssetSlotPanel> onUpload;
+  final ValueChanged<AdminVisualAssetSlotPanel> onHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    if (slots.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+            const SizedBox(width: 9),
+            Text(
+              title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '${slots.length} ${texts.positions}',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double width = constraints.maxWidth;
+            final double cardWidth = width >= 1180
+                ? (width - 28) / 3
+                : width >= 760
+                ? (width - 14) / 2
+                : width;
+            return Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: slots
+                  .map(
+                    (AdminVisualAssetSlotPanel slot) => SizedBox(
+                      width: cardWidth,
+                      child: _SlotCard(
+                        slot: slot,
+                        companyScope: companyScope,
+                        texts: texts,
+                        onUpload: () => onUpload(slot),
+                        onHistory: () => onHistory(slot),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          },
+        ),
       ],
+    );
+  }
+}
+
+class _SlotCard extends StatelessWidget {
+  const _SlotCard({
+    required this.slot,
+    required this.companyScope,
+    required this.texts,
+    required this.onUpload,
+    required this.onHistory,
+  });
+
+  final AdminVisualAssetSlotPanel slot;
+  final bool companyScope;
+  final _VisualAssetsTexts texts;
+  final VoidCallback onUpload;
+  final VoidCallback onHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    return _VisualAssetsSurfaceCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    slot.labelFallback,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                _PlatformPill(slot.platform),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              '${slot.recommendedWidth} × ${slot.recommendedHeight} · '
+              '${slot.displayMode}',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: _AssetPreview(
+                    label: texts.current,
+                    asset: slot.current,
+                    aspectRatio: slot.aspectRatio,
+                    emptyText: companyScope
+                        ? texts.noCompanyImage
+                        : texts.noImage,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _AssetPreview(
+                    label: texts.next,
+                    asset: slot.next,
+                    aspectRatio: slot.aspectRatio,
+                    emptyText: texts.noSchedule,
+                  ),
+                ),
+              ],
+            ),
+            if (slot.additionalScheduled > 0) ...<Widget>[
+              const SizedBox(height: 10),
+              Text(
+                '+ ${slot.additionalScheduled} ${texts.moreScheduled}',
+                style: TextStyle(
+                  color: AdminPalette.success,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: onUpload,
+                    icon: Icon(Icons.add_photo_alternate_outlined),
+                    label: Text(texts.addOrSchedule),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: texts.history,
+                  onPressed: onHistory,
+                  icon: Badge(
+                    isLabelVisible: slot.historyCount > 0,
+                    label: Text(slot.historyCount.toString()),
+                    child: Icon(Icons.history_rounded),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AssetPreview extends StatelessWidget {
+  const _AssetPreview({
+    required this.label,
+    required this.asset,
+    required this.aspectRatio,
+    required this.emptyText,
+  });
+
+  final String label;
+  final AdminVisualAssetItem? asset;
+  final double aspectRatio;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final AdminVisualAssetItem? item = asset;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .8,
+          ),
+        ),
+        const SizedBox(height: 6),
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: item == null || item.imageUrl.isEmpty
+                ? Container(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      emptyText,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                : Image.network(
+                    item.imageUrl,
+                    fit: BoxFit.cover,
+                    alignment: Alignment(
+                      item.focalX * 2 - 1,
+                      item.focalY * 2 - 1,
+                    ),
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      alignment: Alignment.center,
+                      child: Icon(Icons.broken_image_outlined),
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 7),
+        if (item != null) ...<Widget>[
+          _StatusLine(item),
+          const SizedBox(height: 3),
+          Text(
+            item.activateAtUtc == null
+                ? item.version
+                : '${_formatDate(item.activateAtUtc!)} · ${item.timeZone}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _AssetLinkRow(url: item.imageUrl),
+        ],
+      ],
+    );
+  }
+}
+
+class _AssetLinkRow extends StatelessWidget {
+  const _AssetLinkRow({
+    required this.url,
+    this.compact = false,
+  });
+
+  final String url;
+  final bool compact;
+
+  Future<void> _open(BuildContext context) async {
+    final Uri? uri = Uri.tryParse(url);
+    if (uri == null || !await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    )) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_VisualAssetsTexts.of(context).openUrlFailed)),
+      );
+    }
+  }
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_VisualAssetsTexts.of(context).urlCopied)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.trim().isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: compact ? 8 : 10,
+        right: 2,
+        top: compact ? 4 : 6,
+        bottom: compact ? 4 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.link_rounded,
+            size: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Tooltip(
+              message: url,
+              child: SelectableText(
+                url,
+                maxLines: 1,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: compact ? 9 : 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(
+              width: 32,
+              height: 32,
+            ),
+            tooltip: _VisualAssetsTexts.of(context).openNewWindow,
+            onPressed: () => _open(context),
+            icon: Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(
+              width: 32,
+              height: 32,
+            ),
+            tooltip: _VisualAssetsTexts.of(context).copyUrl,
+            onPressed: () => _copy(context),
+            icon: Icon(
+              Icons.content_copy_rounded,
+              size: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusLine extends StatelessWidget {
+  const _StatusLine(this.item);
+
+  final AdminVisualAssetItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool active = item.status == 'ATIVA';
+    final bool scheduled = item.status == 'AGENDADA';
+    final Color color = active
+        ? Colors.green.shade700
+        : scheduled
+        ? Colors.orange.shade800
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    return Row(
+      children: <Widget>[
+        Icon(Icons.circle, size: 7, color: color),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            '${_prettyCode(item.status)} · v${item.version}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        _AssetEnvironmentPill(item.environment),
+      ],
+    );
+  }
+}
+
+class _AssetEnvironmentPill extends StatelessWidget {
+  const _AssetEnvironmentPill(this.environment);
+
+  final String environment;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool live = environment == 'LIVE';
+    final Color color = live ? AdminPalette.success : AdminPalette.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.34)),
+      ),
+      child: Text(
+        environment,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .4,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlatformPill extends StatelessWidget {
+  const _PlatformPill(this.platform);
+  final String platform;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Text(
+        platform,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _UploadAssetDialog extends StatefulWidget {
+  const _UploadAssetDialog({
+    required this.service,
+    required this.slot,
+    required this.scope,
+    required this.company,
+    required this.segment,
+    required this.subsegment,
+  });
+
+  final AdminVisualAssetsService service;
+  final AdminVisualAssetSlotPanel slot;
+  final String scope;
+  final AdminVisualAssetCompany? company;
+  final String? segment;
+  final String? subsegment;
+
+  @override
+  State<_UploadAssetDialog> createState() => _UploadAssetDialogState();
+}
+
+class _UploadAssetDialogState extends State<_UploadAssetDialog> {
+  final ImagePicker _picker = ImagePicker();
+  late final TextEditingController _timeZoneController;
+
+  XFile? _file;
+  Uint8List? _bytes;
+  double _focalX = .5;
+  double _focalY = .5;
+  bool _schedule = false;
+  bool _includeWithoutSubsegment = false;
+  DateTime? _activateAt;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeZoneController = TextEditingController(
+      text: widget.company?.timeZone ?? 'America/Sao_Paulo',
+    );
+  }
+
+  @override
+  void dispose() {
+    _timeZoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+    final Uint8List bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _file = file;
+      _bytes = bytes;
+      _error = null;
+    });
+  }
+
+  Future<void> _chooseDateTime() async {
+    final DateTime now = DateTime.now();
+    final DateTime initial = _activateAt ?? now.add(const Duration(days: 1));
+    final DateTime? date = await showDatePicker(
+      context: context,
+      firstDate: now,
+      lastDate: DateTime(now.year + 5),
+      initialDate: initial,
+    );
+    if (date == null || !mounted) return;
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _activateAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  Future<void> _save() async {
+    final XFile? file = _file;
+    final Uint8List? bytes = _bytes;
+    if (file == null || bytes == null) {
+      setState(() => _error = _VisualAssetsTexts.of(context).chooseImage);
+      return;
+    }
+    if (_schedule && _activateAt == null) {
+      setState(() => _error = _VisualAssetsTexts.of(context).chooseActivation);
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.service.upload(
+        slot: widget.slot.slot,
+        scope: widget.scope,
+        bytes: bytes,
+        fileName: file.name,
+        mimeType: _mime(file),
+        focalX: _focalX,
+        focalY: _focalY,
+        companyId: widget.company?.id,
+        segment: widget.segment,
+        subsegment: widget.subsegment,
+        includeWithoutSubsegment: _includeWithoutSubsegment,
+        activateAtLocal: _schedule ? _activateAt : null,
+        timeZone: widget.scope == 'GLOBAL'
+            ? _timeZoneController.text.trim()
+            : widget.company?.timeZone,
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) setState(() => _error = _cleanError(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  String _mime(XFile file) {
+    final String? mime = file.mimeType;
+    if (mime == 'image/jpeg' || mime == 'image/png' || mime == 'image/webp') {
+      return mime!;
+    }
+    final String lower = file.name.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
+    final Uint8List? bytes = _bytes;
+    final bool globalSegmentWithoutSpecialty =
+        widget.scope == 'GLOBAL' &&
+        widget.segment != null &&
+        widget.subsegment == null;
+
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text(texts.uploadTitle(widget.slot.labelFallback)),
+      content: SizedBox(
+        width: 720,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                '${widget.slot.recommendedWidth} × '
+                '${widget.slot.recommendedHeight} · '
+                '${widget.slot.platform}',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _pickImage,
+                icon: Icon(Icons.photo_library_outlined),
+                label: Text(
+                  _file == null ? texts.chooseImage : _file!.name,
+                ),
+              ),
+              if (bytes != null) ...<Widget>[
+                const SizedBox(height: 14),
+                AspectRatio(
+                  aspectRatio: widget.slot.aspectRatio,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.cover,
+                      alignment: Alignment(
+                        _focalX * 2 - 1,
+                        _focalY * 2 - 1,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(texts.horizontalFocus),
+                Slider(
+                  value: _focalX,
+                  onChanged: _saving
+                      ? null
+                      : (double value) => setState(() => _focalX = value),
+                ),
+                Text(texts.verticalFocus),
+                Slider(
+                  value: _focalY,
+                  onChanged: _saving
+                      ? null
+                      : (double value) => setState(() => _focalY = value),
+                ),
+              ],
+              const Divider(height: 28),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _schedule,
+                onChanged: _saving
+                    ? null
+                    : (bool value) => setState(() => _schedule = value),
+                title: Text(texts.schedule),
+                subtitle: Text(texts.scheduleHelp),
+              ),
+              if (_schedule) ...<Widget>[
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _saving ? null : _chooseDateTime,
+                        icon: Icon(Icons.event_rounded),
+                        label: Text(
+                          _activateAt == null
+                              ? texts.chooseActivation
+                              : _formatLocal(_activateAt!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _timeZoneController,
+                        readOnly: widget.scope == 'EMPRESA',
+                        decoration: InputDecoration(
+                          labelText: texts.timeZone,
+                          border: const OutlineInputBorder(),
+                          helperText: widget.scope == 'EMPRESA'
+                              ? texts.companyTimeZone
+                              : texts.globalTimeZone,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (globalSegmentWithoutSpecialty) ...<Widget>[
+                const SizedBox(height: 10),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _includeWithoutSubsegment,
+                  onChanged: _saving
+                      ? null
+                      : (bool? value) => setState(
+                            () => _includeWithoutSubsegment = value == true,
+                          ),
+                  title: Text(texts.includeWithoutSpecialty),
+                ),
+              ],
+              if (_error != null) ...<Widget>[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context, false),
+          child: Text(texts.cancel),
+        ),
+        FilledButton.icon(
+          onPressed: _saving ? null : _save,
+          icon: _saving
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(Icons.save_rounded),
+          label: Text(_schedule ? texts.saveSchedule : texts.publishNow),
+        ),
+      ],
+      ),
+    );
+  }
+}
+
+class _AssetHistoryDialog extends StatefulWidget {
+  const _AssetHistoryDialog({
+    required this.service,
+    required this.slot,
+    required this.scope,
+    required this.backendEnvironment,
+    required this.company,
+    required this.segment,
+    required this.subsegment,
+  });
+
+  final AdminVisualAssetsService service;
+  final AdminVisualAssetSlotPanel slot;
+  final String scope;
+  final String backendEnvironment;
+  final AdminVisualAssetCompany? company;
+  final String? segment;
+  final String? subsegment;
+
+  @override
+  State<_AssetHistoryDialog> createState() => _AssetHistoryDialogState();
+}
+
+class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
+  late Future<List<AdminVisualAssetItem>> _future;
+  bool _changed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<AdminVisualAssetItem>> _load() {
+    return widget.service.history(
+      slot: widget.slot.slot,
+      scope: widget.scope,
+      companyId: widget.company?.id,
+      segment: widget.segment,
+      subsegment: widget.subsegment,
+    );
+  }
+
+  void _reload() {
+    setState(() => _future = _load());
+  }
+
+  Future<void> _archive(AdminVisualAssetItem item) async {
+    final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => _VisualAssetsDialogTheme(
+            child: AlertDialog(
+            title: Text(texts.archive),
+            content: Text(texts.archiveConfirm),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(texts.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(texts.archive),
+              ),
+            ],
+          ),
+        ),
+      ) ??
+        false;
+    if (!confirmed) return;
+    await widget.service.archive(item.id);
+    _changed = true;
+    _reload();
+  }
+
+  Future<void> _reuse(AdminVisualAssetItem item) async {
+    final _ReuseOptions? options = await showDialog<_ReuseOptions>(
+      context: context,
+      builder: (BuildContext context) => _ReuseDialog(
+        company: widget.company,
+        asset: item,
+      ),
+    );
+    if (options == null) return;
+    await widget.service.reuse(
+      id: item.id,
+      activateAtLocal: options.activateAt,
+      timeZone: options.timeZone,
+    );
+    _changed = true;
+    _reload();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text('${texts.history} · ${widget.slot.labelFallback}'),
+      content: SizedBox(
+        width: 780,
+        height: 520,
+        child: FutureBuilder<List<AdminVisualAssetItem>>(
+          future: _future,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<AdminVisualAssetItem>> snapshot,
+          ) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return _EmptyState(
+                icon: Icons.error_outline_rounded,
+                title: texts.loadError,
+                subtitle: _cleanError(snapshot.error!),
+              );
+            }
+            final List<AdminVisualAssetItem> items =
+                snapshot.data ?? const <AdminVisualAssetItem>[];
+            if (items.isEmpty) {
+              return _EmptyState(
+                icon: Icons.history_toggle_off_rounded,
+                title: texts.noHistory,
+                subtitle: texts.noHistorySubtitle,
+              );
+            }
+            return ListView.separated(
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (BuildContext context, int index) {
+                final AdminVisualAssetItem item = items[index];
+                final bool editable =
+                    item.environment == widget.backendEnvironment;
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 100,
+                      height: 58,
+                      child: Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.broken_image_outlined),
+                      ),
+                    ),
+                  ),
+                  title: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${_prettyCode(item.status)} · v${item.version}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _AssetEnvironmentPill(item.environment),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          '${item.activateAtUtc == null ? '—' : _formatDate(item.activateAtUtc!)}'
+                          ' · ${item.timeZone}'
+                          '${item.migrated ? ' · Legacy seed' : ''}',
+                        ),
+                        const SizedBox(height: 6),
+                        _AssetLinkRow(
+                          url: item.imageUrl,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  trailing: Wrap(
+                    spacing: 4,
+                    children: <Widget>[
+                      IconButton(
+                        tooltip: editable
+                            ? texts.reuse
+                            : texts.readOnlyEnvironment(item.environment),
+                        onPressed: editable ? () => _reuse(item) : null,
+                        icon: Icon(Icons.replay_rounded),
+                      ),
+                      if (item.status != 'ARQUIVADA')
+                        IconButton(
+                          tooltip: editable
+                              ? texts.archive
+                              : texts.readOnlyEnvironment(item.environment),
+                          onPressed: editable ? () => _archive(item) : null,
+                          icon: Icon(Icons.archive_outlined),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context, _changed),
+          child: Text(texts.close),
+        ),
+      ],
+      ),
+    );
+  }
+}
+
+class _ReuseDialog extends StatefulWidget {
+  const _ReuseDialog({
+    required this.company,
+    required this.asset,
+  });
+
+  final AdminVisualAssetCompany? company;
+  final AdminVisualAssetItem asset;
+
+  @override
+  State<_ReuseDialog> createState() => _ReuseDialogState();
+}
+
+class _ReuseDialogState extends State<_ReuseDialog> {
+  late final TextEditingController _zone;
+  bool _schedule = false;
+  DateTime? _activateAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _zone = TextEditingController(
+      text: widget.company?.timeZone ??
+          (widget.asset.timeZone == 'UTC'
+              ? 'America/Sao_Paulo'
+              : widget.asset.timeZone),
+    );
+  }
+
+  @override
+  void dispose() {
+    _zone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick() async {
+    final DateTime now = DateTime.now();
+    final DateTime initial = now.add(const Duration(days: 1));
+    final DateTime? date = await showDatePicker(
+      context: context,
+      firstDate: now,
+      lastDate: DateTime(now.year + 5),
+      initialDate: initial,
+    );
+    if (date == null || !mounted) return;
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _activateAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text(texts.reuse),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _schedule,
+              onChanged: (bool value) => setState(() => _schedule = value),
+              title: Text(texts.schedule),
+            ),
+            if (_schedule) ...<Widget>[
+              OutlinedButton.icon(
+                onPressed: _pick,
+                icon: Icon(Icons.event_rounded),
+                label: Text(
+                  _activateAt == null
+                      ? texts.chooseActivation
+                      : _formatLocal(_activateAt!),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _zone,
+                readOnly: widget.company != null,
+                decoration: InputDecoration(
+                  labelText: texts.timeZone,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(texts.cancel),
+        ),
+        FilledButton(
+          onPressed: _schedule && _activateAt == null
+              ? null
+              : () => Navigator.pop(
+                    context,
+                    _ReuseOptions(
+                      activateAt: _schedule ? _activateAt : null,
+                      timeZone: _schedule ? _zone.text.trim() : null,
+                    ),
+                  ),
+          child: Text(_schedule ? texts.saveSchedule : texts.publishNow),
+        ),
+      ],
+      ),
+    );
+  }
+}
+
+class _ReuseOptions {
+  const _ReuseOptions({this.activateAt, this.timeZone});
+  final DateTime? activateAt;
+  final String? timeZone;
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message, required this.retry});
+  final String message;
+  final VoidCallback retry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(12),
+      child: ListTile(
+        leading: Icon(Icons.error_outline_rounded),
+        title: Text(message),
+        trailing: TextButton(
+          onPressed: retry,
+          child: const Text('Tentar novamente'),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1126,80 +2302,228 @@ class _VisualAssetsTexts {
       _VisualAssetsTexts(Localizations.localeOf(context).languageCode);
 
   String _pick(String pt, String en, String es) =>
-      language == 'en'
-          ? en
-          : language == 'es'
-          ? es
-          : pt;
+      language == 'en' ? en : language == 'es' ? es : pt;
 
   String get checkingAccess => _pick(
-    'Verificando acesso SUPER…',
-    'Checking SUPER access…',
-    'Verificando acceso SUPER…',
-  );
-  String get eyebrow => _pick(
-    'Biblioteca visual',
-    'Visual library',
-    'Biblioteca visual',
-  );
+        'Verificando acesso SUPER…',
+        'Checking SUPER access…',
+        'Verificando acceso SUPER…',
+      );
+  String get eyebrow =>
+      _pick('Controle visual', 'Visual control', 'Control visual');
   String get title => _pick(
-    'Imagens contextuais',
-    'Contextual images',
-    'Imágenes contextuales',
-  );
+        'Imagens do SixApp',
+        'SixApp images',
+        'Imágenes de SixApp',
+      );
   String get subtitle => _pick(
-    'Consulte o que o SixApp exibe hoje para cada perfil de negócio e identifique combinações que ainda precisam de arte.',
-    'See what SixApp currently displays for each business profile and identify combinations that still need artwork.',
-    'Consulta lo que SixApp muestra hoy para cada perfil de negocio e identifica combinaciones que aún necesitan imágenes.',
-  );
-  String get filters => _pick('Filtros de contexto', 'Context filters', 'Filtros de contexto');
-  String get clearFilters => _pick('Limpar filtros', 'Clear filters', 'Limpiar filtros');
-  String get filtered => _pick('Exibidos', 'Shown', 'Mostrados');
-  String get available => _pick('Com imagem', 'With image', 'Con imagen');
-  String get planned => _pick('Sem imagem', 'Without image', 'Sin imagen');
-  String get all => _pick('Todos', 'All', 'Todos');
-  String get segment => _pick('Segmento', 'Business segment', 'Segmento');
+        'Gerencie as imagens atuais, programe campanhas futuras e acompanhe Web e Mobile em um único lugar.',
+        'Manage current images, schedule future campaigns and track Web and Mobile in one place.',
+        'Gestiona las imágenes actuales, programa campañas futuras y controla Web y Mobile en un solo lugar.',
+      );
+  String get global => _pick('Global', 'Global', 'Global');
+  String get company => _pick('Comércio', 'Business', 'Comercio');
+  String get segment => _pick('Segmento', 'Segment', 'Segmento');
   String get specialty => _pick('Especialidade', 'Specialty', 'Especialidad');
-  String get noSpecialty => _pick('Sem especialidade', 'No specialty', 'Sin especialidad');
-  String get cta => 'CTA';
-  String get status => _pick('Situação', 'Status', 'Estado');
-  String get searchHint => _pick(
-    'Buscar por código, pasta ou URL…',
-    'Search by code, folder or URL…',
-    'Buscar por código, carpeta o URL…',
-  );
-  String get clearSearch => _pick('Limpar busca', 'Clear search', 'Limpiar búsqueda');
-  String get screenLabel => _pick('Tela atual:', 'Current screen:', 'Pantalla actual:');
-  String get mobileAttendance => _pick('Atendimento Mobile', 'Mobile Service', 'Atención Mobile');
-  String get fullCard => 'Full-card';
-  String get contextualIcon => _pick('Imagem contextual atual', 'Current contextual image', 'Imagen contextual actual');
-  String get notCreatedYet => _pick('Ainda sem imagem', 'No image yet', 'Aún sin imagen');
-  String get mobile => 'Mobile';
-  String get imageError => _pick('Imagem indisponível', 'Image unavailable', 'Imagen no disponible');
-  String get copyUrl => _pick('Copiar URL', 'Copy URL', 'Copiar URL');
-  String get copied => _pick('URL copiada.', 'URL copied.', 'URL copiada.');
-  String get plannedHint => _pick(
-    'Esta combinação está mapeada como lacuna: o app usa o fallback local até uma nova arte ser criada e associada.',
-    'This combination is mapped as a gap: the app uses its local fallback until new artwork is created and assigned.',
-    'Esta combinación está registrada como pendiente: la app usa el fallback local hasta crear y asociar una nueva imagen.',
-  );
-  String get emptyTitle => _pick('Nenhuma combinação encontrada', 'No combination found', 'No se encontró ninguna combinación');
-  String get emptySubtitle => _pick('Ajuste os filtros ou limpe a busca.', 'Adjust the filters or clear the search.', 'Ajusta los filtros o limpia la búsqueda.');
+  String get globalDefault => _pick(
+        'Padrão global',
+        'Global default',
+        'Predeterminado global',
+      );
+  String get noSpecialty => _pick(
+        'Sem especialidade',
+        'No specialty',
+        'Sin especialidad',
+      );
+  String get version => _pick(
+        'Versão global',
+        'Global version',
+        'Versión global',
+      );
+  String get environment => _pick('Ambiente', 'Environment', 'Ambiente');
+  String get devNotice => _pick(
+        'Você está no ambiente DEV. Uploads, programações, versão global e ativações feitas aqui ficam isolados da produção. Imagens LIVE podem aparecer apenas como referência/fallback e não podem ser alteradas por este backend.',
+        'You are in DEV. Uploads, schedules, global version and activations made here are isolated from production. LIVE images may appear only as reference/fallback and cannot be changed by this backend.',
+        'Estás en DEV. Las cargas, programaciones, versión global y activaciones realizadas aquí quedan aisladas de producción. Las imágenes LIVE pueden aparecer solo como referencia/fallback y no pueden modificarse desde este backend.',
+      );
+  String readOnlyEnvironment(String environment) => _pick(
+        'Imagem $environment somente para referência neste ambiente',
+        '$environment image is read-only in this environment',
+        'Imagen $environment solo de referencia en este ambiente',
+      );
+  String get force =>
+      _pick('Forçar atualização', 'Force refresh', 'Forzar actualización');
+  String get forceTitle => force;
+  String get forceDescription => _pick(
+        'Isso gera uma nova assetsVersion e avisa imediatamente todos os clientes conectados. Imagens que não mudaram continuam aproveitando o cache.',
+        'This generates a new assetsVersion and immediately notifies connected clients. Unchanged images keep using cache.',
+        'Esto genera una nueva assetsVersion y avisa inmediatamente a los clientes conectados. Las imágenes sin cambios siguen usando la caché.',
+      );
+  String get forceSuccess => _pick(
+        'Atualização publicada.',
+        'Refresh published.',
+        'Actualización publicada.',
+      );
+  String get current => _pick('Atual', 'Current', 'Actual');
+  String get next => _pick('Próxima', 'Next', 'Próxima');
+  String get positions => _pick('posições', 'positions', 'posiciones');
+  String get noImage =>
+      _pick('Ainda não existe imagem', 'No image yet', 'Aún no hay imagen');
+  String get noCompanyImage => _pick(
+        'Sem imagem própria. Usa global/fallback.',
+        'No custom image. Uses global/fallback.',
+        'Sin imagen propia. Usa global/fallback.',
+      );
+  String get noSchedule => _pick(
+        'Nenhuma imagem futura',
+        'No future image',
+        'Ninguna imagen futura',
+      );
+  String get moreScheduled => _pick(
+        'outras programadas',
+        'more scheduled',
+        'otras programadas',
+      );
+  String get addOrSchedule => _pick(
+        'Trocar / programar',
+        'Replace / schedule',
+        'Cambiar / programar',
+      );
+  String get history => _pick('Histórico', 'History', 'Historial');
+  String get chooseImage => _pick(
+        'Escolha uma imagem JPEG, PNG ou WebP.',
+        'Choose a JPEG, PNG or WebP image.',
+        'Elige una imagen JPEG, PNG o WebP.',
+      );
+  String uploadTitle(String slot) => _pick(
+        'Nova imagem · $slot',
+        'New image · $slot',
+        'Nueva imagen · $slot',
+      );
+  String get horizontalFocus =>
+      _pick('Foco horizontal', 'Horizontal focus', 'Foco horizontal');
+  String get verticalFocus =>
+      _pick('Foco vertical', 'Vertical focus', 'Foco vertical');
+  String get schedule =>
+      _pick('Programar ativação', 'Schedule activation', 'Programar activación');
+  String get scheduleHelp => _pick(
+        'Se desligado, a imagem entra em vigor agora.',
+        'If disabled, the image goes live now.',
+        'Si está desactivado, la imagen entra en vigor ahora.',
+      );
+  String get chooseActivation => _pick(
+        'Escolher data e horário',
+        'Choose date and time',
+        'Elegir fecha y hora',
+      );
+  String get timeZone => 'Timezone';
+  String get companyTimeZone => _pick(
+        'Usa o fuso configurado no comércio.',
+        'Uses the business configured timezone.',
+        'Usa la zona horaria configurada del comercio.',
+      );
+  String get globalTimeZone => _pick(
+        'IANA, por exemplo America/Sao_Paulo.',
+        'IANA, for example America/Sao_Paulo.',
+        'IANA, por ejemplo America/Sao_Paulo.',
+      );
+  String get includeWithoutSpecialty => _pick(
+        'Usar também quando o comércio não tiver especialidade definida',
+        'Also use when the business has no specialty set',
+        'Usar también cuando el comercio no tenga especialidad definida',
+      );
+  String get cancel => _pick('Cancelar', 'Cancel', 'Cancelar');
+  String get close => _pick('Fechar', 'Close', 'Cerrar');
+  String get saveSchedule =>
+      _pick('Salvar programação', 'Save schedule', 'Guardar programación');
+  String get publishNow =>
+      _pick('Publicar agora', 'Publish now', 'Publicar ahora');
+  String get reuse => _pick('Reutilizar', 'Reuse', 'Reutilizar');
+  String get archive => _pick('Arquivar', 'Archive', 'Archivar');
+  String get archiveConfirm => _pick(
+        'A imagem deixa de participar da resolução. O histórico e o arquivo serão preservados.',
+        'The image will no longer participate in resolution. History and file will be preserved.',
+        'La imagen dejará de participar en la resolución. Se conservarán el historial y el archivo.',
+      );
+  String get noHistory =>
+      _pick('Sem histórico', 'No history', 'Sin historial');
+  String get noHistorySubtitle => _pick(
+        'Este contexto ainda não possui versões anteriores.',
+        'This context has no previous versions yet.',
+        'Este contexto aún no tiene versiones anteriores.',
+      );
+  String get loadError =>
+      _pick('Falha ao carregar', 'Failed to load', 'Error al cargar');
+  String get noCompanies => _pick(
+        'Nenhum comércio disponível',
+        'No business available',
+        'Ningún comercio disponible',
+      );
+  String get noCompaniesSubtitle => _pick(
+        'Cadastre ou ative um comércio antes de criar uma imagem específica.',
+        'Create or activate a business before adding a custom image.',
+        'Crea o activa un comercio antes de agregar una imagen específica.',
+      );
+  String get openNewWindow => _pick(
+        'Abrir imagem em nova janela',
+        'Open image in a new window',
+        'Abrir imagen en una nueva ventana',
+      );
+  String get copyUrl => _pick('Copiar link', 'Copy link', 'Copiar enlace');
+  String get urlCopied => _pick(
+        'Link da imagem copiado.',
+        'Image link copied.',
+        'Enlace de la imagen copiado.',
+      );
+  String get openUrlFailed => _pick(
+        'Não foi possível abrir a imagem.',
+        'Could not open the image.',
+        'No fue posible abrir la imagen.',
+      );
+}
 
-  String slot(AdminVisualAssetSlot slot) {
-    return switch (slot) {
-      AdminVisualAssetSlot.vendas => _pick('Vendas', 'Sales', 'Ventas'),
-      AdminVisualAssetSlot.servicos => _pick('Serviços', 'Services', 'Servicios'),
-      AdminVisualAssetSlot.receber => _pick('Receber', 'Receive', 'Cobrar'),
-      AdminVisualAssetSlot.operacoesCaixa => _pick('Operações de caixa', 'Cash operations', 'Operaciones de caja'),
-      AdminVisualAssetSlot.devolucao => _pick('Devolução', 'Returns', 'Devolución'),
-    };
-  }
+String _prettyCode(String value) {
+  final String normalized = value
+      .trim()
+      .toLowerCase()
+      .replaceAll('_', ' ');
+  if (normalized.isEmpty) return value;
+  return normalized
+      .split(' ')
+      .where((String item) => item.isNotEmpty)
+      .map(
+        (String item) =>
+            '${item.substring(0, 1).toUpperCase()}${item.substring(1)}',
+      )
+      .join(' ');
+}
 
-  String statusLabel(AdminVisualAssetStatus status) {
-    return switch (status) {
-      AdminVisualAssetStatus.disponivel => _pick('Disponível', 'Available', 'Disponible'),
-      AdminVisualAssetStatus.planejado => _pick('Planejado', 'Planned', 'Planificado'),
-    };
-  }
+String _formatDate(DateTime value) {
+  final DateTime local = value.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(local.day)}/${two(local.month)}/${local.year} '
+      '${two(local.hour)}:${two(local.minute)}';
+}
+
+String _formatLocal(DateTime value) => _formatDate(value);
+
+String _displayName(String? email) {
+  final String local = email?.split('@').first.trim() ?? '';
+  if (local.isEmpty) return 'SUPER';
+  return local
+      .split(RegExp(r'[._-]+'))
+      .where((String item) => item.isNotEmpty)
+      .map(
+        (String item) =>
+            '${item.substring(0, 1).toUpperCase()}${item.substring(1)}',
+      )
+      .join(' ');
+}
+
+String _cleanError(Object error) {
+  return error
+      .toString()
+      .replaceFirst('Exception: ', '')
+      .replaceFirst('StateError: ', '')
+      .trim();
 }

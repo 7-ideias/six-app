@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'perfil_negocio_model.dart';
 
 enum AtendimentoMobileAssetSlot {
@@ -72,8 +73,13 @@ class AtendimentoMobileAssetModel {
 
   static String? _https(dynamic value) {
     final Uri? uri = value is String ? Uri.tryParse(value) : null;
+    final bool secure = uri?.scheme == 'https';
+    final bool debugHttp =
+        kDebugMode &&
+        uri?.scheme == 'http' &&
+        (uri?.host == 'localhost' || uri?.host == '127.0.0.1');
     if (uri == null ||
-        uri.scheme != 'https' ||
+        (!secure && !debugHttp) ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty) {
       return null;
