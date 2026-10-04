@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/services/admin_visual_assets_service.dart';
 import '../../core/services/auth_service.dart';
@@ -1203,8 +1205,110 @@ class _AssetPreview extends StatelessWidget {
               fontSize: 10,
             ),
           ),
+          const SizedBox(height: 6),
+          _AssetLinkRow(url: item.imageUrl),
         ],
       ],
+    );
+  }
+}
+
+class _AssetLinkRow extends StatelessWidget {
+  const _AssetLinkRow({
+    required this.url,
+    this.compact = false,
+  });
+
+  final String url;
+  final bool compact;
+
+  Future<void> _open(BuildContext context) async {
+    final Uri? uri = Uri.tryParse(url);
+    if (uri == null || !await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    )) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_VisualAssetsTexts.of(context).openUrlFailed)),
+      );
+    }
+  }
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_VisualAssetsTexts.of(context).urlCopied)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.trim().isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: compact ? 8 : 10,
+        right: 2,
+        top: compact ? 4 : 6,
+        bottom: compact ? 4 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: AdminPalette.softSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AdminPalette.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.link_rounded,
+            size: 14,
+            color: AdminPalette.mutedText,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Tooltip(
+              message: url,
+              child: SelectableText(
+                url,
+                maxLines: 1,
+                style: TextStyle(
+                  color: AdminPalette.bodyText,
+                  fontSize: compact ? 9 : 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(
+              width: 32,
+              height: 32,
+            ),
+            tooltip: _VisualAssetsTexts.of(context).openNewWindow,
+            onPressed: () => _open(context),
+            icon: const Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(
+              width: 32,
+              height: 32,
+            ),
+            tooltip: _VisualAssetsTexts.of(context).copyUrl,
+            onPressed: () => _copy(context),
+            icon: const Icon(
+              Icons.content_copy_rounded,
+              size: 15,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1711,10 +1815,23 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                     '${_prettyCode(item.status)} · v${item.version}',
                     style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
-                  subtitle: Text(
-                    '${item.activateAtUtc == null ? '—' : _formatDate(item.activateAtUtc!)}'
-                    ' · ${item.timeZone}'
-                    '${item.migrated ? ' · Legacy seed' : ''}',
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          '${item.activateAtUtc == null ? '—' : _formatDate(item.activateAtUtc!)}'
+                          ' · ${item.timeZone}'
+                          '${item.migrated ? ' · Legacy seed' : ''}',
+                        ),
+                        const SizedBox(height: 6),
+                        _AssetLinkRow(
+                          url: item.imageUrl,
+                          compact: true,
+                        ),
+                      ],
+                    ),
                   ),
                   trailing: Wrap(
                     spacing: 4,
@@ -2095,6 +2212,22 @@ class _VisualAssetsTexts {
         'Cadastre ou ative um comércio antes de criar uma imagem específica.',
         'Create or activate a business before adding a custom image.',
         'Crea o activa un comercio antes de agregar una imagen específica.',
+      );
+  String get openNewWindow => _pick(
+        'Abrir imagem em nova janela',
+        'Open image in a new window',
+        'Abrir imagen en una nueva ventana',
+      );
+  String get copyUrl => _pick('Copiar link', 'Copy link', 'Copiar enlace');
+  String get urlCopied => _pick(
+        'Link da imagem copiado.',
+        'Image link copied.',
+        'Enlace de la imagen copiado.',
+      );
+  String get openUrlFailed => _pick(
+        'Não foi possível abrir a imagem.',
+        'Could not open the image.',
+        'No fue posible abrir la imagen.',
       );
 }
 
