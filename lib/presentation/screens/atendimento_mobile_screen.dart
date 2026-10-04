@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/perfil_negocio_service.dart';
 import 'package:sixpos/core/services/visual_asset_sync_service.dart';
+import 'package:sixpos/core/services/visual_asset_manifest_cache_service.dart';
 import 'package:sixpos/data/models/atendimento_mobile_assets_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
@@ -84,6 +85,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   final PerfilNegocioService _perfilNegocioService = PerfilNegocioService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
   final VisualAssetSyncService _assetSync = VisualAssetSyncService.instance;
+  final VisualAssetManifestCacheService _manifestCache =
+      VisualAssetManifestCacheService.instance;
   StreamSubscription<void>? _assetSyncSubscription;
   AtendimentoMobileAssetsModel? _businessAssets;
   int _businessAssetsLoadGeneration = 0;
@@ -152,8 +155,35 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   }
 
   Future<void> _inicializarImagensGerenciadas() async {
-    await _assetSync.initialize();
-    if (mounted) {
+    final String empresaId = await _perfilNegocioService.empresaAtual();
+    await _assetSync.restoreLocalState();
+
+    bool restored = false;
+    final String? environment = _assetSync.environment;
+    if (environment != null) {
+      final Map<String, dynamic>? cached = await _manifestCache.load(
+        kind: 'atendimento_mobile',
+        companyId: empresaId,
+        environment: environment,
+      );
+      if (cached != null && mounted) {
+        try {
+          setState(() {
+            _businessAssetsEmpresaId = empresaId;
+            _businessAssets =
+                AtendimentoMobileAssetsModel.fromJson(cached);
+          });
+          restored = true;
+        } catch (error) {
+          debugPrint(
+            '[AtendimentoMobile] manifesto local inválido: $error',
+          );
+        }
+      }
+    }
+
+    final bool versionChanged = await _assetSync.initialize();
+    if (mounted && (!restored || versionChanged)) {
       await _carregarImagensDoPerfil();
     }
   }
@@ -174,6 +204,21 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         'subsegmento=${resolved.perfilNegocio.perfil.subsegmento} '
         'fallbacks=$fallbacks/${resolved.assets.length}',
       );
+
+      final String environment = _assetSync.environment ?? 'LIVE';
+      final String version = _assetSync.version ?? '000000000000';
+      final bool cached = await _manifestCache.prefetchAndSave(
+        kind: 'atendimento_mobile',
+        companyId: empresaId,
+        environment: environment,
+        assetsVersion: version,
+        payload: resolved.toJson(),
+        imageUrls: resolved.assets.map(
+          (AtendimentoMobileAssetModel item) => item.imagemUrl,
+        ),
+      );
+      if (!mounted || generation != _businessAssetsLoadGeneration) return;
+      if (!cached && _businessAssets != null) return;
 
       setState(() {
         _businessAssetsEmpresaId = empresaId;
@@ -196,10 +241,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   void _onEmpresaChanged() {
     if (!mounted || kIsWeb) return;
     _businessAssetsEmpresaId = null;
-    unawaited(_assetSync.synchronize());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _carregarImagensDoPerfil();
+        unawaited(_inicializarImagensGerenciadas());
       }
     });
   }

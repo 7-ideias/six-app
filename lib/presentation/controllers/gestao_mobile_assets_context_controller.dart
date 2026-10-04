@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../core/services/perfil_negocio_service.dart';
+import '../../core/services/visual_asset_manifest_cache_service.dart';
 import '../../core/services/visual_asset_sync_service.dart';
 import '../../data/models/gestao_mobile_assets_model.dart';
 import '../../providers/empresa_provider.dart';
@@ -12,14 +13,18 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     PerfilNegocioService? perfilNegocioService,
     EmpresaProvider? empresaProvider,
     VisualAssetSyncService? visualAssetSyncService,
+    VisualAssetManifestCacheService? manifestCacheService,
   }) : _perfilNegocioService = perfilNegocioService ?? PerfilNegocioService(),
        _empresaProvider = empresaProvider ?? EmpresaProvider(),
        _visualAssetSyncService =
-           visualAssetSyncService ?? VisualAssetSyncService.instance;
+           visualAssetSyncService ?? VisualAssetSyncService.instance,
+       _manifestCacheService =
+           manifestCacheService ?? VisualAssetManifestCacheService.instance;
 
   final PerfilNegocioService _perfilNegocioService;
   final EmpresaProvider _empresaProvider;
   final VisualAssetSyncService _visualAssetSyncService;
+  final VisualAssetManifestCacheService _manifestCacheService;
 
   StreamSubscription<void>? _assetSyncSubscription;
 
@@ -39,10 +44,40 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
       if (_disposed || kIsWeb) return;
       unawaited(refresh());
     });
-    scheduleMicrotask(() async {
-      await _visualAssetSyncService.initialize();
+    scheduleMicrotask(_initializeFromLocalManifest);
+  }
+
+  Future<void> _initializeFromLocalManifest() async {
+    if (_disposed || kIsWeb) return;
+    final String empresaId = await _perfilNegocioService.empresaAtual();
+    await _visualAssetSyncService.restoreLocalState();
+
+    bool restored = false;
+    final String? environment = _visualAssetSyncService.environment;
+    if (environment != null) {
+      final Map<String, dynamic>? cached =
+          await _manifestCacheService.load(
+        kind: 'gestao_mobile',
+        companyId: empresaId,
+        environment: environment,
+      );
+      if (cached != null && !_disposed) {
+        try {
+          _empresaId = empresaId;
+          _assets = GestaoMobileAssetsModel.fromJson(cached);
+          restored = true;
+          notifyListeners();
+        } catch (error) {
+          debugPrint('[GestaoMobile] manifesto local inválido: $error');
+        }
+      }
+    }
+
+    final bool versionChanged =
+        await _visualAssetSyncService.initialize();
+    if (!restored || versionChanged) {
       await refresh();
-    });
+    }
   }
 
   Future<void> refresh() async {
@@ -64,6 +99,23 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
         'subsegmento=${resolved.perfilNegocio.perfil.subsegmento} '
         'fallbacks=$fallbacks/${resolved.assets.length}',
       );
+
+      final String environment =
+          _visualAssetSyncService.environment ?? 'LIVE';
+      final String version =
+          _visualAssetSyncService.version ?? '000000000000';
+      final bool cached = await _manifestCacheService.prefetchAndSave(
+        kind: 'gestao_mobile',
+        companyId: empresaId,
+        environment: environment,
+        assetsVersion: version,
+        payload: resolved.toJson(),
+        imageUrls: resolved.assets.map(
+          (GestaoMobileAssetModel item) => item.imagemUrl,
+        ),
+      );
+      if (_disposed || generation != _generation) return;
+      if (!cached && _assets != null) return;
 
       _empresaId = empresaId;
       _assets = resolved;
@@ -92,8 +144,7 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
       return;
     }
 
-    unawaited(_visualAssetSyncService.synchronize());
-    scheduleMicrotask(refresh);
+    scheduleMicrotask(_initializeFromLocalManifest);
   }
 
   @override

@@ -56,6 +56,13 @@ class PerfilNegocioEmpresaModel {
     podeEditar: json['podeEditar'] == true,
     versao: (json['versao'] as num?)?.toInt(),
   );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'perfil': perfil.toJson(),
+    'configurado': configurado,
+    'podeEditar': podeEditar,
+    'versao': versao,
+  };
 }
 
 class SegmentoNegocioModel {
@@ -188,6 +195,13 @@ class BannerHomeModel {
   String? imagemPara(double larguraFisica) => larguraFisica > 800
       ? imagemUrl1200 ?? imagemUrl800 : imagemUrl800 ?? imagemUrl1200;
 
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'tema': tema,
+    'imagemUrl800': imagemUrl800,
+    'imagemUrl1200': imagemUrl1200,
+  };
+
   static String? _https(dynamic value) {
     final Uri? url = value is String ? Uri.tryParse(value) : null;
     final bool secure = url?.scheme == 'https';
@@ -213,4 +227,9 @@ class HomeBannersModel {
     banners: List<BannerHomeModel>.unmodifiable((json['banners'] as List<dynamic>)
         .map((dynamic item) => BannerHomeModel.fromJson(Map<String, dynamic>.from(item as Map)))),
   );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'perfilNegocio': perfilNegocio.toJson(),
+    'banners': banners.map((BannerHomeModel item) => item.toJson()).toList(growable: false),
+  };
 }
