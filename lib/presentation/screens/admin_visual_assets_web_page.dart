@@ -160,7 +160,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
               ),
               FilledButton.icon(
                 onPressed: () => Navigator.pop(context, true),
-                icon: const Icon(Icons.sync_rounded),
+                icon: Icon(Icons.sync_rounded),
                 label: Text(texts.force),
               ),
             ],
@@ -354,7 +354,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                       dimension: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.sync_rounded),
+                  : Icon(Icons.sync_rounded),
               label: Text(texts.force),
             ),
           ],
@@ -1012,7 +1012,7 @@ class _VersionBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.memory_rounded,
             size: 17,
             color: AdminPalette.success,
@@ -1093,7 +1093,7 @@ class _EnvironmentNotice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.science_rounded,
             color: AdminPalette.warning,
             size: 20,
@@ -1283,7 +1283,7 @@ class _SlotCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.tonalIcon(
                     onPressed: onUpload,
-                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    icon: Icon(Icons.add_photo_alternate_outlined),
                     label: Text(texts.addOrSchedule),
                   ),
                 ),
@@ -1294,7 +1294,7 @@ class _SlotCard extends StatelessWidget {
                   icon: Badge(
                     isLabelVisible: slot.historyCount > 0,
                     label: Text(slot.historyCount.toString()),
-                    child: const Icon(Icons.history_rounded),
+                    child: Icon(Icons.history_rounded),
                   ),
                 ),
               ],
@@ -1364,7 +1364,7 @@ class _AssetPreview extends StatelessWidget {
                     errorBuilder: (_, __, ___) => Container(
                       color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image_outlined),
+                      child: Icon(Icons.broken_image_outlined),
                     ),
                   ),
           ),
@@ -1440,7 +1440,7 @@ class _AssetLinkRow extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.link_rounded,
             size: 14,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1468,7 +1468,7 @@ class _AssetLinkRow extends StatelessWidget {
             ),
             tooltip: _VisualAssetsTexts.of(context).openNewWindow,
             onPressed: () => _open(context),
-            icon: const Icon(
+            icon: Icon(
               Icons.open_in_new_rounded,
               size: 16,
             ),
@@ -1481,7 +1481,7 @@ class _AssetLinkRow extends StatelessWidget {
             ),
             tooltip: _VisualAssetsTexts.of(context).copyUrl,
             onPressed: () => _copy(context),
-            icon: const Icon(
+            icon: Icon(
               Icons.content_copy_rounded,
               size: 15,
             ),
@@ -1750,7 +1750,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
               const SizedBox(height: 14),
               OutlinedButton.icon(
                 onPressed: _saving ? null : _pickImage,
-                icon: const Icon(Icons.photo_library_outlined),
+                icon: Icon(Icons.photo_library_outlined),
                 label: Text(
                   _file == null ? texts.chooseImage : _file!.name,
                 ),
@@ -1804,7 +1804,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _saving ? null : _chooseDateTime,
-                        icon: const Icon(Icons.event_rounded),
+                        icon: Icon(Icons.event_rounded),
                         label: Text(
                           _activateAt == null
                               ? texts.chooseActivation
@@ -1868,7 +1868,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                   dimension: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.save_rounded),
+              : Icon(Icons.save_rounded),
           label: Text(_schedule ? texts.saveSchedule : texts.publishNow),
         ),
       ],
@@ -2026,7 +2026,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                         item.imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image_outlined),
+                            Icon(Icons.broken_image_outlined),
                       ),
                     ),
                   ),
@@ -2070,7 +2070,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                             ? texts.reuse
                             : texts.readOnlyEnvironment(item.environment),
                         onPressed: editable ? () => _reuse(item) : null,
-                        icon: const Icon(Icons.replay_rounded),
+                        icon: Icon(Icons.replay_rounded),
                       ),
                       if (item.status != 'ARQUIVADA')
                         IconButton(
@@ -2078,7 +2078,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                               ? texts.archive
                               : texts.readOnlyEnvironment(item.environment),
                           onPressed: editable ? () => _archive(item) : null,
-                          icon: const Icon(Icons.archive_outlined),
+                          icon: Icon(Icons.archive_outlined),
                         ),
                     ],
                   ),
@@ -2180,7 +2180,7 @@ class _ReuseDialogState extends State<_ReuseDialog> {
             if (_schedule) ...<Widget>[
               OutlinedButton.icon(
                 onPressed: _pick,
-                icon: const Icon(Icons.event_rounded),
+                icon: Icon(Icons.event_rounded),
                 label: Text(
                   _activateAt == null
                       ? texts.chooseActivation
@@ -2240,7 +2240,7 @@ class _ErrorBanner extends StatelessWidget {
       color: Theme.of(context).colorScheme.errorContainer,
       borderRadius: BorderRadius.circular(12),
       child: ListTile(
-        leading: const Icon(Icons.error_outline_rounded),
+        leading: Icon(Icons.error_outline_rounded),
         title: Text(message),
         trailing: TextButton(
           onPressed: retry,
