@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 class PerfilNegocioModel {
   PerfilNegocioModel({
     required this.segmentoPrincipal,
@@ -187,9 +189,18 @@ class BannerHomeModel {
       ? imagemUrl1200 ?? imagemUrl800 : imagemUrl800 ?? imagemUrl1200;
 
   static String? _https(dynamic value) {
-    final url = value is String ? Uri.tryParse(value) : null;
-    return url != null && url.scheme == 'https' && url.host.isNotEmpty && url.userInfo.isEmpty
-        ? url.toString() : null;
+    final Uri? url = value is String ? Uri.tryParse(value) : null;
+    final bool secure = url?.scheme == 'https';
+    final bool debugHttp =
+        kDebugMode &&
+        url?.scheme == 'http' &&
+        (url?.host == 'localhost' || url?.host == '127.0.0.1');
+    return url != null &&
+            (secure || debugHttp) &&
+            url.host.isNotEmpty &&
+            url.userInfo.isEmpty
+        ? url.toString()
+        : null;
   }
 }
 

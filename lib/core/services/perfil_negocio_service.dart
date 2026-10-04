@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../../data/models/atendimento_mobile_assets_model.dart';
@@ -43,7 +44,11 @@ class PerfilNegocioService {
 
   Future<HomeBannersModel> banners(String empresaId) async =>
       HomeBannersModel.fromJson(
-        await _request('GET', '/home/banners', empresaId),
+        await _request(
+          'GET',
+          '/home/banners?plataforma=${kIsWeb ? 'WEB' : 'MOBILE'}',
+          empresaId,
+        ),
       );
 
   Future<AtendimentoMobileAssetsModel> atendimentoMobileAssets(
