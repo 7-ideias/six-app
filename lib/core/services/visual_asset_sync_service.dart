@@ -18,6 +18,8 @@ class VisualAssetSyncService {
   static const String _versionPreferencePrefix =
       'six_visual_assets_version_';
   static const String _eventType = 'ASSETS_VERSION_CHANGED';
+  static const String _lastEnvironmentPreference =
+      'six_visual_assets_last_environment';
 
   final StreamController<void> _changes =
       StreamController<void>.broadcast(sync: true);
@@ -25,6 +27,7 @@ class VisualAssetSyncService {
   StreamSubscription<Map<String, dynamic>>? _stompSubscription;
   Timer? _activationTimer;
   bool _initialized = false;
+  bool _localStateRestored = false;
   bool _synchronizing = false;
   String? _version;
   String? _environment;
@@ -33,23 +36,43 @@ class VisualAssetSyncService {
   String? get version => _version;
   String? get environment => _environment;
 
-  Future<void> initialize() async {
+  Future<bool> initialize() async {
+    await restoreLocalState();
     if (!_initialized) {
       _initialized = true;
       _stompSubscription = stompMessages.listen(_handleStompMessage);
     }
-    await synchronize();
+    return synchronize();
   }
 
-  Future<void> synchronize({bool notifyWhenSame = false}) async {
-    if (_synchronizing) return;
+  Future<void> restoreLocalState() async {
+    if (_localStateRestored) return;
+    _localStateRestored = true;
+    final SharedPreferences preferences =
+        await SharedPreferences.getInstance();
+    final String? environment = preferences
+        .getString(_lastEnvironmentPreference)
+        ?.trim()
+        .toUpperCase();
+    if (environment == null || !_isEnvironment(environment)) {
+      return;
+    }
+    _environment = environment;
+    _version = preferences.getString(
+      '$_versionPreferencePrefix$environment',
+    );
+  }
+
+  Future<bool> synchronize({bool notifyWhenSame = false}) async {
+    await restoreLocalState();
+    if (_synchronizing) return false;
     _synchronizing = true;
     final http.Client client = createHttpClient();
 
     try {
       final AuthService auth = AuthService();
       final String token = (await auth.getAccessToken())?.trim() ?? '';
-      if (token.isEmpty) return;
+      if (token.isEmpty) return false;
 
       final String? companyId = (await auth.getEmpresaId())?.trim();
       final Map<String, String> headers = <String, String>{
@@ -66,10 +89,10 @@ class VisualAssetSyncService {
           )
           .timeout(const Duration(seconds: 15));
 
-      if (response.statusCode != 200) return;
+      if (response.statusCode != 200) return false;
 
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map) return;
+      if (decoded is! Map) return false;
 
       final Map<String, dynamic> json =
           Map<String, dynamic>.from(decoded);
@@ -79,7 +102,7 @@ class VisualAssetSyncService {
           json['environment']?.toString().trim().toUpperCase() ?? '';
       if (!_isVersion(serverVersion) ||
           !_isEnvironment(serverEnvironment)) {
-        return;
+        return false;
       }
 
       await _selectEnvironment(serverEnvironment);
@@ -95,8 +118,10 @@ class VisualAssetSyncService {
       if (changed || notifyWhenSame) {
         _changes.add(null);
       }
+      return changed;
     } catch (error) {
       debugPrint('[VisualAssets] falha ao sincronizar versão: $error');
+      return false;
     } finally {
       client.close();
       _synchronizing = false;
@@ -136,6 +161,10 @@ class VisualAssetSyncService {
     _environment = value;
     final SharedPreferences preferences =
         await SharedPreferences.getInstance();
+    await preferences.setString(
+      _lastEnvironmentPreference,
+      value,
+    );
     _version = preferences.getString(
       '$_versionPreferencePrefix$value',
     );

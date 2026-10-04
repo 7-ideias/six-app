@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/services/six_visual_assets_cache.dart';
+
 class SixCachedNetworkImage extends StatelessWidget {
   const SixCachedNetworkImage({
     super.key,
@@ -42,6 +44,7 @@ class SixCachedNetworkImage extends StatelessWidget {
     }
 
     return CachedNetworkImage(
+      cacheManager: SixVisualAssetsCache.instance,
       imageUrl: imageUrl,
       width: width,
       height: height,

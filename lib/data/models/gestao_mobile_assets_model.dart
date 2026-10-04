@@ -71,6 +71,14 @@ class GestaoMobileAssetModel {
     );
   }
 
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'slot': slot.backendCode,
+    'imagemUrl': imagemUrl,
+    'modoExibicao': modoExibicao.backendCode,
+    'imagemFallback': imagemFallback,
+  };
+
   static String? _https(dynamic value) {
     final Uri? uri = value is String ? Uri.tryParse(value) : null;
     final bool secure = uri?.scheme == 'https';
@@ -114,6 +122,11 @@ class GestaoMobileAssetsModel {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'perfilNegocio': perfilNegocio.toJson(),
+    'assets': assets.map((GestaoMobileAssetModel item) => item.toJson()).toList(growable: false),
+  };
 
   GestaoMobileAssetModel? asset(GestaoMobileAssetSlot slot) {
     for (final GestaoMobileAssetModel item in assets) {

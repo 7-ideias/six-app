@@ -71,6 +71,14 @@ class AtendimentoMobileAssetModel {
     );
   }
 
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'slot': slot.backendCode,
+    'imagemUrl': imagemUrl,
+    'modoExibicao': modoExibicao.backendCode,
+    'imagemFallback': imagemFallback,
+  };
+
   static String? _https(dynamic value) {
     final Uri? uri = value is String ? Uri.tryParse(value) : null;
     final bool secure = uri?.scheme == 'https';
@@ -114,6 +122,11 @@ class AtendimentoMobileAssetsModel {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'perfilNegocio': perfilNegocio.toJson(),
+    'assets': assets.map((AtendimentoMobileAssetModel item) => item.toJson()).toList(growable: false),
+  };
 
   AtendimentoMobileAssetModel? asset(AtendimentoMobileAssetSlot slot) {
     for (final AtendimentoMobileAssetModel item in assets) {
