@@ -149,7 +149,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     final bool confirmed =
         await showDialog<bool>(
           context: context,
-          builder: (BuildContext context) => AlertDialog(
+          builder: (BuildContext context) => _VisualAssetsDialogTheme(
+            child: AlertDialog(
             title: Text(texts.forceTitle),
             content: Text(texts.forceDescription),
             actions: <Widget>[
@@ -164,7 +165,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
               ),
             ],
           ),
-        ) ??
+        ),
+      ) ??
         false;
     if (!confirmed || !mounted) return;
 
@@ -246,7 +248,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     final Widget content = _buildContent(texts);
     if (widget.embeddedInMainShell) {
       return ColoredBox(
-        color: AdminPalette.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AdminSpacing.xl),
           child: content,
@@ -275,7 +277,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     final Widget loading = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
-        child: AdminSurfaceCard(
+        child: _VisualAssetsSurfaceCard(
           child: Padding(
             padding: const EdgeInsets.all(26),
             child: Column(
@@ -286,8 +288,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                 Text(
                   texts.checkingAccess,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AdminPalette.bodyText,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -298,9 +300,9 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       ),
     );
     if (widget.embeddedInMainShell) {
-      return ColoredBox(color: AdminPalette.background, child: loading);
+      return ColoredBox(color: Theme.of(context).scaffoldBackgroundColor, child: loading);
     }
-    return Scaffold(backgroundColor: AdminPalette.background, body: loading);
+    return Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: loading);
   }
 
   Widget _buildContent(_VisualAssetsTexts texts) {
@@ -317,7 +319,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                 children: <Widget>[
                   Text(
                     texts.eyebrow.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AdminPalette.success,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
@@ -327,8 +329,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                   const SizedBox(height: 6),
                   Text(
                     texts.title,
-                    style: const TextStyle(
-                      color: AdminPalette.dark,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                     ),
@@ -336,8 +338,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                   const SizedBox(height: 8),
                   Text(
                     texts.subtitle,
-                    style: const TextStyle(
-                      color: AdminPalette.mutedText,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.45,
                     ),
                   ),
@@ -358,7 +360,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
           ],
         ),
         const SizedBox(height: 22),
-        AdminSurfaceCard(
+        _VisualAssetsSurfaceCard(
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Wrap(
@@ -511,6 +513,86 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
   }
 }
 
+class _VisualAssetsDialogTheme extends StatelessWidget {
+  const _VisualAssetsDialogTheme({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData base = Theme.of(context);
+    final bool dark = base.brightness == Brightness.dark;
+    final ColorScheme colors = base.colorScheme;
+
+    return Theme(
+      data: base.copyWith(
+        dialogTheme: base.dialogTheme.copyWith(
+          backgroundColor: dark
+              ? colors.surfaceContainerHigh
+              : colors.surface,
+          surfaceTintColor: Colors.transparent,
+        ),
+        inputDecorationTheme: base.inputDecorationTheme.copyWith(
+          filled: true,
+          fillColor: dark
+              ? colors.surfaceContainerHighest
+              : colors.surfaceContainerLowest,
+          labelStyle: TextStyle(color: colors.onSurfaceVariant),
+          helperStyle: TextStyle(color: colors.onSurfaceVariant),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: colors.outlineVariant),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: colors.outlineVariant),
+          ),
+        ),
+        dividerColor: colors.outlineVariant,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _VisualAssetsSurfaceCard extends StatelessWidget {
+  const _VisualAssetsSurfaceCard({
+    required this.child,
+    this.compact = false,
+  });
+
+  final Widget child;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark
+            ? colors.surfaceContainer
+            : colors.surface,
+        borderRadius: BorderRadius.circular(AdminRadius.xl),
+        border: Border.all(color: colors.outlineVariant),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: theme.shadowColor.withValues(
+              alpha: dark ? 0.28 : 0.05,
+            ),
+            blurRadius: dark ? 28 : 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 16 : 22),
+        child: child,
+      ),
+    );
+  }
+}
+
 class _ScopeSelector extends StatelessWidget {
   const _ScopeSelector({
     required this.value,
@@ -527,9 +609,9 @@ class _ScopeSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -591,15 +673,15 @@ class _ScopeOptionState extends State<_ScopeOption> {
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             color: widget.selected
-                ? AdminPalette.dark
+                ? Theme.of(context).colorScheme.primary
                 : active
-                    ? Colors.white
+                    ? Theme.of(context).colorScheme.surfaceContainerHigh
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(AdminRadius.md),
             boxShadow: active
                 ? <BoxShadow>[
                     BoxShadow(
-                      color: AdminPalette.shadow.withValues(alpha: 0.06),
+                      color: Theme.of(context).shadowColor.withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -621,8 +703,8 @@ class _ScopeOptionState extends State<_ScopeOption> {
                       widget.icon,
                       size: 18,
                       color: widget.selected
-                          ? Colors.white
-                          : AdminPalette.mutedText,
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -630,8 +712,8 @@ class _ScopeOptionState extends State<_ScopeOption> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: widget.selected
-                            ? Colors.white
-                            : AdminPalette.dark,
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -718,12 +800,12 @@ class _AdminVisualSelectFieldState<T>
         overlayBox.size.width - offset.dx - size.width,
         0,
       ),
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
       elevation: 10,
       constraints: BoxConstraints(minWidth: size.width, maxWidth: size.width),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        side: const BorderSide(color: AdminPalette.border),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       items: widget.options
           .map(
@@ -780,19 +862,21 @@ class _AdminVisualSelectFieldState<T>
                     constraints: const BoxConstraints(minHeight: 58),
                     padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
                     decoration: BoxDecoration(
-                      color: active ? Colors.white : AdminPalette.softSurface,
+                      color: active
+                          ? Theme.of(context).colorScheme.surfaceContainerHigh
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(AdminRadius.lg),
                       border: Border.all(
                         color: active
                             ? AdminPalette.success
-                            : AdminPalette.border,
+                            : Theme.of(context).colorScheme.outlineVariant,
                         width: active ? 1.3 : 1,
                       ),
                       boxShadow: active
                           ? <BoxShadow>[
                               BoxShadow(
                                 color:
-                                    AdminPalette.shadow.withValues(alpha: 0.08),
+                                    Theme.of(context).shadowColor.withValues(alpha: 0.08),
                                 blurRadius: 18,
                                 offset: const Offset(0, 9),
                               ),
@@ -806,7 +890,7 @@ class _AdminVisualSelectFieldState<T>
                           size: 18,
                           color: active
                               ? AdminPalette.success
-                              : AdminPalette.mutedText,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -818,8 +902,8 @@ class _AdminVisualSelectFieldState<T>
                                 widget.label,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AdminPalette.mutedText,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -829,8 +913,8 @@ class _AdminVisualSelectFieldState<T>
                                 selected.label,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AdminPalette.dark,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -847,7 +931,7 @@ class _AdminVisualSelectFieldState<T>
                             Icons.keyboard_arrow_down_rounded,
                             color: active
                                 ? AdminPalette.success
-                                : AdminPalette.mutedText,
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -877,7 +961,9 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: selected ? AdminPalette.activeGreen : Colors.transparent,
+        color: selected
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.32)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(AdminRadius.md),
         border: Border.all(
           color: selected ? AdminPalette.success : Colors.transparent,
@@ -888,7 +974,7 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
           Icon(
             selected ? Icons.check_circle_rounded : Icons.circle_outlined,
             size: 18,
-            color: selected ? AdminPalette.success : AdminPalette.mutedText,
+            color: selected ? AdminPalette.success : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -897,7 +983,7 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: AdminPalette.dark,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
@@ -919,9 +1005,9 @@ class _VersionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AdminRadius.md),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -934,8 +1020,8 @@ class _VersionBadge extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '${texts.version}: $version',
-            style: const TextStyle(
-              color: AdminPalette.dark,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1016,8 +1102,8 @@ class _EnvironmentNotice extends StatelessWidget {
           Expanded(
             child: Text(
               texts.devNotice,
-              style: const TextStyle(
-                color: AdminPalette.bodyText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
               ),
@@ -1056,12 +1142,12 @@ class _PlatformSection extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Icon(icon, color: AdminPalette.dark),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
             const SizedBox(width: 9),
             Text(
               title,
-              style: const TextStyle(
-                color: AdminPalette.dark,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
@@ -1069,7 +1155,7 @@ class _PlatformSection extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               '${slots.length} ${texts.positions}',
-              style: const TextStyle(color: AdminPalette.mutedText),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -1124,7 +1210,7 @@ class _SlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdminSurfaceCard(
+    return _VisualAssetsSurfaceCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1135,8 +1221,8 @@ class _SlotCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     slot.labelFallback,
-                    style: const TextStyle(
-                      color: AdminPalette.dark,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1149,8 +1235,8 @@ class _SlotCard extends StatelessWidget {
             Text(
               '${slot.recommendedWidth} × ${slot.recommendedHeight} · '
               '${slot.displayMode}',
-              style: const TextStyle(
-                color: AdminPalette.mutedText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -1184,7 +1270,7 @@ class _SlotCard extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 '+ ${slot.additionalScheduled} ${texts.moreScheduled}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AdminPalette.success,
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
@@ -1241,8 +1327,8 @@ class _AssetPreview extends StatelessWidget {
       children: <Widget>[
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            color: AdminPalette.mutedText,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: .8,
@@ -1255,14 +1341,14 @@ class _AssetPreview extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: item == null || item.imageUrl.isEmpty
                 ? Container(
-                    color: AdminPalette.softSurface,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     alignment: Alignment.center,
                     padding: const EdgeInsets.all(10),
                     child: Text(
                       emptyText,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AdminPalette.mutedText,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1276,7 +1362,7 @@ class _AssetPreview extends StatelessWidget {
                       item.focalY * 2 - 1,
                     ),
                     errorBuilder: (_, __, ___) => Container(
-                      color: AdminPalette.softSurface,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: const Icon(Icons.broken_image_outlined),
                     ),
@@ -1293,8 +1379,8 @@ class _AssetPreview extends StatelessWidget {
                 : '${_formatDate(item.activateAtUtc!)} · ${item.timeZone}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AdminPalette.mutedText,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 10,
             ),
           ),
@@ -1348,16 +1434,16 @@ class _AssetLinkRow extends StatelessWidget {
         bottom: compact ? 4 : 6,
       ),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: <Widget>[
           const Icon(
             Icons.link_rounded,
             size: 14,
-            color: AdminPalette.mutedText,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -1367,7 +1453,7 @@ class _AssetLinkRow extends StatelessWidget {
                 url,
                 maxLines: 1,
                 style: TextStyle(
-                  color: AdminPalette.bodyText,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: compact ? 9 : 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1419,7 +1505,7 @@ class _StatusLine extends StatelessWidget {
         ? Colors.green.shade700
         : scheduled
         ? Colors.orange.shade800
-        : AdminPalette.mutedText;
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       children: <Widget>[
         Icon(Icons.circle, size: 7, color: color),
@@ -1481,14 +1567,14 @@ class _PlatformPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Text(
         platform,
-        style: const TextStyle(
-          color: AdminPalette.mutedText,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 9,
           fontWeight: FontWeight.w900,
         ),
@@ -1646,8 +1732,9 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
         widget.segment != null &&
         widget.subsegment == null;
 
-    return AlertDialog(
-      title: Text(texts.uploadTitle(widget.slot.labelFallback)),
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text(texts.uploadTitle(widget.slot.labelFallback)),
       content: SizedBox(
         width: 720,
         child: SingleChildScrollView(
@@ -1658,7 +1745,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                 '${widget.slot.recommendedWidth} × '
                 '${widget.slot.recommendedHeight} · '
                 '${widget.slot.platform}',
-                style: const TextStyle(color: AdminPalette.mutedText),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 14),
               OutlinedButton.icon(
@@ -1785,6 +1872,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
           label: Text(_schedule ? texts.saveSchedule : texts.publishNow),
         ),
       ],
+      ),
     );
   }
 }
@@ -1841,7 +1929,8 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
     final bool confirmed =
         await showDialog<bool>(
           context: context,
-          builder: (BuildContext context) => AlertDialog(
+          builder: (BuildContext context) => _VisualAssetsDialogTheme(
+            child: AlertDialog(
             title: Text(texts.archive),
             content: Text(texts.archiveConfirm),
             actions: <Widget>[
@@ -1884,8 +1973,9 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
   @override
   Widget build(BuildContext context) {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
-    return AlertDialog(
-      title: Text('${texts.history} · ${widget.slot.labelFallback}'),
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text('${texts.history} · ${widget.slot.labelFallback}'),
       content: SizedBox(
         width: 780,
         height: 520,
@@ -1944,7 +2034,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                       Expanded(
                         child: Text(
                           '${_prettyCode(item.status)} · v${item.version}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -2003,6 +2093,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
           child: Text(texts.close),
         ),
       ],
+      ),
     );
   }
 }
@@ -2071,8 +2162,9 @@ class _ReuseDialogState extends State<_ReuseDialog> {
   @override
   Widget build(BuildContext context) {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
-    return AlertDialog(
-      title: Text(texts.reuse),
+    return _VisualAssetsDialogTheme(
+      child: AlertDialog(
+        title: Text(texts.reuse),
       content: SizedBox(
         width: 480,
         child: Column(
@@ -2125,6 +2217,7 @@ class _ReuseDialogState extends State<_ReuseDialog> {
           child: Text(_schedule ? texts.saveSchedule : texts.publishNow),
         ),
       ],
+      ),
     );
   }
 }
@@ -2176,13 +2269,13 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 42, color: AdminPalette.mutedText),
+            Icon(icon, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AdminPalette.dark,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
               ),
@@ -2191,7 +2284,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AdminPalette.mutedText),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
