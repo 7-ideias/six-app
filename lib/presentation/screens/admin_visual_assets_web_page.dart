@@ -1717,6 +1717,424 @@ class _UploadImageMetadata extends StatelessWidget {
   }
 }
 
+class _UploadCropGuidePreview extends StatelessWidget {
+  const _UploadCropGuidePreview({
+    required this.bytes,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.recommendedWidth,
+    required this.recommendedHeight,
+    required this.focalX,
+    required this.focalY,
+    required this.texts,
+  });
+
+  final Uint8List bytes;
+  final int? imageWidth;
+  final int? imageHeight;
+  final int recommendedWidth;
+  final int recommendedHeight;
+  final double focalX;
+  final double focalY;
+  final _VisualAssetsTexts texts;
+
+  bool get _hasDimensions =>
+      imageWidth != null &&
+      imageHeight != null &&
+      imageWidth! > 0 &&
+      imageHeight! > 0 &&
+      recommendedWidth > 0 &&
+      recommendedHeight > 0;
+
+  bool get _isLargerThanRecommended =>
+      _hasDimensions &&
+      imageWidth! >= recommendedWidth &&
+      imageHeight! >= recommendedHeight &&
+      (imageWidth! > recommendedWidth ||
+          imageHeight! > recommendedHeight);
+
+  bool get _sameAspectRatio {
+    if (!_hasDimensions) return false;
+    final double source = imageWidth! / imageHeight!;
+    final double target = recommendedWidth / recommendedHeight;
+    return (source - target).abs() < 0.002;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool showCropGuide =
+        _isLargerThanRecommended && !_sameAspectRatio;
+    final bool resizeOnly =
+        _isLargerThanRecommended && _sameAspectRatio;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (_isLargerThanRecommended) ...<Widget>[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colors.primary.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  resizeOnly
+                      ? Icons.aspect_ratio_rounded
+                      : Icons.crop_free_rounded,
+                  size: 18,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    resizeOnly
+                        ? texts.cropGuideResizeOnly(
+                            recommendedWidth,
+                            recommendedHeight,
+                          )
+                        : texts.cropGuideExplanation(
+                            recommendedWidth,
+                            recommendedHeight,
+                          ),
+                    style: TextStyle(
+                      color: colors.onSurface,
+                      fontSize: 12,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        LayoutBuilder(
+          builder: (
+            BuildContext context,
+            BoxConstraints constraints,
+          ) {
+            final double availableWidth =
+                constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : 720;
+            final double sourceAspect =
+                _hasDimensions
+                    ? imageWidth! / imageHeight!
+                    : recommendedWidth / recommendedHeight;
+            final double naturalHeight =
+                availableWidth / sourceAspect;
+            final double previewHeight =
+                naturalHeight.clamp(220.0, 430.0).toDouble();
+            final Size viewport = Size(
+              availableWidth,
+              previewHeight,
+            );
+
+            final Size sourceSize = _hasDimensions
+                ? Size(
+                    imageWidth!.toDouble(),
+                    imageHeight!.toDouble(),
+                  )
+                : Size(
+                    recommendedWidth.toDouble(),
+                    recommendedHeight.toDouble(),
+                  );
+
+            final FittedSizes fitted = applyBoxFit(
+              BoxFit.contain,
+              sourceSize,
+              viewport,
+            );
+            final Rect imageRect = Alignment.center.inscribe(
+              fitted.destination,
+              Offset.zero & viewport,
+            );
+
+            final _NormalizedCrop crop = _computeNormalizedCrop();
+            final Rect cropRect = Rect.fromLTWH(
+              imageRect.left + crop.left * imageRect.width,
+              imageRect.top + crop.top * imageRect.height,
+              crop.width * imageRect.width,
+              crop.height * imageRect.height,
+            );
+
+            return Container(
+              height: previewHeight,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.outlineVariant,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    Image.memory(
+                      bytes,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                    ),
+                    if (showCropGuide)
+                      CustomPaint(
+                        painter: _CropGuideOverlayPainter(
+                          imageRect: imageRect,
+                          cropRect: cropRect,
+                          maskColor: Colors.black.withValues(
+                            alpha: 0.48,
+                          ),
+                          borderColor: colors.primary,
+                        ),
+                      ),
+                    if (resizeOnly)
+                      CustomPaint(
+                        painter: _CropGuideOverlayPainter(
+                          imageRect: imageRect,
+                          cropRect: imageRect,
+                          maskColor: Colors.transparent,
+                          borderColor: colors.primary,
+                          drawMask: false,
+                        ),
+                      ),
+                    if (_isLargerThanRecommended)
+                      Positioned(
+                        left: cropRect.left + 10,
+                        top: cropRect.top + 10,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth:
+                                (cropRect.width - 20)
+                                    .clamp(120.0, 300.0)
+                                    .toDouble(),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(
+                                alpha: 0.94,
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.black.withValues(
+                                    alpha: 0.20,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              resizeOnly
+                                  ? texts.resizeOnlyBadge(
+                                      recommendedWidth,
+                                      recommendedHeight,
+                                    )
+                                  : texts.recommendedAreaBadge(
+                                      recommendedWidth,
+                                      recommendedHeight,
+                                    ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  _NormalizedCrop _computeNormalizedCrop() {
+    if (!_hasDimensions || _sameAspectRatio) {
+      return const _NormalizedCrop(
+        left: 0,
+        top: 0,
+        width: 1,
+        height: 1,
+      );
+    }
+
+    final double sourceAspect = imageWidth! / imageHeight!;
+    final double targetAspect =
+        recommendedWidth / recommendedHeight;
+
+    if (sourceAspect > targetAspect) {
+      final double cropWidth =
+          targetAspect / sourceAspect;
+      final double maxLeft = 1.0 - cropWidth;
+      final double desiredLeft =
+          focalX - cropWidth / 2.0;
+      return _NormalizedCrop(
+        left: desiredLeft.clamp(0.0, maxLeft).toDouble(),
+        top: 0,
+        width: cropWidth,
+        height: 1,
+      );
+    }
+
+    final double cropHeight =
+        sourceAspect / targetAspect;
+    final double maxTop = 1.0 - cropHeight;
+    final double desiredTop =
+        focalY - cropHeight / 2.0;
+    return _NormalizedCrop(
+      left: 0,
+      top: desiredTop.clamp(0.0, maxTop).toDouble(),
+      width: 1,
+      height: cropHeight,
+    );
+  }
+}
+
+class _CropGuideOverlayPainter extends CustomPainter {
+  const _CropGuideOverlayPainter({
+    required this.imageRect,
+    required this.cropRect,
+    required this.maskColor,
+    required this.borderColor,
+    this.drawMask = true,
+  });
+
+  final Rect imageRect;
+  final Rect cropRect;
+  final Color maskColor;
+  final Color borderColor;
+  final bool drawMask;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (drawMask) {
+      final Paint maskPaint = Paint()..color = maskColor;
+      final Path maskPath = Path()
+        ..addRect(imageRect)
+        ..addRRect(
+          RRect.fromRectAndRadius(
+            cropRect,
+            const Radius.circular(10),
+          ),
+        )
+        ..fillType = PathFillType.evenOdd;
+      canvas.drawPath(maskPath, maskPaint);
+    }
+
+    final Paint borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        cropRect,
+        const Radius.circular(10),
+      ),
+      borderPaint,
+    );
+
+    final double handle = 18;
+    final Paint handlePaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    final Rect r = cropRect.deflate(1.5);
+    canvas.drawLine(
+      Offset(r.left, r.top + handle),
+      Offset(r.left, r.top),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.left, r.top),
+      Offset(r.left + handle, r.top),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.right - handle, r.top),
+      Offset(r.right, r.top),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.right, r.top),
+      Offset(r.right, r.top + handle),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.left, r.bottom - handle),
+      Offset(r.left, r.bottom),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.left, r.bottom),
+      Offset(r.left + handle, r.bottom),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.right - handle, r.bottom),
+      Offset(r.right, r.bottom),
+      handlePaint,
+    );
+    canvas.drawLine(
+      Offset(r.right, r.bottom),
+      Offset(r.right, r.bottom - handle),
+      handlePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant _CropGuideOverlayPainter oldDelegate,
+  ) {
+    return imageRect != oldDelegate.imageRect ||
+        cropRect != oldDelegate.cropRect ||
+        maskColor != oldDelegate.maskColor ||
+        borderColor != oldDelegate.borderColor ||
+        drawMask != oldDelegate.drawMask;
+  }
+}
+
+class _NormalizedCrop {
+  const _NormalizedCrop({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+}
+
 class _UploadAssetDialog extends StatefulWidget {
   const _UploadAssetDialog({
     required this.service,
@@ -1927,19 +2345,15 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                   texts: texts,
                 ),
                 const SizedBox(height: 14),
-                AspectRatio(
-                  aspectRatio: widget.slot.aspectRatio,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(
-                      bytes,
-                      fit: BoxFit.cover,
-                      alignment: Alignment(
-                        _focalX * 2 - 1,
-                        _focalY * 2 - 1,
-                      ),
-                    ),
-                  ),
+                _UploadCropGuidePreview(
+                  bytes: bytes,
+                  imageWidth: _imageWidth,
+                  imageHeight: _imageHeight,
+                  recommendedWidth: widget.slot.recommendedWidth,
+                  recommendedHeight: widget.slot.recommendedHeight,
+                  focalX: _focalX,
+                  focalY: _focalY,
+                  texts: texts,
                 ),
                 const SizedBox(height: 12),
                 Text(texts.horizontalFocus),
@@ -2603,6 +3017,26 @@ class _VisualAssetsTexts {
         'Não foi possível identificar a resolução desta imagem. O backend ainda fará a validação antes da publicação.',
         'The image resolution could not be detected. The backend will still validate it before publishing.',
         'No fue posible identificar la resolución de esta imagen. El backend aún la validará antes de publicarla.',
+      );
+  String cropGuideExplanation(int width, int height) => _pick(
+        'A área destacada é o enquadramento que será publicado em $width × $height. Mova os controles de foco para escolher a região principal.',
+        'The highlighted area is the framing that will be published at $width × $height. Move the focus controls to choose the main region.',
+        'El área destacada es el encuadre que se publicará en $width × $height. Mueve los controles de enfoque para elegir la región principal.',
+      );
+  String cropGuideResizeOnly(int width, int height) => _pick(
+        'A imagem é maior que o recomendado, mas já tem a proporção correta. Ela será reduzida para $width × $height sem corte.',
+        'The image is larger than recommended but already has the correct aspect ratio. It will be reduced to $width × $height without cropping.',
+        'La imagen es más grande que la recomendada, pero ya tiene la proporción correcta. Se reducirá a $width × $height sin recorte.',
+      );
+  String recommendedAreaBadge(int width, int height) => _pick(
+        'Área recomendada · $width × $height',
+        'Recommended area · $width × $height',
+        'Área recomendada · $width × $height',
+      );
+  String resizeOnlyBadge(int width, int height) => _pick(
+        'Sem corte · $width × $height',
+        'No crop · $width × $height',
+        'Sin recorte · $width × $height',
       );
   String uploadTitle(String slot) => _pick(
         'Nova imagem · $slot',
