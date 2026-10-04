@@ -369,96 +369,76 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                   texts: texts,
                 ),
                 if (_scope == 'EMPRESA')
-                  SizedBox(
+                  _AdminVisualSelectField<String?>(
                     width: 310,
-                    child: DropdownButtonFormField<String>(
-                      value: _companyId,
-                      decoration: InputDecoration(
-                        labelText: texts.company,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: _companies
-                          .map(
-                            (AdminVisualAssetCompany company) =>
-                                DropdownMenuItem<String>(
-                              value: company.id,
-                              child: Text(
-                                '${company.name} · ${company.timeZone}',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: _loading
-                          ? null
-                          : (String? value) {
-                              setState(() => _companyId = value);
-                              unawaited(_reload());
-                            },
-                    ),
+                    label: texts.company,
+                    icon: Icons.storefront_rounded,
+                    value: _companyId,
+                    options: _companies
+                        .map(
+                          (AdminVisualAssetCompany company) =>
+                              _AdminVisualSelectOption<String?>(
+                            value: company.id,
+                            label: '${company.name} · ${company.timeZone}',
+                          ),
+                        )
+                        .toList(growable: false),
+                    enabled: !_loading && _companies.isNotEmpty,
+                    onSelected: (String? value) {
+                      setState(() => _companyId = value);
+                      unawaited(_reload());
+                    },
                   ),
                 if (_scope == 'GLOBAL') ...<Widget>[
-                  SizedBox(
+                  _AdminVisualSelectField<String?>(
                     width: 250,
-                    child: DropdownButtonFormField<String?>(
-                      value: _segment,
-                      decoration: InputDecoration(
-                        labelText: texts.segment,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+                    label: texts.segment,
+                    icon: Icons.category_rounded,
+                    value: _segment,
+                    options: <_AdminVisualSelectOption<String?>>[
+                      _AdminVisualSelectOption<String?>(
+                        value: null,
+                        label: texts.globalDefault,
                       ),
-                      items: <DropdownMenuItem<String?>>[
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(texts.globalDefault),
+                      ...AdminVisualAssetsCatalog.segmentos.keys.map(
+                        (String segment) =>
+                            _AdminVisualSelectOption<String?>(
+                          value: segment,
+                          label: _prettyCode(segment),
                         ),
-                        ...AdminVisualAssetsCatalog.segmentos.keys.map(
-                          (String segment) => DropdownMenuItem<String?>(
-                            value: segment,
-                            child: Text(_prettyCode(segment)),
-                          ),
-                        ),
-                      ],
-                      onChanged: _loading
-                          ? null
-                          : (String? value) {
-                              setState(() {
-                                _segment = value;
-                                _subsegment = null;
-                              });
-                              unawaited(_reload());
-                            },
-                    ),
+                      ),
+                    ],
+                    enabled: !_loading,
+                    onSelected: (String? value) {
+                      setState(() {
+                        _segment = value;
+                        _subsegment = null;
+                      });
+                      unawaited(_reload());
+                    },
                   ),
-                  SizedBox(
+                  _AdminVisualSelectField<String?>(
                     width: 250,
-                    child: DropdownButtonFormField<String?>(
-                      value: _subsegment,
-                      decoration: InputDecoration(
-                        labelText: texts.specialty,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+                    label: texts.specialty,
+                    icon: Icons.auto_awesome_motion_rounded,
+                    value: _subsegment,
+                    options: <_AdminVisualSelectOption<String?>>[
+                      _AdminVisualSelectOption<String?>(
+                        value: null,
+                        label: texts.noSpecialty,
                       ),
-                      items: <DropdownMenuItem<String?>>[
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(texts.noSpecialty),
+                      ...AdminVisualAssetsCatalog.subsegmentosDe(_segment).map(
+                        (String sub) => _AdminVisualSelectOption<String?>(
+                          value: sub,
+                          label: _prettyCode(sub),
                         ),
-                        ...AdminVisualAssetsCatalog.subsegmentosDe(_segment).map(
-                          (String sub) => DropdownMenuItem<String?>(
-                            value: sub,
-                            child: Text(_prettyCode(sub)),
-                          ),
-                        ),
-                      ],
-                      onChanged: _segment == null || _loading
-                          ? null
-                          : (String? value) {
-                              setState(() => _subsegment = value);
-                              unawaited(_reload());
-                            },
-                    ),
+                      ),
+                    ],
+                    enabled: _segment != null && !_loading,
+                    onSelected: (String? value) {
+                      setState(() => _subsegment = value);
+                      unawaited(_reload());
+                    },
                   ),
                 ],
                 _VersionBadge(
@@ -533,23 +513,386 @@ class _ScopeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<String>(
-      segments: <ButtonSegment<String>>[
-        ButtonSegment<String>(
-          value: 'GLOBAL',
-          icon: const Icon(Icons.public_rounded),
-          label: Text(texts.global),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AdminPalette.softSurface,
+        borderRadius: BorderRadius.circular(AdminRadius.lg),
+        border: Border.all(color: AdminPalette.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _ScopeOption(
+            icon: Icons.public_rounded,
+            label: texts.global,
+            selected: value == 'GLOBAL',
+            enabled: onChanged != null,
+            onTap: () => onChanged?.call('GLOBAL'),
+          ),
+          const SizedBox(width: 4),
+          _ScopeOption(
+            icon: Icons.storefront_rounded,
+            label: texts.company,
+            selected: value == 'EMPRESA',
+            enabled: onChanged != null,
+            onTap: () => onChanged?.call('EMPRESA'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScopeOption extends StatefulWidget {
+  const _ScopeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_ScopeOption> createState() => _ScopeOptionState();
+}
+
+class _ScopeOptionState extends State<_ScopeOption> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool active = widget.selected || _hovering;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: AnimatedOpacity(
+        duration: AdminMotion.fast,
+        opacity: widget.enabled ? 1 : 0.55,
+        child: AnimatedContainer(
+          duration: AdminMotion.fast,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: widget.selected
+                ? AdminPalette.dark
+                : active
+                    ? Colors.white
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(AdminRadius.md),
+            boxShadow: active
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: AdminPalette.shadow.withValues(alpha: 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AdminRadius.md),
+              onTap: widget.enabled ? widget.onTap : null,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      widget.icon,
+                      size: 18,
+                      color: widget.selected
+                          ? Colors.white
+                          : AdminPalette.mutedText,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: widget.selected
+                            ? Colors.white
+                            : AdminPalette.dark,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
-        ButtonSegment<String>(
-          value: 'EMPRESA',
-          icon: const Icon(Icons.storefront_rounded),
-          label: Text(texts.company),
+      ),
+    );
+  }
+}
+
+class _AdminVisualSelectOption<T> {
+  const _AdminVisualSelectOption({
+    required this.value,
+    required this.label,
+  });
+
+  final T value;
+  final String label;
+}
+
+class _AdminVisualSelectField<T> extends StatefulWidget {
+  const _AdminVisualSelectField({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onSelected,
+    required this.icon,
+    this.width = 260,
+    this.enabled = true,
+  });
+
+  final String label;
+  final T value;
+  final List<_AdminVisualSelectOption<T>> options;
+  final ValueChanged<T> onSelected;
+  final IconData icon;
+  final double width;
+  final bool enabled;
+
+  @override
+  State<_AdminVisualSelectField<T>> createState() =>
+      _AdminVisualSelectFieldState<T>();
+}
+
+class _AdminVisualSelectFieldState<T>
+    extends State<_AdminVisualSelectField<T>> {
+  bool _hovering = false;
+  bool _open = false;
+
+  _AdminVisualSelectOption<T> get _selectedOption {
+    for (final _AdminVisualSelectOption<T> option in widget.options) {
+      if (option.value == widget.value) return option;
+    }
+    return widget.options.isNotEmpty
+        ? widget.options.first
+        : _AdminVisualSelectOption<T>(value: widget.value, label: '—');
+  }
+
+  Future<void> _showOptions() async {
+    if (!widget.enabled || widget.options.isEmpty) return;
+
+    final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null || overlayBox == null) return;
+
+    final Offset offset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final Size size = fieldBox.size;
+
+    setState(() => _open = true);
+    final _AdminVisualSelectOption<T>? selected =
+        await showMenu<_AdminVisualSelectOption<T>>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height + 8,
+        overlayBox.size.width - offset.dx - size.width,
+        0,
+      ),
+      color: Colors.white,
+      elevation: 10,
+      constraints: BoxConstraints(minWidth: size.width, maxWidth: size.width),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AdminRadius.lg),
+        side: const BorderSide(color: AdminPalette.border),
+      ),
+      items: widget.options
+          .map(
+            (_AdminVisualSelectOption<T> option) =>
+                PopupMenuItem<_AdminVisualSelectOption<T>>(
+              value: option,
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              child: _AdminVisualSelectMenuItem(
+                label: option.label,
+                selected: option.value == widget.value,
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected.value != widget.value) {
+      widget.onSelected(selected.value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _AdminVisualSelectOption<T> selected = _selectedOption;
+    final bool active = widget.enabled && (_hovering || _open);
+
+    return SizedBox(
+      width: widget.width,
+      child: Semantics(
+        button: true,
+        enabled: widget.enabled,
+        label: widget.label,
+        value: selected.label,
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovering = true),
+          onExit: (_) => setState(() => _hovering = false),
+          child: AnimatedOpacity(
+            duration: AdminMotion.fast,
+            opacity: widget.enabled ? 1 : 0.58,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AdminRadius.lg),
+                onTap: widget.enabled ? _showOptions : null,
+                child: Tooltip(
+                  message: '${widget.label}: ${selected.label}',
+                  waitDuration: const Duration(milliseconds: 450),
+                  child: AnimatedContainer(
+                    duration: AdminMotion.fast,
+                    curve: Curves.easeOutCubic,
+                    constraints: const BoxConstraints(minHeight: 58),
+                    padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
+                    decoration: BoxDecoration(
+                      color: active ? Colors.white : AdminPalette.softSurface,
+                      borderRadius: BorderRadius.circular(AdminRadius.lg),
+                      border: Border.all(
+                        color: active
+                            ? AdminPalette.success
+                            : AdminPalette.border,
+                        width: active ? 1.3 : 1,
+                      ),
+                      boxShadow: active
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color:
+                                    AdminPalette.shadow.withValues(alpha: 0.08),
+                                blurRadius: 18,
+                                offset: const Offset(0, 9),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          widget.icon,
+                          size: 18,
+                          color: active
+                              ? AdminPalette.success
+                              : AdminPalette.mutedText,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                widget.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AdminPalette.mutedText,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                selected.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AdminPalette.dark,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          turns: _open ? 0.5 : 0,
+                          duration: AdminMotion.fast,
+                          curve: Curves.easeOutCubic,
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: active
+                                ? AdminPalette.success
+                                : AdminPalette.mutedText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-      ],
-      selected: <String>{value},
-      onSelectionChanged: onChanged == null
-          ? null
-          : (Set<String> values) => onChanged!(values.first),
+      ),
+    );
+  }
+}
+
+class _AdminVisualSelectMenuItem extends StatelessWidget {
+  const _AdminVisualSelectMenuItem({
+    required this.label,
+    required this.selected,
+  });
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: selected ? AdminPalette.activeGreen : Colors.transparent,
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(
+          color: selected ? AdminPalette.success : Colors.transparent,
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 18,
+            color: selected ? AdminPalette.success : AdminPalette.mutedText,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AdminPalette.dark,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
