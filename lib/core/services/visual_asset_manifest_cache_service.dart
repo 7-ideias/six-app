@@ -70,6 +70,25 @@ class VisualAssetManifestCacheService {
     return true;
   }
 
+  Future<void> remove({
+    required String kind,
+    required String companyId,
+  }) async {
+    if (kIsWeb) return;
+    final SharedPreferences preferences =
+        await SharedPreferences.getInstance();
+    final String prefix =
+        '${_prefix}_${kind.toLowerCase()}_'
+        '${Uri.encodeComponent(companyId)}_';
+    final List<String> keys = preferences
+        .getKeys()
+        .where((String key) => key.startsWith(prefix))
+        .toList(growable: false);
+    for (final String key in keys) {
+      await preferences.remove(key);
+    }
+  }
+
   Future<void> clearCompany(String companyId) async {
     if (kIsWeb) return;
     final SharedPreferences preferences =

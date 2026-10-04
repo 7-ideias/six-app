@@ -19,6 +19,7 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_cached_network_image.dart';
+import 'package:sixpos/presentation/components/six_visual_asset_shimmer.dart';
 import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
@@ -351,6 +352,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     ScrollController scrollController,
     double topInset,
   ) {
+    if (_businessVisuals.loading) {
+      return _GestaoHubLoadingState(
+        scrollController: scrollController,
+        topInset: topInset,
+      );
+    }
+
     final List<_GestaoHubActionData> actions = _hubActions(context);
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
     final double cardHeight = 204 + ((textScale - 1).clamp(0.0, 0.8) * 72);
@@ -1500,6 +1508,67 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 }
 
+class _GestaoHubLoadingState extends StatelessWidget {
+  const _GestaoHubLoadingState({
+    required this.scrollController,
+    required this.topInset,
+  });
+
+  final ScrollController scrollController;
+  final double topInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final double cardHeight =
+        204 + ((textScale - 1).clamp(0.0, 0.8) * 72);
+
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      child: ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          topInset + 10,
+          16,
+          24,
+        ),
+        children: <Widget>[
+          const SixVisualAssetShimmer(
+            height: 154,
+            borderRadius: 22,
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              const double gap = 12;
+              final double width = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[
+                  for (int index = 0; index < 4; index += 1)
+                    SizedBox(
+                      width: width,
+                      height: cardHeight,
+                      child: SixVisualAssetShimmer(
+                        height: cardHeight,
+                        borderRadius: 22,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GestaoHubIntroCard extends StatelessWidget {
   const _GestaoHubIntroCard({
     required this.title,
@@ -1631,14 +1700,8 @@ class _GestaoHubActionCard extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.topCenter,
           filterQuality: FilterQuality.high,
-          placeholder: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[data.brandStart, data.brandEnd],
-              ),
-            ),
+          placeholder: const SixVisualAssetShimmer(
+            borderRadius: 0,
           ),
           errorBuilder: (
             BuildContext context,

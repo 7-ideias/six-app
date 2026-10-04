@@ -7,7 +7,7 @@ import '../../../l10n/perfil_negocio_texts.dart';
 import '../../../providers/home_banners_provider.dart';
 import '../perfil_negocio_icons.dart';
 import '../six_cached_network_image.dart';
-import '../six_backend_loading.dart';
+import '../six_visual_asset_shimmer.dart';
 
 class BusinessContextHomeCarouselMobile extends StatelessWidget {
   const BusinessContextHomeCarouselMobile({
@@ -24,13 +24,7 @@ class BusinessContextHomeCarouselMobile extends StatelessWidget {
     final HomeBannersModel? dados = provider.dados;
 
     if (provider.carregando && dados == null) {
-      return SixBackendLoading(
-        title: perfilNegocioText(context, 'loading'),
-        subtitle: perfilNegocioText(context, 'description'),
-        compact: true,
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-      );
+      return const _HomeBannersShimmer();
     }
 
     if (dados == null) {
@@ -113,6 +107,42 @@ class BusinessContextHomeCarouselMobile extends StatelessWidget {
   }
 }
 
+class _HomeBannersShimmer extends StatelessWidget {
+  const _HomeBannersShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final double cardWidth =
+        MediaQuery.sizeOf(context).width.clamp(280, 338).toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const SixVisualAssetShimmer(
+          width: 156,
+          height: 18,
+          borderRadius: 999,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 220,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 2,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, __) => SizedBox(
+              width: cardWidth,
+              child: const SixVisualAssetShimmer(
+                borderRadius: 22,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BannerCard extends StatelessWidget {
   const _BannerCard({required this.banner, required this.imageUrl});
   final BannerHomeModel banner;
@@ -135,7 +165,9 @@ class _BannerCard extends StatelessWidget {
               SixCachedNetworkImage(
                 imageUrl: imageUrl!,
                 fit: BoxFit.cover,
-                placeholder: _fallback(context),
+                placeholder: const SixVisualAssetShimmer(
+                  borderRadius: 22,
+                ),
                 errorBuilder: (_, __, ___) => _fallback(context),
               )
             else

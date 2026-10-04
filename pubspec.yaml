@@ -92,8 +92,6 @@ flutter:
     - assets/images/navbar/nav-inicio.svg
     - assets/images/navbar/nav-atendimento.svg
     - assets/images/navbar/nav-gestao.svg
-    - "assets/images/atendimento mobile/atendimento-hero.webp"
-    - "assets/images/atendimento mobile/atendimento-hero-acento.webp"
     - "assets/images/atendimento mobile/acao-nova-venda.webp"
     - "assets/images/atendimento mobile/acao-nova-venda-acento.webp"
     - "assets/images/atendimento mobile/acao-novo-servico.webp"

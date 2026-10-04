@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/services/perfil_negocio_change_service.dart';
 import '../../core/services/perfil_negocio_service.dart';
 import '../../core/services/visual_asset_manifest_cache_service.dart';
 import '../../core/services/visual_asset_sync_service.dart';
@@ -27,14 +28,17 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
   final VisualAssetManifestCacheService _manifestCacheService;
 
   StreamSubscription<void>? _assetSyncSubscription;
+  StreamSubscription<String>? _profileSubscription;
 
   GestaoMobileAssetsModel? _assets;
   String? _empresaId;
   int _generation = 0;
   bool _initialized = false;
   bool _disposed = false;
+  bool _loading = false;
 
   GestaoMobileAssetsModel? get assets => _assets;
+  bool get loading => _loading;
 
   void initialize() {
     if (_initialized || _disposed || kIsWeb) return;
@@ -42,7 +46,12 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     _empresaProvider.addListener(_onEmpresaChanged);
     _assetSyncSubscription = _visualAssetSyncService.changes.listen((_) {
       if (_disposed || kIsWeb) return;
-      unawaited(refresh());
+      unawaited(_reloadWithShimmer());
+    });
+    _profileSubscription =
+        PerfilNegocioChangeService.instance.changes.listen((String companyId) {
+      if (_disposed || kIsWeb) return;
+      unawaited(_onProfileChanged(companyId));
     });
     scheduleMicrotask(_initializeFromLocalManifest);
   }
@@ -76,8 +85,28 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     final bool versionChanged =
         await _visualAssetSyncService.initialize();
     if (!restored || versionChanged) {
-      await refresh();
+      await _reloadWithShimmer();
     }
+  }
+
+  Future<void> _onProfileChanged(String companyId) async {
+    final String current = await _perfilNegocioService.empresaAtual();
+    if (_disposed || current != companyId) return;
+    await _manifestCacheService.remove(
+      kind: 'gestao_mobile',
+      companyId: companyId,
+    );
+    await _reloadWithShimmer();
+  }
+
+  Future<void> _reloadWithShimmer() async {
+    if (_disposed || kIsWeb) return;
+    ++_generation;
+    _assets = null;
+    _empresaId = null;
+    _loading = true;
+    notifyListeners();
+    await refresh();
   }
 
   Future<void> refresh() async {
@@ -119,14 +148,15 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
 
       _empresaId = empresaId;
       _assets = resolved;
+      _loading = false;
       notifyListeners();
     } catch (error) {
       if (_disposed || generation != _generation) return;
       debugPrint('[GestaoMobile] falha ao carregar assets do backend: $error');
 
-      if (_assets == null && _empresaId == null) return;
       _empresaId = null;
       _assets = null;
+      _loading = false;
       notifyListeners();
     }
   }
@@ -157,6 +187,8 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
     }
     _assetSyncSubscription?.cancel();
     _assetSyncSubscription = null;
+    _profileSubscription?.cancel();
+    _profileSubscription = null;
     _perfilNegocioService.dispose();
     super.dispose();
   }
