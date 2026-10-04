@@ -315,7 +315,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                   Text(
                     texts.eyebrow.toUpperCase(),
                     style: const TextStyle(
-                      color: AdminPalette.primary,
+                      color: AdminPalette.success,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.1,
@@ -575,7 +575,7 @@ class _VersionBadge extends StatelessWidget {
           const Icon(
             Icons.memory_rounded,
             size: 17,
-            color: AdminPalette.primary,
+            color: AdminPalette.success,
           ),
           const SizedBox(width: 8),
           Text(
@@ -747,7 +747,7 @@ class _SlotCard extends StatelessWidget {
               Text(
                 '+ ${slot.additionalScheduled} ${texts.moreScheduled}',
                 style: const TextStyle(
-                  color: AdminPalette.primary,
+                  color: AdminPalette.success,
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                 ),
