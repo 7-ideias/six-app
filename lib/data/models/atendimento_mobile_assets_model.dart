@@ -74,7 +74,10 @@ class AtendimentoMobileAssetModel {
   static String? _https(dynamic value) {
     final Uri? uri = value is String ? Uri.tryParse(value) : null;
     final bool secure = uri?.scheme == 'https';
-    final bool debugHttp = kDebugMode && uri?.scheme == 'http';
+    final bool debugHttp =
+        kDebugMode &&
+        uri?.scheme == 'http' &&
+        (uri?.host == 'localhost' || uri?.host == '127.0.0.1');
     if (uri == null ||
         (!secure && !debugHttp) ||
         uri.host.isEmpty ||

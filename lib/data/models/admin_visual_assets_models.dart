@@ -24,6 +24,7 @@ class AdminVisualAssetItem {
     required this.slot,
     required this.platform,
     required this.scope,
+    required this.environment,
     required this.version,
     required this.status,
     required this.imageUrl,
@@ -44,6 +45,7 @@ class AdminVisualAssetItem {
   final String slot;
   final String platform;
   final String scope;
+  final String environment;
   final String? companyId;
   final String? segment;
   final List<String> subsegments;
@@ -66,6 +68,7 @@ class AdminVisualAssetItem {
       slot: json['slot']?.toString() ?? '',
       platform: json['plataforma']?.toString() ?? '',
       scope: json['escopo']?.toString() ?? '',
+      environment: json['environment']?.toString() ?? 'LIVE',
       companyId: _nullable(json['idUnicoDaEmpresa']),
       segment: _nullable(json['segmentoPrincipal']),
       subsegments: rawSubs is List
@@ -150,6 +153,7 @@ class AdminVisualAssetSlotPanel {
 class AdminVisualAssetPanel {
   const AdminVisualAssetPanel({
     required this.assetsVersion,
+    required this.environment,
     required this.scope,
     required this.slots,
     this.companyId,
@@ -158,6 +162,7 @@ class AdminVisualAssetPanel {
   });
 
   final String assetsVersion;
+  final String environment;
   final String scope;
   final String? companyId;
   final String? segment;
@@ -168,6 +173,7 @@ class AdminVisualAssetPanel {
     final dynamic rawSlots = json['slots'];
     return AdminVisualAssetPanel(
       assetsVersion: json['assetsVersion']?.toString() ?? '',
+      environment: json['environment']?.toString() ?? 'LIVE',
       scope: json['scope']?.toString() ?? 'GLOBAL',
       companyId: _nullable(json['idUnicoDaEmpresa']),
       segment: _nullable(json['segmentoPrincipal']),

@@ -209,6 +209,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
         service: _service,
         slot: slot,
         scope: _scope,
+        backendEnvironment: _panel?.environment ?? 'DEV',
         company: _selectedCompany,
         segment: _scope == 'GLOBAL' ? _segment : null,
         subsegment: _scope == 'GLOBAL' ? _subsegment : null,
@@ -447,10 +448,18 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
                   version: panel?.assetsVersion ?? '—',
                   texts: texts,
                 ),
+                _EnvironmentBadge(
+                  environment: panel?.environment ?? '—',
+                  texts: texts,
+                ),
               ],
             ),
           ),
         ),
+        if (panel?.environment == 'DEV') ...<Widget>[
+          const SizedBox(height: 14),
+          _EnvironmentNotice(texts: texts),
+        ],
         if (_error != null) ...<Widget>[
           const SizedBox(height: 14),
           _ErrorBanner(
@@ -936,6 +945,90 @@ class _VersionBadge extends StatelessWidget {
   }
 }
 
+class _EnvironmentBadge extends StatelessWidget {
+  const _EnvironmentBadge({
+    required this.environment,
+    required this.texts,
+  });
+
+  final String environment;
+  final _VisualAssetsTexts texts;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool live = environment == 'LIVE';
+    final Color color = live ? AdminPalette.success : AdminPalette.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.42)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            live ? Icons.cloud_done_rounded : Icons.science_rounded,
+            size: 17,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${texts.environment}: $environment',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnvironmentNotice extends StatelessWidget {
+  const _EnvironmentNotice({required this.texts});
+
+  final _VisualAssetsTexts texts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: AdminPalette.warning.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(AdminRadius.md),
+        border: Border.all(
+          color: AdminPalette.warning.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(
+            Icons.science_rounded,
+            color: AdminPalette.warning,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              texts.devNotice,
+              style: const TextStyle(
+                color: AdminPalette.bodyText,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PlatformSection extends StatelessWidget {
   const _PlatformSection({
     required this.title,
@@ -1343,7 +1436,38 @@ class _StatusLine extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(width: 5),
+        _AssetEnvironmentPill(item.environment),
       ],
+    );
+  }
+}
+
+class _AssetEnvironmentPill extends StatelessWidget {
+  const _AssetEnvironmentPill(this.environment);
+
+  final String environment;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool live = environment == 'LIVE';
+    final Color color = live ? AdminPalette.success : AdminPalette.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.34)),
+      ),
+      child: Text(
+        environment,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .4,
+        ),
+      ),
     );
   }
 }
@@ -1378,6 +1502,7 @@ class _UploadAssetDialog extends StatefulWidget {
     required this.service,
     required this.slot,
     required this.scope,
+    required this.backendEnvironment,
     required this.company,
     required this.segment,
     required this.subsegment,
@@ -1386,6 +1511,7 @@ class _UploadAssetDialog extends StatefulWidget {
   final AdminVisualAssetsService service;
   final AdminVisualAssetSlotPanel slot;
   final String scope;
+  final String backendEnvironment;
   final AdminVisualAssetCompany? company;
   final String? segment;
   final String? subsegment;
@@ -1793,6 +1919,8 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 final AdminVisualAssetItem item = items[index];
+                final bool editable =
+                    item.environment == widget.backendEnvironment;
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 8,
@@ -1811,9 +1939,19 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                       ),
                     ),
                   ),
-                  title: Text(
-                    '${_prettyCode(item.status)} · v${item.version}',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  title: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${_prettyCode(item.status)} · v${item.version}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _AssetEnvironmentPill(item.environment),
+                    ],
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 3),
@@ -1837,14 +1975,18 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                     spacing: 4,
                     children: <Widget>[
                       IconButton(
-                        tooltip: texts.reuse,
-                        onPressed: () => _reuse(item),
+                        tooltip: editable
+                            ? texts.reuse
+                            : texts.readOnlyEnvironment(item.environment),
+                        onPressed: editable ? () => _reuse(item) : null,
                         icon: const Icon(Icons.replay_rounded),
                       ),
                       if (item.status != 'ARQUIVADA')
                         IconButton(
-                          tooltip: texts.archive,
-                          onPressed: () => _archive(item),
+                          tooltip: editable
+                              ? texts.archive
+                              : texts.readOnlyEnvironment(item.environment),
+                          onPressed: editable ? () => _archive(item) : null,
                           icon: const Icon(Icons.archive_outlined),
                         ),
                     ],
@@ -2099,7 +2241,22 @@ class _VisualAssetsTexts {
         'No specialty',
         'Sin especialidad',
       );
-  String get version => _pick('Versão global', 'Global version', 'Versión global');
+  String get version => _pick(
+        'Versão global',
+        'Global version',
+        'Versión global',
+      );
+  String get environment => _pick('Ambiente', 'Environment', 'Ambiente');
+  String get devNotice => _pick(
+        'Você está no ambiente DEV. Uploads, programações, versão global e ativações feitas aqui ficam isolados da produção. Imagens LIVE podem aparecer apenas como referência/fallback e não podem ser alteradas por este backend.',
+        'You are in DEV. Uploads, schedules, global version and activations made here are isolated from production. LIVE images may appear only as reference/fallback and cannot be changed by this backend.',
+        'Estás en DEV. Las cargas, programaciones, versión global y activaciones realizadas aquí quedan aisladas de producción. Las imágenes LIVE pueden aparecer solo como referencia/fallback y no pueden modificarse desde este backend.',
+      );
+  String readOnlyEnvironment(String environment) => _pick(
+        'Imagem $environment somente para referência neste ambiente',
+        '$environment image is read-only in this environment',
+        'Imagen $environment solo de referencia en este ambiente',
+      );
   String get force =>
       _pick('Forçar atualização', 'Force refresh', 'Forzar actualización');
   String get forceTitle => force;
