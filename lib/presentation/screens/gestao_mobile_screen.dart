@@ -18,6 +18,7 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_cached_network_image.dart';
 import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
@@ -1625,11 +1626,20 @@ class _GestaoHubActionCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        Image.network(
-          url,
+        SixCachedNetworkImage(
+          imageUrl: url,
           fit: BoxFit.cover,
           alignment: Alignment.topCenter,
           filterQuality: FilterQuality.high,
+          placeholder: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[data.brandStart, data.brandEnd],
+              ),
+            ),
+          ),
           errorBuilder: (
             BuildContext context,
             Object error,
@@ -1649,23 +1659,6 @@ class _GestaoHubActionCard extends StatelessWidget {
               ),
             );
           },
-          loadingBuilder:
-              (
-                BuildContext context,
-                Widget child,
-                ImageChunkEvent? loadingProgress,
-              ) =>
-                  loadingProgress == null
-                      ? child
-                      : DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: <Color>[data.brandStart, data.brandEnd],
-                          ),
-                        ),
-                      ),
         ),
         DecoratedBox(
           decoration: BoxDecoration(

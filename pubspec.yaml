@@ -15,7 +15,9 @@ dependencies:
   firebase_messaging: 16.4.1
   image_picker: ^1.1.2
   image_picker_for_web: ^3.0.6
+  cached_network_image: 3.4.1
   http: ^1.2.1
+  http_parser: ^4.1.2
   provider: ^6.1.2
   shared_preferences: ^2.2.3
   local_auth: 3.0.0

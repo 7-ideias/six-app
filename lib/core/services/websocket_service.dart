@@ -151,6 +151,7 @@ void _onConnect({
     if (empresaId != null) '/topic/empresa/$empresaId/vendas',
     if (empresaId != null) '/topic/empresa/$empresaId/produtos',
     if (empresaId != null) '/topic/empresa/$empresaId/dashboard',
+    '/topic/system/assets',
     '/user/queue/chat-suporte',
   ];
 
@@ -203,7 +204,7 @@ void _assinarDestino({
           NotificacaoService().registrarPayload(payload);
         }
         _stompMessageController.add(payload);
-        if (!_ehAtualizacaoSilenciosaDoDashboard(payload)) {
+        if (!_ehEventoSilencioso(payload)) {
           onMensagemRecebida?.call(payload);
         }
       } catch (error) {
@@ -214,7 +215,7 @@ void _assinarDestino({
 }
 
 bool _deveRegistrarComoNotificacao(Map<String, dynamic> payload) {
-  if (_ehAtualizacaoSilenciosaDoDashboard(payload)) {
+  if (_ehEventoSilencioso(payload)) {
     return false;
   }
   if (payload['destination']?.toString() != 'support.chat') {
@@ -223,9 +224,10 @@ bool _deveRegistrarComoNotificacao(Map<String, dynamic> payload) {
   return payload['tipoDeEvento']?.toString() == 'CHAT_SUPORTE_NOVA_MENSAGEM';
 }
 
-bool _ehAtualizacaoSilenciosaDoDashboard(Map<String, dynamic> payload) {
-  return payload['tipoDeEvento']?.toString() ==
-      'DASHBOARD_DESEMPENHO_ATUALIZADO';
+bool _ehEventoSilencioso(Map<String, dynamic> payload) {
+  final String tipo = payload['tipoDeEvento']?.toString() ?? '';
+  return tipo == 'DASHBOARD_DESEMPENHO_ATUALIZADO' ||
+      tipo == 'ASSETS_VERSION_CHANGED';
 }
 
 void disconnectStomp() {

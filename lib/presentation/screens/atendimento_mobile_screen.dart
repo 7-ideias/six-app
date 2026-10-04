@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/perfil_negocio_service.dart';
+import 'package:sixpos/core/services/visual_asset_sync_service.dart';
 import 'package:sixpos/data/models/atendimento_mobile_assets_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
@@ -17,6 +20,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
+import 'package:sixpos/presentation/components/six_cached_network_image.dart';
 import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
@@ -79,6 +83,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   final NotificacaoService _notificacoes = NotificacaoService();
   final PerfilNegocioService _perfilNegocioService = PerfilNegocioService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
+  final VisualAssetSyncService _assetSync = VisualAssetSyncService.instance;
+  StreamSubscription<void>? _assetSyncSubscription;
   AtendimentoMobileAssetsModel? _businessAssets;
   int _businessAssetsLoadGeneration = 0;
   String? _businessAssetsEmpresaId;
@@ -112,9 +118,14 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _notificacoes.addListener(_onNotificacoesChanged);
     if (!kIsWeb) {
       _empresaProvider.addListener(_onEmpresaChanged);
+      _assetSyncSubscription = _assetSync.changes.listen((_) {
+        if (mounted) {
+          unawaited(_carregarImagensDoPerfil());
+        }
+      });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _carregarImagensDoPerfil();
+          unawaited(_inicializarImagensGerenciadas());
         }
       });
     }
@@ -127,6 +138,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       _empresaProvider.removeListener(_onEmpresaChanged);
     }
     ++_businessAssetsLoadGeneration;
+    _assetSyncSubscription?.cancel();
+    _assetSyncSubscription = null;
     _perfilNegocioService.dispose();
     _ordemCardsController
       ..removeListener(_aoAlterarOrdemDosCards)
@@ -136,6 +149,13 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
   void _aoAlterarOrdemDosCards() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _inicializarImagensGerenciadas() async {
+    await _assetSync.initialize();
+    if (mounted) {
+      await _carregarImagensDoPerfil();
+    }
   }
 
   Future<void> _carregarImagensDoPerfil() async {
@@ -176,6 +196,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   void _onEmpresaChanged() {
     if (!mounted || kIsWeb) return;
     _businessAssetsEmpresaId = null;
+    unawaited(_assetSync.synchronize());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _carregarImagensDoPerfil();
@@ -886,12 +907,13 @@ class _ContextualFullCardContent extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        Image.network(
-          url,
+        SixCachedNetworkImage(
+          imageUrl: url,
           key: ValueKey<String>('atendimento-contextual-fullcard-${data.id}'),
           fit: BoxFit.cover,
           alignment: Alignment.center,
           filterQuality: FilterQuality.high,
+          placeholder: localFallback,
           errorBuilder: (
             BuildContext context,
             Object error,
@@ -902,13 +924,6 @@ class _ContextualFullCardContent extends StatelessWidget {
               'url=$url error=$error',
             );
             return localFallback;
-          },
-          loadingBuilder: (
-            BuildContext context,
-            Widget child,
-            ImageChunkEvent? loadingProgress,
-          ) {
-            return loadingProgress == null ? child : localFallback;
           },
         ),
         DecoratedBox(
@@ -1195,26 +1210,20 @@ class _ActionIllustration extends StatelessWidget {
     final String? url = data.contextualImageUrl;
     if (url == null || url.isEmpty || kIsWeb) return fallback;
 
-    return Image.network(
-      url,
+    return SixCachedNetworkImage(
+      imageUrl: url,
       key: ValueKey<String>('atendimento-contextual-image-${data.id}'),
       width: imageSize,
       height: imageSize,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
+      placeholder: fallback,
       errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
         debugPrint(
           '[AtendimentoMobile] Falha ao carregar imagem contextual '
           'url=$url error=$error',
         );
         return fallback;
-      },
-      loadingBuilder: (
-        BuildContext context,
-        Widget child,
-        ImageChunkEvent? loadingProgress,
-      ) {
-        return loadingProgress == null ? child : fallback;
       },
     );
   }
