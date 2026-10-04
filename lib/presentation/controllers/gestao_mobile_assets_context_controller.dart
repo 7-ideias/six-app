@@ -53,7 +53,7 @@ class GestaoMobileAssetsContextController extends ChangeNotifier {
       if (_disposed || kIsWeb) return;
       unawaited(_onProfileChanged(companyId));
     });
-    scheduleMicrotask(_reloadWithShimmer);
+    scheduleMicrotask(_initializeFromLocalManifest);
   }
 
   Future<void> _initializeFromLocalManifest() async {
