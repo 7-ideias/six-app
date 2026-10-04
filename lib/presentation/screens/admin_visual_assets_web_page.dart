@@ -1944,7 +1944,8 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
               ),
             ],
           ),
-        ) ??
+        ),
+      ) ??
         false;
     if (!confirmed) return;
     await widget.service.archive(item.id);
