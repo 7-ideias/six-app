@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1583,6 +1584,139 @@ class _PlatformPill extends StatelessWidget {
   }
 }
 
+class _UploadImageMetadata extends StatelessWidget {
+  const _UploadImageMetadata({
+    required this.fileSizeBytes,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.recommendedWidth,
+    required this.recommendedHeight,
+    required this.platform,
+    required this.dimensionReadFailed,
+    required this.texts,
+  });
+
+  final int fileSizeBytes;
+  final int? imageWidth;
+  final int? imageHeight;
+  final int recommendedWidth;
+  final int recommendedHeight;
+  final String platform;
+  final bool dimensionReadFailed;
+  final _VisualAssetsTexts texts;
+
+  bool get _hasDimensions => imageWidth != null && imageHeight != null;
+
+  bool get _exactMatch =>
+      _hasDimensions &&
+      imageWidth == recommendedWidth &&
+      imageHeight == recommendedHeight;
+
+  bool get _sameAspectRatio {
+    if (!_hasDimensions ||
+        imageWidth == 0 ||
+        imageHeight == 0 ||
+        recommendedWidth == 0 ||
+        recommendedHeight == 0) {
+      return false;
+    }
+    final double selected = imageWidth! / imageHeight!;
+    final double recommended = recommendedWidth / recommendedHeight;
+    return (selected - recommended).abs() < 0.002;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Color stateColor = _exactMatch
+        ? Colors.green.shade600
+        : colors.tertiary;
+    final IconData stateIcon = _exactMatch
+        ? Icons.check_circle_rounded
+        : Icons.warning_amber_rounded;
+
+    final String selectedDimensions = _hasDimensions
+        ? '${imageWidth!} × ${imageHeight!} px'
+        : texts.dimensionUnavailable;
+
+    final String message;
+    if (dimensionReadFailed || !_hasDimensions) {
+      message = texts.dimensionReadWarning;
+    } else if (_exactMatch) {
+      message = texts.dimensionIdeal;
+    } else if (_sameAspectRatio) {
+      message = texts.dimensionResizeWarning(
+        recommendedWidth,
+        recommendedHeight,
+      );
+    } else {
+      message = texts.dimensionCropWarning(
+        recommendedWidth,
+        recommendedHeight,
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: stateColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: stateColor.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(stateIcon, color: stateColor, size: 21),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  texts.selectedImageInfo(
+                    selectedDimensions,
+                    _formatFileSize(fileSizeBytes),
+                  ),
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  texts.recommendedImageInfo(
+                    platform,
+                    recommendedWidth,
+                    recommendedHeight,
+                  ),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: stateColor,
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _UploadAssetDialog extends StatefulWidget {
   const _UploadAssetDialog({
     required this.service,
@@ -1610,6 +1744,9 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
 
   XFile? _file;
   Uint8List? _bytes;
+  int? _imageWidth;
+  int? _imageHeight;
+  bool _dimensionReadFailed = false;
   double _focalX = .5;
   double _focalY = .5;
   bool _schedule = false;
@@ -1635,11 +1772,33 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
   Future<void> _pickImage() async {
     final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
+
     final Uint8List bytes = await file.readAsBytes();
+    int? width;
+    int? height;
+    bool dimensionReadFailed = false;
+
+    try {
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      try {
+        final ui.FrameInfo frame = await codec.getNextFrame();
+        width = frame.image.width;
+        height = frame.image.height;
+        frame.image.dispose();
+      } finally {
+        codec.dispose();
+      }
+    } catch (_) {
+      dimensionReadFailed = true;
+    }
+
     if (!mounted) return;
     setState(() {
       _file = file;
       _bytes = bytes;
+      _imageWidth = width;
+      _imageHeight = height;
+      _dimensionReadFailed = dimensionReadFailed;
       _error = null;
     });
   }
@@ -1756,6 +1915,17 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                 ),
               ),
               if (bytes != null) ...<Widget>[
+                const SizedBox(height: 14),
+                _UploadImageMetadata(
+                  fileSizeBytes: bytes.lengthInBytes,
+                  imageWidth: _imageWidth,
+                  imageHeight: _imageHeight,
+                  recommendedWidth: widget.slot.recommendedWidth,
+                  recommendedHeight: widget.slot.recommendedHeight,
+                  platform: widget.slot.platform,
+                  dimensionReadFailed: _dimensionReadFailed,
+                  texts: texts,
+                ),
                 const SizedBox(height: 14),
                 AspectRatio(
                   aspectRatio: widget.slot.aspectRatio,
@@ -2395,6 +2565,45 @@ class _VisualAssetsTexts {
         'Choose a JPEG, PNG or WebP image.',
         'Elige una imagen JPEG, PNG o WebP.',
       );
+  String selectedImageInfo(String dimensions, String fileSize) => _pick(
+        'Imagem selecionada: $dimensions · $fileSize',
+        'Selected image: $dimensions · $fileSize',
+        'Imagen seleccionada: $dimensions · $fileSize',
+      );
+  String recommendedImageInfo(
+    String platform,
+    int width,
+    int height,
+  ) => _pick(
+        'Recomendado para $platform: $width × $height px',
+        'Recommended for $platform: $width × $height px',
+        'Recomendado para $platform: $width × $height px',
+      );
+  String get dimensionIdeal => _pick(
+        'Dimensão ideal. Nenhum ajuste de tamanho será necessário.',
+        'Ideal dimensions. No size adjustment will be required.',
+        'Dimensión ideal. No será necesario ajustar el tamaño.',
+      );
+  String dimensionResizeWarning(int width, int height) => _pick(
+        'A dimensão é diferente da recomendada, mas a proporção é compatível. A imagem será redimensionada para $width × $height.',
+        'The dimensions differ from the recommendation, but the aspect ratio matches. The image will be resized to $width × $height.',
+        'La dimensión difiere de la recomendada, pero la proporción es compatible. La imagen se redimensionará a $width × $height.',
+      );
+  String dimensionCropWarning(int width, int height) => _pick(
+        'A dimensão e a proporção são diferentes da recomendada. A imagem será recortada e redimensionada para $width × $height. Use os controles de foco para escolher a área principal.',
+        'The dimensions and aspect ratio differ from the recommendation. The image will be cropped and resized to $width × $height. Use the focus controls to choose the main area.',
+        'La dimensión y la proporción difieren de la recomendada. La imagen se recortará y redimensionará a $width × $height. Usa los controles de enfoque para elegir el área principal.',
+      );
+  String get dimensionUnavailable => _pick(
+        'dimensão não identificada',
+        'dimensions unavailable',
+        'dimensión no identificada',
+      );
+  String get dimensionReadWarning => _pick(
+        'Não foi possível identificar a resolução desta imagem. O backend ainda fará a validação antes da publicação.',
+        'The image resolution could not be detected. The backend will still validate it before publishing.',
+        'No fue posible identificar la resolución de esta imagen. El backend aún la validará antes de publicarla.',
+      );
   String uploadTitle(String slot) => _pick(
         'Nova imagem · $slot',
         'New image · $slot',
@@ -2480,6 +2689,14 @@ class _VisualAssetsTexts {
         'Could not open the image.',
         'No fue posible abrir la imagen.',
       );
+}
+
+String _formatFileSize(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  final double kb = bytes / 1024;
+  if (kb < 1024) return '${kb.toStringAsFixed(kb >= 100 ? 0 : 1)} KB';
+  final double mb = kb / 1024;
+  return '${mb.toStringAsFixed(mb >= 10 ? 1 : 2)} MB';
 }
 
 String _prettyCode(String value) {
