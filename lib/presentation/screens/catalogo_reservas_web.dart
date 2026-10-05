@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/core/services/catalogo_reserva_service.dart';
 import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
@@ -765,133 +768,94 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Material(
-      color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          _buildHeader(context, tokens),
-          Expanded(child: _buildBody(context, tokens)),
-        ],
+    return SixWebPageShell(
+      child: Material(
+        color: tokens.workspaceBackground,
+        child: Column(
+          children: <Widget>[
+            _buildHeader(context, tokens),
+            const SizedBox(height: 16),
+            Expanded(child: _buildBody(context, tokens)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, WebThemeTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
-      decoration: BoxDecoration(
-        color: tokens.headerBackground,
-        border: Border(bottom: BorderSide(color: tokens.headerBorder)),
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.reservas,
+      icon: Icons.bookmarks_outlined,
+      title: context.t(
+        'catalogReservations.title',
+        fallback: 'Reservas do catálogo',
       ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: tokens.info.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(Icons.bookmarks_outlined, color: tokens.info),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  context.t(
-                    'catalogReservations.title',
-                    fallback: 'Reservas do catálogo',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  context.t(
-                    'catalogReservations.subtitle',
-                    fallback:
-                        'Acompanhe solicitações recebidas pelo catálogo virtual.',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: tokens.secondaryText),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              FilledButton.icon(
-                onPressed:
-                    _abrindoCatalogoVirtual ? null : _abrirCatalogoVirtual,
-                icon:
-                    _abrindoCatalogoVirtual
-                        ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        )
-                        : const Icon(Icons.storefront_outlined, size: 18),
-                label: Text(
-                  context.t(
-                    'catalogReservations.openCatalog',
-                    fallback: 'Abrir catálogo virtual',
-                  ),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed:
-                    _carregando
-                        ? null
-                        : () => _carregar(
-                          pagina: _pagina?.pagina ?? 0,
-                          selecionarId: _idSelecionado,
+      subtitle: context.t(
+        'catalogReservations.subtitle',
+        fallback: 'Acompanhe solicitações recebidas pelo catálogo virtual.',
+      ),
+      actions: <Widget>[
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            FilledButton.icon(
+              onPressed: _abrindoCatalogoVirtual ? null : _abrirCatalogoVirtual,
+              icon:
+                  _abrindoCatalogoVirtual
+                      ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(
-                  context.t('common.refresh', fallback: 'Atualizar'),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: tokens.info,
-                  backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-                  side: BorderSide(color: tokens.selectedBorder),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                      )
+                      : const Icon(Icons.storefront_outlined, size: 18),
+              label: Text(
+                context.t(
+                  'catalogReservations.openCatalog',
+                  fallback: 'Abrir catálogo virtual',
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed:
+                  _carregando
+                      ? null
+                      : () => _carregar(
+                        pagina: _pagina?.pagina ?? 0,
+                        selecionarId: _idSelecionado,
+                      ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: tokens.info,
+                backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+                side: BorderSide(color: tokens.selectedBorder),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

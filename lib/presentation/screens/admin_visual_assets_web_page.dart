@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/admin_visual_assets_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../data/models/admin_visual_assets_models.dart';
+import '../../l10n/six_i18n.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
@@ -1221,7 +1222,7 @@ class _SlotCard extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    slot.labelFallback,
+                    texts.slotTitle(context, slot),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
@@ -2311,7 +2312,7 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
 
     return _VisualAssetsDialogTheme(
       child: AlertDialog(
-        title: Text(texts.uploadTitle(widget.slot.labelFallback)),
+        title: Text(texts.uploadTitle(texts.slotTitle(context, widget.slot))),
       content: SizedBox(
         width: 720,
         child: SingleChildScrollView(
@@ -2560,7 +2561,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
     return _VisualAssetsDialogTheme(
       child: AlertDialog(
-        title: Text('${texts.history} · ${widget.slot.labelFallback}'),
+        title: Text('${texts.history} · ${texts.slotTitle(context, widget.slot)}'),
       content: SizedBox(
         width: 780,
         height: 520,
@@ -2887,6 +2888,48 @@ class _VisualAssetsTexts {
 
   String _pick(String pt, String en, String es) =>
       language == 'en' ? en : language == 'es' ? es : pt;
+
+  String slotTitle(BuildContext context, AdminVisualAssetSlotPanel slot) {
+    final labels = <String, List<String>>{
+      'WEB_DEVOLUCOES_HEADER': [
+        'Web · Devoluções e trocas',
+        'Web · Returns and exchanges',
+        'Web · Devoluciones y cambios',
+      ],
+      'WEB_CAIXA_HEADER': ['Web · Caixa', 'Web · Cash register', 'Web · Caja'],
+      'WEB_ASSISTENCIAS_HEADER': [
+        'Web · Assistências técnicas',
+        'Web · Technical assistance',
+        'Web · Asistencias técnicas',
+      ],
+      'WEB_COMPRAS_HEADER': [
+        'Web · Compras',
+        'Web · Purchases',
+        'Web · Compras',
+      ],
+      'WEB_RESERVAS_HEADER': [
+        'Web · Reservas',
+        'Web · Reservations',
+        'Web · Reservas',
+      ],
+      'WEB_PRODUTOS_HEADER': [
+        'Web · Produtos',
+        'Web · Products',
+        'Web · Productos',
+      ],
+      'WEB_ESTOQUE_HEADER': [
+        'Web · Estoque',
+        'Web · Inventory',
+        'Web · Inventario',
+      ],
+    }[slot.slot];
+    return context.t(
+      slot.labelKey,
+      fallback: labels == null
+          ? slot.labelFallback
+          : _pick(labels[0], labels[1], labels[2]),
+    );
+  }
 
   String get checkingAccess => _pick(
         'Verificando acesso SUPER…',

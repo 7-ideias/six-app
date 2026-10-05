@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web/six_web_select_field.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
@@ -18,9 +21,9 @@ part 'compras_web_widgets.dart';
 
 /// Protótipo funcional do módulo de Compras para Flutter Web.
 ///
-/// Os dados permanecem somente em memória. Não há chamadas HTTP, persistência
-/// local ou integração com estoque/financeiro. O objetivo é validar a jornada e
-/// as funcionalidades antes da implementação definitiva no backend.
+/// As compras permanecem somente em memória, sem integração com estoque ou
+/// financeiro. O cabeçalho visual consome o catálogo de imagens do backend.
+/// O objetivo é validar a jornada antes da implementação definitiva das compras.
 class ComprasWebPage extends StatefulWidget {
   const ComprasWebPage({super.key, this.onBack});
 
@@ -353,185 +356,119 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<_CompraDemo> compras = _comprasFiltradas;
-    return LayoutBuilder(
-      key: const ValueKey<String>('compras-lista'),
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compacto = constraints.maxWidth < 840;
-        final EdgeInsets padding = EdgeInsets.fromLTRB(
-          compacto ? 16 : 26,
-          compacto ? 16 : 24,
-          compacto ? 16 : 26,
-          26,
-        );
-        return Column(
-          children: <Widget>[
-            Expanded(
-              child: CustomScrollView(
-                slivers: <Widget>[
-                  SliverPadding(
-                    padding: padding,
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate(<Widget>[
-                        _buildCabecalhoLista(compacto),
-                        const SizedBox(height: 14),
-                        const _CompraDemoBanner(),
-                        const SizedBox(height: 18),
-                        _buildIndicadores(compacto),
-                        const SizedBox(height: 18),
-                        _buildFiltros(compacto),
-                        const SizedBox(height: 14),
-                        if (compras.isEmpty)
-                          _CompraSurfaceCard(
-                            child: _CompraEmptyState(
-                              icon: Icons.search_off_outlined,
-                              title: context.comprasT(
-                                'compras.empty.filtered.title',
+    return SixWebPageShell(
+      child: LayoutBuilder(
+        key: const ValueKey<String>('compras-lista'),
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compacto = constraints.maxWidth < 840;
+          const EdgeInsets padding = EdgeInsets.only(bottom: 16);
+          return Column(
+            children: <Widget>[
+              Expanded(
+                child: CustomScrollView(
+                  slivers: <Widget>[
+                    SliverPadding(
+                      padding: padding,
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate(<Widget>[
+                          _buildCabecalhoLista(compacto),
+                          const SizedBox(height: 14),
+                          const _CompraDemoBanner(),
+                          const SizedBox(height: 18),
+                          _buildIndicadores(compacto),
+                          const SizedBox(height: 18),
+                          _buildFiltros(compacto),
+                          const SizedBox(height: 14),
+                          if (compras.isEmpty)
+                            _CompraSurfaceCard(
+                              child: _CompraEmptyState(
+                                icon: Icons.search_off_outlined,
+                                title: context.comprasT(
+                                  'compras.empty.filtered.title',
+                                ),
+                                description: context.comprasT(
+                                  'compras.empty.filtered.description',
+                                ),
+                                action: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _buscaController.clear();
+                                      _filtroStatus = _CompraFiltroStatus.todos;
+                                      _periodo = _CompraPeriodo.todos;
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.filter_alt_off_outlined,
+                                  ),
+                                  label: Text(
+                                    context.comprasT('compras.filters.clear'),
+                                  ),
+                                ),
                               ),
-                              description: context.comprasT(
-                                'compras.empty.filtered.description',
-                              ),
-                              action: OutlinedButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _buscaController.clear();
-                                    _filtroStatus = _CompraFiltroStatus.todos;
-                                    _periodo = _CompraPeriodo.todos;
-                                  });
-                                },
-                                icon: const Icon(Icons.filter_alt_off_outlined),
-                                label: Text(
-                                  context.comprasT('compras.filters.clear'),
+                            )
+                          else
+                            ...compras.indexed.map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _buildCompraCard(
+                                  compra: entry.$2,
+                                  compacto: compacto,
                                 ),
                               ),
                             ),
-                          )
-                        else
-                          ...compras.indexed.map(
-                            (entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _buildCompraCard(
-                                compra: entry.$2,
-                                compacto: compacto,
-                              ),
-                            ),
-                          ),
-                      ]),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: compacto ? 16 : 26,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: tokens.surface,
-                border: Border(top: BorderSide(color: tokens.cardBorder)),
-              ),
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 12,
-                runSpacing: 8,
-                children: <Widget>[
-                  Text(
-                    context
-                        .comprasT('compras.footer.count')
-                        .replaceAll('{count}', compras.length.toString()),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: tokens.secondaryText,
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: compacto ? 16 : 26,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  border: Border(top: BorderSide(color: tokens.cardBorder)),
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    Text(
+                      context
+                          .comprasT('compras.footer.count')
+                          .replaceAll('{count}', compras.length.toString()),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: _redefinirDemonstracao,
-                    icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                    label: Text(context.comprasT('compras.reset.action')),
-                  ),
-                ],
+                    TextButton.icon(
+                      onPressed: _redefinirDemonstracao,
+                      icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                      label: Text(context.comprasT('compras.reset.action')),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
   Widget _buildCabecalhoLista(bool compacto) {
-    final ThemeData theme = Theme.of(context);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget texto = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            if (widget.onBack != null) ...<Widget>[
-              IconButton(
-                tooltip: context.comprasT('common.back'),
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
-              const SizedBox(width: 4),
-            ],
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: tokens.selectedBackground,
-                borderRadius: BorderRadius.circular(13),
-                border: Border.all(color: tokens.selectedBorder),
-              ),
-              child: Icon(
-                Icons.shopping_cart_outlined,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    context.comprasT('compras.title'),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    context.comprasT('compras.subtitle'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: tokens.secondaryText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-    if (compacto) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          texto,
-          const SizedBox(height: 14),
-          FilledButton.icon(
-            onPressed: _novaCompra,
-            icon: const Icon(Icons.add_rounded),
-            label: Text(context.comprasT('compras.new')),
-          ),
-        ],
-      );
-    }
-    return Row(
-      children: <Widget>[
-        Expanded(child: texto),
-        const SizedBox(width: 18),
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.compras,
+      icon: Icons.shopping_cart_outlined,
+      title: context.comprasT('compras.title'),
+      subtitle: context.comprasT('compras.subtitle'),
+      onBack: widget.onBack,
+      actions: <Widget>[
         FilledButton.icon(
           onPressed: _novaCompra,
           icon: const Icon(Icons.add_rounded),

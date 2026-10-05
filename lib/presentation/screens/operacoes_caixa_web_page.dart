@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/di/caixa_module.dart';
 import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../data/models/caixa_models.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -15,12 +16,15 @@ import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/web/six_managed_web_hero.dart';
 import '../components/web/six_web_cash_movement_cancel_dialog.dart';
 import '../components/web/six_web_cash_session_close_dialog.dart';
 import '../components/web/six_web_operational_launch_dialog.dart';
+import '../components/web/six_web_operational_texts.dart';
 import '../components/web/six_web_select_field.dart';
-import 'consulta_vendas_web_page.dart';
 import '../components/web_dashboard_widgets.dart';
+import 'consulta_vendas_web_page.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 
 enum _OperacoesCaixaFiltroModo { todosOsCaixas, porCaixa }
@@ -490,7 +494,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               key: const ValueKey<String>('operacoes-caixa-content'),
               child: SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 1120;
@@ -573,35 +577,37 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               ),
             );
 
-    return Material(
-      color: tokens.workspaceBackground,
-      child: Theme(
-        data: theme.copyWith(
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: _outlinedButtonStyle(theme),
+    return SixWebPageShell(
+      child: Material(
+        color: tokens.workspaceBackground,
+        child: Theme(
+          data: theme.copyWith(
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: _outlinedButtonStyle(theme),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: _filledButtonStyle(theme),
+            ),
+            checkboxTheme: _checkboxTheme(theme),
           ),
-          filledButtonTheme: FilledButtonThemeData(
-            style: _filledButtonStyle(theme),
-          ),
-          checkboxTheme: _checkboxTheme(theme),
-        ),
-        child: Column(
-          children: <Widget>[
-            _buildHeader(theme),
-            Expanded(
-              child: AnimatedContainer(
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
-                color: tokens.workspaceBackground,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: body,
+          child: Column(
+            children: <Widget>[
+              _buildHeader(theme),
+              Expanded(
+                child: AnimatedContainer(
+                  duration: WebThemeTokens.transitionDuration,
+                  curve: WebThemeTokens.transitionCurve,
+                  color: tokens.workspaceBackground,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: body,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -637,9 +643,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             : _temCaixaAberto
             ? 'Caixa aberto'
             : 'Aguardando abertura';
-    return SixWebDashboardHeader(
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.caixa,
       icon: Icons.point_of_sale_rounded,
-      title: 'Operações de caixa',
+      title: SixWebOperationalTexts.title(context, WebHeaderAssetPage.caixa),
       subtitle: '$empresa • $movimentos movimento(s) • $subtituloStatus',
       onBack: widget.embedded && widget.onBack == null ? null : _sairDaTela,
       actions: <Widget>[
