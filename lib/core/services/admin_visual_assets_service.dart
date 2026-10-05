@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../../data/models/admin_visual_assets_models.dart';
+import '../../data/models/web_hero_appearance.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
@@ -24,6 +25,39 @@ class AdminVisualAssetsService {
       'accept': 'application/json',
       'Authorization': 'Bearer $token',
     };
+  }
+
+  Future<WebHeroAppearance> appearance() async {
+    final response = await _client.get(
+      Uri.parse(
+        '${AppConfig.baseUrl}/private/api/admin/visual-assets/web-hero-appearance',
+      ),
+      headers: await _headers(),
+    );
+    return WebHeroAppearance.fromJson(_map(response));
+  }
+
+  Future<WebHeroAppearance> saveAppearance(WebHeroAppearance value) async {
+    final response = await _client.put(
+      Uri.parse(
+        '${AppConfig.baseUrl}/private/api/admin/visual-assets/web-hero-appearance',
+      ),
+      headers: {...await _headers(), 'content-type': 'application/json'},
+      body: jsonEncode(value.toJson()),
+    );
+    return WebHeroAppearance.fromJson(_map(response));
+  }
+
+  Future<void> delete(String id, {String? subsegment}) async {
+    final response = await _client.delete(
+      Uri.parse(
+        '${AppConfig.baseUrl}/private/api/admin/visual-assets/${Uri.encodeComponent(id)}',
+      ).replace(
+        queryParameters: {if (_has(subsegment)) 'subsegmento': subsegment!},
+      ),
+      headers: await _headers(),
+    );
+    _decode(response);
   }
 
   Future<AdminVisualAssetPanel> panel({
@@ -64,9 +98,8 @@ class AdminVisualAssetsService {
     return decoded
         .whereType<Map>()
         .map(
-          (Map item) => AdminVisualAssetCompany.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
+          (Map item) =>
+              AdminVisualAssetCompany.fromJson(Map<String, dynamic>.from(item)),
         )
         .toList(growable: false);
   }
@@ -101,9 +134,8 @@ class AdminVisualAssetsService {
     return decoded
         .whereType<Map>()
         .map(
-          (Map item) => AdminVisualAssetItem.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
+          (Map item) =>
+              AdminVisualAssetItem.fromJson(Map<String, dynamic>.from(item)),
         )
         .toList(growable: false);
   }

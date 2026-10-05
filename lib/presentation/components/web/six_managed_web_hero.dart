@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/web_header_assets_model.dart';
+import '../../../data/models/web_hero_appearance.dart';
+import 'six_web_hero_gradient.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../controllers/web_header_assets_context_controller.dart';
 import '../../theme/web_theme_tokens.dart';
@@ -54,6 +56,12 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
     return AnimatedBuilder(
       animation: _assets,
       builder: (BuildContext context, Widget? _) {
+        final WebHeroAppearance appearance =
+            _assets.assets?.appearance ?? const WebHeroAppearance();
+        final WebHeroFade fade =
+            theme.brightness == Brightness.dark
+                ? appearance.dark
+                : appearance.light;
         final String? resolvedUrl =
             _assets.assets?.asset(widget.page)?.imagemUrl;
         final String? version = _assets.assetsVersion;
@@ -122,15 +130,10 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
                       child: IgnorePointer(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: <Color>[
-                                tokens.surface,
-                                tokens.surface.withValues(alpha: 0.95),
-                                tokens.surface.withValues(
-                                  alpha: compact ? 0.70 : 0.12,
-                                ),
-                              ],
-                              stops: const <double>[0, 0.42, 1],
+                            gradient: sixWebHeroGradient(
+                              tokens.surface,
+                              fade,
+                              compact: compact,
                             ),
                           ),
                         ),
