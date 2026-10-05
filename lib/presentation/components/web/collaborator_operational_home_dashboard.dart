@@ -6,6 +6,7 @@ import '../../../data/models/venda_nao_liquidada_models.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../../providers/colaborador_home_operacional_provider.dart';
 import '../../../providers/locale_settings_provider.dart';
+import '../../layouts/six_web_page_shell.dart';
 import '../../theme/web_theme_tokens.dart';
 import '../web_dashboard_widgets.dart';
 
@@ -63,7 +64,7 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
           ),
         ),
         if (showSales) ...<Widget>[
-          const SizedBox(height: 16),
+          SixWebPageShell.sectionGap,
           SixWebEntry(
             order: 1,
             child: _SalesOverview(
@@ -74,7 +75,7 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
           ),
         ],
         if (showServices || showReservations) ...<Widget>[
-          const SizedBox(height: 16),
+          SixWebPageShell.sectionGap,
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool stack =
@@ -99,7 +100,7 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
                   children: <Widget>[
                     if (showServices) SixWebEntry(order: 2, child: services),
                     if (showServices && showReservations)
-                      const SizedBox(height: 16),
+                      SixWebPageShell.sectionGap,
                     if (showReservations)
                       SixWebEntry(order: 3, child: reservations),
                   ],
@@ -113,7 +114,7 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
                     flex: 7,
                     child: SixWebEntry(order: 2, child: services),
                   ),
-                  const SizedBox(width: 16),
+                  SixWebPageShell.columnGap,
                   Expanded(
                     flex: 4,
                     child: SixWebEntry(order: 3, child: reservations),
@@ -156,11 +157,11 @@ class _OperationalLoading extends StatelessWidget {
             children: <Widget>[
               const SixWebEntry(order: 0, child: _LoadingAttentionOverview()),
               if (showSales) ...<Widget>[
-                const SizedBox(height: 16),
+                SixWebPageShell.sectionGap,
                 const SixWebEntry(order: 1, child: _LoadingSalesOverview()),
               ],
               if (showServices || showReservations) ...<Widget>[
-                const SizedBox(height: 16),
+                SixWebPageShell.sectionGap,
                 if (stack)
                   Column(
                     children: <Widget>[
@@ -170,7 +171,7 @@ class _OperationalLoading extends StatelessWidget {
                           child: _LoadingServicesOverview(),
                         ),
                       if (showServices && showReservations)
-                        const SizedBox(height: 16),
+                        SixWebPageShell.sectionGap,
                       if (showReservations)
                         const SixWebEntry(
                           order: 3,
@@ -189,7 +190,7 @@ class _OperationalLoading extends StatelessWidget {
                           child: _LoadingServicesOverview(),
                         ),
                       ),
-                      SizedBox(width: 16),
+                      SixWebPageShell.columnGap,
                       Expanded(
                         flex: 4,
                         child: SixWebEntry(
@@ -685,7 +686,7 @@ class _LoadingReservationsOverview extends StatelessWidget {
               Expanded(child: _LoadingReservationMainMetric()),
             ],
           ),
-          const SizedBox(height: 16),
+          SixWebPageShell.sectionGap,
           const _LoadingStatusBars(items: 4),
         ],
       ),
@@ -2042,7 +2043,7 @@ class _ReservationsOverview extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SixWebPageShell.sectionGap,
                   for (int index = 0; index < entries.length; index++)
                     Padding(
                       padding: EdgeInsets.only(

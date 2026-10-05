@@ -62,7 +62,11 @@ class PerfilNegocioService {
       );
   Future<WebHeaderAssetsModel> webHeaderAssets(String empresaId) async =>
       WebHeaderAssetsModel.fromJson(
-        await _request('GET', '/web-header/assets', empresaId),
+        await _request(
+          'GET',
+          '/web-header/assets?incluirOperacionais=true',
+          empresaId,
+        ),
       );
 
   Future<PerfilNegocioEmpresaModel> salvar(

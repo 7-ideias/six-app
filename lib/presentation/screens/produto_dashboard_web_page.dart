@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/core/di/catalog_health_module.dart';
 import 'package:sixpos/data/models/catalog_health_model.dart';
 import 'package:sixpos/data/services/catalog_health/catalog_health_api_client.dart';
@@ -98,137 +101,145 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
     final bool canOpenLabels =
         permissions.podeAcessarEtiquetas && onOpenEtiquetas != null;
 
-    return Material(
-      color: WebThemeTokens.of(context).workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          SixWebDashboardHeader(
-            icon: Icons.inventory_2_outlined,
-            title: context.t('catalogHub.web.title', fallback: 'Produtos'),
-            subtitle: context.t(
-              'catalogHub.web.subtitle',
-              fallback:
-                  'Cuide da qualidade do catálogo e acesse cadastros, categorias e etiquetas.',
-            ),
-            onBack: onBack,
-            actions: <Widget>[
-              OutlinedButton.icon(
-                onPressed: provider.isLoading ? null : provider.reload,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+    return SixWebPageShell(
+      child: Material(
+        color: WebThemeTokens.of(context).workspaceBackground,
+        child: Column(
+          children: <Widget>[
+            SixManagedWebHero(
+              page: WebHeaderAssetPage.produtos,
+              icon: Icons.inventory_2_outlined,
+              title: context.t('catalogHub.web.title', fallback: 'Produtos'),
+              subtitle: context.t(
+                'catalogHub.web.subtitle',
+                fallback:
+                    'Cuide da qualidade do catálogo e acesse cadastros, categorias e etiquetas.',
               ),
-              if (canCreate && (onNovoProduto != null || onNovoServico != null))
-                PopupMenuButton<_CatalogCreateAction>(
-                  onSelected: (_CatalogCreateAction action) {
-                    switch (action) {
-                      case _CatalogCreateAction.product:
-                        onNovoProduto?.call();
-                      case _CatalogCreateAction.service:
-                        onNovoServico?.call();
-                    }
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<_CatalogCreateAction>>[
-                        if (onNovoProduto != null)
-                          PopupMenuItem<_CatalogCreateAction>(
-                            value: _CatalogCreateAction.product,
-                            child: ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.inventory_2_outlined),
-                              title: Text(
-                                context.t(
-                                  'catalogHub.actions.newProduct',
-                                  fallback: 'Novo produto',
+              onBack: onBack,
+              actions: <Widget>[
+                OutlinedButton.icon(
+                  onPressed: provider.isLoading ? null : provider.reload,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(
+                    context.t('common.refresh', fallback: 'Atualizar'),
+                  ),
+                ),
+                if (canCreate &&
+                    (onNovoProduto != null || onNovoServico != null))
+                  PopupMenuButton<_CatalogCreateAction>(
+                    onSelected: (_CatalogCreateAction action) {
+                      switch (action) {
+                        case _CatalogCreateAction.product:
+                          onNovoProduto?.call();
+                        case _CatalogCreateAction.service:
+                          onNovoServico?.call();
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<_CatalogCreateAction>>[
+                          if (onNovoProduto != null)
+                            PopupMenuItem<_CatalogCreateAction>(
+                              value: _CatalogCreateAction.product,
+                              child: ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(Icons.inventory_2_outlined),
+                                title: Text(
+                                  context.t(
+                                    'catalogHub.actions.newProduct',
+                                    fallback: 'Novo produto',
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (onNovoServico != null)
-                          PopupMenuItem<_CatalogCreateAction>(
-                            value: _CatalogCreateAction.service,
-                            child: ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(
-                                Icons.home_repair_service_outlined,
-                              ),
-                              title: Text(
-                                context.t(
-                                  'catalogHub.actions.newService',
-                                  fallback: 'Novo serviço',
+                          if (onNovoServico != null)
+                            PopupMenuItem<_CatalogCreateAction>(
+                              value: _CatalogCreateAction.service,
+                              child: ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(
+                                  Icons.home_repair_service_outlined,
+                                ),
+                                title: Text(
+                                  context.t(
+                                    'catalogHub.actions.newService',
+                                    fallback: 'Novo serviço',
+                                  ),
                                 ),
                               ),
                             ),
+                        ],
+                    child: IgnorePointer(
+                      child: FilledButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.add_rounded),
+                        label: Text(
+                          context.t(
+                            'catalogHub.actions.newItem',
+                            fallback: 'Novo item',
                           ),
-                      ],
-                  child: IgnorePointer(
-                    child: FilledButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.add_rounded),
-                      label: Text(
-                        context.t(
-                          'catalogHub.actions.newItem',
-                          fallback: 'Novo item',
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: provider.reload,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
-                children: <Widget>[
-                  if (!permissions.podeAcessarCatalogo)
-                    _CatalogStatePanel(
-                      icon: Icons.lock_outline_rounded,
-                      title: context.t(
-                        'catalogHub.states.noAccessTitle',
-                        fallback: 'Acesso ao catálogo indisponível',
-                      ),
-                      description: context.t(
-                        'catalogHub.states.noAccessDescription',
-                        fallback:
-                            'Seu perfil não permite visualizar produtos e serviços deste comércio.',
-                      ),
-                    )
-                  else ...<Widget>[
-                    _healthState(context, provider, canManage: canManage),
-                    const SizedBox(height: 20),
-                    SixWebEntry(
-                      order: 2,
-                      child: _CatalogManagementSection(
-                        canManage: canManage,
-                        canOpenLabels: canOpenLabels,
-                        onOpenProducts: onOpenListaCompleta,
-                        onOpenServices:
-                            onOpenListaServicos ?? onOpenListaCompleta,
-                        onOpenCategories: onOpenCategorias,
-                        onOpenLabels: onOpenEtiquetas,
-                        onOpenCatalog: onOpenCatalogoVirtual,
-                      ),
-                    ),
-                    if (canViewStock && onOpenEstoque != null) ...<Widget>[
-                      const SizedBox(height: 20),
-                      SixWebEntry(
-                        order: 3,
-                        child: _StockBoundaryCard(
-                          summary: provider.summary,
-                          onOpenStock: onOpenEstoque!,
+              ],
+            ),
+            Expanded(
+              child: SixWebPageBody(
+                child: RefreshIndicator(
+                  onRefresh: provider.reload,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: SixWebPageShell.scrollPadding,
+                    children: <Widget>[
+                      if (!permissions.podeAcessarCatalogo)
+                        _CatalogStatePanel(
+                          icon: Icons.lock_outline_rounded,
+                          title: context.t(
+                            'catalogHub.states.noAccessTitle',
+                            fallback: 'Acesso ao catálogo indisponível',
+                          ),
+                          description: context.t(
+                            'catalogHub.states.noAccessDescription',
+                            fallback:
+                                'Seu perfil não permite visualizar produtos e serviços deste comércio.',
+                          ),
+                        )
+                      else ...<Widget>[
+                        _healthState(context, provider, canManage: canManage),
+                        SixWebPageShell.sectionGap,
+                        SixWebEntry(
+                          order: 2,
+                          child: _CatalogManagementSection(
+                            canManage: canManage,
+                            canOpenLabels: canOpenLabels,
+                            onOpenProducts: onOpenListaCompleta,
+                            onOpenServices:
+                                onOpenListaServicos ?? onOpenListaCompleta,
+                            onOpenCategories: onOpenCategorias,
+                            onOpenLabels: onOpenEtiquetas,
+                            onOpenCatalog: onOpenCatalogoVirtual,
+                          ),
                         ),
-                      ),
+                        if (canViewStock && onOpenEstoque != null) ...<Widget>[
+                          SixWebPageShell.sectionGap,
+                          SixWebEntry(
+                            order: 3,
+                            child: _StockBoundaryCard(
+                              summary: provider.summary,
+                              onOpenStock: onOpenEstoque!,
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -310,10 +321,9 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
           child: _CatalogHealthOverview(
             summary: summary,
             onOpenProducts: canManage ? onOpenListaCompleta : null,
-            onOpenServices:
-                canManage
-                    ? (onOpenListaServicos ?? onOpenListaCompleta)
-                    : null,
+            onOpenServices: canManage
+                ? (onOpenListaServicos ?? onOpenListaCompleta)
+                : null,
           ),
         ),
         const SizedBox(height: 16),
@@ -557,7 +567,7 @@ class _CatalogHealthDetails extends StatelessWidget {
                     index++
                   ) ...<Widget>[
                     cards[index],
-                    if (index != cards.length - 1) const SizedBox(height: 10),
+                    if (index != cards.length - 1) SixWebPageShell.sectionGap,
                   ],
                 ],
               );
@@ -566,7 +576,7 @@ class _CatalogHealthDetails extends StatelessWidget {
               children: <Widget>[
                 for (int index = 0; index < cards.length; index++) ...<Widget>[
                   Expanded(child: cards[index]),
-                  if (index != cards.length - 1) const SizedBox(width: 10),
+                  if (index != cards.length - 1) SixWebPageShell.columnGap,
                 ],
               ],
             );

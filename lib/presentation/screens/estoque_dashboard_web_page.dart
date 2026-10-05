@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
+import 'package:sixpos/presentation/components/web/six_web_operational_texts.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/estoque_dashboard_model.dart';
 import 'package:sixpos/data/models/stock_movement_model.dart';
@@ -68,6 +72,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
       ),
     );
   }
+
   String _currency(double value) => _money.format(value);
   String _whole(double value) => _number.format(value.round());
   String _qty(double value) =>
@@ -87,71 +92,81 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Material(
-      color: tokens.workspaceBackground,
-      child: FutureBuilder<EstoqueDashboardModel>(
-        future: _future,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<EstoqueDashboardModel> snapshot,
-        ) {
-          final Widget child;
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            child = _loading();
-          } else if (snapshot.hasError) {
-            child = _error(snapshot.error);
-          } else {
-            final EstoqueDashboardModel data = snapshot.data ?? _empty();
-            child = data.isEmpty ? _emptyState() : _dashboard(data);
-          }
+    return SixWebPageShell(
+      child: Material(
+        color: tokens.workspaceBackground,
+        child: FutureBuilder<EstoqueDashboardModel>(
+          future: _future,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<EstoqueDashboardModel> snapshot,
+          ) {
+            final Widget child;
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              child = _loading();
+            } else if (snapshot.hasError) {
+              child = _error(snapshot.error);
+            } else {
+              final EstoqueDashboardModel data = snapshot.data ?? _empty();
+              child = data.isEmpty ? _emptyState() : _dashboard(data);
+            }
 
-          return Column(
-            children: <Widget>[
-              SixWebDashboardHeader(
-                icon: Icons.warehouse_outlined,
-                title: 'Estoque',
-                subtitle:
-                    'Controle operacional de saldos, reposição, rupturas e movimentações do estoque.',
-                onBack: widget.onBack,
-                actions: <Widget>[
-                  OutlinedButton.icon(
-                    onPressed: _reload,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Atualizar'),
-                    style: _headerOutlinedButtonStyle(tokens),
+            return Column(
+              children: <Widget>[
+                SixManagedWebHero(
+                  page: WebHeaderAssetPage.estoque,
+                  icon: Icons.warehouse_outlined,
+                  title: SixWebOperationalTexts.title(
+                    context,
+                    WebHeaderAssetPage.estoque,
                   ),
-                  FilledButton.icon(
-                    onPressed:
-                        widget.onEntradaEstoque ??
-                        () => _openMovement(StockMovementType.entry),
-                    icon: const Icon(Icons.add_box_outlined),
-                    label: const Text('Entrada'),
+                  subtitle: SixWebOperationalTexts.subtitle(
+                    context,
+                    WebHeaderAssetPage.estoque,
                   ),
-                  OutlinedButton.icon(
-                    onPressed:
-                        widget.onSaidaEstoque ??
-                        () => _openMovement(StockMovementType.exit),
-                    icon: const Icon(Icons.indeterminate_check_box_outlined),
-                    label: const Text('Saída'),
-                    style: _headerOutlinedButtonStyle(tokens),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: widget.onOpenListaCompleta,
-                    icon: const Icon(Icons.table_rows_rounded),
-                    label: const Text('Produtos'),
-                    style: _headerOutlinedButtonStyle(tokens),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  child: child,
+                  onBack: widget.onBack,
+                  actions: <Widget>[
+                    OutlinedButton.icon(
+                      onPressed: _reload,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Atualizar'),
+                      style: _headerOutlinedButtonStyle(tokens),
+                    ),
+                    FilledButton.icon(
+                      onPressed:
+                          widget.onEntradaEstoque ??
+                          () => _openMovement(StockMovementType.entry),
+                      icon: const Icon(Icons.add_box_outlined),
+                      label: const Text('Entrada'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed:
+                          widget.onSaidaEstoque ??
+                          () => _openMovement(StockMovementType.exit),
+                      icon: const Icon(Icons.indeterminate_check_box_outlined),
+                      label: const Text('Saída'),
+                      style: _headerOutlinedButtonStyle(tokens),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: widget.onOpenListaCompleta,
+                      icon: const Icon(Icons.table_rows_rounded),
+                      label: const Text('Produtos'),
+                      style: _headerOutlinedButtonStyle(tokens),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          );
-        },
+                Expanded(
+                  child: SixWebPageBody(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -180,27 +195,29 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     builder: (BuildContext context, BoxConstraints constraints) {
       final bool compact = constraints.maxWidth < 1180;
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: SixWebPageShell.scrollPadding,
         child: Column(
           children: <Widget>[
             _loadingKpis(compact),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: const <Widget>[
                 SixWebLoadingBlock(height: 280),
                 SixWebLoadingBlock(height: 280),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: const <Widget>[
                 SixWebLoadingBlock(height: 240),
                 SixWebLoadingBlock(height: 240),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             const SixWebLoadingBlock(height: 240),
           ],
         ),
@@ -214,8 +231,8 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     itemCount: 8,
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: compact ? 2 : 4,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 14,
+      crossAxisSpacing: SixWebPageShell.sectionSpacing,
+      mainAxisSpacing: SixWebPageShell.sectionSpacing,
       mainAxisExtent: 118,
     ),
     itemBuilder:
@@ -229,13 +246,14 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     builder: (BuildContext context, BoxConstraints constraints) {
       final bool compact = constraints.maxWidth < 1180;
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: SixWebPageShell.scrollPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _kpis(data, compact),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(
@@ -258,8 +276,9 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(order: 10, child: _alerts(data.alertas)),
@@ -269,8 +288,9 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(
@@ -283,7 +303,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             SixWebEntry(
               order: 14,
               child: _movements(data.movimentacoesRecentes),
@@ -352,8 +372,8 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 118,
       ),
       itemBuilder: (BuildContext context, int index) {

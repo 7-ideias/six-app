@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
@@ -25,8 +28,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
   bool _requestStarted = false;
   bool _loading = false;
   bool _loadFailed = false;
-  List<AdminUsuarioEmpresaAtiva> _users =
-      const <AdminUsuarioEmpresaAtiva>[];
+  List<AdminUsuarioEmpresaAtiva> _users = const <AdminUsuarioEmpresaAtiva>[];
   AdminUsuarioEmpresaAtiva? _selectedUser;
 
   @override
@@ -50,18 +52,15 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
   void _onSearchChanged() => setState(() {});
 
   void _startRequestIfAllowed() {
-    final bool isSuper = context
-        .read<ColaboradorAutorizacoesProvider>()
-        .ehSuperUsuario;
+    final bool isSuper =
+        context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
     if (!isSuper || _requestStarted) return;
     _requestStarted = true;
     _loadUsers();
   }
 
   Future<void> _loadUsers() async {
-    if (!context
-        .read<ColaboradorAutorizacoesProvider>()
-        .ehSuperUsuario) {
+    if (!context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario) {
       return;
     }
     setState(() {
@@ -104,9 +103,8 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isSuper = context
-        .watch<ColaboradorAutorizacoesProvider>()
-        .ehSuperUsuario;
+    final bool isSuper =
+        context.watch<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
     if (isSuper && !_requestStarted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startRequestIfAllowed();
@@ -130,47 +128,53 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 
     return Material(
       color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          SixWebDashboardHeader(
-            icon: Icons.hub_outlined,
-            title: context.t(
-              'usuariosSixo.title',
-              fallback: 'Usuários do Sixo',
-            ),
-            subtitle: context.t(
-              'usuariosSixo.subtitle',
-              fallback:
-                  'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
-            ),
-            actions: <Widget>[
-              if (isSuper)
-                OutlinedButton.icon(
-                  onPressed: _loading ? null : _loadUsers,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(
-                    context.t('common.refresh', fallback: 'Atualizar'),
-                  ),
-                ),
-            ],
-          ),
-          Expanded(
-            child: isSuper
-                ? _buildAllowedContent(context)
-                : _WebMessageState(
-                    icon: Icons.lock_outline_rounded,
-                    title: context.t(
-                      'usuariosSixo.forbiddenTitle',
-                      fallback: 'Acesso exclusivo para SUPER',
-                    ),
-                    message: context.t(
-                      'usuariosSixo.forbiddenMessage',
-                      fallback:
-                          'Seu perfil não possui permissão para consultar os usuários do Sixo.',
+      child: SixWebPageShell(
+        child: Column(
+          children: <Widget>[
+            SixManagedWebHero(
+              page: WebHeaderAssetPage.usuariosSixo,
+              icon: Icons.hub_outlined,
+              title: context.t(
+                'usuariosSixo.title',
+                fallback: 'Usuários do Sixo',
+              ),
+              subtitle: context.t(
+                'usuariosSixo.subtitle',
+                fallback:
+                    'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
+              ),
+              actions: <Widget>[
+                if (isSuper)
+                  OutlinedButton.icon(
+                    onPressed: _loading ? null : _loadUsers,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(
+                      context.t('common.refresh', fallback: 'Atualizar'),
                     ),
                   ),
-          ),
-        ],
+              ],
+            ),
+            Expanded(
+              child: SixWebPageBody(
+                child:
+                    isSuper
+                        ? _buildAllowedContent(context)
+                        : _WebMessageState(
+                          icon: Icons.lock_outline_rounded,
+                          title: context.t(
+                            'usuariosSixo.forbiddenTitle',
+                            fallback: 'Acesso exclusivo para SUPER',
+                          ),
+                          message: context.t(
+                            'usuariosSixo.forbiddenMessage',
+                            fallback:
+                                'Seu perfil não possui permissão para consultar os usuários do Sixo.',
+                          ),
+                        ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -178,25 +182,19 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
   Widget _buildAllowedContent(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1360),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: <Widget>[
-                  _buildToolbar(context, constraints.maxWidth < 720),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: _buildContent(context),
-                    ),
-                  ),
-                ],
+        return Padding(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: <Widget>[
+              _buildToolbar(context, constraints.maxWidth < 720),
+              SixWebPageShell.sectionGap,
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: _buildContent(context),
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -230,13 +228,14 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
             fallback: 'Buscar por nome, e-mail, celular ou perfil',
           ),
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _searchController.text.isEmpty
-              ? null
-              : IconButton(
-                  onPressed: _searchController.clear,
-                  tooltip: context.t('common.clear', fallback: 'Limpar'),
-                  icon: const Icon(Icons.close_rounded),
-                ),
+          suffixIcon:
+              _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                    onPressed: _searchController.clear,
+                    tooltip: context.t('common.clear', fallback: 'Limpar'),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
           filled: true,
           fillColor: tokens.inputBackground,
           border: OutlineInputBorder(
@@ -255,7 +254,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
       return Column(
         children: <Widget>[
           SizedBox(height: 92, child: total),
-          const SizedBox(height: 12),
+          SixWebPageShell.sectionGap,
           search,
         ],
       );
@@ -263,7 +262,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
     return Row(
       children: <Widget>[
         SizedBox(width: 280, height: 92, child: total),
-        const SizedBox(width: 16),
+        SixWebPageShell.columnGap,
         Expanded(child: search),
       ],
     );
@@ -356,10 +355,8 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 
   String _roleLabel(BuildContext context, String role) {
     return switch (role.trim().toUpperCase()) {
-      'SUPER' || 'SUPER_USER' => context.t(
-        'usuariosSixo.role.super',
-        fallback: 'SUPER',
-      ),
+      'SUPER' ||
+      'SUPER_USER' => context.t('usuariosSixo.role.super', fallback: 'SUPER'),
       'ADMIN' || 'ADMINISTRADOR' => context.t(
         'usuariosSixo.role.admin',
         fallback: 'Administrador',
@@ -368,10 +365,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
         'usuariosSixo.role.collaborator',
         fallback: 'Colaborador',
       ),
-      'CLIENTE' => context.t(
-        'usuariosSixo.role.customer',
-        fallback: 'Cliente',
-      ),
+      'CLIENTE' => context.t('usuariosSixo.role.customer', fallback: 'Cliente'),
       _ => context.t('usuariosSixo.role.unknown', fallback: 'Não informado'),
     };
   }
@@ -391,9 +385,13 @@ class _WebSixoUserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String name = user.nomeExibicao.trim().isEmpty
-        ? context.t('usuariosSixo.userFallback', fallback: 'Usuário do Sixo')
-        : user.nomeExibicao.trim();
+    final String name =
+        user.nomeExibicao.trim().isEmpty
+            ? context.t(
+              'usuariosSixo.userFallback',
+              fallback: 'Usuário do Sixo',
+            )
+            : user.nomeExibicao.trim();
     return Semantics(
       container: true,
       button: true,
@@ -410,91 +408,96 @@ class _WebSixoUserCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Row(
-          children: <Widget>[
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: tokens.selectedBackground,
-              foregroundColor: tokens.info,
-              child: Text(
-                _initials(name),
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    name,
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: tokens.selectedBackground,
+                  foregroundColor: tokens.info,
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _WebUserMetadata(
+                        icon: Icons.fingerprint_rounded,
+                        value: _userIdentifier(user),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 3,
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      _WebMetadataChip(
+                        icon: Icons.mail_outline_rounded,
+                        value:
+                            user.email.trim().isEmpty
+                                ? context.t(
+                                  'usuariosSixo.noEmail',
+                                  fallback: 'E-mail não informado',
+                                )
+                                : user.email.trim(),
+                      ),
+                      _WebMetadataChip(
+                        icon: Icons.phone_outlined,
+                        value:
+                            user.celular.trim().isEmpty
+                                ? context.t(
+                                  'usuariosSixo.noPhone',
+                                  fallback: 'Celular não informado',
+                                )
+                                : user.celular.trim(),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.selectedBackground,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: tokens.selectedBorder),
+                  ),
+                  child: Text(
+                    roleLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: tokens.primaryText,
-                      fontSize: 15,
+                      color: tokens.info,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  _WebUserMetadata(
-                    icon: Icons.fingerprint_rounded,
-                    value: _userIdentifier(user),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 3,
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                children: <Widget>[
-                  _WebMetadataChip(
-                    icon: Icons.mail_outline_rounded,
-                    value: user.email.trim().isEmpty
-                        ? context.t(
-                            'usuariosSixo.noEmail',
-                            fallback: 'E-mail não informado',
-                          )
-                        : user.email.trim(),
-                  ),
-                  _WebMetadataChip(
-                    icon: Icons.phone_outlined,
-                    value: user.celular.trim().isEmpty
-                        ? context.t(
-                            'usuariosSixo.noPhone',
-                            fallback: 'Celular não informado',
-                          )
-                        : user.celular.trim(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: tokens.selectedBackground,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: tokens.selectedBorder),
-              ),
-              child: Text(
-                roleLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: tokens.info,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Icon(Icons.chevron_right_rounded, color: tokens.mutedText),
-          ],
+                const SizedBox(width: 10),
+                Icon(Icons.chevron_right_rounded, color: tokens.mutedText),
+              ],
             ),
           ),
         ),

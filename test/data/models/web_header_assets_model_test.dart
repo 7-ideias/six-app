@@ -34,11 +34,43 @@ void main() {
           'modoExibicao': 'HEADER_HERO',
           'imagemFallback': false,
         },
+        for (final WebHeaderAssetPage page in <WebHeaderAssetPage>[
+          WebHeaderAssetPage.devolucoes,
+          WebHeaderAssetPage.caixa,
+          WebHeaderAssetPage.assistencias,
+          WebHeaderAssetPage.compras,
+          WebHeaderAssetPage.reservas,
+          WebHeaderAssetPage.produtos,
+          WebHeaderAssetPage.estoque,
+          WebHeaderAssetPage.desempenho,
+          WebHeaderAssetPage.agendaFinanceira,
+          WebHeaderAssetPage.usuariosSixo,
+          WebHeaderAssetPage.inicio,
+        ])
+          <String, dynamic>{
+            'id': 'fallback-${page.backendCode}',
+            'pagina': page.backendCode,
+            'imagemUrl':
+                'https://assets.sixappback.com/atendimento/mobile/fallback/vendas-v1.webp?rev=1',
+            'modoExibicao': 'HEADER_HERO',
+            'imagemFallback': true,
+          },
       ],
     });
 
     expect(model.perfilNegocio.perfil.segmentoPrincipal, 'AUTOMOTIVO');
-    expect(model.assets.length, 2);
+    expect(model.assets.length, 13);
+    expect(model.asset(WebHeaderAssetPage.estoque)!.imagemFallback, isTrue);
+    expect(model.asset(WebHeaderAssetPage.desempenho)!.imagemFallback, isTrue);
+    expect(model.asset(WebHeaderAssetPage.inicio)!.imagemFallback, isTrue);
+    expect(
+      model.asset(WebHeaderAssetPage.agendaFinanceira)!.imagemFallback,
+      isTrue,
+    );
+    expect(
+      model.asset(WebHeaderAssetPage.usuariosSixo)!.imagemFallback,
+      isTrue,
+    );
 
     final WebHeaderAssetModel? clientes = model.asset(
       WebHeaderAssetPage.clientes,
@@ -89,7 +121,7 @@ void main() {
     expect(
       () => WebHeaderAssetModel.fromJson(<String, dynamic>{
         'id': 'invalido',
-        'pagina': 'ESTOQUE',
+        'pagina': 'PAGINA_FUTURA',
         'imagemUrl': 'https://assets.sixappback.com/web/estoque/hero-v1.png',
         'modoExibicao': 'HEADER_HERO',
         'imagemFallback': false,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
+import '../layouts/six_web_page_shell.dart';
 
 import 'admin_portal_components.dart';
 import 'admin_portal_texts.dart';
@@ -21,6 +22,7 @@ class AdminNavigationShell extends StatelessWidget {
     required this.refreshing,
     required this.loggingOut,
     required this.child,
+    this.standardPageSpacing = false,
   });
 
   final AdminPortalTexts texts;
@@ -32,6 +34,7 @@ class AdminNavigationShell extends StatelessWidget {
   final bool refreshing;
   final bool loggingOut;
   final Widget child;
+  final bool standardPageSpacing;
 
   static const double sidebarWidth = 252;
   static const double compactBreakpoint = 900;
@@ -65,6 +68,7 @@ class AdminNavigationShell extends StatelessWidget {
                     onOpenMenu: () => Scaffold.of(scaffoldContext).openDrawer(),
                     onRefresh: onRefresh,
                     onLogout: onLogout,
+                    standardPageSpacing: standardPageSpacing,
                     child: child,
                   ),
             ),
@@ -85,6 +89,7 @@ class AdminNavigationShell extends StatelessWidget {
                   loggingOut: loggingOut,
                   onRefresh: onRefresh,
                   onLogout: onLogout,
+                  standardPageSpacing: standardPageSpacing,
                   child: child,
                 ),
               ),
@@ -107,6 +112,7 @@ class _AdminNavigationMainArea extends StatelessWidget {
     required this.onLogout,
     required this.child,
     this.onOpenMenu,
+    this.standardPageSpacing = false,
   });
 
   final AdminPortalTexts texts;
@@ -118,6 +124,7 @@ class _AdminNavigationMainArea extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback? onOpenMenu;
   final Widget child;
+  final bool standardPageSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -216,22 +223,30 @@ class _AdminNavigationMainArea extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                compact ? AdminSpacing.lg : AdminSpacing.xl,
-                AdminSpacing.lg,
-                compact ? AdminSpacing.lg : AdminSpacing.xl,
-                AdminSpacing.xl,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AdminNavigationShell.maxContentWidth,
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
+            child:
+                standardPageSpacing
+                    ? SixWebPageShell(
+                      child: SingleChildScrollView(
+                        padding: SixWebPageShell.scrollPadding,
+                        child: child,
+                      ),
+                    )
+                    : SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? AdminSpacing.lg : AdminSpacing.xl,
+                        AdminSpacing.lg,
+                        compact ? AdminSpacing.lg : AdminSpacing.xl,
+                        AdminSpacing.xl,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: AdminNavigationShell.maxContentWidth,
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    ),
           ),
         ],
       ),
@@ -356,8 +371,7 @@ class _AdminNavigationSidebar extends StatelessWidget {
                   icon: Icons.image_search_rounded,
                   label: navigationTexts.visualAssets,
                   selected: currentRoute == '/admin/imagens-contextuais',
-                  onTap:
-                      () => _navigate(context, '/admin/imagens-contextuais'),
+                  onTap: () => _navigate(context, '/admin/imagens-contextuais'),
                 ),
               ],
               const Spacer(),

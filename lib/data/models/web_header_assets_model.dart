@@ -4,7 +4,18 @@ import 'perfil_negocio_model.dart';
 enum WebHeaderAssetPage {
   clientes('CLIENTES'),
   colaboradores('COLABORADORES'),
-  vendas('VENDAS');
+  vendas('VENDAS'),
+  devolucoes('DEVOLUCOES'),
+  caixa('CAIXA'),
+  assistencias('ASSISTENCIAS'),
+  compras('COMPRAS'),
+  reservas('RESERVAS'),
+  produtos('PRODUTOS'),
+  estoque('ESTOQUE'),
+  desempenho('DESEMPENHO'),
+  agendaFinanceira('AGENDA_FINANCEIRA'),
+  usuariosSixo('USUARIOS_SIXO'),
+  inicio('INICIO');
 
   const WebHeaderAssetPage(this.backendCode);
   final String backendCode;

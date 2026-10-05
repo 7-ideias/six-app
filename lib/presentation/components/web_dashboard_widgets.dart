@@ -538,11 +538,14 @@ class SixWebLoadingBlock extends StatelessWidget {
 List<Widget> sixWebResponsiveChildren({
   required bool compact,
   required List<Widget> children,
+  double spacing = 18,
 }) {
   final List<Widget> spaced = <Widget>[];
   for (int index = 0; index < children.length; index++) {
     if (index > 0) {
-      spaced.add(SizedBox(width: compact ? 0 : 18, height: compact ? 18 : 0));
+      spaced.add(
+        SizedBox(width: compact ? 0 : spacing, height: compact ? spacing : 0),
+      );
     }
     spaced.add(compact ? children[index] : Expanded(child: children[index]));
   }
@@ -552,14 +555,23 @@ List<Widget> sixWebResponsiveChildren({
 Widget sixWebResponsiveGroup({
   required bool compact,
   required List<Widget> children,
+  double spacing = 18,
 }) {
   if (compact) {
     return Column(
-      children: sixWebResponsiveChildren(compact: true, children: children),
+      children: sixWebResponsiveChildren(
+        compact: true,
+        children: children,
+        spacing: spacing,
+      ),
     );
   }
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
-    children: sixWebResponsiveChildren(compact: false, children: children),
+    children: sixWebResponsiveChildren(
+      compact: false,
+      children: children,
+      spacing: spacing,
+    ),
   );
 }

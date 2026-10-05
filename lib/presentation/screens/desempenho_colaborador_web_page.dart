@@ -3,8 +3,12 @@ import 'package:intl/intl.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/desempenho_colaborador_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/six_managed_web_hero.dart';
+import '../components/web/six_web_operational_texts.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 
 class DesempenhoColaboradorWebPage extends StatefulWidget {
@@ -133,98 +137,57 @@ class _DesempenhoColaboradorWebPageState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
-    return Material(
-      color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          _buildHeader(theme),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: _buildBody(theme),
+    return SixWebPageShell(
+      child: Material(
+        color: tokens.workspaceBackground,
+        child: Column(
+          children: <Widget>[
+            _buildHeader(),
+            Expanded(
+              child: SixWebPageBody(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: _buildBody(theme),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+  Widget _buildHeader() {
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.desempenho,
+      icon: Icons.trending_up_rounded,
+      title: SixWebOperationalTexts.title(
+        context,
+        WebHeaderAssetPage.desempenho,
       ),
-      child: Row(
-        children: <Widget>[
-          _headerIcon(theme, Icons.trending_up_rounded),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Desempenho do colaborador',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Resumo executivo de metas, vendas, serviços e atendimentos por participante.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
+      subtitle: SixWebOperationalTexts.subtitle(
+        context,
+        WebHeaderAssetPage.desempenho,
+      ),
+      onBack: widget.onBack,
+      actions: <Widget>[
+        OutlinedButton.icon(
+          onPressed: _load,
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(SixWebOperationalTexts.action(context, 'common.refresh')),
+          style: _outlinedCtaStyle(),
+        ),
+        FilledButton.icon(
+          onPressed: _saving ? null : () => _openGoalForm(),
+          icon: const Icon(Icons.add_rounded),
+          label: Text(
+            SixWebOperationalTexts.action(context, 'desempenho.newGoal'),
           ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Atualizar'),
-                style: _outlinedCtaStyle(),
-              ),
-              FilledButton.icon(
-                onPressed: _saving ? null : () => _openGoalForm(),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Nova meta'),
-                style: _filledCtaStyle(),
-              ),
-              if (widget.onBack != null)
-                IconButton.filledTonal(
-                  onPressed: widget.onBack,
-                  tooltip: 'Fechar',
-                  icon: const Icon(Icons.close_rounded),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _headerIcon(ThemeData theme, IconData icon) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        color: tokens.info.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Icon(icon, color: tokens.info, size: 28),
+          style: _filledCtaStyle(),
+        ),
+      ],
     );
   }
 
@@ -267,7 +230,7 @@ class _DesempenhoColaboradorWebPageState
                   color: tokens.secondaryText,
                 ),
               ),
-              const SizedBox(height: 14),
+              SixWebPageShell.sectionGap,
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
@@ -285,24 +248,24 @@ class _DesempenhoColaboradorWebPageState
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 1180;
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: SixWebPageShell.scrollPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _buildFilters(theme, compact),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               _buildKpis(theme, compact),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               if (compact) ...<Widget>[
                 _buildResultados(theme),
-                const SizedBox(height: 18),
+                SixWebPageShell.sectionGap,
                 _buildMetas(theme),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Expanded(flex: 7, child: _buildResultados(theme)),
-                    const SizedBox(width: 18),
+                    SixWebPageShell.columnGap,
                     Expanded(flex: 4, child: _buildMetas(theme)),
                   ],
                 ),
@@ -332,8 +295,8 @@ class _DesempenhoColaboradorWebPageState
             final DateTime now = DateTime.now();
             _setPeriod(now, now);
           }),
-          SizedBox(
-            width: compact ? 320 : 340,
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: compact ? 320 : 340),
             child: _SelectorButton(
               icon: Icons.badge_outlined,
               label: _selectedParticipantName,
@@ -468,8 +431,8 @@ class _DesempenhoColaboradorWebPageState
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 112,
       ),
       itemBuilder: (context, index) => _KpiCard(data: items[index]),

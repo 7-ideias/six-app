@@ -6,9 +6,13 @@ import 'package:provider/provider.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/models/devolucao_produto_models.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/services/devolucao_produto/devolucao_produto_api_client.dart';
 import '../../domain/services/devolucao_produto/devolucao_produto_service.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_managed_web_hero.dart';
+import '../components/web/six_web_operational_texts.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 
 class DevolucoesProdutosJornada extends StatefulWidget {
@@ -418,9 +422,11 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
         widget.web ? tokens!.workspaceBackground : theme.colorScheme.surface;
     final EdgeInsetsGeometry padding =
         widget.padding ??
-        EdgeInsets.fromLTRB(widget.web ? 24 : 16, 18, widget.web ? 24 : 16, 32);
+        (widget.web
+            ? SixWebPageShell.scrollPadding
+            : const EdgeInsets.fromLTRB(16, 18, 16, 32));
 
-    return AnimatedTheme(
+    final Widget content = AnimatedTheme(
       data: theme,
       duration: WebThemeTokens.transitionDuration,
       curve: WebThemeTokens.transitionCurve,
@@ -434,38 +440,75 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
             children: <Widget>[
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1180),
+                  constraints: BoxConstraints(
+                    maxWidth: widget.web ? double.infinity : 1180,
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        widget.web
+                            ? CrossAxisAlignment.stretch
+                            : CrossAxisAlignment.start,
                     children: <Widget>[
                       _buildCabecalho(),
-                      const SizedBox(height: 16),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
                       if (_erro != null) ...<Widget>[
                         _buildErro(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                       ],
                       if (_resultado != null) ...<Widget>[
                         _buildResultado(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                       ],
                       _buildBuscaVenda(),
                       if (_venda != null) ...<Widget>[
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildResumoVenda(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildItensDevolucao(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildTipoOperacao(),
                         if (_tipo == TipoDevolucaoProduto.troca) ...<Widget>[
-                          const SizedBox(height: 16),
+                          SizedBox(
+                            height:
+                                widget.web
+                                    ? SixWebPageShell.sectionSpacing
+                                    : 16,
+                          ),
                           _buildItensTroca(),
                         ],
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildAcertoFinanceiro(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildConfirmacao(),
                       ],
-                      const SizedBox(height: 20),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 20,
+                      ),
                       _buildRecentes(),
                     ],
                   ),
@@ -476,9 +519,24 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
         ),
       ),
     );
+    return widget.web ? SixWebPageShell(child: content) : content;
   }
 
   Widget _buildCabecalho() {
+    if (widget.web) {
+      return SixManagedWebHero(
+        page: WebHeaderAssetPage.devolucoes,
+        icon: Icons.assignment_return_outlined,
+        title: SixWebOperationalTexts.title(
+          context,
+          WebHeaderAssetPage.devolucoes,
+        ),
+        subtitle: SixWebOperationalTexts.subtitle(
+          context,
+          WebHeaderAssetPage.devolucoes,
+        ),
+      );
+    }
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens? tokens =
         widget.web ? WebThemeTokens.of(context) : null;

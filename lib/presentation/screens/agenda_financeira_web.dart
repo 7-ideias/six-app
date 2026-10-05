@@ -14,12 +14,16 @@ import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_managed_web_hero.dart';
+import '../components/web/six_web_operational_texts.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
@@ -1358,6 +1362,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         displayColor: tokens.primaryText,
       ),
       cardTheme: webTheme.cardTheme.copyWith(
+        margin: EdgeInsets.zero,
         color: tokens.cardBackground,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
@@ -1525,25 +1530,31 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           final theme = Theme.of(context);
           final Widget content = Focus(
             autofocus: podeFecharTela,
-            child: RefreshIndicator(
-              onRefresh: () => _consultar(mostrarFeedback: true),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: <Widget>[
-                  _buildHeader(theme, showCloseButton: podeFecharTela),
-                  const SizedBox(height: 14),
-                  _buildFiltros(theme),
-                  if (_carregando || _executandoAcao) ...const <Widget>[
-                    SizedBox(height: 10),
-                    LinearProgressIndicator(minHeight: 3),
+            child: SixWebPageShell(
+              child: RefreshIndicator(
+                onRefresh: () => _consultar(mostrarFeedback: true),
+                child: ListView(
+                  padding: SixWebPageShell.scrollPadding,
+                  children: <Widget>[
+                    _buildHeader(
+                      context,
+                      theme,
+                      showCloseButton: podeFecharTela,
+                    ),
+                    SixWebPageShell.sectionGap,
+                    _buildFiltros(theme),
+                    if (_carregando || _executandoAcao) ...const <Widget>[
+                      SizedBox(height: 10),
+                      LinearProgressIndicator(minHeight: 3),
+                    ],
+                    SixWebPageShell.sectionGap,
+                    _buildResumo(theme),
+                    SixWebPageShell.sectionGap,
+                    _buildAbas(theme),
+                    SixWebPageShell.sectionGap,
+                    _buildConteudoAba(theme),
                   ],
-                  const SizedBox(height: 14),
-                  _buildResumo(theme),
-                  const SizedBox(height: 18),
-                  _buildAbas(theme),
-                  const SizedBox(height: 16),
-                  _buildConteudoAba(theme),
-                ],
+                ),
               ),
             ),
           );
@@ -1568,72 +1579,49 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme, {required bool showCloseButton}) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: <Widget>[
-          Builder(
-            builder: (BuildContext context) {
-              final tokens = WebThemeTokens.of(context);
-              return Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: tokens.selectedBackground,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: tokens.info,
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Agenda financeira',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  _ultimaConsultaEm == null
-                      ? 'Filtre os lançamentos e acompanhe seus detalhes.'
-                      : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
-                ),
-              ],
-            ),
-          ),
-          OutlinedButton.icon(
-            style: _secondaryCtaStyle(theme),
-            onPressed:
-                _carregando ? null : () => _consultar(mostrarFeedback: true),
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Atualizar'),
-          ),
-          const SizedBox(width: 10),
-          FilledButton.icon(
-            style: _primaryCtaStyle(theme),
-            onPressed: _novoLancamento,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Novo lançamento'),
-          ),
-          if (showCloseButton) ...<Widget>[
-            const SizedBox(width: 10),
-            IconButton.filled(
-              onPressed: _fechar,
-              icon: const Icon(Icons.close_rounded),
-              tooltip: 'Fechar',
-            ),
-          ],
-        ],
-      ),
+  Widget _buildHeader(
+    BuildContext context,
+    ThemeData theme, {
+    required bool showCloseButton,
+  }) => SixManagedWebHero(
+    page: WebHeaderAssetPage.agendaFinanceira,
+    icon: Icons.account_balance_wallet_outlined,
+    title: SixWebOperationalTexts.title(
+      context,
+      WebHeaderAssetPage.agendaFinanceira,
     ),
+    subtitle:
+        _ultimaConsultaEm == null
+            ? SixWebOperationalTexts.subtitle(
+              context,
+              WebHeaderAssetPage.agendaFinanceira,
+            )
+            : SixWebOperationalTexts.updatedAt(
+              context,
+              context.watch<LocaleSettingsProvider>().formatTime(
+                _ultimaConsultaEm!,
+              ),
+            ),
+    actions: <Widget>[
+      OutlinedButton.icon(
+        style: _secondaryCtaStyle(theme),
+        onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+        icon: const Icon(Icons.refresh_rounded),
+        label: Text(SixWebOperationalTexts.action(context, 'common.refresh')),
+      ),
+      FilledButton.icon(
+        style: _primaryCtaStyle(theme),
+        onPressed: _novoLancamento,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
+      ),
+      if (showCloseButton)
+        IconButton.filled(
+          onPressed: _fechar,
+          icon: const Icon(Icons.close_rounded),
+          tooltip: SixWebOperationalTexts.action(context, 'common.close'),
+        ),
+    ],
   );
 
   Widget _buildFiltros(ThemeData theme) => Card(
@@ -1806,13 +1794,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       builder: (context, constraints) {
         final double width =
             constraints.maxWidth >= 1500
-                ? (constraints.maxWidth - 60) / 6
+                ? (constraints.maxWidth - 5 * SixWebPageShell.sectionSpacing) /
+                    6
                 : constraints.maxWidth >= 1000
-                ? (constraints.maxWidth - 36) / 4
-                : (constraints.maxWidth - 12) / 2;
+                ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                    4
+                : (constraints.maxWidth - SixWebPageShell.sectionSpacing) / 2;
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children:
               cards
                   .map(

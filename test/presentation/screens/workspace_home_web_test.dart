@@ -11,6 +11,7 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/domain/services/workspace_home/workspace_home_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
+import 'package:sixpos/presentation/components/web/business_context_home_carousel_web.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
@@ -212,6 +213,40 @@ void main() {
         );
 
         expect(tester.takeException(), isNull, reason: size.toString());
+        final double gutter =
+            size.width < 1200
+                ? 16
+                : size.width < 1600
+                ? 24
+                : 32;
+        final double expectedWidth = (size.width - gutter * 2).clamp(0, 1680);
+        final Rect hero = tester.getRect(
+          find.byKey(const ValueKey<String>('web-hero-INICIO')),
+        );
+        expect(
+          hero.width,
+          closeTo(expectedWidth, 0.1),
+          reason: size.toString(),
+        );
+        expect(hero.left, closeTo((size.width - expectedWidth) / 2, 0.1));
+        expect(hero.top, closeTo(20, 0.1));
+        final Rect carousel = tester.getRect(
+          find.byType(BusinessContextHomeCarouselWeb),
+        );
+        expect(carousel.top - hero.bottom, closeTo(16, 0.1));
+        final Rect cash = tester.getRect(
+          find.byKey(const Key('workspace-home-situation-cash')),
+        );
+        final Rect services = tester.getRect(
+          find.byKey(const Key('workspace-home-situation-technical-services')),
+        );
+        expect(services.left - cash.right, closeTo(16, 0.1));
+        expect(
+          tester
+              .getRect(find.byKey(const Key('workspace-home-section-today')))
+              .width,
+          closeTo(hero.width, 0.1),
+        );
       }
     });
 
@@ -257,15 +292,12 @@ void main() {
           _animatedContainerColor(tester, const Key('workspace-home-root')),
           tokens.workspaceBackground,
         );
-        expect(
-          _animatedContainerColor(tester, const Key('workspace-home-header')),
-          tokens.surface,
+        final Container hero = tester.widget<Container>(
+          find.byKey(const ValueKey<String>('web-hero-INICIO')),
         );
+        expect((hero.decoration! as BoxDecoration).color, tokens.surface);
         expect(
-          _animatedContainerBorderColor(
-            tester,
-            const Key('workspace-home-header'),
-          ),
+          ((hero.decoration! as BoxDecoration).border! as Border).top.color,
           tokens.cardBorder,
         );
         expect(

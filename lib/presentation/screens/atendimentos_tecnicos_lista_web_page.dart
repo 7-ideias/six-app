@@ -14,6 +14,7 @@ import '../../data/models/dominio_models.dart';
 import '../../data/models/operational_procedure_flow_models.dart';
 import '../../data/models/operational_procedure_models.dart';
 import '../../data/models/usuario_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_status_signature_policy.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
@@ -21,10 +22,13 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
-import '../components/web/six_web_atendimento_details_dialog.dart';
+import '../components/web/six_managed_web_hero.dart';
 import '../components/web/six_web_atendimento_date_filter_dialog.dart';
+import '../components/web/six_web_atendimento_details_dialog.dart';
+import '../components/web/six_web_operational_texts.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
@@ -1466,106 +1470,96 @@ class _AtendimentosTecnicosListaWebPageState
 
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
-    final content = FutureBuilder<_ListaAtendimentosState>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return _buildLoading();
-        }
-        if (snapshot.hasError) {
-          return _ErrorState(
-            mensagem: snapshot.error.toString(),
-            onRetry: _recarregar,
-          );
-        }
-        final state = snapshot.data!;
-        final statusOptions = state.dominios.statusAtendimentoTecnico;
-        final atendimentos = _filtrar(state.atendimentos, statusOptions);
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 920;
-            final horizontalPadding = isCompact ? 16.0 : 28.0;
-            return AnimatedContainer(
-              duration: WebThemeTokens.transitionDuration,
-              curve: WebThemeTokens.transitionCurve,
-              color: tokens.workspaceBackground,
-              child: CustomScrollView(
-                slivers: <Widget>[
-                  SliverToBoxAdapter(
-                    child: _buildHeader(
-                      theme,
-                      total: state.atendimentos.length,
-                      filtrados: atendimentos.length,
-                      isCompact: isCompact,
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      14,
-                      horizontalPadding,
-                      10,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        children: <Widget>[
-                          _buildResumo(theme, atendimentos, isCompact),
-                          const SizedBox(height: 12),
-                          _buildBusca(
-                            theme,
-                            isCompact,
-                            state.atendimentos,
-                            state.tecnicos,
-                            statusOptions,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (atendimentos.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          horizontalPadding,
-                          0,
-                          horizontalPadding,
-                          16,
-                        ),
-                        child: _EmptyState(onRetry: _recarregar),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        0,
-                        horizontalPadding,
-                        16,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final atendimento = atendimentos[index];
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: index == atendimentos.length - 1 ? 0 : 10,
-                            ),
-                            child: _buildAtendimentoCard(
-                              theme,
-                              atendimento,
-                              statusOptions,
-                              isCompact,
-                            ),
-                          );
-                        }, childCount: atendimentos.length),
-                      ),
-                    ),
-                ],
-              ),
+    final content = SixWebPageShell(
+      child: FutureBuilder<_ListaAtendimentosState>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return _buildLoading();
+          }
+          if (snapshot.hasError) {
+            return _ErrorState(
+              mensagem: snapshot.error.toString(),
+              onRetry: _recarregar,
             );
-          },
-        );
-      },
+          }
+          final state = snapshot.data!;
+          final statusOptions = state.dominios.statusAtendimentoTecnico;
+          final atendimentos = _filtrar(state.atendimentos, statusOptions);
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 920;
+              return AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                color: tokens.workspaceBackground,
+                child: CustomScrollView(
+                  slivers: <Widget>[
+                    SliverToBoxAdapter(
+                      child: _buildHeader(
+                        theme,
+                        total: state.atendimentos.length,
+                        filtrados: atendimentos.length,
+                        isCompact: isCompact,
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: SixWebPageShell.sectionPadding,
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          children: <Widget>[
+                            _buildResumo(theme, atendimentos, isCompact),
+                            SixWebPageShell.sectionGap,
+                            _buildBusca(
+                              theme,
+                              isCompact,
+                              state.atendimentos,
+                              state.tecnicos,
+                              statusOptions,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (atendimentos.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding: SixWebPageShell.scrollPadding,
+                          child: _EmptyState(onRetry: _recarregar),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: SixWebPageShell.scrollPadding,
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final atendimento = atendimentos[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    index == atendimentos.length - 1 ? 0 : 10,
+                              ),
+                              child: _buildAtendimentoCard(
+                                theme,
+                                atendimento,
+                                statusOptions,
+                                isCompact,
+                              ),
+                            );
+                          }, childCount: atendimentos.length),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
 
     final bool podeFecharTela = widget.onBack != null || !widget.embedded;
@@ -1614,46 +1608,6 @@ class _AtendimentosTecnicosListaWebPageState
     required int filtrados,
     required bool isCompact,
   }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final titleBlock = Row(
-      children: <Widget>[
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: tokens.info.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(Icons.fact_check_outlined, color: tokens.info, size: 27),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Atendimentos criados',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isCompact ? 21 : 24,
-                  fontWeight: FontWeight.w900,
-                  color: tokens.primaryText,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Consulte, receba, edite, audite e gere assinatura.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: tokens.secondaryText),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
     final actions = Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -1678,46 +1632,18 @@ class _AtendimentosTecnicosListaWebPageState
       ],
     );
 
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.assistencias,
+      icon: Icons.fact_check_outlined,
+      title: SixWebOperationalTexts.title(
+        context,
+        WebHeaderAssetPage.assistencias,
       ),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha:
-                  theme.colorScheme.brightness == Brightness.dark ? 0.14 : 0.05,
-            ),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      subtitle: SixWebOperationalTexts.subtitle(
+        context,
+        WebHeaderAssetPage.assistencias,
       ),
-      child:
-          isCompact
-              ? Column(
-                children: <Widget>[
-                  titleBlock,
-                  const SizedBox(height: 14),
-                  Align(alignment: Alignment.centerRight, child: actions),
-                ],
-              )
-              : Row(
-                children: <Widget>[
-                  Expanded(child: titleBlock),
-                  const SizedBox(width: 16),
-                  actions,
-                ],
-              ),
+      actions: <Widget>[actions],
     );
   }
 
@@ -1745,13 +1671,12 @@ class _AtendimentosTecnicosListaWebPageState
         final cardWidth =
             isCompact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(
-                  190.0,
-                  constraints.maxWidth,
-                );
+                : ((constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                        4)
+                    .clamp(190.0, constraints.maxWidth);
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: <Widget>[
             _summaryCard(
               theme,
@@ -3843,7 +3768,6 @@ class _AtendimentosTecnicosWebSkeletonState
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
                     final bool isCompact = constraints.maxWidth < 920;
-                    final double horizontalPadding = isCompact ? 16 : 28;
                     return CustomScrollView(
                       physics: const NeverScrollableScrollPhysics(),
                       slivers: <Widget>[
@@ -3851,29 +3775,19 @@ class _AtendimentosTecnicosWebSkeletonState
                           child: _buildHeader(tokens, skeletonColor, isCompact),
                         ),
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            14,
-                            horizontalPadding,
-                            10,
-                          ),
+                          padding: SixWebPageShell.sectionPadding,
                           sliver: SliverToBoxAdapter(
                             child: Column(
                               children: <Widget>[
                                 _buildSummary(tokens, skeletonColor, isCompact),
-                                const SizedBox(height: 12),
+                                SixWebPageShell.sectionGap,
                                 _buildFilters(tokens, skeletonColor, isCompact),
                               ],
                             ),
                           ),
                         ),
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            0,
-                            horizontalPadding,
-                            16,
-                          ),
+                          padding: SixWebPageShell.scrollPadding,
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (BuildContext context, int index) => Padding(
@@ -3940,15 +3854,12 @@ class _AtendimentosTecnicosWebSkeletonState
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
-      ),
+      constraints: BoxConstraints(minHeight: isCompact ? 180 : 196),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: tokens.surface,
-        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+        border: Border.all(color: tokens.cardBorder),
+        borderRadius: BorderRadius.circular(22),
       ),
       child:
           isCompact
@@ -3979,13 +3890,12 @@ class _AtendimentosTecnicosWebSkeletonState
         final double cardWidth =
             isCompact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(
-                  190.0,
-                  constraints.maxWidth,
-                );
+                : ((constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                        4)
+                    .clamp(190.0, constraints.maxWidth);
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: List<Widget>.generate(
             4,
             (int index) => Container(
