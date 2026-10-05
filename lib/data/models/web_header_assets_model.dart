@@ -12,7 +12,9 @@ enum WebHeaderAssetPage {
   reservas('RESERVAS'),
   produtos('PRODUTOS'),
   estoque('ESTOQUE'),
-  desempenho('DESEMPENHO');
+  desempenho('DESEMPENHO'),
+  agendaFinanceira('AGENDA_FINANCEIRA'),
+  usuariosSixo('USUARIOS_SIXO');
 
   const WebHeaderAssetPage(this.backendCode);
   final String backendCode;

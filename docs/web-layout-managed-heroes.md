@@ -3,7 +3,8 @@
 Branch nos dois repositórios: `feature/20261005-web-layout-managed-heroes`.
 
 As páginas Vendas, Devoluções e trocas, Caixa, Assistências técnicas, Compras,
-Reservas, Produtos, Estoque, Clientes, Colaboradores e Desempenho usam
+Reservas, Produtos, Estoque, Clientes, Colaboradores, Desempenho, Agenda financeira
+e Usuários do Sixo usam
 `SixWebPageShell` e `SixManagedWebHero`.
 As margens são calculadas sobre a área disponível depois da barra lateral:
 
@@ -24,7 +25,7 @@ seu cabeçalho e suas margens anteriores.
 
 O Flutter solicita
 `GET /private/api/web-header/assets?incluirOperacionais=true`, com autenticação
-e o cabeçalho `idUnicoDaEmpresa`. A resposta inclui os onze códigos de páginas,
+e o cabeçalho `idUnicoDaEmpresa`. A resposta inclui os treze códigos de páginas,
 quando há uma imagem resolvida. Sem a opção, o backend mantém os três códigos
 originais para clientes anteriores.
 
@@ -52,12 +53,12 @@ com o fundo do tema.
    ```
 
 4. Entre pela rota `http://localhost:39441/login/flutter`.
-5. Confira as onze páginas com barra lateral aberta e recolhida, em larguras
+5. Confira as treze páginas com barra lateral aberta e recolhida, em larguras
    menores e maiores, nos temas claro e escuro. Verifique o alinhamento das
    bordas dos cabeçalhos, filtros, indicadores e listas.
 6. Troque de empresa e de segmento/subsegmento. Confira o shimmer, a nova imagem
    e a ausência de imagens do contexto anterior.
-7. Como administrador autorizado, confira os oito slots adicionais, publique
+7. Como administrador autorizado, confira os dez slots adicionais, publique
    uma imagem por um fluxo já existente e force a atualização de versão.
    Confira também um agendamento vigente no ambiente local.
 8. Exercite as ações existentes de cada página, inclusive devoluções, caixa,
@@ -105,3 +106,25 @@ novos (três apontamentos anteriores no painel administrativo); nove testes
 backend e quinze testes Flutter passaram. Duas falhas nos testes mobile de
 Colaboradores (superfícies dark e texto do estado vazio) foram reproduzidas na
 `main` original. Nenhum arquivo de tela mobile foi alterado neste complemento.
+
+## Complemento: Agenda financeira e Usuários do Sixo
+
+As duas páginas usam o mesmo shell e cabeçalho gerenciado. Na Agenda, os cards
+não acrescentam margem externa ao shell e as ações continuam disponíveis no
+cabeçalho, incluindo atualização, novo lançamento e fechamento quando aplicável.
+A indicação de última atualização respeita o formato de hora global da empresa.
+Em Usuários do Sixo, indicadores, busca e lista usam a largura comum de até
+1680 px, sem o limite anterior de 1360 px e sem margem horizontal duplicada.
+O acesso SUPER e a navegação para detalhes foram preservados.
+
+Os slots `WEB_AGENDA_FINANCEIRA_HEADER` e `WEB_USUARIOS_SIXO_HEADER` aparecem
+no painel de imagens. Agenda pode reaproveitar o slot de Caixa; Usuários do Sixo,
+o de Colaboradores. Ambos também têm fallback genérico publicado. Atualize os
+dois repositórios antes do teste local.
+
+Verificações deste complemento: build Web release concluído; análise dos
+arquivos alterados sem erros novos
+(três apontamentos anteriores no painel administrativo); nove testes backend e
+19 testes Flutter passaram. Três falhas foram reproduzidas na `main`: uma
+verificação de texto-fonte no modal de lançamento e duas verificações de textos
+nos estados financeiros/erro da Agenda mobile. Nenhuma tela mobile foi alterada.

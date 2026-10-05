@@ -2927,6 +2927,16 @@ class _VisualAssetsTexts {
         'Web · Performance',
         'Web · Desempeño',
       ],
+      'WEB_AGENDA_FINANCEIRA_HEADER': [
+        'Web · Agenda financeira',
+        'Web · Financial agenda',
+        'Web · Agenda financiera',
+      ],
+      'WEB_USUARIOS_SIXO_HEADER': [
+        'Web · Usuários do Sixo',
+        'Web · Sixo users',
+        'Web · Usuarios de Sixo',
+      ],
     }[slot.slot];
     return context.t(
       slot.labelKey,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/data/models/web_header_assets_model.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
@@ -104,9 +107,8 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isSuper = context
-        .watch<ColaboradorAutorizacoesProvider>()
-        .ehSuperUsuario;
+    final bool isSuper =
+        context.watch<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
     if (isSuper && !_requestStarted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startRequestIfAllowed();
@@ -130,47 +132,51 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 
     return Material(
       color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          SixWebDashboardHeader(
-            icon: Icons.hub_outlined,
-            title: context.t(
-              'usuariosSixo.title',
-              fallback: 'Usuários do Sixo',
-            ),
-            subtitle: context.t(
-              'usuariosSixo.subtitle',
-              fallback:
-                  'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
-            ),
-            actions: <Widget>[
-              if (isSuper)
-                OutlinedButton.icon(
-                  onPressed: _loading ? null : _loadUsers,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(
-                    context.t('common.refresh', fallback: 'Atualizar'),
-                  ),
-                ),
-            ],
-          ),
-          Expanded(
-            child: isSuper
-                ? _buildAllowedContent(context)
-                : _WebMessageState(
-                    icon: Icons.lock_outline_rounded,
-                    title: context.t(
-                      'usuariosSixo.forbiddenTitle',
-                      fallback: 'Acesso exclusivo para SUPER',
-                    ),
-                    message: context.t(
-                      'usuariosSixo.forbiddenMessage',
-                      fallback:
-                          'Seu perfil não possui permissão para consultar os usuários do Sixo.',
+      child: SixWebPageShell(
+        child: Column(
+          children: <Widget>[
+            SixManagedWebHero(
+              page: WebHeaderAssetPage.usuariosSixo,
+              icon: Icons.hub_outlined,
+              title: context.t(
+                'usuariosSixo.title',
+                fallback: 'Usuários do Sixo',
+              ),
+              subtitle: context.t(
+                'usuariosSixo.subtitle',
+                fallback:
+                    'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
+              ),
+              actions: <Widget>[
+                if (isSuper)
+                  OutlinedButton.icon(
+                    onPressed: _loading ? null : _loadUsers,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(
+                      context.t('common.refresh', fallback: 'Atualizar'),
                     ),
                   ),
-          ),
-        ],
+              ],
+            ),
+            Expanded(
+              child:
+                  isSuper
+                      ? _buildAllowedContent(context)
+                      : _WebMessageState(
+                        icon: Icons.lock_outline_rounded,
+                        title: context.t(
+                          'usuariosSixo.forbiddenTitle',
+                          fallback: 'Acesso exclusivo para SUPER',
+                        ),
+                        message: context.t(
+                          'usuariosSixo.forbiddenMessage',
+                          fallback:
+                              'Seu perfil não possui permissão para consultar os usuários do Sixo.',
+                        ),
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -178,25 +184,19 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
   Widget _buildAllowedContent(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1360),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: <Widget>[
-                  _buildToolbar(context, constraints.maxWidth < 720),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: _buildContent(context),
-                    ),
-                  ),
-                ],
+        return Padding(
+          padding: const EdgeInsets.only(top: SixWebPageShell.sectionSpacing),
+          child: Column(
+            children: <Widget>[
+              _buildToolbar(context, constraints.maxWidth < 720),
+              const SizedBox(height: 16),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: _buildContent(context),
+                ),
               ),
-            ),
+            ],
           ),
         );
       },

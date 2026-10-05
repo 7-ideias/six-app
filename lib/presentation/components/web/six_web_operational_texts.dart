@@ -14,6 +14,12 @@ abstract final class SixWebOperationalTexts {
   static String action(BuildContext context, String key) =>
       _localized(context, key, _actions[key]!);
 
+  static String updatedAt(BuildContext context, String time) => _localized(
+    context,
+    'agenda.updatedAt',
+    ['Atualizado às {time}', 'Updated at {time}', 'Actualizado a las {time}'],
+  ).replaceAll('{time}', time);
+
   static String _resolve(
     BuildContext context,
     WebHeaderAssetPage page,
@@ -41,6 +47,11 @@ abstract final class SixWebOperationalTexts {
   }
 
   static const _titles = <WebHeaderAssetPage, List<String>>{
+    WebHeaderAssetPage.agendaFinanceira: [
+      'Agenda financeira',
+      'Financial agenda',
+      'Agenda financiera',
+    ],
     WebHeaderAssetPage.clientes: ['Clientes', 'Customers', 'Clientes'],
     WebHeaderAssetPage.desempenho: [
       'Desempenho do colaborador',
@@ -66,6 +77,11 @@ abstract final class SixWebOperationalTexts {
   };
 
   static const _subtitles = <WebHeaderAssetPage, List<String>>{
+    WebHeaderAssetPage.agendaFinanceira: [
+      'Filtre os lançamentos e acompanhe seus detalhes.',
+      'Filter financial entries and track their details.',
+      'Filtre los movimientos financieros y consulte sus detalles.',
+    ],
     WebHeaderAssetPage.clientes: [
       'Resumo da base de clientes, fiado, contatos e relacionamento comercial.',
       'Overview of customers, credit accounts, contacts and business relationships.',
@@ -95,6 +111,8 @@ abstract final class SixWebOperationalTexts {
 
   static const _actions = <String, List<String>>{
     'common.refresh': ['Atualizar', 'Refresh', 'Actualizar'],
+    'common.close': ['Fechar', 'Close', 'Cerrar'],
+    'agenda.newEntry': ['Novo lançamento', 'New entry', 'Nuevo movimiento'],
     'clientes.autoRegistration': [
       'Auto cadastro',
       'Self-registration',
