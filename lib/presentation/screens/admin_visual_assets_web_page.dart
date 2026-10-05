@@ -2922,6 +2922,11 @@ class _VisualAssetsTexts {
         'Web · Inventory',
         'Web · Inventario',
       ],
+      'WEB_DESEMPENHO_HEADER': [
+        'Web · Desempenho',
+        'Web · Performance',
+        'Web · Desempeño',
+      ],
     }[slot.slot];
     return context.t(
       slot.labelKey,

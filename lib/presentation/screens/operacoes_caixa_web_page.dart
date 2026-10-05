@@ -703,7 +703,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         final width =
             compact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(210.0, 360.0);
+                : (constraints.maxWidth - 36) / 4;
         return Wrap(
           spacing: 12,
           runSpacing: 12,

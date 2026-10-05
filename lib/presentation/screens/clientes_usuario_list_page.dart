@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
+import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
+import 'package:sixpos/presentation/components/web/six_web_operational_texts.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
-import 'package:sixpos/presentation/controllers/web_header_assets_context_controller.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_web_dialog.dart';
@@ -30,7 +32,6 @@ class ClientesUsuarioListPage extends StatefulWidget {
 
 class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   late final ClienteUsuarioApiClient _api;
-  late final WebHeaderAssetsContextController _headerAssets;
   final TextEditingController _search = TextEditingController();
   final NumberFormat _money = NumberFormat.currency(
     locale: 'pt_BR',
@@ -66,24 +67,13 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpClienteUsuarioApiClient();
-    _headerAssets =
-        WebHeaderAssetsContextController()
-          ..addListener(_onHeaderAssetsChanged)
-          ..initialize();
     _reload();
   }
 
   @override
   void dispose() {
     _search.dispose();
-    _headerAssets
-      ..removeListener(_onHeaderAssetsChanged)
-      ..dispose();
     super.dispose();
-  }
-
-  void _onHeaderAssetsChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _reload() async {
@@ -171,63 +161,49 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     }
 
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget content = Column(
-      children: <Widget>[_header(), Expanded(child: _body())],
+    final Widget content = SixWebPageShell(
+      child: Column(children: <Widget>[_header(), Expanded(child: _body())]),
     );
     if (widget.embedded) {
       return Material(color: tokens.workspaceBackground, child: content);
     }
     return Scaffold(
       backgroundColor: tokens.workspaceBackground,
-      appBar: AppBar(
-        title: const Text('Clientes'),
-        actions: <Widget>[
-          IconButton(
-            onPressed: _loading ? null : _reload,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            onPressed: _loading ? null : _openAutoCadastro,
-            icon: const Icon(Icons.link_outlined),
-            tooltip: 'Auto cadastro',
-          ),
-        ],
-      ),
-      body: SafeArea(child: _body()),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const Text('Novo cliente'),
-      ),
+      body: SafeArea(child: content),
     );
   }
 
   Widget _header() {
-    return SixWebDashboardHeader(
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.clientes,
       icon: Icons.groups_2_outlined,
-      title: 'Clientes',
-      subtitle:
-          'Resumo da base de clientes, fiado, contatos e relacionamento comercial.',
-      backgroundImageUrl:
-          _headerAssets.assets?.asset(WebHeaderAssetPage.clientes)?.imagemUrl,
+      title: SixWebOperationalTexts.title(context, WebHeaderAssetPage.clientes),
+      subtitle: SixWebOperationalTexts.subtitle(
+        context,
+        WebHeaderAssetPage.clientes,
+      ),
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: _loading ? null : _reload,
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Atualizar'),
+          label: Text(SixWebOperationalTexts.action(context, 'common.refresh')),
           style: _outlinedCtaStyle(),
         ),
         OutlinedButton.icon(
           onPressed: _loading ? null : _openAutoCadastro,
           icon: const Icon(Icons.link_outlined),
-          label: const Text('Auto cadastro'),
+          label: Text(
+            SixWebOperationalTexts.action(context, 'clientes.autoRegistration'),
+          ),
           style: _outlinedCtaStyle(),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : () => _openForm(),
           icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Novo cliente'),
+          label: Text(
+            SixWebOperationalTexts.action(context, 'clientes.newCustomer'),
+          ),
           style: _filledCtaStyle(),
         ),
       ],
@@ -245,12 +221,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
           final bool compact = constraints.maxWidth < 900;
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              widget.embedded ? 24 : 16,
-              widget.embedded ? 24 : 14,
-              widget.embedded ? 24 : 16,
-              widget.embedded ? 28 : 96,
-            ),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
             children: <Widget>[
               SixWebEntry(order: 0, child: _kpis(compact)),
               const SizedBox(height: 18),
@@ -790,7 +761,7 @@ class _LoadingClientes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
     children: const <Widget>[
       SixWebLoadingBlock(height: 118),
       SizedBox(height: 18),

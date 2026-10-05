@@ -9,8 +9,9 @@ import '../../domain/services/etiqueta/etiqueta_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web/six_web_animated_dialog.dart';
+import '../components/web/six_managed_web_hero.dart';
 import '../components/web_dashboard_widgets.dart';
-import '../controllers/web_header_assets_context_controller.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../theme/web_theme_tokens.dart';
 import 'colaborador_convite_web_body.dart';
 
@@ -37,7 +38,6 @@ class _ColaboradoresUsuarioListPageState
     extends State<ColaboradoresUsuarioListPage> {
   late final ColaboradorUsuarioApiClient _api;
   late final EtiquetaService _etiquetaService;
-  late final WebHeaderAssetsContextController _headerAssets;
   final TextEditingController _search = TextEditingController();
 
   bool _loading = false;
@@ -67,24 +67,13 @@ class _ColaboradoresUsuarioListPageState
     super.initState();
     _api = widget.apiClient ?? HttpColaboradorUsuarioApiClient();
     _etiquetaService = widget.etiquetaService ?? EtiquetaService();
-    _headerAssets =
-        WebHeaderAssetsContextController()
-          ..addListener(_onHeaderAssetsChanged)
-          ..initialize();
     _reload();
   }
 
   @override
   void dispose() {
     _search.dispose();
-    _headerAssets
-      ..removeListener(_onHeaderAssetsChanged)
-      ..dispose();
     super.dispose();
-  }
-
-  void _onHeaderAssetsChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _reload() async {
@@ -416,8 +405,8 @@ class _ColaboradoresUsuarioListPageState
     context.watch<LocaleSettingsProvider>();
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    final Widget content = Column(
-      children: <Widget>[_header(), Expanded(child: _body())],
+    final Widget content = SixWebPageShell(
+      child: Column(children: <Widget>[_header(), Expanded(child: _body())]),
     );
     final Widget closeAwareContent =
         widget.onBack == null
@@ -438,17 +427,14 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Widget _header() {
-    return SixWebDashboardHeader(
+    return SixManagedWebHero(
+      page: WebHeaderAssetPage.colaboradores,
       icon: Icons.badge_outlined,
       title: _t('colaboradores.title', 'Colaboradores'),
       subtitle: _t(
         'colaboradores.webSubtitle',
         'Gestão de colaboradores, convites, contatos e permissões de acesso por comércio.',
       ),
-      backgroundImageUrl:
-          _headerAssets.assets
-              ?.asset(WebHeaderAssetPage.colaboradores)
-              ?.imagemUrl,
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(
@@ -484,12 +470,7 @@ class _ColaboradoresUsuarioListPageState
           builder: (BuildContext context, BoxConstraints constraints) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                widget.embedded ? 24 : 16,
-                widget.embedded ? 24 : 14,
-                widget.embedded ? 24 : 16,
-                widget.embedded ? 28 : 96,
-              ),
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
               children: <Widget>[
                 SixWebEntry(order: 0, child: _empty(firstCollaborator: true)),
               ],
@@ -506,12 +487,7 @@ class _ColaboradoresUsuarioListPageState
           final bool compact = constraints.maxWidth < 900;
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              widget.embedded ? 24 : 16,
-              widget.embedded ? 24 : 14,
-              widget.embedded ? 24 : 16,
-              widget.embedded ? 28 : 96,
-            ),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
             children: <Widget>[
               SixWebEntry(order: 0, child: _kpis(compact)),
               const SizedBox(height: 18),
@@ -1600,7 +1576,7 @@ class _LoadingColaboradores extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
       children: const <Widget>[
         SixWebLoadingBlock(height: 118),
         SizedBox(height: 18),

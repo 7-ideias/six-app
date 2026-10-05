@@ -42,6 +42,7 @@ void main() {
           WebHeaderAssetPage.reservas,
           WebHeaderAssetPage.produtos,
           WebHeaderAssetPage.estoque,
+          WebHeaderAssetPage.desempenho,
         ])
           <String, dynamic>{
             'id': 'fallback-${page.backendCode}',
@@ -55,8 +56,9 @@ void main() {
     });
 
     expect(model.perfilNegocio.perfil.segmentoPrincipal, 'AUTOMOTIVO');
-    expect(model.assets.length, 9);
+    expect(model.assets.length, 10);
     expect(model.asset(WebHeaderAssetPage.estoque)!.imagemFallback, isTrue);
+    expect(model.asset(WebHeaderAssetPage.desempenho)!.imagemFallback, isTrue);
 
     final WebHeaderAssetModel? clientes = model.asset(
       WebHeaderAssetPage.clientes,

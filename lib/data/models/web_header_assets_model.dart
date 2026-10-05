@@ -11,7 +11,8 @@ enum WebHeaderAssetPage {
   compras('COMPRAS'),
   reservas('RESERVAS'),
   produtos('PRODUTOS'),
-  estoque('ESTOQUE');
+  estoque('ESTOQUE'),
+  desempenho('DESEMPENHO');
 
   const WebHeaderAssetPage(this.backendCode);
   final String backendCode;
