@@ -361,7 +361,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         key: const ValueKey<String>('compras-lista'),
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compacto = constraints.maxWidth < 840;
-          const EdgeInsets padding = EdgeInsets.only(bottom: 16);
+          const EdgeInsets padding = SixWebPageShell.scrollPadding;
           return Column(
             children: <Widget>[
               Expanded(
@@ -372,13 +372,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate(<Widget>[
                           _buildCabecalhoLista(compacto),
-                          const SizedBox(height: 14),
+                          SixWebPageShell.sectionGap,
                           const _CompraDemoBanner(),
-                          const SizedBox(height: 18),
+                          SixWebPageShell.sectionGap,
                           _buildIndicadores(compacto),
-                          const SizedBox(height: 18),
+                          SixWebPageShell.sectionGap,
                           _buildFiltros(compacto),
-                          const SizedBox(height: 14),
+                          SixWebPageShell.sectionGap,
                           if (compras.isEmpty)
                             _CompraSurfaceCard(
                               child: _CompraEmptyState(
@@ -489,10 +489,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                 : largura >= 580
                 ? 2
                 : 1;
-        final double itemWidth = (largura - ((colunas - 1) * 12)) / colunas;
+        final double itemWidth =
+            (largura - ((colunas - 1) * SixWebPageShell.sectionSpacing)) /
+            colunas;
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: <Widget>[
             SizedBox(
               width: itemWidth,

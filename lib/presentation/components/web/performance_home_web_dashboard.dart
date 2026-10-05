@@ -8,6 +8,7 @@ import '../../../data/models/desempenho_colaborador_model.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../../providers/desempenho_colaborador_home_provider.dart';
 import '../../../providers/locale_settings_provider.dart';
+import '../../layouts/six_web_page_shell.dart';
 import '../../theme/web_theme_tokens.dart';
 import '../six_backend_loading.dart';
 import '../web_dashboard_widgets.dart';
@@ -38,7 +39,7 @@ class PerformanceHomeWebDashboard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _DashboardHeader(provider: provider, regionalizacao: regionalizacao),
-        const SizedBox(height: 16),
+        SixWebPageShell.sectionGap,
         AnimatedSwitcher(
           duration:
               reduceMotion ? Duration.zero : WebThemeTokens.transitionDuration,
@@ -93,7 +94,7 @@ class PerformanceHomeWebDashboard extends StatelessWidget {
                             regionalizacao: regionalizacao,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SixWebPageShell.sectionGap,
                         entry(
                           _PerformanceChart(
                             key: ValueKey<String>(
@@ -103,7 +104,7 @@ class PerformanceHomeWebDashboard extends StatelessWidget {
                           ),
                           order: 1,
                         ),
-                        const SizedBox(height: 16),
+                        SixWebPageShell.sectionGap,
                         entry(
                           _GoalsSection(
                             provider: provider,
@@ -638,10 +639,12 @@ class _KpiGrid extends StatelessWidget {
                 ? 2
                 : 1;
         final double width =
-            (constraints.maxWidth - (columns - 1) * 12) / columns;
+            (constraints.maxWidth -
+                (columns - 1) * SixWebPageShell.sectionSpacing) /
+            columns;
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: items
               .map(
                 (item) => SizedBox(width: width, child: _KpiCard(data: item)),
@@ -1107,10 +1110,12 @@ class _GoalsSection extends StatelessWidget {
               builder: (BuildContext context, BoxConstraints constraints) {
                 final int columns = constraints.maxWidth >= 820 ? 2 : 1;
                 final double width =
-                    (constraints.maxWidth - (columns - 1) * 12) / columns;
+                    (constraints.maxWidth -
+                        (columns - 1) * SixWebPageShell.sectionSpacing) /
+                    columns;
                 return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                  spacing: SixWebPageShell.sectionSpacing,
+                  runSpacing: SixWebPageShell.sectionSpacing,
                   children: provider.metasAtivas
                       .map(
                         (item) => SizedBox(
@@ -1313,7 +1318,7 @@ class _InitialLoading extends StatelessWidget {
               backgroundColor: tokens.surface,
               borderColor: tokens.cardBorder,
             ),
-            const SizedBox(height: 12),
+            SixWebPageShell.sectionGap,
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
                 final int columns =
@@ -1323,10 +1328,12 @@ class _InitialLoading extends StatelessWidget {
                         ? 2
                         : 1;
                 final double width =
-                    (constraints.maxWidth - (columns - 1) * 12) / columns;
+                    (constraints.maxWidth -
+                        (columns - 1) * SixWebPageShell.sectionSpacing) /
+                    columns;
                 return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                  spacing: SixWebPageShell.sectionSpacing,
+                  runSpacing: SixWebPageShell.sectionSpacing,
                   children: List<Widget>.generate(
                     4,
                     (int index) => SizedBox(

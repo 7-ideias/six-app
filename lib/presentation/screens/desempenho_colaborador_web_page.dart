@@ -144,11 +144,13 @@ class _DesempenhoColaboradorWebPageState
           children: <Widget>[
             _buildHeader(),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 260),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: _buildBody(theme),
+              child: SixWebPageBody(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: _buildBody(theme),
+                ),
               ),
             ),
           ],
@@ -228,7 +230,7 @@ class _DesempenhoColaboradorWebPageState
                   color: tokens.secondaryText,
                 ),
               ),
-              const SizedBox(height: 14),
+              SixWebPageShell.sectionGap,
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
@@ -246,24 +248,24 @@ class _DesempenhoColaboradorWebPageState
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 1180;
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+          padding: SixWebPageShell.scrollPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _buildFilters(theme, compact),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               _buildKpis(theme, compact),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               if (compact) ...<Widget>[
                 _buildResultados(theme),
-                const SizedBox(height: 18),
+                SixWebPageShell.sectionGap,
                 _buildMetas(theme),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Expanded(flex: 7, child: _buildResultados(theme)),
-                    const SizedBox(width: 18),
+                    SixWebPageShell.columnGap,
                     Expanded(flex: 4, child: _buildMetas(theme)),
                   ],
                 ),
@@ -429,8 +431,8 @@ class _DesempenhoColaboradorWebPageState
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 112,
       ),
       itemBuilder: (context, index) => _KpiCard(data: items[index]),

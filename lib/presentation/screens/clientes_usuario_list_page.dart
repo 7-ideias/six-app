@@ -162,7 +162,12 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
 
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Widget content = SixWebPageShell(
-      child: Column(children: <Widget>[_header(), Expanded(child: _body())]),
+      child: Column(
+        children: <Widget>[
+          _header(),
+          Expanded(child: SixWebPageBody(child: _body())),
+        ],
+      ),
     );
     if (widget.embedded) {
       return Material(color: tokens.workspaceBackground, child: content);
@@ -221,16 +226,16 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
           final bool compact = constraints.maxWidth < 900;
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+            padding: SixWebPageShell.scrollPadding,
             children: <Widget>[
               SixWebEntry(order: 0, child: _kpis(compact)),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               SixWebEntry(order: 4, child: _searchSection()),
               if (_erro != null) ...<Widget>[
-                const SizedBox(height: 14),
+                SixWebPageShell.sectionGap,
                 _inlineError(_erro!),
               ],
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               Row(
                 children: <Widget>[
                   Expanded(
@@ -295,8 +300,8 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
       itemCount: metrics.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 118,
       ),
       itemBuilder: (_, int index) {
@@ -761,12 +766,12 @@ class _LoadingClientes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+    padding: SixWebPageShell.scrollPadding,
     children: const <Widget>[
       SixWebLoadingBlock(height: 118),
-      SizedBox(height: 18),
+      SixWebPageShell.sectionGap,
       SixWebLoadingBlock(height: 124),
-      SizedBox(height: 18),
+      SixWebPageShell.sectionGap,
       SixWebLoadingBlock(height: 172),
       SizedBox(height: 12),
       SixWebLoadingBlock(height: 172),

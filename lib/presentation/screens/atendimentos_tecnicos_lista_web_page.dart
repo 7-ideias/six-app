@@ -1489,7 +1489,6 @@ class _AtendimentosTecnicosListaWebPageState
           return LayoutBuilder(
             builder: (context, constraints) {
               final isCompact = constraints.maxWidth < 920;
-              const horizontalPadding = 0.0;
               return AnimatedContainer(
                 duration: WebThemeTokens.transitionDuration,
                 curve: WebThemeTokens.transitionCurve,
@@ -1505,17 +1504,12 @@ class _AtendimentosTecnicosListaWebPageState
                       ),
                     ),
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        14,
-                        horizontalPadding,
-                        10,
-                      ),
+                      padding: SixWebPageShell.sectionPadding,
                       sliver: SliverToBoxAdapter(
                         child: Column(
                           children: <Widget>[
                             _buildResumo(theme, atendimentos, isCompact),
-                            const SizedBox(height: 12),
+                            SixWebPageShell.sectionGap,
                             _buildBusca(
                               theme,
                               isCompact,
@@ -1531,23 +1525,13 @@ class _AtendimentosTecnicosListaWebPageState
                       SliverFillRemaining(
                         hasScrollBody: false,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            0,
-                            horizontalPadding,
-                            16,
-                          ),
+                          padding: SixWebPageShell.scrollPadding,
                           child: _EmptyState(onRetry: _recarregar),
                         ),
                       )
                     else
                       SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          horizontalPadding,
-                          0,
-                          horizontalPadding,
-                          16,
-                        ),
+                        padding: SixWebPageShell.scrollPadding,
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate((
                             context,
@@ -1687,13 +1671,12 @@ class _AtendimentosTecnicosListaWebPageState
         final cardWidth =
             isCompact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(
-                  190.0,
-                  constraints.maxWidth,
-                );
+                : ((constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                        4)
+                    .clamp(190.0, constraints.maxWidth);
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: <Widget>[
             _summaryCard(
               theme,
@@ -3785,7 +3768,6 @@ class _AtendimentosTecnicosWebSkeletonState
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
                     final bool isCompact = constraints.maxWidth < 920;
-                    const double horizontalPadding = 0;
                     return CustomScrollView(
                       physics: const NeverScrollableScrollPhysics(),
                       slivers: <Widget>[
@@ -3793,29 +3775,19 @@ class _AtendimentosTecnicosWebSkeletonState
                           child: _buildHeader(tokens, skeletonColor, isCompact),
                         ),
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            14,
-                            horizontalPadding,
-                            10,
-                          ),
+                          padding: SixWebPageShell.sectionPadding,
                           sliver: SliverToBoxAdapter(
                             child: Column(
                               children: <Widget>[
                                 _buildSummary(tokens, skeletonColor, isCompact),
-                                const SizedBox(height: 12),
+                                SixWebPageShell.sectionGap,
                                 _buildFilters(tokens, skeletonColor, isCompact),
                               ],
                             ),
                           ),
                         ),
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            0,
-                            horizontalPadding,
-                            16,
-                          ),
+                          padding: SixWebPageShell.scrollPadding,
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (BuildContext context, int index) => Padding(
@@ -3918,13 +3890,12 @@ class _AtendimentosTecnicosWebSkeletonState
         final double cardWidth =
             isCompact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(
-                  190.0,
-                  constraints.maxWidth,
-                );
+                : ((constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                        4)
+                    .clamp(190.0, constraints.maxWidth);
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: List<Widget>.generate(
             4,
             (int index) => Container(

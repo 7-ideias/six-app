@@ -406,7 +406,12 @@ class _ColaboradoresUsuarioListPageState
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     final Widget content = SixWebPageShell(
-      child: Column(children: <Widget>[_header(), Expanded(child: _body())]),
+      child: Column(
+        children: <Widget>[
+          _header(),
+          Expanded(child: SixWebPageBody(child: _body())),
+        ],
+      ),
     );
     final Widget closeAwareContent =
         widget.onBack == null
@@ -470,7 +475,7 @@ class _ColaboradoresUsuarioListPageState
           builder: (BuildContext context, BoxConstraints constraints) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+              padding: SixWebPageShell.scrollPadding,
               children: <Widget>[
                 SixWebEntry(order: 0, child: _empty(firstCollaborator: true)),
               ],
@@ -487,16 +492,16 @@ class _ColaboradoresUsuarioListPageState
           final bool compact = constraints.maxWidth < 900;
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+            padding: SixWebPageShell.scrollPadding,
             children: <Widget>[
               SixWebEntry(order: 0, child: _kpis(compact)),
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               SixWebEntry(order: 4, child: _searchSection()),
               if (_erro != null) ...<Widget>[
-                const SizedBox(height: 14),
+                SixWebPageShell.sectionGap,
                 _inlineError(_erro!),
               ],
-              const SizedBox(height: 18),
+              SixWebPageShell.sectionGap,
               Row(
                 children: <Widget>[
                   Expanded(
@@ -576,8 +581,8 @@ class _ColaboradoresUsuarioListPageState
       itemCount: metrics.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 118,
       ),
       itemBuilder: (_, int index) {
@@ -1576,12 +1581,12 @@ class _LoadingColaboradores extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+      padding: SixWebPageShell.scrollPadding,
       children: const <Widget>[
         SixWebLoadingBlock(height: 118),
-        SizedBox(height: 18),
+        SixWebPageShell.sectionGap,
         SixWebLoadingBlock(height: 124),
-        SizedBox(height: 18),
+        SixWebPageShell.sectionGap,
         SixWebLoadingBlock(height: 172),
         SizedBox(height: 12),
         SixWebLoadingBlock(height: 172),

@@ -423,7 +423,7 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
     final EdgeInsetsGeometry padding =
         widget.padding ??
         (widget.web
-            ? const EdgeInsets.only(bottom: 12)
+            ? SixWebPageShell.scrollPadding
             : const EdgeInsets.fromLTRB(16, 18, 16, 32));
 
     final Widget content = AnimatedTheme(
@@ -450,33 +450,65 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
                             : CrossAxisAlignment.start,
                     children: <Widget>[
                       _buildCabecalho(),
-                      const SizedBox(height: 16),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
                       if (_erro != null) ...<Widget>[
                         _buildErro(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                       ],
                       if (_resultado != null) ...<Widget>[
                         _buildResultado(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                       ],
                       _buildBuscaVenda(),
                       if (_venda != null) ...<Widget>[
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildResumoVenda(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildItensDevolucao(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildTipoOperacao(),
                         if (_tipo == TipoDevolucaoProduto.troca) ...<Widget>[
-                          const SizedBox(height: 16),
+                          SizedBox(
+                            height:
+                                widget.web
+                                    ? SixWebPageShell.sectionSpacing
+                                    : 16,
+                          ),
                           _buildItensTroca(),
                         ],
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildAcertoFinanceiro(),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                          height:
+                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                        ),
                         _buildConfirmacao(),
                       ],
-                      const SizedBox(height: 20),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 20,
+                      ),
                       _buildRecentes(),
                     ],
                   ),

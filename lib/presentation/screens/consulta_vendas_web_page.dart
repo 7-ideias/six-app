@@ -691,16 +691,16 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             builder: (context, constraints) {
               final bool compacto = constraints.maxWidth < 980;
               return SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: SixWebPageShell.scrollPadding,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     _buildCabecalho(context, tokens),
-                    const SizedBox(height: 16),
+                    SixWebPageShell.sectionGap,
                     _buildResumo(context, tokens, regionalizacao),
-                    const SizedBox(height: 16),
+                    SixWebPageShell.sectionGap,
                     _buildFiltros(context, tokens, regionalizacao, compacto),
-                    const SizedBox(height: 16),
+                    SixWebPageShell.sectionGap,
                     _buildResultados(context, tokens, regionalizacao, compacto),
                   ],
                 ),
@@ -795,8 +795,8 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         );
 
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: SixWebPageShell.sectionSpacing,
+      runSpacing: SixWebPageShell.sectionSpacing,
       children: <Widget>[
         _KpiCard(
           tokens: tokens,

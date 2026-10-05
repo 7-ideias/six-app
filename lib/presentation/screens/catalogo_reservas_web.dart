@@ -774,8 +774,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
         child: Column(
           children: <Widget>[
             _buildHeader(context, tokens),
-            const SizedBox(height: 16),
-            Expanded(child: _buildBody(context, tokens)),
+            Expanded(child: SixWebPageBody(child: _buildBody(context, tokens))),
           ],
         ),
       ),

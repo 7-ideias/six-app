@@ -21,6 +21,32 @@ mesma largura externa; no Caixa, os quatro indicadores dividem toda a largura
 disponível, sem o antigo limite de 360 px por card. O layout mobile das devoluções mantém
 seu cabeçalho e suas margens anteriores.
 
+## Espaçamento único das 15 telas
+
+As quatorze páginas acima e o painel de imagens do administrador usam a mesma
+regra de margem externa. O painel aplica o shell tanto dentro da navegação
+principal quanto no portal administrativo independente, sem duplicar margens.
+
+| Elemento | Medida compartilhada |
+| --- | --- |
+| Margem vertical externa | 20 px |
+| Cabeçalho até o primeiro bloco | 16 px |
+| Intervalo entre seções principais | 16 px |
+| Intervalo entre colunas e indicadores principais | 16 px |
+| Recuo inferior das áreas de rolagem | 12 px |
+
+Essas medidas ficam em `SixWebPageShell`. `SixWebPageBody` aplica o intervalo
+após cabeçalhos fixos antes da troca de estado: dados, carregamento, vazio e
+erro recebem o mesmo recuo. Nas páginas com cabeçalho rolável, o intervalo usa
+`sectionGap` ou `sectionPadding`. Os painéis operacional e de desempenho da
+Home também usam os mesmos intervalos de seção. Grades recalculam a largura
+dos cards considerando o espaçamento, para preservar alinhamento e evitar
+estouro nas colunas.
+
+Espaços internos de textos, ícones, botões e linhas de listas continuam seguindo
+a hierarquia de cada componente; não são margens externas ou intervalos entre
+seções. As medidas mobile da jornada de devoluções são preservadas.
+
 ## Imagens e atualização de contexto
 
 O Flutter solicita
@@ -154,3 +180,17 @@ traduções e troca de tema sem recarregar os dados. Duas falhas existentes fora
 reproduzidas na `main`: texto da abertura do caixa e localização das ações
 rápidas no cenário de permissões do teste. A análise não encontrou erros novos;
 os três apontamentos anteriores continuam no painel administrativo.
+
+## Verificações da padronização de espaçamento
+
+A auditoria confirmou o shell compartilhado nas 15 telas e o recuo comum nos
+oito layouts com cabeçalho fixo. O teste existente da Home agora mede margem
+superior, distância do cabeçalho ao carrossel e intervalo entre indicadores em
+1024, 1280, 1366, 1440 e 1920 px. Essas medições passaram, junto aos testes de
+temas e navegação selecionados. Build Web release concluído.
+
+Na seleção executada, 22 testes Flutter passaram e as duas falhas anteriores
+da Home permaneceram (data do caixa e ações rápidas/permissões). A análise dos
+arquivos alterados não encontrou erros novos; os apontamentos existentes de
+imports, finally, parâmetro opcional, campos depreciados e chaves de if continuam
+nos arquivos anteriores. Os testes autenticados locais seguem o roteiro acima.

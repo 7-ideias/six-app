@@ -242,6 +242,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                 decoration: BoxDecoration(color: tokens.workspaceBackground),
                 child: SixWebPageShell(
                   child: SingleChildScrollView(
+                    padding: SixWebPageShell.scrollPadding,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -320,7 +321,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                             }
                           },
                         ),
-                        const SizedBox(height: SixWebPageShell.sectionSpacing),
+                        SixWebPageShell.sectionGap,
                         if (isAdminUser || isCollaborator) ...<Widget>[
                           BusinessContextHomeCarouselWeb(
                             onConfigure: () async {
@@ -333,7 +334,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                               }
                             },
                           ),
-                          const SizedBox(height: 18),
+                          SixWebPageShell.sectionGap,
                           _WorkspaceHomeViewSwitch(
                             selected: _selectedView,
                             onChanged: (_WorkspaceHomeView value) {
@@ -343,7 +344,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                               );
                             },
                           ),
-                          const SizedBox(height: 18),
+                          SixWebPageShell.sectionGap,
                         ],
                         if ((isAdminUser || isCollaborator) &&
                             _selectedView == _WorkspaceHomeView.performance)
@@ -366,7 +367,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                             ),
                           ),
                           if (hasOperationalAccess) ...<Widget>[
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                             CollaboratorOperationalHomeWebDashboard(
                               provider: operacional,
                               regionalizacao: regionalizacao,
@@ -417,9 +418,9 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                                 'Infraestrutura monitorada e saúde do backend.',
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                             _WorkspaceHomeSuperInfrastructureBlock(),
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                           ],
                           if (isAdminUser) ...<Widget>[
                             _WorkspaceHomeRoleHeader(
@@ -435,7 +436,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                                 'Resumo operacional e ações do comércio atual.',
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                             _WorkspaceHomeSection(
                               id: 'today',
                               title: _text(
@@ -449,7 +450,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                                 regionalizacao: regionalizacao,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                             _WorkspaceHomeSection(
                               id: 'attention',
                               title: _text(
@@ -479,7 +480,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                                     ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SixWebPageShell.sectionGap,
                             _WorkspaceHomeSection(
                               id: 'quick-actions',
                               title: _text(
@@ -1161,10 +1162,12 @@ class _WorkspaceHomeSuperInfrastructureBlock extends StatelessWidget {
               final double panelWidth =
                   compact
                       ? constraints.maxWidth
-                      : (constraints.maxWidth - 14) / 2;
+                      : (constraints.maxWidth -
+                              SixWebPageShell.sectionSpacing) /
+                          2;
               return Wrap(
-                spacing: 14,
-                runSpacing: 14,
+                spacing: SixWebPageShell.sectionSpacing,
+                runSpacing: SixWebPageShell.sectionSpacing,
                 children: <Widget>[
                   if (resumo.bancosDeDados.isNotEmpty)
                     SizedBox(
@@ -2554,11 +2557,13 @@ class _ResponsiveCardGrid extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth;
         final int columns = (maxWidth / 220).floor().clamp(1, 5);
-        final double itemWidth = (maxWidth - ((columns - 1) * 12)) / columns;
+        final double itemWidth =
+            (maxWidth - ((columns - 1) * SixWebPageShell.sectionSpacing)) /
+            columns;
 
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: <Widget>[
             for (final Widget child in children)
               SizedBox(width: itemWidth, child: child),

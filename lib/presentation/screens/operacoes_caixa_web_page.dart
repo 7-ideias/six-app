@@ -494,7 +494,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               key: const ValueKey<String>('operacoes-caixa-content'),
               child: SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+                padding: SixWebPageShell.scrollPadding,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 1120;
@@ -502,7 +502,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         SixWebEntry(order: 0, child: _buildKpis(theme)),
-                        const SizedBox(height: 18),
+                        SixWebPageShell.sectionGap,
                         if (!_temCaixaAberto)
                           SixWebEntry(
                             order: 1,
@@ -520,13 +520,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                       child: _buildContextoOperacao(theme),
                                     ),
                                     if (_mostrarPainelFechamento) ...<Widget>[
-                                      const SizedBox(height: 12),
+                                      SixWebPageShell.sectionGap,
                                       SixWebEntry(
                                         order: 2,
                                         child: _buildPainelFechamento(theme),
                                       ),
                                     ],
-                                    const SizedBox(height: 12),
+                                    SixWebPageShell.sectionGap,
                                     SixWebEntry(
                                       order: 3,
                                       child: _buildHistorico(theme),
@@ -534,7 +534,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SixWebPageShell.columnGap,
                               SizedBox(
                                 width: 390,
                                 child: SixWebEntry(
@@ -551,19 +551,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                 order: 1,
                                 child: _buildContextoOperacao(theme),
                               ),
-                              const SizedBox(height: 12),
+                              SixWebPageShell.sectionGap,
                               SixWebEntry(
                                 order: 2,
                                 child: _buildResumoLateral(theme),
                               ),
                               if (_mostrarPainelFechamento) ...<Widget>[
-                                const SizedBox(height: 12),
+                                SixWebPageShell.sectionGap,
                                 SixWebEntry(
                                   order: 3,
                                   child: _buildPainelFechamento(theme),
                                 ),
                               ],
-                              const SizedBox(height: 12),
+                              SixWebPageShell.sectionGap,
                               SixWebEntry(
                                 order: 4,
                                 child: _buildHistorico(theme),
@@ -594,15 +594,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             children: <Widget>[
               _buildHeader(theme),
               Expanded(
-                child: AnimatedContainer(
-                  duration: WebThemeTokens.transitionDuration,
-                  curve: WebThemeTokens.transitionCurve,
-                  color: tokens.workspaceBackground,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: body,
+                child: SixWebPageBody(
+                  child: AnimatedContainer(
+                    duration: WebThemeTokens.transitionDuration,
+                    curve: WebThemeTokens.transitionCurve,
+                    color: tokens.workspaceBackground,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: body,
+                    ),
                   ),
                 ),
               ),
@@ -703,10 +705,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         final width =
             compact
                 ? constraints.maxWidth
-                : (constraints.maxWidth - 36) / 4;
+                : (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                    4;
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children: <Widget>[
             _summaryCard(
               theme,

@@ -186,53 +186,55 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
               ],
             ),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: provider.reload,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
-                  children: <Widget>[
-                    if (!permissions.podeAcessarCatalogo)
-                      _CatalogStatePanel(
-                        icon: Icons.lock_outline_rounded,
-                        title: context.t(
-                          'catalogHub.states.noAccessTitle',
-                          fallback: 'Acesso ao catálogo indisponível',
-                        ),
-                        description: context.t(
-                          'catalogHub.states.noAccessDescription',
-                          fallback:
-                              'Seu perfil não permite visualizar produtos e serviços deste comércio.',
-                        ),
-                      )
-                    else ...<Widget>[
-                      _healthState(context, provider, canManage: canManage),
-                      const SizedBox(height: 20),
-                      SixWebEntry(
-                        order: 2,
-                        child: _CatalogManagementSection(
-                          canManage: canManage,
-                          canOpenLabels: canOpenLabels,
-                          onOpenProducts: onOpenListaCompleta,
-                          onOpenServices:
-                              onOpenListaServicos ?? onOpenListaCompleta,
-                          onOpenCategories: onOpenCategorias,
-                          onOpenLabels: onOpenEtiquetas,
-                          onOpenCatalog: onOpenCatalogoVirtual,
-                        ),
-                      ),
-                      if (canViewStock && onOpenEstoque != null) ...<Widget>[
-                        const SizedBox(height: 20),
+              child: SixWebPageBody(
+                child: RefreshIndicator(
+                  onRefresh: provider.reload,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: SixWebPageShell.scrollPadding,
+                    children: <Widget>[
+                      if (!permissions.podeAcessarCatalogo)
+                        _CatalogStatePanel(
+                          icon: Icons.lock_outline_rounded,
+                          title: context.t(
+                            'catalogHub.states.noAccessTitle',
+                            fallback: 'Acesso ao catálogo indisponível',
+                          ),
+                          description: context.t(
+                            'catalogHub.states.noAccessDescription',
+                            fallback:
+                                'Seu perfil não permite visualizar produtos e serviços deste comércio.',
+                          ),
+                        )
+                      else ...<Widget>[
+                        _healthState(context, provider, canManage: canManage),
+                        SixWebPageShell.sectionGap,
                         SixWebEntry(
-                          order: 3,
-                          child: _StockBoundaryCard(
-                            summary: provider.summary,
-                            onOpenStock: onOpenEstoque!,
+                          order: 2,
+                          child: _CatalogManagementSection(
+                            canManage: canManage,
+                            canOpenLabels: canOpenLabels,
+                            onOpenProducts: onOpenListaCompleta,
+                            onOpenServices:
+                                onOpenListaServicos ?? onOpenListaCompleta,
+                            onOpenCategories: onOpenCategorias,
+                            onOpenLabels: onOpenEtiquetas,
+                            onOpenCatalog: onOpenCatalogoVirtual,
                           ),
                         ),
+                        if (canViewStock && onOpenEstoque != null) ...<Widget>[
+                          SixWebPageShell.sectionGap,
+                          SixWebEntry(
+                            order: 3,
+                            child: _StockBoundaryCard(
+                              summary: provider.summary,
+                              onOpenStock: onOpenEstoque!,
+                            ),
+                          ),
+                        ],
                       ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -565,7 +567,7 @@ class _CatalogHealthDetails extends StatelessWidget {
                     index++
                   ) ...<Widget>[
                     cards[index],
-                    if (index != cards.length - 1) const SizedBox(height: 10),
+                    if (index != cards.length - 1) SixWebPageShell.sectionGap,
                   ],
                 ],
               );
@@ -574,7 +576,7 @@ class _CatalogHealthDetails extends StatelessWidget {
               children: <Widget>[
                 for (int index = 0; index < cards.length; index++) ...<Widget>[
                   Expanded(child: cards[index]),
-                  if (index != cards.length - 1) const SizedBox(width: 10),
+                  if (index != cards.length - 1) SixWebPageShell.columnGap,
                 ],
               ],
             );

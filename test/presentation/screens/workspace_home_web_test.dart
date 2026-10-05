@@ -11,6 +11,7 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/domain/services/workspace_home/workspace_home_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
+import 'package:sixpos/presentation/components/web/business_context_home_carousel_web.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
@@ -228,6 +229,18 @@ void main() {
           reason: size.toString(),
         );
         expect(hero.left, closeTo((size.width - expectedWidth) / 2, 0.1));
+        expect(hero.top, closeTo(20, 0.1));
+        final Rect carousel = tester.getRect(
+          find.byType(BusinessContextHomeCarouselWeb),
+        );
+        expect(carousel.top - hero.bottom, closeTo(16, 0.1));
+        final Rect cash = tester.getRect(
+          find.byKey(const Key('workspace-home-situation-cash')),
+        );
+        final Rect services = tester.getRect(
+          find.byKey(const Key('workspace-home-situation-technical-services')),
+        );
+        expect(services.left - cash.right, closeTo(16, 0.1));
         expect(
           tester
               .getRect(find.byKey(const Key('workspace-home-section-today')))

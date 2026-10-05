@@ -1534,24 +1534,24 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               child: RefreshIndicator(
                 onRefresh: () => _consultar(mostrarFeedback: true),
                 child: ListView(
-                  padding: EdgeInsets.zero,
+                  padding: SixWebPageShell.scrollPadding,
                   children: <Widget>[
                     _buildHeader(
                       context,
                       theme,
                       showCloseButton: podeFecharTela,
                     ),
-                    const SizedBox(height: SixWebPageShell.sectionSpacing),
+                    SixWebPageShell.sectionGap,
                     _buildFiltros(theme),
                     if (_carregando || _executandoAcao) ...const <Widget>[
                       SizedBox(height: 10),
                       LinearProgressIndicator(minHeight: 3),
                     ],
-                    const SizedBox(height: SixWebPageShell.sectionSpacing),
+                    SixWebPageShell.sectionGap,
                     _buildResumo(theme),
-                    const SizedBox(height: 18),
+                    SixWebPageShell.sectionGap,
                     _buildAbas(theme),
-                    const SizedBox(height: 16),
+                    SixWebPageShell.sectionGap,
                     _buildConteudoAba(theme),
                   ],
                 ),
@@ -1794,13 +1794,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       builder: (context, constraints) {
         final double width =
             constraints.maxWidth >= 1500
-                ? (constraints.maxWidth - 60) / 6
+                ? (constraints.maxWidth - 5 * SixWebPageShell.sectionSpacing) /
+                    6
                 : constraints.maxWidth >= 1000
-                ? (constraints.maxWidth - 36) / 4
-                : (constraints.maxWidth - 12) / 2;
+                ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) /
+                    4
+                : (constraints.maxWidth - SixWebPageShell.sectionSpacing) / 2;
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: SixWebPageShell.sectionSpacing,
+          runSpacing: SixWebPageShell.sectionSpacing,
           children:
               cards
                   .map(

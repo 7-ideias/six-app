@@ -156,9 +156,11 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                   ],
                 ),
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    child: child,
+                  child: SixWebPageBody(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      child: child,
+                    ),
                   ),
                 ),
               ],
@@ -193,27 +195,29 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     builder: (BuildContext context, BoxConstraints constraints) {
       final bool compact = constraints.maxWidth < 1180;
       return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+        padding: SixWebPageShell.scrollPadding,
         child: Column(
           children: <Widget>[
             _loadingKpis(compact),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: const <Widget>[
                 SixWebLoadingBlock(height: 280),
                 SixWebLoadingBlock(height: 280),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: const <Widget>[
                 SixWebLoadingBlock(height: 240),
                 SixWebLoadingBlock(height: 240),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             const SixWebLoadingBlock(height: 240),
           ],
         ),
@@ -227,8 +231,8 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     itemCount: 8,
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: compact ? 2 : 4,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 14,
+      crossAxisSpacing: SixWebPageShell.sectionSpacing,
+      mainAxisSpacing: SixWebPageShell.sectionSpacing,
       mainAxisExtent: 118,
     ),
     itemBuilder:
@@ -242,13 +246,14 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     builder: (BuildContext context, BoxConstraints constraints) {
       final bool compact = constraints.maxWidth < 1180;
       return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+        padding: SixWebPageShell.scrollPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _kpis(data, compact),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(
@@ -271,8 +276,9 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(order: 10, child: _alerts(data.alertas)),
@@ -282,8 +288,9 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             sixWebResponsiveGroup(
+              spacing: SixWebPageShell.sectionSpacing,
               compact: compact,
               children: <Widget>[
                 SixWebEntry(
@@ -296,7 +303,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SixWebPageShell.sectionGap,
             SixWebEntry(
               order: 14,
               child: _movements(data.movimentacoesRecentes),
@@ -365,8 +372,8 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: SixWebPageShell.sectionSpacing,
+        mainAxisSpacing: SixWebPageShell.sectionSpacing,
         mainAxisExtent: 118,
       ),
       itemBuilder: (BuildContext context, int index) {

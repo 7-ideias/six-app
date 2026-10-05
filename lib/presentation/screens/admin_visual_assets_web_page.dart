@@ -17,6 +17,7 @@ import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
 import '../admin/admin_visual_assets_catalog.dart';
+import '../layouts/six_web_page_shell.dart';
 
 class AdminVisualAssetsWebPage extends StatefulWidget {
   const AdminVisualAssetsWebPage({
@@ -251,9 +252,11 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     if (widget.embeddedInMainShell) {
       return ColoredBox(
         color: Theme.of(context).scaffoldBackgroundColor,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AdminSpacing.xl),
-          child: content,
+        child: SixWebPageShell(
+          child: SingleChildScrollView(
+            padding: SixWebPageShell.scrollPadding,
+            child: content,
+          ),
         ),
       );
     }
@@ -271,6 +274,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       onRefresh: () => _reload(loadCompanies: true),
       refreshing: _loading,
       loggingOut: _loggingOut,
+      standardPageSpacing: true,
       child: content,
     );
   }
@@ -361,7 +365,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             ),
           ],
         ),
-        const SizedBox(height: 22),
+        SixWebPageShell.sectionGap,
         _VisualAssetsSurfaceCard(
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -461,17 +465,17 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
           ),
         ),
         if (panel?.environment == 'DEV') ...<Widget>[
-          const SizedBox(height: 14),
+          SixWebPageShell.sectionGap,
           _EnvironmentNotice(texts: texts),
         ],
         if (_error != null) ...<Widget>[
-          const SizedBox(height: 14),
+          SixWebPageShell.sectionGap,
           _ErrorBanner(
             message: _error!,
             retry: () => _reload(loadCompanies: true),
           ),
         ],
-        const SizedBox(height: 20),
+        SixWebPageShell.sectionGap,
         if (_loading && panel == null)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 80),
@@ -495,7 +499,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             onUpload: _upload,
             onHistory: _showHistory,
           ),
-          const SizedBox(height: 24),
+          SixWebPageShell.sectionGap,
           _PlatformSection(
             title: 'Mobile',
             icon: Icons.phone_iphone_rounded,
@@ -1166,13 +1170,13 @@ class _PlatformSection extends StatelessWidget {
           builder: (BuildContext context, BoxConstraints constraints) {
             final double width = constraints.maxWidth;
             final double cardWidth = width >= 1180
-                ? (width - 28) / 3
+                ? (width - 2 * SixWebPageShell.sectionSpacing) / 3
                 : width >= 760
-                ? (width - 14) / 2
+                ? (width - SixWebPageShell.sectionSpacing) / 2
                 : width;
             return Wrap(
-              spacing: 14,
-              runSpacing: 14,
+              spacing: SixWebPageShell.sectionSpacing,
+              runSpacing: SixWebPageShell.sectionSpacing,
               children: slots
                   .map(
                     (AdminVisualAssetSlotPanel slot) => SizedBox(
