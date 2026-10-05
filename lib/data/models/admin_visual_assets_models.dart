@@ -103,6 +103,7 @@ class AdminVisualAssetSlotPanel {
     required this.additionalScheduled,
     required this.historyCount,
     this.current,
+    this.fallback,
     this.next,
   });
 
@@ -114,6 +115,7 @@ class AdminVisualAssetSlotPanel {
   final int recommendedHeight;
   final String displayMode;
   final AdminVisualAssetItem? current;
+  final AdminVisualAssetItem? fallback;
   final AdminVisualAssetItem? next;
   final int additionalScheduled;
   final int historyCount;
@@ -125,10 +127,14 @@ class AdminVisualAssetSlotPanel {
 
   factory AdminVisualAssetSlotPanel.fromJson(Map<String, dynamic> json) {
     final dynamic current = json['current'];
+    final dynamic fallback = json['fallback'];
     final dynamic next = json['next'];
     return AdminVisualAssetSlotPanel(
       slot: json['slot']?.toString() ?? '',
       platform: json['plataforma']?.toString() ?? '',
+      fallback: fallback is Map
+          ? AdminVisualAssetItem.fromJson(Map<String, dynamic>.from(fallback))
+          : null,
       labelKey: json['labelKey']?.toString() ?? '',
       labelFallback: json['labelFallback']?.toString() ?? '',
       recommendedWidth: _int(json['recommendedWidth']),

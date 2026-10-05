@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'perfil_negocio_model.dart';
+import 'web_hero_appearance.dart';
 
 enum WebHeaderAssetPage {
   clientes('CLIENTES'),
@@ -99,10 +100,12 @@ class WebHeaderAssetsModel {
   const WebHeaderAssetsModel({
     required this.perfilNegocio,
     required this.assets,
+    this.appearance = const WebHeroAppearance(),
   });
 
   final PerfilNegocioEmpresaModel perfilNegocio;
   final List<WebHeaderAssetModel> assets;
+  final WebHeroAppearance appearance;
 
   factory WebHeaderAssetsModel.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> perfil = Map<String, dynamic>.from(
@@ -112,6 +115,7 @@ class WebHeaderAssetsModel {
 
     return WebHeaderAssetsModel(
       perfilNegocio: PerfilNegocioEmpresaModel.fromJson(perfil),
+      appearance: WebHeroAppearance.fromJson(json['appearance']),
       assets: List<WebHeaderAssetModel>.unmodifiable(
         itens.map(
           (dynamic item) => WebHeaderAssetModel.fromJson(

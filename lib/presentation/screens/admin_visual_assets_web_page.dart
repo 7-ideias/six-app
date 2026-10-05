@@ -18,6 +18,9 @@ import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
 import '../admin/admin_visual_assets_catalog.dart';
 import '../layouts/six_web_page_shell.dart';
+import '../admin/admin_web_hero_appearance_card.dart';
+import '../admin/admin_visual_asset_settings_texts.dart';
+import '../components/web/six_web_delete_visual_asset_dialog.dart';
 
 class AdminVisualAssetsWebPage extends StatefulWidget {
   const AdminVisualAssetsWebPage({
@@ -205,6 +208,22 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       ),
     );
     if (changed == true) await _reload();
+  }
+
+  Future<void> _deleteImage(AdminVisualAssetSlotPanel slot) async {
+    final item = slot.current;
+    if (item == null) return;
+    final texts = _VisualAssetsTexts.of(context);
+    final changed = await showSixWebDeleteVisualAssetDialog(
+      context: context,
+      title: texts.slotTitle(context, slot),
+      target: [_segment, _subsegment]
+          .whereType<String>()
+          .map(_prettyCode)
+          .join(' · '),
+      onConfirm: () => _service.delete(item.id, subsegment: _subsegment),
+    );
+    if (changed && mounted) await _reload();
   }
 
   Future<void> _showHistory(AdminVisualAssetSlotPanel slot) async {
@@ -488,6 +507,16 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             subtitle: texts.noCompaniesSubtitle,
           )
         else if (panel != null) ...<Widget>[
+          AdminWebHeroAppearanceCard(
+            key: ValueKey(panel.environment),
+            service: _service,
+            imageUrl: panel.slots
+                .where((slot) => slot.platform == 'WEB' &&
+                    (slot.current ?? slot.fallback) != null)
+                .map((slot) => (slot.current ?? slot.fallback)!.imageUrl)
+                .firstOrNull,
+          ),
+          SixWebPageShell.sectionGap,
           _PlatformSection(
             title: 'Web',
             icon: Icons.language_rounded,
@@ -498,6 +527,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             texts: texts,
             onUpload: _upload,
             onHistory: _showHistory,
+            onDelete: _scope == 'GLOBAL' && _segment != null ? _deleteImage : null,
+            environment: panel.environment,
           ),
           SixWebPageShell.sectionGap,
           _PlatformSection(
@@ -512,6 +543,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             texts: texts,
             onUpload: _upload,
             onHistory: _showHistory,
+            onDelete: _scope == 'GLOBAL' && _segment != null ? _deleteImage : null,
+            environment: panel.environment,
           ),
         ],
       ],
@@ -1130,6 +1163,8 @@ class _PlatformSection extends StatelessWidget {
     required this.texts,
     required this.onUpload,
     required this.onHistory,
+    this.onDelete,
+    required this.environment,
   });
 
   final String title;
@@ -1139,6 +1174,8 @@ class _PlatformSection extends StatelessWidget {
   final _VisualAssetsTexts texts;
   final ValueChanged<AdminVisualAssetSlotPanel> onUpload;
   final ValueChanged<AdminVisualAssetSlotPanel> onHistory;
+  final ValueChanged<AdminVisualAssetSlotPanel>? onDelete;
+  final String environment;
 
   @override
   Widget build(BuildContext context) {
@@ -1187,6 +1224,10 @@ class _PlatformSection extends StatelessWidget {
                         texts: texts,
                         onUpload: () => onUpload(slot),
                         onHistory: () => onHistory(slot),
+                        onDelete: onDelete != null &&
+                                slot.current?.environment == environment
+                            ? () => onDelete!(slot)
+                            : null,
                       ),
                     ),
                   )
@@ -1206,6 +1247,7 @@ class _SlotCard extends StatelessWidget {
     required this.texts,
     required this.onUpload,
     required this.onHistory,
+    this.onDelete,
   });
 
   final AdminVisualAssetSlotPanel slot;
@@ -1213,6 +1255,7 @@ class _SlotCard extends StatelessWidget {
   final _VisualAssetsTexts texts;
   final VoidCallback onUpload;
   final VoidCallback onHistory;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1253,8 +1296,10 @@ class _SlotCard extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _AssetPreview(
-                    label: texts.current,
-                    asset: slot.current,
+                    label: slot.current == null && slot.fallback != null
+                        ? '${texts.current} · ${texts.globalDefault}'
+                        : texts.current,
+                    asset: slot.current ?? slot.fallback,
                     aspectRatio: slot.aspectRatio,
                     emptyText: companyScope
                         ? texts.noCompanyImage
@@ -1281,6 +1326,14 @@ class _SlotCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                 ),
+              ),
+            ],
+            if (onDelete != null) ...<Widget>[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline),
+                label: Text(AdminVisualAssetSettingsTexts(context).delete),
               ),
             ],
             const SizedBox(height: 14),

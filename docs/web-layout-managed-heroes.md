@@ -194,3 +194,35 @@ da Home permaneceram (data do caixa e ações rápidas/permissões). A análise 
 arquivos alterados não encontrou erros novos; os apontamentos existentes de
 imports, finally, parâmetro opcional, campos depreciados e chaves de if continuam
 nos arquivos anteriores. Os testes autenticados locais seguem o roteiro acima.
+
+## Esmaecimento e exclusão no painel de imagens
+
+O painel SUPER possui uma configuração global de esmaecimento por ambiente,
+com intensidade e alcance independentes para os temas claro e escuro. A prévia
+usa o mesmo gradiente do `SixManagedWebHero`, incluindo a simulação compacta.
+Os valores originais (intensidade 100%, alcance 42%) continuam valendo em
+instalações sem configuração. Intensidade zero remove a sobreposição.
+
+Os valores são carregados e salvos em `GET/PUT /private/api/admin/visual-assets/web-hero-appearance`.
+O manifesto de cabeçalhos inclui `appearance`; a publicação usa a versão e o
+WebSocket existentes para invalidar os caches e atualizar as telas abertas.
+
+Em um segmento ou especialidade, “Apagar imagem” remove somente o vínculo
+selecionado da imagem atual. O backend exige acesso SUPER, propriedade do
+ambiente e um padrão global cadastrado para a posição. Outras especialidades
+que compartilham o cadastro são preservadas. Um marcador interno direciona a
+resolução ao padrão global, inclusive em DEV quando existe uma imagem
+contextual herdada de LIVE. O painel mostra o padrão global após a exclusão.
+Novos uploads podem substituir esse marcador. Agendamentos já existentes
+mantêm suas datas e são informados na confirmação. Exclusão e arquivamento
+continuam sendo ações distintas; a imagem excluída não aparece no histórico.
+
+Para validar localmente, atualize frontend e backend desta branch:
+
+1. No painel, ajuste um tema, salve e reabra; confirme que o outro tema manteve
+   seus valores e que Home e as demais telas refletem a mudança.
+2. Confira intensidade zero e 100%, além da prévia compacta.
+3. Cadastre um padrão global e uma imagem específica, exclua a específica e
+   confira o padrão global no painel e na tela operacional.
+4. Em imagens com múltiplas especialidades, confirme que as demais continuam
+   usando a imagem original; confira também DEV/LIVE e a ativação agendada.
