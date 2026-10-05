@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/services/admin_portal_service.dart';
 import '../../data/models/empresa_model.dart';
 import '../../data/models/usuario_model.dart';
+import '../../data/models/web_header_assets_model.dart';
 import '../../data/models/workspace_home_model.dart';
 import '../../domain/services/workspace_home/workspace_home_service.dart';
 import '../../l10n/six_i18n.dart';
@@ -22,6 +23,8 @@ import '../components/six_backend_loading.dart';
 import '../components/web/business_context_home_carousel_web.dart';
 import '../components/web/collaborator_operational_home_dashboard.dart';
 import '../components/web/performance_home_web_dashboard.dart';
+import '../components/web/six_managed_web_hero.dart';
+import '../layouts/six_web_page_shell.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import 'perfil_negocio_web_dialog.dart';
 import '../navigation/web_navigation_item.dart';
@@ -231,317 +234,298 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
           return LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool narrow = widget.compact || constraints.maxWidth < 900;
-              final double horizontalPadding = narrow ? 14 : 24;
 
               return AnimatedContainer(
                 key: const Key('workspace-home-root'),
                 duration: WebThemeTokens.transitionDuration,
                 curve: WebThemeTokens.transitionCurve,
                 decoration: BoxDecoration(color: tokens.workspaceBackground),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    narrow ? 14 : 20,
-                    horizontalPadding,
-                    narrow ? 18 : 24,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1280),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          _WorkspaceHomeHeader(
-                            userName: _resolveUserName(context),
-                            companyName: _resolveCompanyName(context, empresa),
-                            home: isCollaborator ? null : home,
-                            regionalizacao: regionalizacao,
-                            loading:
-                                _selectedView == _WorkspaceHomeView.performance
-                                    ? desempenho.loading
-                                    : isCollaborator
-                                    ? hasOperationalAccess &&
-                                        operacional.loading
-                                    : provider.loading,
-                            onRefresh: () async {
-                              final ColaboradorAutorizacoesProvider
-                              refreshedAutorizacoes =
-                                  context
-                                      .read<ColaboradorAutorizacoesProvider>();
-                              await refreshedAutorizacoes
-                                  .carregarAutorizacoesDoUsuarioLogado(
-                                    force: true,
-                                  );
-                              if (!context.mounted) {
-                                return;
-                              }
+                child: SixWebPageShell(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _WorkspaceHomeHeader(
+                          userName: _resolveUserName(context),
+                          companyName: _resolveCompanyName(context, empresa),
+                          home: isCollaborator ? null : home,
+                          regionalizacao: regionalizacao,
+                          loading:
+                              _selectedView == _WorkspaceHomeView.performance
+                                  ? desempenho.loading
+                                  : isCollaborator
+                                  ? hasOperationalAccess && operacional.loading
+                                  : provider.loading,
+                          onRefresh: () async {
+                            final ColaboradorAutorizacoesProvider
+                            refreshedAutorizacoes =
+                                context.read<ColaboradorAutorizacoesProvider>();
+                            await refreshedAutorizacoes
+                                .carregarAutorizacoesDoUsuarioLogado(
+                                  force: true,
+                                );
+                            if (!context.mounted) {
+                              return;
+                            }
 
-                              final bool refreshedIsCollaborator =
-                                  refreshedAutorizacoes.ehColaborador;
-                              final bool refreshedIsAdmin =
-                                  refreshedAutorizacoes.ehAdministrador;
-                              desempenho.configureRole(
-                                isAdmin: refreshedIsAdmin,
-                              );
-                              final bool refreshedCanAccessSales =
-                                  refreshedIsCollaborator &&
-                                  refreshedAutorizacoes.podeVerQuantoVendeu;
-                              final bool refreshedCanAccessServices =
-                                  refreshedIsCollaborator &&
-                                  refreshedAutorizacoes
-                                      .podeAcompanharAssistenciaTecnica;
-                              final bool refreshedCanAccessReservations =
-                                  refreshedIsCollaborator &&
-                                  refreshedAutorizacoes.podeFazerVenda;
-                              final bool refreshedHasOperationalAccess =
-                                  refreshedCanAccessSales ||
-                                  refreshedCanAccessServices ||
-                                  refreshedCanAccessReservations;
+                            final bool refreshedIsCollaborator =
+                                refreshedAutorizacoes.ehColaborador;
+                            final bool refreshedIsAdmin =
+                                refreshedAutorizacoes.ehAdministrador;
+                            desempenho.configureRole(isAdmin: refreshedIsAdmin);
+                            final bool refreshedCanAccessSales =
+                                refreshedIsCollaborator &&
+                                refreshedAutorizacoes.podeVerQuantoVendeu;
+                            final bool refreshedCanAccessServices =
+                                refreshedIsCollaborator &&
+                                refreshedAutorizacoes
+                                    .podeAcompanharAssistenciaTecnica;
+                            final bool refreshedCanAccessReservations =
+                                refreshedIsCollaborator &&
+                                refreshedAutorizacoes.podeFazerVenda;
+                            final bool refreshedHasOperationalAccess =
+                                refreshedCanAccessSales ||
+                                refreshedCanAccessServices ||
+                                refreshedCanAccessReservations;
 
-                              if (_selectedView ==
-                                      _WorkspaceHomeView.performance &&
-                                  (refreshedIsAdmin ||
-                                      refreshedIsCollaborator)) {
-                                await desempenho.reload();
-                              } else if (refreshedIsCollaborator) {
-                                await Future.wait<void>(<Future<void>>[
-                                  if (refreshedHasOperationalAccess)
-                                    operacional.reload(
-                                      canAccessSales: refreshedCanAccessSales,
-                                      canAccessServices:
-                                          refreshedCanAccessServices,
-                                      canAccessReservations:
-                                          refreshedCanAccessReservations,
-                                    ),
-                                ]);
-                              } else {
-                                await provider.reload();
-                              }
-                              if (context.mounted &&
-                                  (refreshedIsAdmin || refreshedIsCollaborator)) {
+                            if (_selectedView ==
+                                    _WorkspaceHomeView.performance &&
+                                (refreshedIsAdmin || refreshedIsCollaborator)) {
+                              await desempenho.reload();
+                            } else if (refreshedIsCollaborator) {
+                              await Future.wait<void>(<Future<void>>[
+                                if (refreshedHasOperationalAccess)
+                                  operacional.reload(
+                                    canAccessSales: refreshedCanAccessSales,
+                                    canAccessServices:
+                                        refreshedCanAccessServices,
+                                    canAccessReservations:
+                                        refreshedCanAccessReservations,
+                                  ),
+                              ]);
+                            } else {
+                              await provider.reload();
+                            }
+                            if (context.mounted &&
+                                (refreshedIsAdmin || refreshedIsCollaborator)) {
+                              await context
+                                  .read<HomeBannersProvider>()
+                                  .carregar(force: true);
+                            }
+                            if (refreshedAutorizacoes.ehSuperUsuario &&
+                                context.mounted) {
+                              await context
+                                  .read<_WorkspaceHomeInfrastructureProvider>()
+                                  .reload();
+                            }
+                          },
+                        ),
+                        const SizedBox(height: SixWebPageShell.sectionSpacing),
+                        if (isAdminUser || isCollaborator) ...<Widget>[
+                          BusinessContextHomeCarouselWeb(
+                            onConfigure: () async {
+                              final bool updated =
+                                  await showPerfilNegocioWebDialog(context);
+                              if (updated && context.mounted) {
                                 await context
                                     .read<HomeBannersProvider>()
                                     .carregar(force: true);
                               }
-                              if (refreshedAutorizacoes.ehSuperUsuario &&
-                                  context.mounted) {
-                                await context
-                                    .read<
-                                      _WorkspaceHomeInfrastructureProvider
-                                    >()
-                                    .reload();
-                              }
                             },
                           ),
                           const SizedBox(height: 18),
-                          if (isAdminUser || isCollaborator) ...<Widget>[
-                            BusinessContextHomeCarouselWeb(
-                              onConfigure: () async {
-                                final bool updated =
-                                    await showPerfilNegocioWebDialog(context);
-                                if (updated && context.mounted) {
-                                  await context
-                                      .read<HomeBannersProvider>()
-                                      .carregar(force: true);
-                                }
-                              },
+                          _WorkspaceHomeViewSwitch(
+                            selected: _selectedView,
+                            onChanged: (_WorkspaceHomeView value) {
+                              setState(() => _selectedView = value);
+                              desempenho.setRealtimeActive(
+                                value == _WorkspaceHomeView.performance,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        if ((isAdminUser || isCollaborator) &&
+                            _selectedView == _WorkspaceHomeView.performance)
+                          PerformanceHomeWebDashboard(
+                            provider: desempenho,
+                            regionalizacao: regionalizacao,
+                          )
+                        else if (isCollaborator) ...<Widget>[
+                          _WorkspaceHomeRoleHeader(
+                            icon: Icons.track_changes_rounded,
+                            title: _text(
+                              context,
+                              'collaboratorHome.title',
+                              'Meu painel',
                             ),
-                            const SizedBox(height: 18),
-                            _WorkspaceHomeViewSwitch(
-                              selected: _selectedView,
-                              onChanged: (_WorkspaceHomeView value) {
-                                setState(() => _selectedView = value);
-                                desempenho.setRealtimeActive(
-                                  value == _WorkspaceHomeView.performance,
-                                );
-                              },
+                            subtitle: _text(
+                              context,
+                              'collaboratorHome.subtitle',
+                              'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
                             ),
-                            const SizedBox(height: 18),
-                          ],
-                          if ((isAdminUser || isCollaborator) &&
-                              _selectedView == _WorkspaceHomeView.performance)
-                            PerformanceHomeWebDashboard(
-                              provider: desempenho,
+                          ),
+                          if (hasOperationalAccess) ...<Widget>[
+                            const SizedBox(height: 16),
+                            CollaboratorOperationalHomeWebDashboard(
+                              provider: operacional,
                               regionalizacao: regionalizacao,
-                            )
-                          else if (isCollaborator) ...<Widget>[
-                            _WorkspaceHomeRoleHeader(
-                              icon: Icons.track_changes_rounded,
-                              title: _text(
-                                context,
-                                'collaboratorHome.title',
-                                'Meu painel',
-                              ),
-                              subtitle: _text(
-                                context,
-                                'collaboratorHome.subtitle',
-                                'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
-                              ),
-                            ),
-                            if (hasOperationalAccess) ...<Widget>[
-                              const SizedBox(height: 16),
-                              CollaboratorOperationalHomeWebDashboard(
-                                provider: operacional,
-                                regionalizacao: regionalizacao,
-                                showSales: canAccessSales,
-                                showServices: canAccessServices,
-                                showReservations: canAccessReservations,
-                                onRetry:
-                                    () => operacional.reload(
-                                      canAccessSales: canAccessSales,
-                                      canAccessServices: canAccessServices,
-                                      canAccessReservations:
-                                          canAccessReservations,
-                                    ),
-                                onOpenServices:
-                                    autorizacoes.podeLancarAssistenciaTecnica
-                                        ? () => _resolve(
-                                          context,
-                                          WebNavigationDestination
-                                              .operationsTechnicalServices,
-                                        )
-                                        : null,
-                                onOpenReservations:
-                                    canAccessReservations
-                                        ? () => _resolve(
-                                          context,
-                                          WebNavigationDestination
-                                              .operationsReservations,
-                                        )
-                                        : null,
-                              ),
-                            ],
-                          ] else if (initialLoading)
-                            _WorkspaceHomeLoading(compact: narrow)
-                          else if (initialError)
-                            _WorkspaceHomeError(onRetry: provider.reload)
-                          else if (home != null) ...<Widget>[
-                            if (isSuperUser) ...<Widget>[
-                              _WorkspaceHomeRoleHeader(
-                                icon: Icons.admin_panel_settings_outlined,
-                                title: _text(
-                                  context,
-                                  'workspaceHome.superBlock.title',
-                                  'Bloco SUPER',
-                                ),
-                                subtitle: _text(
-                                  context,
-                                  'workspaceHome.superBlock.subtitle',
-                                  'Infraestrutura monitorada e saúde do backend.',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _WorkspaceHomeSuperInfrastructureBlock(),
-                              const SizedBox(height: 16),
-                            ],
-                            if (isAdminUser) ...<Widget>[
-                              _WorkspaceHomeRoleHeader(
-                                icon: Icons.dashboard_customize_outlined,
-                                title: _text(
-                                  context,
-                                  'workspaceHome.adminBlock.title',
-                                  'Bloco ADMIN',
-                                ),
-                                subtitle: _text(
-                                  context,
-                                  'workspaceHome.adminBlock.subtitle',
-                                  'Resumo operacional e ações do comércio atual.',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _WorkspaceHomeSection(
-                                id: 'today',
-                                title: _text(
-                                  context,
-                                  'workspaceHome.section.today',
-                                  'Situação de hoje',
-                                ),
-                                icon: Icons.today_outlined,
-                                child: _TodaySituationGrid(
-                                  home: home,
-                                  regionalizacao: regionalizacao,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _WorkspaceHomeSection(
-                                id: 'attention',
-                                title: _text(
-                                  context,
-                                  'workspaceHome.section.attention',
-                                  'Precisa da sua atenção',
-                                ),
-                                icon: Icons.priority_high_rounded,
-                                child: _AttentionList(
-                                  home: home,
-                                  regionalizacao: regionalizacao,
-                                  onOpenTechnicalServices:
-                                      () => _resolve(
+                              showSales: canAccessSales,
+                              showServices: canAccessServices,
+                              showReservations: canAccessReservations,
+                              onRetry:
+                                  () => operacional.reload(
+                                    canAccessSales: canAccessSales,
+                                    canAccessServices: canAccessServices,
+                                    canAccessReservations:
+                                        canAccessReservations,
+                                  ),
+                              onOpenServices:
+                                  autorizacoes.podeLancarAssistenciaTecnica
+                                      ? () => _resolve(
                                         context,
                                         WebNavigationDestination
                                             .operationsTechnicalServices,
-                                      ),
-                                  onOpenFinancial:
-                                      () => _resolve(
+                                      )
+                                      : null,
+                              onOpenReservations:
+                                  canAccessReservations
+                                      ? () => _resolve(
                                         context,
                                         WebNavigationDestination
-                                            .financialAgenda,
-                                      ),
-                                  onOpenStock:
-                                      () => _resolve(
-                                        context,
-                                        WebNavigationDestination.catalogStock,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _WorkspaceHomeSection(
-                                id: 'quick-actions',
-                                title: _text(
-                                  context,
-                                  'workspaceHome.section.quickActions',
-                                  'Ações rápidas',
-                                ),
-                                icon: Icons.flash_on_outlined,
-                                child: _QuickActions(
-                                  permissions:
-                                      WebNavigationPermissionAdapter.permissionsFor(
-                                        autorizacoes,
-                                      ),
-                                  onNewSale:
-                                      () => _resolve(
-                                        context,
-                                        WebNavigationDestination
-                                            .operationsPointOfSale,
-                                      ),
-                                  onNewTechnicalService:
-                                      widget.onNovoAtendimentoTecnico,
-                                  onOpenCash:
-                                      () => _resolve(
-                                        context,
-                                        WebNavigationDestination.cash,
-                                      ),
-                                  onOpenFinancialAgenda:
-                                      () => _resolve(
-                                        context,
-                                        WebNavigationDestination
-                                            .financialAgenda,
-                                      ),
-                                ),
-                              ),
-                            ],
-                            if (!isSuperUser && !isAdminUser)
-                              _WorkspaceHomeNoData(
-                                keySuffix: 'restricted-profile',
-                                height: 128,
-                                text: _text(
-                                  context,
-                                  'workspaceHome.empty.profile',
-                                  'Nenhum bloco da home está disponível para o seu perfil.',
-                                ),
-                              ),
+                                            .operationsReservations,
+                                      )
+                                      : null,
+                            ),
                           ],
+                        ] else if (initialLoading)
+                          _WorkspaceHomeLoading(compact: narrow)
+                        else if (initialError)
+                          _WorkspaceHomeError(onRetry: provider.reload)
+                        else if (home != null) ...<Widget>[
+                          if (isSuperUser) ...<Widget>[
+                            _WorkspaceHomeRoleHeader(
+                              icon: Icons.admin_panel_settings_outlined,
+                              title: _text(
+                                context,
+                                'workspaceHome.superBlock.title',
+                                'Bloco SUPER',
+                              ),
+                              subtitle: _text(
+                                context,
+                                'workspaceHome.superBlock.subtitle',
+                                'Infraestrutura monitorada e saúde do backend.',
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSuperInfrastructureBlock(),
+                            const SizedBox(height: 16),
+                          ],
+                          if (isAdminUser) ...<Widget>[
+                            _WorkspaceHomeRoleHeader(
+                              icon: Icons.dashboard_customize_outlined,
+                              title: _text(
+                                context,
+                                'workspaceHome.adminBlock.title',
+                                'Bloco ADMIN',
+                              ),
+                              subtitle: _text(
+                                context,
+                                'workspaceHome.adminBlock.subtitle',
+                                'Resumo operacional e ações do comércio atual.',
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSection(
+                              id: 'today',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.today',
+                                'Situação de hoje',
+                              ),
+                              icon: Icons.today_outlined,
+                              child: _TodaySituationGrid(
+                                home: home,
+                                regionalizacao: regionalizacao,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSection(
+                              id: 'attention',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.attention',
+                                'Precisa da sua atenção',
+                              ),
+                              icon: Icons.priority_high_rounded,
+                              child: _AttentionList(
+                                home: home,
+                                regionalizacao: regionalizacao,
+                                onOpenTechnicalServices:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination
+                                          .operationsTechnicalServices,
+                                    ),
+                                onOpenFinancial:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.financialAgenda,
+                                    ),
+                                onOpenStock:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.catalogStock,
+                                    ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSection(
+                              id: 'quick-actions',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.quickActions',
+                                'Ações rápidas',
+                              ),
+                              icon: Icons.flash_on_outlined,
+                              child: _QuickActions(
+                                permissions:
+                                    WebNavigationPermissionAdapter.permissionsFor(
+                                      autorizacoes,
+                                    ),
+                                onNewSale:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination
+                                          .operationsPointOfSale,
+                                    ),
+                                onNewTechnicalService:
+                                    widget.onNovoAtendimentoTecnico,
+                                onOpenCash:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.cash,
+                                    ),
+                                onOpenFinancialAgenda:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.financialAgenda,
+                                    ),
+                              ),
+                            ),
+                          ],
+                          if (!isSuperUser && !isAdminUser)
+                            _WorkspaceHomeNoData(
+                              keySuffix: 'restricted-profile',
+                              height: 128,
+                              text: _text(
+                                context,
+                                'workspaceHome.empty.profile',
+                                'Nenhum bloco da home está disponível para o seu perfil.',
+                              ),
+                            ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -752,7 +736,6 @@ class _WorkspaceHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final WorkspaceHomeModel? currentHome = home;
     final String? operationalDate =
@@ -760,121 +743,53 @@ class _WorkspaceHomeHeader extends StatelessWidget {
             ? null
             : regionalizacao.formatDate(currentHome.date);
 
-    return AnimatedContainer(
+    return SixManagedWebHero(
       key: const Key('workspace-home-header'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: tokens.cardBorder),
+      page: WebHeaderAssetPage.inicio,
+      icon: Icons.home_outlined,
+      eyebrow: _text(context, 'workspaceHome.title', 'Meu dia no SixoApp'),
+      title: _template(
+        context,
+        'workspaceHome.greeting',
+        'Olá, {name}',
+        <String, String>{'name': userName},
       ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool stack = constraints.maxWidth < 720;
-
-          final Widget title = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                _text(context, 'workspaceHome.title', 'Meu dia no SixoApp'),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: tokens.info,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _template(
-                  context,
-                  'workspaceHome.greeting',
-                  'Olá, {name}',
-                  <String, String>{'name': userName},
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                companyName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: tokens.secondaryText,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          );
-
-          final Widget meta = Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: stack ? WrapAlignment.start : WrapAlignment.end,
-            children: <Widget>[
-              if (operationalDate != null)
-                _WorkspaceHomeMetaChip(
-                  icon: Icons.calendar_today_outlined,
-                  label: _template(
-                    context,
-                    'workspaceHome.operationalDate',
-                    'Hoje: {date}',
-                    <String, String>{'date': operationalDate},
-                  ),
-                ),
-              Tooltip(
-                message: _text(
-                  context,
-                  'workspaceHome.refreshTooltip',
-                  'Atualizar resumo do dia',
-                ),
-                child: OutlinedButton.icon(
-                  style: _homeOutlinedButtonStyle(tokens: tokens),
-                  onPressed: loading ? null : onRefresh,
-                  icon:
-                      loading
-                          ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: tokens.info,
-                            ),
-                          )
-                          : const Icon(Icons.refresh_rounded, size: 18),
-                  label: Text(_text(context, 'common.refresh', 'Atualizar')),
-                ),
-              ),
-            ],
-          );
-
-          if (stack) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[title, const SizedBox(height: 14), meta],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Expanded(child: title),
-              const SizedBox(width: 18),
-              Flexible(
-                child: Align(alignment: Alignment.centerRight, child: meta),
-              ),
-            ],
-          );
-        },
-      ),
+      subtitle: companyName,
+      actions: <Widget>[
+        if (operationalDate != null)
+          _WorkspaceHomeMetaChip(
+            icon: Icons.calendar_today_outlined,
+            label: _template(
+              context,
+              'workspaceHome.operationalDate',
+              'Hoje: {date}',
+              <String, String>{'date': operationalDate},
+            ),
+          ),
+        Tooltip(
+          message: _text(
+            context,
+            'workspaceHome.refreshTooltip',
+            'Atualizar resumo do dia',
+          ),
+          child: OutlinedButton.icon(
+            style: _homeOutlinedButtonStyle(tokens: tokens),
+            onPressed: loading ? null : onRefresh,
+            icon:
+                loading
+                    ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: tokens.info,
+                      ),
+                    )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+            label: Text(_text(context, 'common.refresh', 'Atualizar')),
+          ),
+        ),
+      ],
     );
   }
 }

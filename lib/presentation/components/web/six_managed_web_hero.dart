@@ -14,6 +14,7 @@ class SixManagedWebHero extends StatefulWidget {
     required this.page,
     required this.title,
     required this.subtitle,
+    this.eyebrow,
     this.icon,
     this.onBack,
     this.actions = const <Widget>[],
@@ -22,6 +23,7 @@ class SixManagedWebHero extends StatefulWidget {
   final WebHeaderAssetPage page;
   final String title;
   final String subtitle;
+  final String? eyebrow;
   final IconData? icon;
   final VoidCallback? onBack;
   final List<Widget> actions;
@@ -179,6 +181,17 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: <Widget>[
+                                      if (widget.eyebrow != null) ...<Widget>[
+                                        Text(
+                                          widget.eyebrow!,
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
+                                                color: tokens.info,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                      ],
                                       Text(
                                         widget.title,
                                         style: theme.textTheme.headlineSmall

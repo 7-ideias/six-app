@@ -4,7 +4,7 @@ Branch nos dois repositórios: `feature/20261005-web-layout-managed-heroes`.
 
 As páginas Vendas, Devoluções e trocas, Caixa, Assistências técnicas, Compras,
 Reservas, Produtos, Estoque, Clientes, Colaboradores, Desempenho, Agenda financeira
-e Usuários do Sixo usam
+e Usuários do Sixo, além da tela inicial, usam
 `SixWebPageShell` e `SixManagedWebHero`.
 As margens são calculadas sobre a área disponível depois da barra lateral:
 
@@ -25,7 +25,7 @@ seu cabeçalho e suas margens anteriores.
 
 O Flutter solicita
 `GET /private/api/web-header/assets?incluirOperacionais=true`, com autenticação
-e o cabeçalho `idUnicoDaEmpresa`. A resposta inclui os treze códigos de páginas,
+e o cabeçalho `idUnicoDaEmpresa`. A resposta inclui os quatorze códigos de páginas,
 quando há uma imagem resolvida. Sem a opção, o backend mantém os três códigos
 originais para clientes anteriores.
 
@@ -53,12 +53,12 @@ com o fundo do tema.
    ```
 
 4. Entre pela rota `http://localhost:39441/login/flutter`.
-5. Confira as treze páginas com barra lateral aberta e recolhida, em larguras
+5. Confira as quatorze páginas com barra lateral aberta e recolhida, em larguras
    menores e maiores, nos temas claro e escuro. Verifique o alinhamento das
    bordas dos cabeçalhos, filtros, indicadores e listas.
 6. Troque de empresa e de segmento/subsegmento. Confira o shimmer, a nova imagem
    e a ausência de imagens do contexto anterior.
-7. Como administrador autorizado, confira os dez slots adicionais, publique
+7. Como administrador autorizado, confira os onze slots adicionais, publique
    uma imagem por um fluxo já existente e force a atualização de versão.
    Confira também um agendamento vigente no ambiente local.
 8. Exercite as ações existentes de cada página, inclusive devoluções, caixa,
@@ -128,3 +128,29 @@ arquivos alterados sem erros novos
 19 testes Flutter passaram. Três falhas foram reproduzidas na `main`: uma
 verificação de texto-fonte no modal de lançamento e duas verificações de textos
 nos estados financeiros/erro da Agenda mobile. Nenhuma tela mobile foi alterada.
+
+## Complemento: tela inicial Web
+
+A Home usa `SixWebPageShell`, com largura máxima de 1680 px e as mesmas margens
+calculadas depois da barra lateral. O limite anterior de 1280 px foi removido.
+O cabeçalho usa `SixManagedWebHero` e o slot `WEB_INICIO_HEADER`, preservando a
+saudação, o nome do comércio, a data operacional e a ação de atualizar.
+O rótulo “Meu dia no SixoApp” continua acima da saudação. Os painéis operacional,
+de desempenho e de infraestrutura SUPER mantêm suas regras e navegação.
+
+O slot pode ser publicado e agendado no painel de imagens. Sem imagem própria,
+o backend pode reaproveitar o slot de Vendas ou sua imagem genérica publicada.
+A troca de empresa/perfil e os eventos de versão usam o mesmo shimmer e a mesma
+invalidação de cache dos demais cabeçalhos. Os banners “Para o seu negócio”
+continuam usando o catálogo existente, separados do slot do cabeçalho.
+
+Atualize frontend e backend na mesma branch antes de testar a Home. Confira
+ADMIN, COLABORADOR e SUPER, temas claro/escuro e barra lateral aberta/recolhida.
+
+Verificações da Home: build Web release concluído; nove testes backend e
+21 testes Flutter passaram, incluindo
+largura/alinhamento em cinco tamanhos de tela, temas claro/escuro, navegação,
+traduções e troca de tema sem recarregar os dados. Duas falhas existentes foram
+reproduzidas na `main`: texto da abertura do caixa e localização das ações
+rápidas no cenário de permissões do teste. A análise não encontrou erros novos;
+os três apontamentos anteriores continuam no painel administrativo.

@@ -2937,6 +2937,7 @@ class _VisualAssetsTexts {
         'Web · Sixo users',
         'Web · Usuarios de Sixo',
       ],
+      'WEB_INICIO_HEADER': ['Web · Início', 'Web · Home', 'Web · Inicio'],
     }[slot.slot];
     return context.t(
       slot.labelKey,

@@ -212,6 +212,28 @@ void main() {
         );
 
         expect(tester.takeException(), isNull, reason: size.toString());
+        final double gutter =
+            size.width < 1200
+                ? 16
+                : size.width < 1600
+                ? 24
+                : 32;
+        final double expectedWidth = (size.width - gutter * 2).clamp(0, 1680);
+        final Rect hero = tester.getRect(
+          find.byKey(const ValueKey<String>('web-hero-INICIO')),
+        );
+        expect(
+          hero.width,
+          closeTo(expectedWidth, 0.1),
+          reason: size.toString(),
+        );
+        expect(hero.left, closeTo((size.width - expectedWidth) / 2, 0.1));
+        expect(
+          tester
+              .getRect(find.byKey(const Key('workspace-home-section-today')))
+              .width,
+          closeTo(hero.width, 0.1),
+        );
       }
     });
 
@@ -257,15 +279,12 @@ void main() {
           _animatedContainerColor(tester, const Key('workspace-home-root')),
           tokens.workspaceBackground,
         );
-        expect(
-          _animatedContainerColor(tester, const Key('workspace-home-header')),
-          tokens.surface,
+        final Container hero = tester.widget<Container>(
+          find.byKey(const ValueKey<String>('web-hero-INICIO')),
         );
+        expect((hero.decoration! as BoxDecoration).color, tokens.surface);
         expect(
-          _animatedContainerBorderColor(
-            tester,
-            const Key('workspace-home-header'),
-          ),
+          ((hero.decoration! as BoxDecoration).border! as Border).top.color,
           tokens.cardBorder,
         );
         expect(
