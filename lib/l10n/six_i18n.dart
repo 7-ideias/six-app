@@ -2349,6 +2349,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Atendimento mobile
     'atendimento.mobile.title': 'Atendimento',
+    'atendimento.mobile.returnsShort': 'Devoluções',
+    'atendimento.mobile.editorialSubtitle': 'Como podemos ajudar hoje?',
+    'atendimento.mobile.cashSummary': 'Abertura, movimentações e fechamento',
     'atendimento.mobile.heroTitle': 'O que você deseja fazer?',
     'atendimento.mobile.heroSubtitle':
         'Venda, serviço ou recebimento em poucos passos',
@@ -4759,6 +4762,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Service mobile
     'atendimento.mobile.title': 'Service',
+    'atendimento.mobile.returnsShort': 'Returns',
+    'atendimento.mobile.editorialSubtitle': 'How can we help today?',
+    'atendimento.mobile.cashSummary': 'Opening, transactions and closing',
     'atendimento.mobile.heroTitle': 'What do you want to do?',
     'atendimento.mobile.heroSubtitle':
         'Sale, service or receipt in a few steps',
@@ -7241,6 +7247,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Atención mobile
     'atendimento.mobile.title': 'Atención',
+    'atendimento.mobile.returnsShort': 'Devoluciones',
+    'atendimento.mobile.editorialSubtitle': '¿Cómo podemos ayudar hoy?',
+    'atendimento.mobile.cashSummary': 'Apertura, movimientos y cierre',
     'atendimento.mobile.heroTitle': '¿Qué deseas hacer?',
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
     'atendimento.mobile.introTitle': 'Atención al Cliente',

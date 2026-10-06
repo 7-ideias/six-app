@@ -13,6 +13,7 @@ class SixMobileReorderableCard<T extends Object> extends StatelessWidget {
     required this.feedbackHeight,
     required this.handleColor,
     this.handleOnLeft = false,
+    this.showHandle = true,
   });
 
   final T value;
@@ -22,6 +23,7 @@ class SixMobileReorderableCard<T extends Object> extends StatelessWidget {
   final double feedbackHeight;
   final Color handleColor;
   final bool handleOnLeft;
+  final bool showHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +88,7 @@ class SixMobileReorderableCard<T extends Object> extends StatelessWidget {
       clipBehavior: Clip.none,
       children: <Widget>[
         SizedBox(width: double.infinity, child: cardBuilder()),
-        Positioned(
+        if (showHandle) Positioned(
           top: 7,
           left: handleOnLeft ? 7 : null,
           right: handleOnLeft ? null : 7,
