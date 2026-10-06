@@ -2357,7 +2357,9 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
         companyId: widget.company?.id,
         segment: widget.segment,
         subsegment: widget.subsegment,
-        includeWithoutSubsegment: _includeWithoutSubsegment,
+        includeWithoutSubsegment: widget.scope == 'GLOBAL' &&
+            widget.segment != null &&
+            (widget.subsegment == null || _includeWithoutSubsegment),
         activateAtLocal: _schedule ? _activateAt : null,
         timeZone: widget.scope == 'GLOBAL'
             ? _timeZoneController.text.trim()
@@ -2496,6 +2498,12 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                 ),
               ],
               if (globalSegmentWithoutSpecialty) ...<Widget>[
+                const SizedBox(height: 10),
+                Text(texts.withoutSpecialtyTarget),
+              ],
+              if (widget.scope == 'GLOBAL' &&
+                  widget.segment != null &&
+                  widget.subsegment != null) ...<Widget>[
                 const SizedBox(height: 10),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
@@ -3212,6 +3220,11 @@ class _VisualAssetsTexts {
         'IANA, por exemplo America/Sao_Paulo.',
         'IANA, for example America/Sao_Paulo.',
         'IANA, por ejemplo America/Sao_Paulo.',
+      );
+  String get withoutSpecialtyTarget => _pick(
+        'Esta imagem será usada por comércios deste segmento sem especialidade definida.',
+        'This image will be used by businesses in this segment with no specialty set.',
+        'Esta imagen se usará en negocios de este segmento sin especialidad definida.',
       );
   String get includeWithoutSpecialty => _pick(
         'Usar também quando o comércio não tiver especialidade definida',
