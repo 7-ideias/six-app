@@ -16,7 +16,6 @@ import 'package:sixpos/presentation/components/mobile/management/management_area
 import 'package:sixpos/presentation/components/mobile/management/management_admin_header.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
-import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_cached_network_image.dart';
 import 'package:sixpos/presentation/components/six_visual_asset_shimmer.dart';
@@ -238,12 +237,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final Widget shell = SixMobilePageShell(
       title:
           isHub
-              ? context.t('gestao.title', fallback: 'Gestão')
+              ? ''
               : _areaTitle(context, area),
       backgroundColor: colors.background,
       primaryColor: colors.primary,
       secondaryColor: colors.secondary,
       accentColor: colors.accent,
+      enableAnimatedBackground: !isHub,
       automaticallyImplyLeading: !isHub,
       leading: isHub ? SixMobileAppBarProfileAction() : null,
       actions: <Widget>[
@@ -352,16 +352,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     ScrollController scrollController,
     double topInset,
   ) {
-    if (_businessVisuals.loading) {
-      return _GestaoHubLoadingState(
-        scrollController: scrollController,
-        topInset: topInset,
-      );
-    }
-
     final List<_GestaoHubActionData> actions = _hubActions(context);
+    final colors = context.sixMobileColors;
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
-    final double cardHeight = 204 + ((textScale - 1).clamp(0.0, 0.8) * 72);
 
     return SafeArea(
       top: false,
@@ -372,41 +365,35 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           _horizontalPadding,
-          topInset + 10,
+          topInset + 8,
           _horizontalPadding,
           _sectionContentBottomPadding,
         ),
         children: <Widget>[
-          SixStaggeredEntry(
-            key: const ValueKey<String>('gestao-hub-intro'),
-            delay: Duration(milliseconds: 40),
-            child: _GestaoHubIntroCard(
-              backgroundImageUrl: _gestaoImageUrl(GestaoMobileAssetSlot.hero),
-              title: context.t(
-                'gestao.hub.title',
-                fallback: 'O que você quer gerenciar?',
-              ),
-              subtitles: <String>[
-                context.t(
-                  'gestao.hub.terminal.products',
-                  fallback: 'Gerencie seus produtos e colaboradores',
-                ),
-                context.t(
-                  'gestao.hub.terminal.finance',
-                  fallback: 'Gerencie seu financeiro',
-                ),
-                context.t(
-                  'gestao.hub.terminal.preferences',
-                  fallback: 'Ajuste suas preferências e configurações',
-                ),
-              ],
+          Text(
+            context.t('gestao.title', fallback: 'Gestão'),
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              color: colors.titleText,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 6),
+          Text(
+            context.t(
+              'gestao.hub.title',
+              fallback: 'O que você quer gerenciar?',
+            ),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: colors.mutedText,
+            ),
+          ),
+          const SizedBox(height: 22),
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints gridConstraints) {
               const double gap = 12;
               final double itemWidth = (gridConstraints.maxWidth - gap) / 2;
+              final double cardHeight = itemWidth * 1.12 +
+                  (textScale - 1).clamp(0.0, 2.0).toDouble() * 64;
 
               return Wrap(
                 spacing: gap,
@@ -414,14 +401,17 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 children: <Widget>[
                   for (int index = 0; index < actions.length; index += 1)
                     SizedBox(
+                      key: ValueKey(actions[index].preferencia),
                       width: itemWidth,
                       height: cardHeight,
-                      child: _buildReorderableHubCard(
-                        action: actions[index],
-                        index: index,
-                        itemWidth: itemWidth,
-                        cardHeight: cardHeight,
-                      ),
+                      child: _businessVisuals.loading
+                          ? const SixVisualAssetShimmer(borderRadius: 18)
+                          : _buildReorderableHubCard(
+                              action: actions[index],
+                              index: index,
+                              itemWidth: itemWidth,
+                              cardHeight: cardHeight,
+                            ),
                     ),
                 ],
               );
@@ -438,40 +428,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     required double itemWidth,
     required double cardHeight,
   }) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return SixStaggeredEntry(
       key: ValueKey<String>('gestao-hub-reorder-${action.id}'),
-      delay: Duration(milliseconds: 90 + (index * 45)),
+      delay: Duration(milliseconds: 50 + (index * 35)),
       child: SixMobileReorderableCard<GestaoMobileCardPreferencia>(
         value: action.preferencia,
         onReorder: _reordenarCardsGestaoMobile,
         feedbackWidth: itemWidth,
         feedbackHeight: cardHeight,
-        handleColor: action.accentColor.withAlpha(isDark ? 220 : 190),
+        handleColor: context.sixMobileColors.mutedText,
+        showHandle: false,
         cardBuilder: () => _GestaoHubActionCard(data: action),
       ),
     );
   }
 
   List<_GestaoHubActionData> _hubActions(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color catalogAccent =
-        isDark ? SixMobilePalette.brandCyan : SixMobilePalette.brandBlue;
-    final Color peopleAccent =
-        isDark
-            ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.34)!
-            : SixMobilePalette.brandViolet;
-    final Color financeAccent =
-        isDark
-            ? SixMobilePalette.brandCyan
-            : Color.lerp(
-              SixMobilePalette.brandCyan,
-              SixMobilePalette.brandNavyDeep,
-              0.48,
-            )!;
-    final Color settingsAccent = isDark ? colors.accent : colors.primary;
-
     final Map<GestaoMobileCardPreferencia, _GestaoHubActionData> actions =
         <GestaoMobileCardPreferencia, _GestaoHubActionData>{
           GestaoMobileCardPreferencia.catalogo: _GestaoHubActionData(
@@ -485,9 +457,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             assetContorno: _catalogAssetContorno,
             assetAcento: _catalogAssetAcento,
             backgroundImageUrl: _gestaoImageUrl(GestaoMobileAssetSlot.catalogo),
-            accentColor: catalogAccent,
-            brandStart: SixMobilePalette.brandCyan,
-            brandEnd: SixMobilePalette.brandBlue,
             onTap: () => _openArea(GestaoMobileArea.catalogo),
           ),
           GestaoMobileCardPreferencia.pessoas: _GestaoHubActionData(
@@ -501,9 +470,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             assetContorno: _peopleAssetContorno,
             assetAcento: _peopleAssetAcento,
             backgroundImageUrl: _gestaoImageUrl(GestaoMobileAssetSlot.pessoas),
-            accentColor: peopleAccent,
-            brandStart: SixMobilePalette.brandBlue,
-            brandEnd: SixMobilePalette.brandViolet,
             onTap: () => _openArea(GestaoMobileArea.pessoas),
           ),
           GestaoMobileCardPreferencia.financeiro: _GestaoHubActionData(
@@ -519,9 +485,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             backgroundImageUrl: _gestaoImageUrl(
               GestaoMobileAssetSlot.financeiro,
             ),
-            accentColor: financeAccent,
-            brandStart: SixMobilePalette.brandCyan,
-            brandEnd: SixMobilePalette.brandBlue,
             onTap: () => _openArea(GestaoMobileArea.financeiro),
           ),
           GestaoMobileCardPreferencia.configuracoes: _GestaoHubActionData(
@@ -537,9 +500,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             backgroundImageUrl: _gestaoImageUrl(
               GestaoMobileAssetSlot.configuracoes,
             ),
-            accentColor: settingsAccent,
-            brandStart: SixMobilePalette.brandBlue,
-            brandEnd: SixMobilePalette.brandViolet,
             onTap: () => _openArea(GestaoMobileArea.configuracoes),
           ),
         };
@@ -1508,119 +1468,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 }
 
-class _GestaoHubLoadingState extends StatelessWidget {
-  const _GestaoHubLoadingState({
-    required this.scrollController,
-    required this.topInset,
-  });
-
-  final ScrollController scrollController;
-  final double topInset;
-
-  @override
-  Widget build(BuildContext context) {
-    final double textScale = MediaQuery.textScalerOf(context).scale(1);
-    final double cardHeight =
-        204 + ((textScale - 1).clamp(0.0, 0.8) * 72);
-
-    return SafeArea(
-      top: false,
-      left: false,
-      right: false,
-      child: ListView(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
-          16,
-          topInset + 10,
-          16,
-          24,
-        ),
-        children: <Widget>[
-          const SixVisualAssetShimmer(
-            height: 154,
-            borderRadius: 22,
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              const double gap = 12;
-              final double width = (constraints.maxWidth - gap) / 2;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: <Widget>[
-                  for (int index = 0; index < 4; index += 1)
-                    SizedBox(
-                      width: width,
-                      height: cardHeight,
-                      child: SixVisualAssetShimmer(
-                        height: cardHeight,
-                        borderRadius: 22,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GestaoHubIntroCard extends StatelessWidget {
-  const _GestaoHubIntroCard({
-    required this.title,
-    required this.subtitles,
-    this.backgroundImageUrl,
-  });
-
-  final String title;
-  final List<String> subtitles;
-  final String? backgroundImageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return SixMobileRotatingIntroCard(
-      title: title,
-      subtitles: subtitles,
-      backgroundImageUrl: backgroundImageUrl,
-      markChild: const _GestaoHubMark(),
-    );
-  }
-}
-
-class _GestaoHubMark extends StatelessWidget {
-  const _GestaoHubMark();
-
-  @override
-  Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: <Widget>[
-          for (int index = 0; index < 4; index += 1)
-            Container(
-              width: 15,
-              height: 15,
-              decoration: BoxDecoration(
-                color:
-                    index == 0 || index == 3 ? colors.accent : colors.titleText,
-                borderRadius: BorderRadius.circular(index == 0 ? 5 : 4),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
+/// Composition exclusive to the mobile management hub.
 class _GestaoHubActionCard extends StatelessWidget {
   const _GestaoHubActionCard({required this.data});
 
@@ -1628,298 +1476,104 @@ class _GestaoHubActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool contextual = data.backgroundImageUrl?.isNotEmpty ?? false;
+    final colors = context.sixMobileColors;
+    final url = data.backgroundImageUrl;
+    final fallback = ColoredBox(
+      color: SixMobilePalette.surfaceElevatedDark,
+      child: Center(
+        child: SixImagemCanetinha(
+          assetContorno: data.assetContorno,
+          assetAcento: data.assetAcento,
+          largura: 72,
+          altura: 72,
+          fit: BoxFit.contain,
+          corContorno: SixMobilePalette.heroSupportingTextDark,
+          corAcento: SixMobilePalette.heroSupportingTextDark,
+        ),
+      ),
+    );
 
     return Semantics(
       container: true,
       button: true,
-      enabled: true,
       label: '${data.title}. ${data.subtitle}',
-      child: Container(
+      child: Material(
         key: ValueKey<String>('gestao-hub-card-${data.id}'),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: data.brandEnd.withAlpha(isDark ? 30 : 17),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+        color: SixMobilePalette.surfaceElevatedDark,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            ExcludeSemantics(
+              child: url == null || url.isEmpty
+                  ? fallback
+                  : SixCachedNetworkImage(
+                      key: ValueKey<String>('gestao-${data.id}-$url'),
+                      imageUrl: url,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      filterQuality: FilterQuality.high,
+                      placeholder: const SixVisualAssetShimmer(borderRadius: 0),
+                      errorBuilder: (_, __, ___) => fallback,
+                    ),
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          clipBehavior: Clip.antiAlias,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[
-                  Color.alphaBlend(
-                    data.brandStart.withAlpha(isDark ? 28 : 14),
-                    colors.surface,
-                  ),
-                  Color.alphaBlend(
-                    data.brandEnd.withAlpha(isDark ? 20 : 8),
-                    colors.surface,
-                  ),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: data.accentColor.withAlpha(isDark ? 82 : 54),
-              ),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: data.onTap,
-              child:
-                  contextual
-                      ? _buildContextualContent(context)
-                      : _buildLegacyContent(context),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContextualContent(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final String url = data.backgroundImageUrl!;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        SixCachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover,
-          alignment: Alignment.topCenter,
-          filterQuality: FilterQuality.high,
-          placeholder: const SixVisualAssetShimmer(
-            borderRadius: 0,
-          ),
-          errorBuilder: (
-            BuildContext context,
-            Object error,
-            StackTrace? stackTrace,
-          ) {
-            debugPrint(
-              '[GestaoMobile] Falha ao carregar imagem contextual '
-              'url=$url error=$error',
-            );
-            return DecoratedBox(
+            const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[data.brandStart, data.brandEnd],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: <Color>[
+                    Colors.transparent,
+                    Color(0x08000000),
+                    Color(0xE6000000),
+                  ],
+                  stops: <double>[0, .45, 1],
                 ),
               ),
-            );
-          },
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: const <double>[0, 0.42, 0.68, 1],
-              colors: <Color>[
-                Color(0x1200163A),
-                Color(0x4200163A),
-                Color(0xC900163A),
-                SixMobilePalette.brandNavyDeep,
-              ],
             ),
-          ),
-        ),
-        Positioned(
-          left: 10,
-          right: 10,
-          bottom: 10,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                data.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: SixMobilePalette.onPrimary,
-                  fontSize: 14.5,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
-                  shadows: <Shadow>[
-                    Shadow(color: Color(0x99000000), blurRadius: 8),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      data.title,
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 18,
+                        height: 1.12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      data.subtitle,
+                      style: const TextStyle(
+                        color: SixMobilePalette.heroSupportingTextDark,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 5),
-              Text(
-                data.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: SixMobilePalette.onPrimary.withAlpha(218),
-                  fontSize: 10.7,
-                  height: 1.16,
-                  fontWeight: FontWeight.w600,
+            ),
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: data.onTap,
+                  splashColor: colors.titleText.withValues(alpha: .10),
+                  highlightColor: SixMobilePalette.onPrimary.withValues(alpha: .08),
                 ),
               ),
-              const SizedBox(height: 8),
-              ExcludeSemantics(
-                child: Container(
-                  width: 27,
-                  height: 27,
-                  decoration: BoxDecoration(
-                    color: data.accentColor.withAlpha(isDark ? 56 : 46),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: data.accentColor.withAlpha(isDark ? 120 : 96),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 15,
-                    color: SixMobilePalette.onPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildLegacyContent(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            child: Center(
-              child: Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: <Color>[
-                      data.brandStart.withAlpha(isDark ? 92 : 54),
-                      data.brandEnd.withAlpha(isDark ? 58 : 34),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: data.accentColor.withAlpha(isDark ? 108 : 82),
-                  ),
-                  boxShadow:
-                      isDark
-                          ? <BoxShadow>[
-                            BoxShadow(
-                              color: data.brandStart.withAlpha(64),
-                              blurRadius: 20,
-                            ),
-                          ]
-                          : const <BoxShadow>[],
-                ),
-                child: Center(
-                  child: SixImagemCanetinha(
-                    assetContorno: data.assetContorno,
-                    assetAcento: data.assetAcento,
-                    largura: 88,
-                    altura: 88,
-                    fit: BoxFit.contain,
-                    corContorno: colors.titleText,
-                    corAcento: data.accentColor,
-                    gradienteContorno: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[
-                        Color.lerp(
-                          data.brandStart,
-                          colors.titleText,
-                          isDark ? 0.28 : 0.08,
-                        )!,
-                        Color.lerp(
-                          data.brandEnd,
-                          colors.titleText,
-                          isDark ? 0.48 : 0.20,
-                        )!,
-                      ],
-                    ),
-                    gradienteAcento: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[data.accentColor, data.brandEnd],
-                    ),
-                    reforcoContorno: 0.58,
-                    reforcoAcento: 0.72,
-                    opacidadeReforco: isDark ? 0.52 : 0.42,
-                    opacidadeBrilho: isDark ? 0.48 : 0.16,
-                    desfoqueBrilho: 4,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Text(
-            data.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: data.accentColor,
-              fontSize: 14.5,
-              height: 1.08,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            data.subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colors.mutedText,
-              fontSize: 10.7,
-              height: 1.16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ExcludeSemantics(
-            child: Container(
-              width: 27,
-              height: 27,
-              decoration: BoxDecoration(
-                color: data.accentColor.withAlpha(isDark ? 34 : 20),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: data.accentColor.withAlpha(isDark ? 74 : 48),
-                ),
-              ),
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                size: 15,
-                color: data.accentColor,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1934,9 +1588,6 @@ class _GestaoHubActionData {
     required this.assetContorno,
     required this.assetAcento,
     this.backgroundImageUrl,
-    required this.accentColor,
-    required this.brandStart,
-    required this.brandEnd,
     required this.onTap,
   });
 
@@ -1947,9 +1598,6 @@ class _GestaoHubActionData {
   final String assetContorno;
   final String assetAcento;
   final String? backgroundImageUrl;
-  final Color accentColor;
-  final Color brandStart;
-  final Color brandEnd;
   final VoidCallback onTap;
 }
 
