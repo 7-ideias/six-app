@@ -84,3 +84,45 @@ Cartões de crédito, parcelas de fatura e pagamento de faturas ficam fora desta
 48 verificações Dart executadas (36 existentes + 4 de espaços + 8 de divisão/contrato). Sintaxe Java 17 e `dart format` aprovados. Adicionados 7 testes backend para previsão, taxas, conta padrão, isolamento, confirmação duplicada e estorno. Validar as migrations e os fluxos completos em homologação; Flutter analyze, widget tests e build não executados neste ambiente por falta das dependências já bloqueadas na etapa anterior.
 
 Taxas automáticas, antecipação, agenda de parcelas da operadora, conciliação bancária e integração com adquirentes continuam fora deste pacote. A visão de recebíveis é separada dos totais brutos de vendas da agenda; não soma novamente esses valores à receita. Faturas dos cartões usados para compras pessoais/empresariais também ficam fora deste pacote.
+
+
+## Cobertura de interação Web/Mobile — PR 311
+
+`test/presentation/screens/financeiro_fluxos_test.dart` contém sete cenários
+parametrizados para as duas composições visuais (14 testes de widget):
+
+- escolha de maquininha, conta padrão, troca explícita da conta, divisão e bloqueio por soma inválida/conta ausente;
+- mesma forma dividida entre duas contas sem maquininha;
+- confirmação com validação de valor, cancelamento, argumentos enviados ao serviço e recarga; estorno com cancelamento e retorno a previsto;
+- erro do serviço de confirmação e nova tentativa;
+- bloqueio de envio duplicado durante confirmação pendente;
+- resposta atrasada de Pessoal descartada após troca para Empresa no seletor;
+- troca do espaço nas configurações e persistência da conta padrão da maquininha no serviço do espaço correto.
+
+Os testes usam widgets reais, serviços simulados e o provider de regionalização.
+As verificações de destinos examinam o resultado retornado pela rota ao fluxo
+chamador; as de configuração/recebíveis capturam argumentos enviados aos serviços.
+Não substituem testes integrados dos endpoints nem exercitam o envio HTTP do PDV.
+Animações decorativas contínuas são desabilitadas no harness para permitir
+`pumpAndSettle`; as rotas e as interações permanecem reais.
+
+Correções associadas: recarga/descartes de respostas obsoletas ao mudar espaço,
+reuso do serviço do espaço nos seletores e descarte do controlador de confirmação
+somente após a remoção da rota. Serviços injetados são de responsabilidade do
+chamador; os criados pelo widget continuam sendo fechados pelo widget.
+
+Validação nesta revisão: `dart format --language-version=3.7` e `git diff --check`
+aprovados. Execução de widgets/analyze/build **pendente**: inicialização do Flutter
+bloqueada pela revisão automática por tentativa de acesso a metadados da
+infraestrutura; execução direta de um contrato Dart também abortou com `Bus error`
+no SDK local. Nenhum teste novo foi declarado aprovado sem execução.
+
+Executar em ambiente com Flutter e dependências preparados:
+
+```bash
+flutter pub get
+flutter test test/presentation/screens/financeiro_fluxos_test.dart test/presentation/screens/configuracoes_espaco_mobile_test.dart
+flutter test
+flutter analyze
+flutter build web
+```

@@ -6,13 +6,14 @@ import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class RecebiveisVendasWeb extends StatefulWidget {
-  const RecebiveisVendasWeb({super.key});
+  const RecebiveisVendasWeb({super.key, this.service});
+  final RecebivelVendaService? service;
   @override
   State<RecebiveisVendasWeb> createState() => _RecebiveisVendasWebState();
 }
 
 class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
-  final _service = RecebivelVendaService();
+  late final _service = widget.service ?? RecebivelVendaService();
   List<RecebivelVenda> _items = [];
   bool _loading = true, _error = false, _saving = false;
   String _filtro = 'PREVISTO';
@@ -24,7 +25,7 @@ class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
 
   @override
   void dispose() {
-    _service.dispose();
+    if (widget.service == null) _service.dispose();
     super.dispose();
   }
 
@@ -57,62 +58,69 @@ class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
               .replaceAll(locale.decimalSeparator, '.'),
         ) ??
         0;
-    Widget form(BuildContext ctx, StateSetter update) => Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          context.t(
-            item.status == 'PREVISTO' ? 'machine.confirm' : 'machine.reverse',
-          ),
-          style: Theme.of(ctx).textTheme.titleLarge,
-        ),
-        Text(
-          [
-            item.codigoOperacao,
-            item.descricao,
-          ].where((s) => s.isNotEmpty).join(' · '),
-        ),
-        const SizedBox(height: 16),
-        if (item.status == 'PREVISTO') ...[
-          TextField(
-            controller: valor,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: context.t('machine.actualAmount'),
+    ModalRoute<dynamic>? editorRoute;
+    Widget form(BuildContext ctx, StateSetter update) {
+      editorRoute = ModalRoute.of(ctx);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.t(
+              item.status == 'PREVISTO' ? 'machine.confirm' : 'machine.reverse',
             ),
-            onChanged: (_) => update(() {}),
+            style: Theme.of(ctx).textTheme.titleLarge,
           ),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.event),
-            label: Text(locale.formatDate(data)),
-            onPressed: () async {
-              final selected = await showDatePicker(
-                context: context,
-                initialDate: data,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-              );
-              if (selected != null && ctx.mounted)
-                update(() => data = selected);
-            },
+          Text(
+            [
+              item.codigoOperacao,
+              item.descricao,
+            ].where((s) => s.isNotEmpty).join(' · '),
           ),
-        ] else
-          Text(context.t('machine.reverseHint')),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed:
-              item.status != 'PREVISTO' || numero() > 0
-                  ? () => Navigator.pop(ctx, true)
-                  : null,
-          child: Text(context.t('space.save')),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text(context.t('space.cancel')),
-        ),
-      ],
-    );
+          const SizedBox(height: 16),
+          if (item.status == 'PREVISTO') ...[
+            TextField(
+              controller: valor,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: context.t('machine.actualAmount'),
+              ),
+              onChanged: (_) => update(() {}),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.event),
+              label: Text(locale.formatDate(data)),
+              onPressed: () async {
+                final selected = await showDatePicker(
+                  context: context,
+                  initialDate: data,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (selected != null && ctx.mounted)
+                  update(() => data = selected);
+              },
+            ),
+          ] else
+            Text(context.t('machine.reverseHint')),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed:
+                item.status != 'PREVISTO' || numero() > 0
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+            child: Text(context.t('space.save')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.t('space.cancel')),
+          ),
+        ],
+      );
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -130,6 +138,8 @@ class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
           ),
     );
     final amount = numero();
+    // The route still renders its text field during the exit animation.
+    await editorRoute?.completed;
     valor.dispose();
     if (confirmed != true || !mounted) return;
     setState(() => _saving = true);

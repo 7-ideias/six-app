@@ -26,8 +26,13 @@ Future<List<RecebimentoFormaInput>?> selecionarDestinosMobile(
 }
 
 class DestinosRecebimentoMobile extends StatefulWidget {
-  const DestinosRecebimentoMobile({super.key, required this.formas});
+  const DestinosRecebimentoMobile({
+    super.key,
+    required this.formas,
+    this.service,
+  });
   final List<RecebimentoFormaInput> formas;
+  final ConfiguracaoFinanceiraService? service;
   @override
   State<DestinosRecebimentoMobile> createState() =>
       _DestinosRecebimentoMobileState();
@@ -35,7 +40,8 @@ class DestinosRecebimentoMobile extends StatefulWidget {
 
 class _DestinosRecebimentoMobileState extends State<DestinosRecebimentoMobile> {
   late final _drafts = widget.formas.map(DestinoRecebimentoDraft.new).toList();
-  final _service = ConfiguracaoFinanceiraService('EMPRESA');
+  late final _service =
+      widget.service ?? ConfiguracaoFinanceiraService('EMPRESA');
   List<ConfiguracaoFinanceira> _contas = [], _maquinas = [];
   bool _loading = true, _erro = false;
   @override
@@ -46,7 +52,7 @@ class _DestinosRecebimentoMobileState extends State<DestinosRecebimentoMobile> {
 
   @override
   void dispose() {
-    _service.dispose();
+    if (widget.service == null) _service.dispose();
     super.dispose();
   }
 
@@ -80,6 +86,7 @@ class _DestinosRecebimentoMobileState extends State<DestinosRecebimentoMobile> {
       context,
       'EMPRESA',
       grupo: grupo,
+      service: _service,
       permitirLimpar: grupo == 'MAQUININHAS',
     );
     if (id == null || !mounted) return;

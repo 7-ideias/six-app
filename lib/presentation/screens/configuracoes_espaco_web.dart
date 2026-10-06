@@ -5,14 +5,16 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class ConfiguracoesEspacoWeb extends StatefulWidget {
-  const ConfiguracoesEspacoWeb({super.key, required this.espaco});
+  const ConfiguracoesEspacoWeb({super.key, required this.espaco, this.service});
   final String espaco;
+  final ConfiguracaoFinanceiraService? service;
   @override
   State<ConfiguracoesEspacoWeb> createState() => _ConfiguracoesEspacoWebState();
 }
 
 class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
-  late final _service = ConfiguracaoFinanceiraService(widget.espaco);
+  late ConfiguracaoFinanceiraService _service =
+      widget.service ?? ConfiguracaoFinanceiraService(widget.espaco);
   String _grupo = 'CONTAS';
   bool _loading = true;
   bool _error = false;
@@ -25,22 +27,38 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
 
   @override
   void dispose() {
-    _service.dispose();
+    if (widget.service == null) _service.dispose();
     super.dispose();
   }
 
+  int _request = 0;
+
+  @override
+  void didUpdateWidget(covariant ConfiguracoesEspacoWeb oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.espaco != widget.espaco ||
+        oldWidget.service != widget.service) {
+      if (oldWidget.service == null) _service.dispose();
+      _service = widget.service ?? ConfiguracaoFinanceiraService(widget.espaco);
+      _items = [];
+      _grupo = 'CONTAS';
+      _load();
+    }
+  }
+
   Future<void> _load() async {
+    final request = ++_request;
     setState(() {
       _loading = true;
       _error = false;
     });
     try {
       final items = await _service.listar(_grupo);
-      if (mounted) setState(() => _items = items);
+      if (mounted && request == _request) setState(() => _items = items);
     } catch (_) {
-      if (mounted) setState(() => _error = true);
+      if (mounted && request == _request) setState(() => _error = true);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && request == _request) setState(() => _loading = false);
     }
   }
 
@@ -275,6 +293,7 @@ class _WebConfigEditorState extends State<_WebConfigEditor> {
               if (widget.grupo == 'MAQUININHAS')
                 ContaFinanceiraWebField(
                   espaco: widget.service.espaco,
+                  service: widget.service,
                   value: _contaDestinoId,
                   enabled: !_saving,
                   onChanged: (v) => setState(() => _contaDestinoId = v),

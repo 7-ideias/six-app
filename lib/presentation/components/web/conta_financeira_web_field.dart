@@ -7,11 +7,12 @@ Future<String?> selecionarContaWeb(
   String espaco, {
   String grupo = 'CONTAS',
   bool permitirLimpar = false,
+  ConfiguracaoFinanceiraService? service,
 }) async {
-  final service = ConfiguracaoFinanceiraService(espaco);
+  final ownedService = service ?? ConfiguracaoFinanceiraService(espaco);
   List<ConfiguracaoFinanceira> items;
   try {
-    items = await service.listar(grupo);
+    items = await ownedService.listar(grupo);
   } catch (_) {
     if (context.mounted)
       ScaffoldMessenger.of(
@@ -19,7 +20,7 @@ Future<String?> selecionarContaWeb(
       ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
     return null;
   } finally {
-    service.dispose();
+    if (service == null) ownedService.dispose();
   }
   if (!context.mounted) return null;
   final options = Builder(
@@ -78,8 +79,10 @@ class ContaFinanceiraWebField extends StatefulWidget {
     required this.onChanged,
     this.value,
     this.enabled = true,
+    this.service,
   });
   final String espaco;
+  final ConfiguracaoFinanceiraService? service;
   final String? value;
   final ValueChanged<String?> onChanged;
   final bool enabled;
@@ -96,14 +99,30 @@ class _ContaFinanceiraWebFieldState extends State<ContaFinanceiraWebField> {
     _load();
   }
 
+  int _request = 0;
+
+  @override
+  void didUpdateWidget(covariant ContaFinanceiraWebField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.espaco != widget.espaco ||
+        oldWidget.service != widget.service) {
+      _items = [];
+      _load();
+    }
+  }
+
   Future<void> _load() async {
-    final s = ConfiguracaoFinanceiraService(widget.espaco);
+    final request = ++_request;
+    final espaco = widget.espaco;
+    final ownsService = widget.service == null;
+    final s = widget.service ?? ConfiguracaoFinanceiraService(espaco);
     try {
       final items = await s.listar('CONTAS');
-      if (mounted) setState(() => _items = items);
+      if (mounted && widget.espaco == espaco && request == _request)
+        setState(() => _items = items);
     } catch (_) {
     } finally {
-      s.dispose();
+      if (ownsService) s.dispose();
     }
   }
 
@@ -118,12 +137,14 @@ class _ContaFinanceiraWebFieldState extends State<ContaFinanceiraWebField> {
           !widget.enabled
               ? null
               : () async {
+                final espaco = widget.espaco;
                 final id = await selecionarContaWeb(
                   context,
                   widget.espaco,
                   permitirLimpar: true,
+                  service: widget.service,
                 );
-                if (id != null && mounted) {
+                if (id != null && mounted && widget.espaco == espaco) {
                   widget.onChanged(id.isEmpty ? null : id);
                   await _load();
                 }
