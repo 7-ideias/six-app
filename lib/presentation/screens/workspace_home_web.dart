@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/admin_portal_service.dart';
@@ -662,7 +663,7 @@ class _WorkspaceHomeViewButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? tokens.info : tokens.secondaryText,
+                color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
               ),
               const SizedBox(width: 8),
               Text(
@@ -737,7 +738,6 @@ class _WorkspaceHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final WorkspaceHomeModel? currentHome = home;
     final String? operationalDate =
         currentHome == null
@@ -774,7 +774,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
             'Atualizar resumo do dia',
           ),
           child: OutlinedButton.icon(
-            style: _homeOutlinedButtonStyle(tokens: tokens),
+            style: _homeOutlinedButtonStyle(context: context),
             onPressed: loading ? null : onRefresh,
             icon:
                 loading
@@ -783,7 +783,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: tokens.info,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     )
                     : const Icon(Icons.refresh_rounded, size: 18),
@@ -879,7 +879,6 @@ class _WorkspaceHomeError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final _HomeToneStyle tone = _homeToneStyle(
       context,
@@ -935,10 +934,7 @@ class _WorkspaceHomeError extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                    ),
+                    style: SixWebActionStyles.primary(context),
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh_rounded),
                     label: Text(
@@ -1000,7 +996,7 @@ class _WorkspaceHomeSection extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: tokens.info, size: 19),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1054,7 +1050,7 @@ class _WorkspaceHomeRoleHeader extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: tokens.info, size: 20),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -2150,7 +2146,7 @@ class _AttentionCard extends StatelessWidget {
             alignment: stack ? Alignment.centerLeft : Alignment.centerRight,
             child: TextButton.icon(
               key: Key('workspace-home-attention-action-${entry.keySuffix}'),
-              style: _homeTextButtonStyle(tokens: tokens),
+              style: _homeTextButtonStyle(context: context),
               onPressed: entry.onAction,
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
               label: Text(entry.actionLabel),
@@ -2292,41 +2288,9 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final ButtonStyle style = ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll<Size>(Size(0, 42)),
-      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
-        EdgeInsets.symmetric(horizontal: 14),
-      ),
-      shape: WidgetStatePropertyAll<OutlinedBorder>(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      side: WidgetStatePropertyAll<BorderSide>(
-        BorderSide(
-          color: action.primary ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      backgroundColor: WidgetStatePropertyAll<Color>(
-        action.primary ? colorScheme.primary : tokens.surfaceMuted,
-      ),
-      foregroundColor: WidgetStatePropertyAll<Color>(
-        action.primary ? colorScheme.onPrimary : tokens.primaryText,
-      ),
-      overlayColor:
-          action.primary
-              ? WidgetStateProperty.resolveWith<Color?>((
-                Set<WidgetState> states,
-              ) {
-                if (!_hasInteractiveState(states)) return null;
-                return colorScheme.onPrimary.withValues(alpha: 0.12);
-              })
-              : _homeOverlay(tokens),
-      textStyle: WidgetStatePropertyAll<TextStyle?>(
-        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
-      ),
-    );
+    final ButtonStyle style = action.primary
+        ? SixWebActionStyles.primary(context)
+        : SixWebActionStyles.secondary(context);
 
     if (action.primary) {
       return FilledButton.icon(
@@ -2338,11 +2302,11 @@ class _QuickActionButton extends StatelessWidget {
       );
     }
 
-    return FilledButton.tonalIcon(
+    return OutlinedButton.icon(
       key: Key('workspace-home-quick-action-${action.keySuffix}'),
       style: style,
       onPressed: action.onPressed,
-      icon: Icon(action.icon, size: 18, color: tokens.info),
+      icon: Icon(action.icon, size: 18),
       label: Text(action.label),
     );
   }
@@ -2484,67 +2448,9 @@ _HomeTone _stockSituationTone({
   return _HomeTone.success;
 }
 
-ButtonStyle _homeOutlinedButtonStyle({required WebThemeTokens tokens}) {
-  return ButtonStyle(
-    backgroundColor: WidgetStateProperty.resolveWith<Color>((
-      Set<WidgetState> states,
-    ) {
-      return states.contains(WidgetState.disabled)
-          ? tokens.disabledBackground
-          : tokens.surfaceMuted;
-    }),
-    foregroundColor: WidgetStateProperty.resolveWith<Color>((
-      Set<WidgetState> states,
-    ) {
-      return states.contains(WidgetState.disabled)
-          ? tokens.disabledForeground
-          : tokens.info;
-    }),
-    side: WidgetStateProperty.resolveWith<BorderSide>((
-      Set<WidgetState> states,
-    ) {
-      return BorderSide(
-        color:
-            states.contains(WidgetState.disabled)
-                ? tokens.cardBorder
-                : tokens.selectedBorder,
-      );
-    }),
-    overlayColor: _homeOverlay(tokens),
-    shape: WidgetStatePropertyAll<OutlinedBorder>(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    textStyle: const WidgetStatePropertyAll<TextStyle>(
-      TextStyle(fontWeight: FontWeight.w800),
-    ),
-  );
-}
+ButtonStyle _homeOutlinedButtonStyle({required BuildContext context}) => SixWebActionStyles.secondary(context);
 
-ButtonStyle _homeTextButtonStyle({required WebThemeTokens tokens}) {
-  return ButtonStyle(
-    foregroundColor: WidgetStatePropertyAll<Color>(tokens.info),
-    overlayColor: _homeOverlay(tokens),
-    textStyle: const WidgetStatePropertyAll<TextStyle>(
-      TextStyle(fontWeight: FontWeight.w800),
-    ),
-  );
-}
-
-WidgetStateProperty<Color?> _homeOverlay(WebThemeTokens tokens) {
-  return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-    if (!_hasInteractiveState(states)) {
-      return null;
-    }
-
-    return tokens.hoverBackground.withValues(alpha: 0.72);
-  });
-}
-
-bool _hasInteractiveState(Set<WidgetState> states) {
-  return states.contains(WidgetState.hovered) ||
-      states.contains(WidgetState.focused) ||
-      states.contains(WidgetState.pressed);
-}
+ButtonStyle _homeTextButtonStyle({required BuildContext context}) => SixWebActionStyles.text(context);
 
 class _ResponsiveCardGrid extends StatelessWidget {
   const _ResponsiveCardGrid({required this.children});

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
 import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
@@ -80,14 +81,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
           ? _number.format(value.toInt())
           : value.toStringAsFixed(2).replaceAll('.', ',');
 
-  ButtonStyle _headerOutlinedButtonStyle(WebThemeTokens tokens) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      backgroundColor: tokens.surface,
-      side: BorderSide(color: tokens.cardBorder),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
+  ButtonStyle _headerOutlinedButtonStyle(WebThemeTokens tokens) => SixWebActionStyles.secondary(context);
 
   @override
   Widget build(BuildContext context) {
@@ -832,7 +826,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.warehouse_outlined, size: 48, color: tokens.info),
+            Icon(Icons.warehouse_outlined, size: 48, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 14),
             Text(
               'Nenhum produto em estoque ainda.',

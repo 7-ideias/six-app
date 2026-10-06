@@ -3,8 +3,147 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:sixpos/presentation/theme/six_web_action_styles.dart';
+import 'package:sixpos/presentation/layouts/six_web_page_shell.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/domain/models/aparencia_models.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 
 void main() {
+  for (final dark in [false, true]) {
+    testWidgets(
+      'CTAs acompanham Aparência e troca de paleta em ${dark ? "dark" : "light"}',
+      (tester) async {
+        final resolver = SixThemeResolver();
+        final previous = ConfiguracaoAparenciaSistema(
+          tema: resolver.tema,
+          paleta: resolver.paleta,
+        );
+        final provider = ThemeProvider(enableLocalPersistence: false);
+        addTearDown(() {
+          provider.dispose();
+          resolver.atualizarConfiguracao(previous);
+        });
+        for (final color in [
+          const Color(0xFF7425AA),
+          const Color(0xFFFFDC45),
+        ]) {
+          final base = PaletaSistema.defaultPalette();
+          resolver.atualizarConfiguracao(
+            ConfiguracaoAparenciaSistema(
+              tema: dark ? TemaSistema.escuro : TemaSistema.claro,
+              paleta: PaletaSistema(
+                primaria: color,
+                secundaria: base.secundaria,
+                destaque: base.destaque,
+                alerta: base.alerta,
+                fundo: base.fundo,
+                superficie: base.superficie,
+                textoPrimario: base.textoPrimario,
+                textoSecundario: base.textoSecundario,
+              ),
+            ),
+          );
+          await tester.pumpWidget(
+            AnimatedBuilder(
+              animation: provider,
+              builder:
+                  (_, __) => MaterialApp(
+                    theme: provider.lightTheme,
+                    darkTheme: provider.darkTheme,
+                    themeMode: provider.themeMode,
+                    home: Scaffold(
+                      body: SixWebPageShell(
+                        child: Builder(
+                          builder:
+                              (context) => Wrap(
+                                children: [
+                                  FilledButton(
+                                    onPressed: () {},
+                                    child: const Text('inherited'),
+                                  ),
+                                  FilledButton(
+                                    style: SixWebActionStyles.primary(context),
+                                    onPressed: () {},
+                                    child: const Text('explicit'),
+                                  ),
+                                  FilledButton(
+                                    style: SixWebActionStyles.primary(context),
+                                    onPressed: null,
+                                    child: const Text('disabled'),
+                                  ),
+                                  FilledButton(
+                                    style: SixWebActionStyles.danger(context),
+                                    onPressed: () {},
+                                    child: const Text('danger'),
+                                  ),
+                                  OutlinedButton(
+                                    style: SixWebActionStyles.secondary(
+                                      context,
+                                    ),
+                                    onPressed: () {},
+                                    child: const Text('refresh'),
+                                  ),
+                                ],
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          for (final label in ['inherited', 'explicit']) {
+            final material = tester.widget<Material>(
+              find
+                  .ancestor(
+                    of: find.text(label),
+                    matching: find.byType(Material),
+                  )
+                  .first,
+            );
+            expect(material.color, color);
+            final foreground =
+                DefaultTextStyle.of(
+                  tester.element(find.text(label)),
+                ).style.color!;
+            expect(
+              _contrastRatio(color, foreground),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
+          final dangerMaterial = tester.widget<Material>(
+            find
+                .ancestor(
+                  of: find.text('danger'),
+                  matching: find.byType(Material),
+                )
+                .first,
+          );
+          expect(dangerMaterial.color, base.alerta);
+          final context = tester.element(find.text('refresh'));
+          final style = SixWebActionStyles.secondary(context);
+          expect(style.backgroundColor!.resolve({}), Colors.transparent);
+          expect(style.overlayColor!.resolve({WidgetState.hovered}), isNotNull);
+          expect(
+            style.foregroundColor!.resolve({WidgetState.disabled}),
+            isNot(style.foregroundColor!.resolve({})),
+          );
+          final disabled = tester.widget<Material>(
+            find
+                .ancestor(
+                  of: find.text('disabled'),
+                  matching: find.byType(Material),
+                )
+                .first,
+          );
+          expect(disabled.color, isNot(color));
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
+  }
+
   group('WebThemeTokens', () {
     test('define hierarquia clara de superficies em Light e Dark', () {
       final WebThemeTokens light = WebThemeTokens.resolve(

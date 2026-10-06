@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
@@ -287,54 +288,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     return Theme(
       data: theme.copyWith(
         outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            backgroundColor: tokens.surfaceMuted,
-            foregroundColor: tokens.info,
-            disabledBackgroundColor: tokens.disabledBackground,
-            disabledForegroundColor: tokens.disabledForeground,
-            minimumSize: const Size(0, 44),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            side: BorderSide(
-              color: tokens.info.withValues(alpha: 0.24),
-              width: 1.1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          style: SixWebActionStyles.secondary(context),
         ),
         filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: tokens.info,
-            foregroundColor: tokens.onInfo,
-            disabledBackgroundColor: tokens.disabledBackground,
-            disabledForegroundColor: tokens.disabledForeground,
-            minimumSize: const Size(0, 44),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          style: SixWebActionStyles.primary(context),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: tokens.secondaryText,
-            disabledForegroundColor: tokens.disabledForeground,
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          style: SixWebActionStyles.text(context),
         ),
       ),
       child: ColoredBox(

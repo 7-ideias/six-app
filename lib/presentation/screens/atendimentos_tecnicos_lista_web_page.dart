@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
@@ -1619,12 +1620,7 @@ class _AtendimentosTecnicosListaWebPageState
           onPressed: _abrindoNovoAtendimento ? null : _novoAtendimento,
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Novo atendimento'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
+          style: SixWebActionStyles.primary(context),
         ),
         _metricBadge(theme, '$total total', Icons.assignment_outlined),
         _metricBadge(theme, '$filtrados visíveis', Icons.filter_alt_outlined),
@@ -1895,15 +1891,7 @@ class _AtendimentosTecnicosListaWebPageState
                     onPressed: _limparFiltros,
                     icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
                     label: const Text('Limpar filtros'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 15,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
+                    style: SixWebActionStyles.secondary(context),
                   )
                   : null;
           final auditoria = _metricBadge(
@@ -1918,7 +1906,7 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: InputDecoration(
                 hintText:
                     'Buscar por cliente, técnico, status, equipamento ou número...',
-                prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
+                prefixIcon: Icon(Icons.search_rounded, color: Theme.of(context).colorScheme.primary),
                 suffixIcon:
                     _buscaController.text.trim().isEmpty
                         ? null
@@ -2048,7 +2036,7 @@ class _AtendimentosTecnicosListaWebPageState
       ),
       child: Row(
         children: <Widget>[
-          Icon(icon, color: tokens.info, size: 19),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -2622,7 +2610,6 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Widget _detailsControl({required VoidCallback onPressed}) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String tooltip = context.t(
       'atendimentoTecnico.lista.openDetails',
       fallback: 'Ver detalhes',
@@ -2631,13 +2618,7 @@ class _AtendimentosTecnicosListaWebPageState
       message: tooltip,
       child: IconButton.filledTonal(
         onPressed: onPressed,
-        style: IconButton.styleFrom(
-          backgroundColor: tokens.surfaceMuted,
-          foregroundColor: tokens.info,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
+        style: SixWebActionStyles.icon(context),
         icon: const Icon(Icons.visibility_outlined),
       ),
     );
@@ -3475,18 +3456,11 @@ class _AtendimentosTecnicosListaWebPageState
     String label,
     VoidCallback? onPressed,
   ) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: tokens.info,
-        backgroundColor: tokens.surfaceMuted,
-        side: BorderSide(color: tokens.cardBorder),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
+      style: SixWebActionStyles.secondary(context),
     );
   }
 
@@ -3497,30 +3471,19 @@ class _AtendimentosTecnicosListaWebPageState
     required VoidCallback? onPressed,
     bool filled = false,
   }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-    );
-    final padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 13);
     if (filled) {
       return FilledButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 17),
         label: Text(label),
-        style: FilledButton.styleFrom(padding: padding, shape: shape),
+        style: SixWebActionStyles.primary(context),
       );
     }
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 17),
       label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: tokens.info,
-        backgroundColor: tokens.surfaceMuted,
-        side: BorderSide(color: tokens.cardBorder),
-        padding: padding,
-        shape: shape,
-      ),
+      style: SixWebActionStyles.secondary(context),
     );
   }
 
@@ -4137,7 +4100,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.search_off_rounded, color: tokens.info, size: 38),
+            Icon(Icons.search_off_rounded, color: Theme.of(context).colorScheme.primary, size: 38),
             const SizedBox(height: 10),
             Text(
               'Nenhum atendimento encontrado.',
@@ -4636,7 +4599,7 @@ class _AlterarStatusAtendimentoWebDialogState
                             ),
                             child: Icon(
                               Icons.swap_horiz_rounded,
-                              color: tokens.info,
+                              color: Theme.of(context).colorScheme.primary,
                               size: 27,
                             ),
                           ),
@@ -4811,7 +4774,7 @@ class _StatusContextCard extends StatelessWidget {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(Icons.devices_other_outlined, color: tokens.info),
+            child: Icon(Icons.devices_other_outlined, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -4884,7 +4847,7 @@ class _StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: tokens.info),
+          Icon(icon, size: 15, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
             '$label: ',
@@ -5001,7 +4964,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                       ),
                     ),
                     if (selected)
-                      Icon(Icons.check_rounded, size: 18, color: tokens.info),
+                      Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
                   ],
                 ),
               ),
@@ -5044,7 +5007,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                 color: tokens.info.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(Icons.flag_outlined, color: tokens.info, size: 20),
+              child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -5234,7 +5197,7 @@ class _FiltroMultiSelectDropdownState
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(widget.icon, color: tokens.info, size: 19),
+                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -5362,7 +5325,7 @@ class _FiltroMultiSelectMenuEntryState
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(widget.titleIcon, color: tokens.info, size: 18),
+                Icon(widget.titleIcon, color: Theme.of(context).colorScheme.primary, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -5490,7 +5453,7 @@ class _FiltroMultiSelectMenuTile extends StatelessWidget {
               Icon(
                 selected ? Icons.check_circle_rounded : icon,
                 size: 18,
-                color: selected ? tokens.info : tokens.secondaryText,
+                color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -5499,7 +5462,7 @@ class _FiltroMultiSelectMenuTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: selected ? tokens.info : tokens.primaryText,
+                    color: selected ? Theme.of(context).colorScheme.primary : tokens.primaryText,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                   ),
                 ),
@@ -5702,7 +5665,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(widget.icon, color: tokens.info, size: 19),
+                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -5779,7 +5742,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
           Icon(
             icon,
             size: 18,
-            color: selected ? tokens.info : tokens.secondaryText,
+            color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -5788,7 +5751,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: selected ? tokens.info : tokens.primaryText,
+                color: selected ? Theme.of(context).colorScheme.primary : tokens.primaryText,
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
@@ -5797,7 +5760,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
           AnimatedOpacity(
             opacity: selected ? 1 : 0,
             duration: const Duration(milliseconds: 120),
-            child: Icon(Icons.check_rounded, size: 18, color: tokens.info),
+            child: Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 
 /// Margens únicas para páginas operacionais, medidas após a barra lateral.
 class SixWebPageShell extends StatelessWidget {
@@ -36,7 +37,10 @@ class SixWebPageShell extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: maxContentWidth),
-              child: SizedBox(width: double.infinity, child: child),
+              child: Theme(
+                data: SixWebActionStyles.apply(Theme.of(context)),
+                child: SizedBox(width: double.infinity, child: child),
+              ),
             ),
           ),
         );

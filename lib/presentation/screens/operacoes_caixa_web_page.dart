@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -1012,7 +1013,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       decoration: _softBox(theme),
       child: Row(
         children: <Widget>[
-          Icon(icon, color: tokens.info, size: 20),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1267,7 +1268,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                           ? Icons.check_circle_rounded
                           : Icons.radio_button_unchecked_rounded,
                       size: 18,
-                      color: selected ? tokens.info : tokens.secondaryText,
+                      color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1701,7 +1702,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: tokens.info, size: 22),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -2003,7 +2004,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         ? Icons.check_circle_rounded
                         : Icons.store_mall_directory_outlined,
                     size: 18,
-                    color: selected ? tokens.info : tokens.secondaryText,
+                    color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2088,40 +2089,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  ButtonStyle _outlinedButtonStyle(ThemeData theme, {Color? accentColor}) {
-    final tokens = WebThemeTokens.of(context);
-    final Color resolvedAccent = accentColor ?? tokens.info;
-    return OutlinedButton.styleFrom(
-      backgroundColor: tokens.surfaceMuted,
-      foregroundColor: resolvedAccent,
-      disabledBackgroundColor: tokens.disabledBackground,
-      disabledForegroundColor: tokens.disabledForeground,
-      minimumSize: const Size(0, 46),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      side: BorderSide(
-        color: resolvedAccent.withValues(alpha: 0.28),
-        width: 1.1,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _outlinedButtonStyle(ThemeData theme) => SixWebActionStyles.secondary(context);
 
-  ButtonStyle _filledButtonStyle(ThemeData theme) {
-    final tokens = WebThemeTokens.of(context);
-    return FilledButton.styleFrom(
-      backgroundColor: tokens.info,
-      foregroundColor: tokens.onInfo,
-      disabledBackgroundColor: tokens.disabledBackground,
-      disabledForegroundColor: tokens.disabledForeground,
-      minimumSize: const Size(0, 46),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _filledButtonStyle(ThemeData theme) => SixWebActionStyles.primary(context);
 
   CheckboxThemeData _checkboxTheme(ThemeData theme) {
     final tokens = WebThemeTokens.of(context);
@@ -3043,10 +3013,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           onPressed: () => Navigator.pop(context, true),
           style:
               danger
-                  ? FilledButton.styleFrom(
-                    backgroundColor: tokens.danger,
-                    foregroundColor: tokens.onDanger,
-                  )
+                  ? SixWebActionStyles.danger(context)
                   : null,
           child: Text(confirmLabel),
         ),
@@ -3359,17 +3326,11 @@ class _HistoricoDateFilterButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          side: BorderSide(color: tokens.cardBorder),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
+        style: SixWebActionStyles.secondary(context),
         onPressed: onPressed,
         child: Row(
           children: <Widget>[
-            Icon(Icons.calendar_today_outlined, size: 18, color: tokens.info),
+            Icon(Icons.calendar_today_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 9),
             Expanded(
               child: Column(

@@ -226,3 +226,25 @@ Para validar localmente, atualize frontend e backend desta branch:
    confira o padrão global no painel e na tela operacional.
 4. Em imagens com múltiplas especialidades, confirme que as demais continuam
    usando a imagem original; confira também DEV/LIVE e a ativação agendada.
+
+## CTAs e paleta de Aparência
+
+Os CTAs das 15 telas revisadas usam `SixWebActionStyles`, que deriva os estilos
+do `AppTheme` e do `ColorScheme` atual. O `SixWebPageShell` aplica esse padrão
+aos botões herdados, inclusive Produtos, Usuários do Sixo e painel SUPER.
+Estilos explícitos nas outras páginas delegam à mesma fonte.
+
+- Ações principais: cor primária cadastrada (`primaryContainer`) e texto com
+  contraste calculado pelo tema da aplicação.
+- Atualizar, filtros e ações secundárias: padrão contornado do tema, com os
+  mesmos estados de hover, foco e desabilitado.
+- Links e botões de ícone: respectivos estilos do tema da aplicação.
+- Seleções e ícones de filtros acompanham a paleta. Indicadores de status mantêm
+  sua semântica; ações destrutivas usam a cor de alerta da paleta.
+
+A troca da configuração de Aparência reconstrói os estilos sem precisar abrir
+novamente a tela. O ajuste se restringe à composição Web; Devoluções mantém
+a aplicação condicional para Web na jornada existente.
+
+Validação: teste de troca de paleta roxa/amarela em light/dark, contraste dos
+botões e estado desabilitado; Home nas cinco larguras de referência e build Web.
