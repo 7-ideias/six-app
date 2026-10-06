@@ -1,5 +1,10 @@
 import 'dart:async';
 
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -195,24 +200,27 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('Vencimento'),
+      find.text('Vencimento original'),
       260,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pump();
     await tester.tap(
       find
-          .ancestor(of: find.text('Vencimento'), matching: find.byType(InkWell))
+          .ancestor(
+            of: find.text('Vencimento original'),
+            matching: find.byType(InkWell),
+          )
           .first,
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 220));
 
-    expect(find.text('Data de vencimento'), findsOneWidget);
+    expect(find.text('Vencimento original'), findsWidgets);
     expect(
       _hasDecoratedAncestorColor(
         tester,
-        find.text('Data de vencimento'),
+        find.text('Vencimento original').last,
         SixMobileColorScheme.dark.background,
       ),
       isTrue,
@@ -274,7 +282,15 @@ Future<void> _pumpScreen(
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      home: child,
+      home: ChangeNotifierProvider(
+        create:
+            (_) => LocaleSettingsProvider(
+              regionalizacaoService: RegionalizacaoService(
+                apiClient: _RegionalApi(),
+              ),
+            ),
+        child: child,
+      ),
     ),
   );
   await tester.pump();
@@ -505,3 +521,9 @@ final Map<String, dynamic> _detailPayload = <String, dynamic>{
   'responsavel': <String, dynamic>{'nome': 'Mobile'},
   'payloadOriginalJson': <String, dynamic>{},
 };
+
+class _RegionalApi implements RegionalizacaoApiClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('Unexpected call');
+}

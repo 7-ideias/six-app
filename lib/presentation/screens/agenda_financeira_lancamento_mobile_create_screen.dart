@@ -1,3 +1,7 @@
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_pagamento_mobile_fields.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/conta_financeira_mobile_field.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
@@ -80,6 +84,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   DateTime _dataOperacao = _inicioHoje();
   DateTime _dataVencimento = _inicioHoje();
   DateTime _dataCompetencia = _inicioHoje();
+
+  DateTime? _dataPrevisaoPagamento;
+  bool _registrarPagamento = false;
+  DateTime _dataPagamentoRealizado = DateUtils.dateOnly(DateTime.now());
 
   bool _salvando = false;
   bool _carregandoTiposRecebimento = false;
@@ -357,12 +365,12 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       icon: Icons.calendar_month_outlined,
       children: <Widget>[
         _selectorTile(
-          label: 'Vencimento',
+          label: context.t('agenda.form.due'),
           value: _formatarDataBr(_dataVencimento),
           icon: Icons.event_available_outlined,
           onTap:
               () => _selecionarData(
-                titulo: 'Data de vencimento',
+                titulo: context.t('agenda.form.due'),
                 atual: _dataVencimento,
                 onSelected: (DateTime value) => _dataVencimento = value,
               ),
@@ -399,6 +407,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        _buildPagamentoFields(),
       ],
     );
   }
@@ -762,7 +772,17 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                           ),
                         )
                         : Icon(Icons.check_rounded),
-                label: Text(_salvando ? 'Salvando...' : 'Salvar lançamento'),
+                label: Text(
+                  context.t(
+                    _salvando
+                        ? 'agenda.form.saving'
+                        : _registrarPagamento
+                        ? (_tipoSelecionado == 'Receber'
+                            ? 'agenda.form.saveReceive'
+                            : 'agenda.form.saveContinue')
+                        : 'agenda.form.save',
+                  ),
+                ),
               ),
             ),
           ],
@@ -887,6 +907,20 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     return RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo.trim().toLowerCase());
   }
 
+  Widget _buildPagamentoFields() => AgendaPagamentoMobileFields(
+    receber: _tipoSelecionado == 'Receber',
+    previsao: _dataPrevisaoPagamento,
+    registrarPagamento: _registrarPagamento,
+    dataEfetiva: _dataPagamentoRealizado,
+    recorrente: _recorrencia.ativa,
+    enabled: !_salvando,
+    onPrevisaoChanged:
+        (value) => setState(() => _dataPrevisaoPagamento = value),
+    onRegistrarChanged: (value) => setState(() => _registrarPagamento = value),
+    onDataEfetivaChanged:
+        (value) => setState(() => _dataPagamentoRealizado = value),
+  );
+
   Future<void> _salvar() async {
     final FormState? formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
@@ -924,7 +958,11 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       _mostrarSnack('Lançamento salvo com sucesso.');
       final String idRetorno =
           response.id.isEmpty ? request.uuidOperacaoApp : response.id;
-      Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
+      Navigator.of(context).pop({
+        ...request.toAgendaItem(idFallback: idRetorno),
+        'registrarPagamento': _registrarPagamento,
+        'dataLiquidacaoSolicitada': _dataPagamentoRealizado.toIso8601String(),
+      });
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
       _mostrarSnack(
@@ -958,6 +996,9 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         'origemFiltro': origem,
         'empresaFiltro': _empresa,
         'formaPrevistaPagamento': formaPagamento,
+        'atualizarPrevisaoPagamento': true,
+        'dataPrevisaoPagamento':
+            _dataPrevisaoPagamento?.toIso8601String().split('T').first,
       },
       'contato': <String, dynamic>{'nome': contatoNome},
       'origem': 'mobile',
@@ -1091,11 +1132,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   DateTime _normalizarData(DateTime data) =>
       DateTime(data.year, data.month, data.day);
 
-  String _formatarDataBr(DateTime data) {
-    final String dia = data.day.toString().padLeft(2, '0');
-    final String mes = data.month.toString().padLeft(2, '0');
-    return '$dia/$mes/${data.year}';
-  }
+  String _formatarDataBr(DateTime data) =>
+      context.read<LocaleSettingsProvider>().formatDate(data);
 
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();

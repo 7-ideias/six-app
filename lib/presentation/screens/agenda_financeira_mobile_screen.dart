@@ -972,6 +972,10 @@ class _AgendaFinanceiraMobileScreenState
       ),
     );
     if (!mounted || item == null) return;
+    if (item['registrarPagamento'] == true) {
+      await _liquidarComFormas(item, parcialInicial: false);
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
@@ -989,6 +993,10 @@ class _AgendaFinanceiraMobileScreenState
       ),
     );
     if (!mounted || itemAtualizado == null) return;
+    if (itemAtualizado['registrarPagamento'] == true) {
+      await _liquidarComFormas(itemAtualizado, parcialInicial: false);
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
@@ -1073,7 +1081,11 @@ class _AgendaFinanceiraMobileScreenState
           request: AgendaFinanceiraLiquidacaoRequest(
             contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'TOTAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
@@ -1088,7 +1100,11 @@ class _AgendaFinanceiraMobileScreenState
           request: AgendaFinanceiraParcialRequest(
             contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,

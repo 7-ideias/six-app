@@ -71,6 +71,12 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'dateSelector.applyDate': 'Aplicar data',
+    'dateSelector.hint': 'Escolha uma data sem sair do atendimento.',
+    'dateSelector.today': 'Hoje',
+    'dateSelector.tomorrow': 'Amanhã',
+    'dateSelector.inDays': 'Em {days} dias',
+    'dateSelector.shortcuts': 'Atalhos rápidos',
     'space.actualAccount': 'Conta utilizada',
     'space.PESSOAL': 'Pessoal',
     'space.EMPRESA': 'Empresa',
@@ -99,7 +105,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.empty': 'Nenhum cadastro neste espaço.',
     'space.emptyHint': 'Cadastre uma opção nas configurações deste espaço.',
     'space.required': 'Informe um nome.',
-    'space.saveError': 'Não foi possível salvar. Verifique sua permissão e tente novamente.',
+    'space.saveError':
+        'Não foi possível salvar. Verifique sua permissão e tente novamente.',
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
     'space.none': 'Não informada',
@@ -2834,6 +2841,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'dateSelector.applyDate': 'Apply date',
+    'dateSelector.hint': 'Choose a date without leaving this screen.',
+    'dateSelector.today': 'Today',
+    'dateSelector.tomorrow': 'Tomorrow',
+    'dateSelector.inDays': 'In {days} days',
+    'dateSelector.shortcuts': 'Quick shortcuts',
     'space.actualAccount': 'Account used',
     'space.PESSOAL': 'Personal',
     'space.EMPRESA': 'Company',
@@ -5381,6 +5394,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'dateSelector.applyDate': 'Aplicar fecha',
+    'dateSelector.hint': 'Elige una fecha sin salir de esta pantalla.',
+    'dateSelector.today': 'Hoy',
+    'dateSelector.tomorrow': 'Mañana',
+    'dateSelector.inDays': 'En {days} días',
+    'dateSelector.shortcuts': 'Accesos rápidos',
     'space.actualAccount': 'Cuenta utilizada',
     'space.PESSOAL': 'Personal',
     'space.EMPRESA': 'Empresa',
@@ -5409,7 +5428,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.empty': 'No hay registros en este espacio.',
     'space.emptyHint': 'Añada una opción en la configuración de este espacio.',
     'space.required': 'Introduzca un nombre.',
-    'space.saveError': 'No se pudo guardar. Revise sus permisos e inténtelo de nuevo.',
+    'space.saveError':
+        'No se pudo guardar. Revise sus permisos e inténtelo de nuevo.',
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
     'space.none': 'Sin especificar',

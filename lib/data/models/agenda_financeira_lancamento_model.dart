@@ -255,6 +255,29 @@ class AgendaFinanceiraLancamentoDetalhe {
     );
   }
 
+  // O detalhe é autoritativo, inclusive quando a previsão foi removida.
+  // dadosEdicao mantém compatibilidade com respostas que encapsulam os campos.
+  DateTime? _dataPersistida(String key, {String? alias}) {
+    final edicao = dados['dadosEdicao'];
+    final campos = edicao is Map ? edicao : const <String, dynamic>{};
+    final value =
+        dados.containsKey(key)
+            ? dados[key]
+            : campos.containsKey(key)
+            ? campos[key]
+            : alias == null
+            ? null
+            : dados[alias] ?? campos[alias];
+    return value is DateTime
+        ? value
+        : DateTime.tryParse(value?.toString() ?? '');
+  }
+
+  DateTime? get dataPrevisaoPagamento =>
+      _dataPersistida('dataPrevisaoPagamento');
+  DateTime? get dataLiquidacao =>
+      _dataPersistida('dataLiquidacao', alias: 'dataQuitacao');
+
   /// Combina dados persistidos com os labels da consulta sem trocar IDs por textos.
   Map<String, dynamic> paraEdicao(Map<String, dynamic> item) {
     final contato = dados['contato'];
