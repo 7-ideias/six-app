@@ -1,3 +1,5 @@
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'configuracao_financeira_mobile_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -18,14 +20,17 @@ Future<String?> selecionarContaMobile(
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
-    return null;
-  } finally {
     if (service == null) ownedService.dispose();
+    return null;
   }
-  if (!context.mounted) return null;
-  final options = Builder(
+  if (!context.mounted) {
+    if (service == null) ownedService.dispose();
+    return null;
+  }
+  bool abrindoCadastro = false;
+  final options = StatefulBuilder(
     builder:
-        (context) => ListView(
+        (context, setState) => ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(16),
           children: [
@@ -41,7 +46,13 @@ Future<String?> selecionarContaMobile(
             if (!items.any((e) => e.ativo))
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(context.t('space.emptyHint')),
+                child: Text(
+                  context.t(
+                    grupo == 'CONTAS'
+                        ? 'space.emptyAccountHint'
+                        : 'space.emptyHint',
+                  ),
+                ),
               ),
             for (final item in items.where((e) => e.ativo))
               ListTile(
@@ -53,6 +64,41 @@ Future<String?> selecionarContaMobile(
                       context,
                     ).pop(grupo != 'CATEGORIAS' ? item.id : item.nome),
               ),
+            if (grupo == 'CONTAS')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: FilledButton.icon(
+                  key: const ValueKey('cadastrar-conta-no-seletor'),
+                  icon: const Icon(Icons.add),
+                  label: Text(context.t('space.createAccount')),
+                  onPressed:
+                      abrindoCadastro
+                          ? null
+                          : () async {
+                            setState(() => abrindoCadastro = true);
+                            final conta = await showModalBottomSheet<
+                              ConfiguracaoFinanceira
+                            >(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              isDismissible: false,
+                              enableDrag: false,
+                              backgroundColor: context.sixMobileColors.surface,
+                              builder:
+                                  (_) => ConfiguracaoFinanceiraMobileEditor(
+                                    service: ownedService,
+                                    grupo: 'CONTAS',
+                                    selecionarAoCriar: true,
+                                  ),
+                            );
+                            if (!context.mounted) return;
+                            setState(() => abrindoCadastro = false);
+                            if (conta != null)
+                              Navigator.of(context).pop(conta.id);
+                          },
+                ),
+              ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(context.t('space.cancel')),
@@ -60,19 +106,23 @@ Future<String?> selecionarContaMobile(
           ],
         ),
   );
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    builder:
-        (context) => SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.65,
+  try {
+    return await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder:
+          (context) => SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.65,
+              ),
+              child: options,
             ),
-            child: options,
           ),
-        ),
-  );
+    );
+  } finally {
+    if (service == null) ownedService.dispose();
+  }
 }
 
 class ContaFinanceiraMobileField extends StatefulWidget {

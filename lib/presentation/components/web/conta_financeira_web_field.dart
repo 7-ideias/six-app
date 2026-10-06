@@ -1,3 +1,4 @@
+import 'configuracao_financeira_web_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -18,14 +19,17 @@ Future<String?> selecionarContaWeb(
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
-    return null;
-  } finally {
     if (service == null) ownedService.dispose();
+    return null;
   }
-  if (!context.mounted) return null;
-  final options = Builder(
+  if (!context.mounted) {
+    if (service == null) ownedService.dispose();
+    return null;
+  }
+  bool abrindoCadastro = false;
+  final options = StatefulBuilder(
     builder:
-        (context) => ListView(
+        (context, setState) => ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(16),
           children: [
@@ -41,7 +45,13 @@ Future<String?> selecionarContaWeb(
             if (!items.any((e) => e.ativo))
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(context.t('space.emptyHint')),
+                child: Text(
+                  context.t(
+                    grupo == 'CONTAS'
+                        ? 'space.emptyAccountHint'
+                        : 'space.emptyHint',
+                  ),
+                ),
               ),
             for (final item in items.where((e) => e.ativo))
               ListTile(
@@ -53,6 +63,44 @@ Future<String?> selecionarContaWeb(
                       context,
                     ).pop(grupo != 'CATEGORIAS' ? item.id : item.nome),
               ),
+            if (grupo == 'CONTAS')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: FilledButton.icon(
+                  key: const ValueKey('cadastrar-conta-no-seletor'),
+                  icon: const Icon(Icons.add),
+                  label: Text(context.t('space.createAccount')),
+                  onPressed:
+                      abrindoCadastro
+                          ? null
+                          : () async {
+                            setState(() => abrindoCadastro = true);
+                            final conta =
+                                await showDialog<ConfiguracaoFinanceira>(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder:
+                                      (_) => Dialog(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 520,
+                                          ),
+                                          child:
+                                              ConfiguracaoFinanceiraWebEditor(
+                                                service: ownedService,
+                                                grupo: 'CONTAS',
+                                                selecionarAoCriar: true,
+                                              ),
+                                        ),
+                                      ),
+                                );
+                            if (!context.mounted) return;
+                            setState(() => abrindoCadastro = false);
+                            if (conta != null)
+                              Navigator.of(context).pop(conta.id);
+                          },
+                ),
+              ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(context.t('space.cancel')),
@@ -60,16 +108,20 @@ Future<String?> selecionarContaWeb(
           ],
         ),
   );
-  return showDialog<String>(
-    context: context,
-    builder:
-        (context) => Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 500),
-            child: options,
+  try {
+    return await showDialog<String>(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520, maxHeight: 500),
+              child: options,
+            ),
           ),
-        ),
-  );
+    );
+  } finally {
+    if (service == null) ownedService.dispose();
+  }
 }
 
 class ContaFinanceiraWebField extends StatefulWidget {

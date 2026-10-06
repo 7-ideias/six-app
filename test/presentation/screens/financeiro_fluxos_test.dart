@@ -118,6 +118,34 @@ class _Settings extends ConfiguracaoFinanceiraService {
   }
 }
 
+class _Accounts extends _Settings {
+  _Accounts() : super('PESSOAL');
+  final created = <ConfiguracaoFinanceira>[];
+  bool failCreate = false;
+  int createCalls = 0;
+  Completer<void>? saving;
+  @override
+  Future<List<ConfiguracaoFinanceira>> listar(String grupo) async => created;
+  @override
+  Future<ConfiguracaoFinanceira> criarConta({
+    required String nome,
+    required String tipo,
+    required String instituicao,
+  }) async {
+    createCalls++;
+    if (saving != null) await saving!.future;
+    if (failCreate) throw StateError('forbidden');
+    final conta = ConfiguracaoFinanceira(
+      id: 'persisted-account-id',
+      nome: nome.trim(),
+      tipo: tipo,
+      instituicao: instituicao.trim(),
+    );
+    created.add(conta);
+    return conta;
+  }
+}
+
 class _Receivables extends RecebivelVendaService {
   String status = 'PREVISTO';
   final confirmations = <Map<String, dynamic>>[];
@@ -496,6 +524,122 @@ void main() {
         service.pending!.complete();
         await tester.pumpAndSettle();
         expect(service.loads, 2);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '$platform: cadastrar no seletor seleciona o ID e mantém o espaço',
+      (tester) async {
+        await size(tester);
+        final service = _Accounts();
+        addTearDown(service.dispose);
+        String? selected;
+        await tester.pumpWidget(
+          _app(
+            Scaffold(
+              body: StatefulBuilder(
+                builder:
+                    (context, setState) =>
+                        mobile
+                            ? ContaFinanceiraMobileField(
+                              espaco: service.espaco,
+                              service: service,
+                              value: selected,
+                              onChanged: (id) => setState(() => selected = id),
+                            )
+                            : ContaFinanceiraWebField(
+                              espaco: service.espaco,
+                              service: service,
+                              value: selected,
+                              onChanged: (id) => setState(() => selected = id),
+                            ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await _tap(tester, find.byType(OutlinedButton));
+        expect(_text(tester, 'space.emptyAccountHint'), findsOneWidget);
+        await _tap(
+          tester,
+          find.byKey(const ValueKey('cadastrar-conta-no-seletor')),
+        );
+        expect(_text(tester, 'space.PESSOAL'), findsOneWidget);
+        await _tap(
+          tester,
+          find.widgetWithText(FilledButton, _label(tester, 'space.save')),
+        );
+        expect(service.createCalls, 0);
+        await tester.enterText(find.byType(TextFormField), 'Minha conta');
+        service.saving = Completer<void>();
+        await tester.tap(
+          find.widgetWithText(FilledButton, _label(tester, 'space.save')),
+        );
+        await tester.pump();
+        expect(service.createCalls, 1);
+        expect(
+          tester.widget<FilledButton>(find.byType(FilledButton).last).onPressed,
+          isNull,
+        );
+        service.saving!.complete();
+        await tester.pumpAndSettle();
+        expect(selected, 'persisted-account-id');
+        expect(service.created.single.tipo, 'BANCO');
+        expect(service.espaco, 'PESSOAL');
+        expect(find.textContaining('Minha conta'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '$platform: erro mantém cadastro aberto e cancelar preserva seleção',
+      (tester) async {
+        await size(tester);
+        final service = _Accounts()..failCreate = true;
+        addTearDown(service.dispose);
+        final changes = <String?>[];
+        await tester.pumpWidget(
+          _app(
+            Scaffold(
+              body:
+                  mobile
+                      ? ContaFinanceiraMobileField(
+                        espaco: service.espaco,
+                        service: service,
+                        onChanged: changes.add,
+                      )
+                      : ContaFinanceiraWebField(
+                        espaco: service.espaco,
+                        service: service,
+                        onChanged: changes.add,
+                      ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await _tap(tester, find.byType(OutlinedButton));
+        await _tap(
+          tester,
+          find.byKey(const ValueKey('cadastrar-conta-no-seletor')),
+        );
+        await tester.enterText(find.byType(TextFormField), 'Minha conta');
+        await _tap(
+          tester,
+          find.widgetWithText(FilledButton, _label(tester, 'space.save')),
+        );
+        expect(_text(tester, 'space.saveError'), findsOneWidget);
+        expect(changes, isEmpty);
+        await _tap(
+          tester,
+          find.widgetWithText(TextButton, _label(tester, 'space.cancel')).last,
+        );
+        expect(
+          find.byKey(const ValueKey('cadastrar-conta-no-seletor')),
+          findsOneWidget,
+        );
+        expect(changes, isEmpty);
+        expect(service.created, isEmpty);
         expect(tester.takeException(), isNull);
       },
     );

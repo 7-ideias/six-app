@@ -71,6 +71,8 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'space.createAccount': 'Cadastrar conta',
+    'space.emptyAccountHint': 'Cadastre uma conta aqui para continuar.',
     'dateSelector.applyDate': 'Aplicar data',
     'dateSelector.hint': 'Escolha uma data sem sair do atendimento.',
     'dateSelector.today': 'Hoje',
@@ -2841,6 +2843,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'space.createAccount': 'Create account',
+    'space.emptyAccountHint': 'Create an account here to continue.',
     'dateSelector.applyDate': 'Apply date',
     'dateSelector.hint': 'Choose a date without leaving this screen.',
     'dateSelector.today': 'Today',
@@ -5394,6 +5398,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'space.createAccount': 'Crear cuenta',
+    'space.emptyAccountHint': 'Crea una cuenta aquí para continuar.',
     'dateSelector.applyDate': 'Aplicar fecha',
     'dateSelector.hint': 'Elige una fecha sin salir de esta pantalla.',
     'dateSelector.today': 'Hoy',

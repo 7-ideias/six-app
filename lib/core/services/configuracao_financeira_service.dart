@@ -76,6 +76,48 @@ class ConfiguracaoFinanceiraService {
     required bool ativo,
     String? contaDestinoId,
   }) async {
+    await _persistir(
+      grupo,
+      original: original,
+      nome: nome,
+      tipo: tipo,
+      instituicao: instituicao,
+      ativo: ativo,
+      contaDestinoId: contaDestinoId,
+    );
+  }
+
+  /// Retorna o ID persistido, sem procurar por nome (nomes podem se repetir).
+  Future<ConfiguracaoFinanceira> criarConta({
+    required String nome,
+    required String tipo,
+    required String instituicao,
+  }) async {
+    final response = await _persistir(
+      'CONTAS',
+      nome: nome,
+      tipo: tipo,
+      instituicao: instituicao,
+      ativo: true,
+    );
+    final conta = ConfiguracaoFinanceira.fromJson(
+      Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+    );
+    if (conta.id.trim().isEmpty || conta.id == 'null') {
+      throw const FormatException('Conta sem identificador');
+    }
+    return conta;
+  }
+
+  Future<http.Response> _persistir(
+    String grupo, {
+    ConfiguracaoFinanceira? original,
+    required String nome,
+    required String tipo,
+    required String instituicao,
+    required bool ativo,
+    String? contaDestinoId,
+  }) async {
     final payload = {
       'nome': nome.trim(),
       'tipo': tipo,
@@ -99,6 +141,7 @@ class ConfiguracaoFinanceiraService {
               body: jsonEncode(payload),
             );
     _check(response);
+    return response;
   }
 
   void _check(http.Response response) {
