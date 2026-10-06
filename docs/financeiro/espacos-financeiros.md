@@ -42,9 +42,9 @@ A troca de espaço limpa os dados anteriores e recarrega a agenda e seus filtros
 Publicar backend/migration e frontend de maneira coordenada: clientes antigos não enviam conta nas liquidações e receberão erro de validação após a nova exigência.
 Não fazer rollback do schema eliminando colunas depois que houver dados pessoais.
 
-Validações executadas: sintaxe Java 17, formatação/sintaxe Dart, diff e quatro verificações executáveis de serialização/edição.
+Validações executadas: sintaxe Java 17, formatação/sintaxe Dart, diff e 40 verificações executáveis de contrato, recorrência, status, liquidação e centros de custos.
 Testes adicionados: isolamento de titular, permissões de leitura/escrita, conta de outro espaço e tema escuro mobile.
-Build Spring/JUnit não executado: Maven/dependências indisponíveis. Flutter analyze/widget tests/build não executados: preparação das dependências bloqueada pela revisão automática do ambiente.
+Backend: `Maven Verify` passou no GitHub Actions (execução 37523411459, job build-test). A migration ainda precisa ser exercitada em banco de homologação. Flutter analyze/widget tests/build não executados: preparação das dependências bloqueada pela revisão automática do ambiente.
 
 Antes do merge, validar em ambiente integrado:
 1. Usuário A cria salário pessoal; usuário B e administradores de empresas não o consultam nem alteram por ID.
