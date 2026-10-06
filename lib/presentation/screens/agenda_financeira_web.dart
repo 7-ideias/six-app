@@ -1209,7 +1209,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraLiquidacaoRequest(
             tipoLiquidacao: 'TOTAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
@@ -1223,7 +1227,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraParcialRequest(
             tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
@@ -1286,6 +1294,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (!mounted || item == null) {
       return;
     }
+    if (item['registrarPagamento'] == true) {
+      await _confirmarTotal(item, 'Liquidar');
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
@@ -1296,22 +1308,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
       if (!mounted) return;
-      item = {
-        ...item,
-        for (final key in [
-          'uuidOperacaoApp',
-          'codigoOperacao',
-          'recorrente',
-          'frequenciaRecorrencia',
-          'recorrenciaInicio',
-          'recorrenciaFim',
-          'quantidadeParcelas',
-          'diaVencimentoRecorrencia',
-          'serieRecorrenciaId',
-          'numeroOcorrencia',
-        ])
-          if (detalhe.containsKey(key)) key: detalhe[key],
-      };
+      item = AgendaFinanceiraLancamentoDetalhe.fromJson(
+        detalhe,
+      ).paraEdicao(item);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1333,6 +1332,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (!mounted || atualizado == null) {
       return;
     }
+    if (atualizado['registrarPagamento'] == true) {
+      await _confirmarTotal(atualizado, 'Liquidar');
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
