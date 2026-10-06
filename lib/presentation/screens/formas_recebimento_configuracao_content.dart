@@ -1,3 +1,4 @@
+import '../../core/di/caixa_module.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/caixa_models.dart';
@@ -28,7 +29,7 @@ class _FormasRecebimentoConfiguracaoContentState
   @override
   void initState() {
     super.initState();
-    _caixaService = CaixaService(apiClient: HttpCaixaApiClient());
+    _caixaService = CaixaModule.caixaService;
     _carregarTipos();
   }
 
@@ -90,6 +91,7 @@ class _FormasRecebimentoConfiguracaoContentState
   }
 
   Future<void> _editarTipo(TiposRecebimento tipo) async {
+    if (_carregando || _restaurandoPadrao || _salvandoCodigo != null) return;
     final TiposRecebimento? atualizado = await showDialog<TiposRecebimento>(
       context: context,
       barrierDismissible: true,
@@ -98,7 +100,7 @@ class _FormasRecebimentoConfiguracaoContentState
               _TipoRecebimentoEditDialog(tipo: tipo),
     );
 
-    if (atualizado == null) return;
+    if (!mounted || atualizado == null) return;
 
     setState(() => _salvandoCodigo = tipo.codigoTipo);
     try {

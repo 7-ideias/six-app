@@ -71,6 +71,26 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'paymentSettings.title': 'Formas de recebimento',
+    'paymentSettings.hint':
+        'Altere o nome exibido sem mudar o tipo financeiro.',
+    'paymentSettings.name': 'Descrição de exibição',
+    'paymentSettings.required': 'Informe um nome.',
+    'paymentSettings.save': 'Salvar',
+    'paymentSettings.cancel': 'Cancelar',
+    'paymentSettings.refresh': 'Atualizar',
+    'paymentSettings.empty': 'Nenhuma forma de recebimento disponível.',
+    'paymentSettings.loadError':
+        'Não foi possível carregar as formas de recebimento.',
+    'paymentSettings.saveError': 'Não foi possível salvar. Tente novamente.',
+    'paymentSettings.forbidden':
+        'Somente administradores podem alterar as formas de recebimento.',
+    'paymentSettings.expired': 'Sessão expirada. Faça login novamente.',
+    'paymentSettings.saved': 'Forma de recebimento atualizada.',
+    'paymentSettings.active': 'Ativo',
+    'paymentSettings.inactive': 'Inativo',
+    'paymentSettings.edit': 'Editar nome',
+    'paymentSettings.loading': 'Carregando formas de recebimento',
     'agenda.form.overdueOne': 'Vencido há 1 dia',
     'agenda.form.option.sale': 'Venda',
     'agenda.form.option.service': 'Ordem de serviço',
@@ -2782,6 +2802,25 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'paymentSettings.title': 'Payment methods',
+    'paymentSettings.hint':
+        'Change the displayed name without changing the financial type.',
+    'paymentSettings.name': 'Display name',
+    'paymentSettings.required': 'Enter a name.',
+    'paymentSettings.save': 'Save',
+    'paymentSettings.cancel': 'Cancel',
+    'paymentSettings.refresh': 'Refresh',
+    'paymentSettings.empty': 'No payment methods available.',
+    'paymentSettings.loadError': 'Unable to load payment methods.',
+    'paymentSettings.saveError': 'Unable to save. Try again.',
+    'paymentSettings.forbidden':
+        'Only administrators can edit payment methods.',
+    'paymentSettings.expired': 'Session expired. Sign in again.',
+    'paymentSettings.saved': 'Payment method updated.',
+    'paymentSettings.active': 'Active',
+    'paymentSettings.inactive': 'Inactive',
+    'paymentSettings.edit': 'Edit name',
+    'paymentSettings.loading': 'Loading payment methods',
     'agenda.form.overdueOne': 'Overdue by 1 day',
     'agenda.form.option.sale': 'Sale',
     'agenda.form.option.service': 'Service order',
@@ -5278,6 +5317,25 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'paymentSettings.title': 'Formas de pago',
+    'paymentSettings.hint':
+        'Cambie el nombre mostrado sin cambiar el tipo financiero.',
+    'paymentSettings.name': 'Nombre mostrado',
+    'paymentSettings.required': 'Introduzca un nombre.',
+    'paymentSettings.save': 'Guardar',
+    'paymentSettings.cancel': 'Cancelar',
+    'paymentSettings.refresh': 'Actualizar',
+    'paymentSettings.empty': 'No hay formas de pago disponibles.',
+    'paymentSettings.loadError': 'No se pudieron cargar las formas de pago.',
+    'paymentSettings.saveError': 'No se pudo guardar. Inténtelo de nuevo.',
+    'paymentSettings.forbidden':
+        'Solo los administradores pueden editar las formas de pago.',
+    'paymentSettings.expired': 'Sesión caducada. Inicie sesión nuevamente.',
+    'paymentSettings.saved': 'Forma de pago actualizada.',
+    'paymentSettings.active': 'Activo',
+    'paymentSettings.inactive': 'Inactivo',
+    'paymentSettings.edit': 'Editar nombre',
+    'paymentSettings.loading': 'Cargando formas de pago',
     'agenda.form.overdueOne': 'Vencido hace 1 día',
     'agenda.form.option.sale': 'Venta',
     'agenda.form.option.service': 'Orden de servicio',

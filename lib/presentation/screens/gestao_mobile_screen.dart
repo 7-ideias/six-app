@@ -27,6 +27,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_car
 import 'package:sixpos/data/models/gestao_mobile_assets_model.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
+import 'formas_recebimento_configuracao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalogo_virtual_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
@@ -1268,9 +1269,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Dinheiro, cartão, Pix e outros meios',
             ),
             icon: Icons.payments_outlined,
-            accentColor: _lockedAccent,
+            accentColor: colors.primary,
             emphasis: ManagementActionEmphasis.operational,
-            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const FormasRecebimentoConfiguracaoMobileScreen(),
+                ),
           ),
         ],
       ),
