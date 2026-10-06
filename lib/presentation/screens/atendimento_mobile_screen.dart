@@ -344,8 +344,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     double topInset,
   ) {
     final actions = _orderedActions();
-    final grid = actions.where((item) => item.id != 'cash').toList();
-    final cash = actions.firstWhere((item) => item.id == 'cash');
     return SafeArea(
       top: false,
       child: ListView(
@@ -365,46 +363,57 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: _colors.mutedText),
           ),
           const SizedBox(height: 22),
-          LayoutBuilder(builder: (context, constraints) {
-            final width = (constraints.maxWidth - 12) / 2;
-            final scale = MediaQuery.textScalerOf(context).scale(1);
-            final height = width * 1.12 + (scale - 1).clamp(0.0, 2.0).toDouble() * 48;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: <Widget>[
-                for (int i = 0; i < grid.length; i++)
-                  SizedBox(
-                    width: width,
-                    height: height,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = (constraints.maxWidth - 12) / 2;
+              final scale = MediaQuery.textScalerOf(context).scale(1);
+              final extraScale = (scale - 1).clamp(0.0, 2.0).toDouble();
+              final gridHeight = width * 1.12 + extraScale * 48;
+              final horizontalHeight = 116 + extraScale * 64;
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: List<Widget>.generate(actions.length, (index) {
+                  final action = actions[index];
+                  // The last position owns the wide layout, regardless of action.
+                  final horizontal = index == actions.length - 1;
+                  final cardWidth = horizontal ? constraints.maxWidth : width;
+                  final cardHeight = horizontal ? horizontalHeight : gridHeight;
+
+                  return SizedBox(
+                    key: ValueKey(action.preferencia),
+                    width: cardWidth,
+                    height: cardHeight,
                     child: _businessAssetsLoading
                         ? const SixVisualAssetShimmer(borderRadius: 18)
                         : SixStaggeredEntry(
-                            delay: Duration(milliseconds: 50 + i * 35),
-                            child: SixMobileReorderableCard<AtendimentoMobileCardPreferencia>(
-                              value: grid[i].preferencia,
+                            delay: Duration(milliseconds: 50 + index * 35),
+                            child: SixMobileReorderableCard<
+                              AtendimentoMobileCardPreferencia
+                            >(
+                              value: action.preferencia,
                               onReorder: _ordemCardsController.reordenar,
-                              feedbackWidth: width,
-                              feedbackHeight: height,
+                              feedbackWidth: cardWidth,
+                              feedbackHeight: cardHeight,
                               handleColor: _colors.mutedText,
                               showHandle: false,
-                              cardBuilder: () => _AtendimentoEditorialCard(data: grid[i]),
+                              cardBuilder: () => _AtendimentoEditorialCard(
+                                data: action,
+                                horizontal: horizontal,
+                                subtitle: horizontal && action.id == 'cash'
+                                    ? _txt(
+                                        'atendimento.mobile.cashSummary',
+                                        'Abertura, movimentações e fechamento',
+                                      )
+                                    : null,
+                              ),
                             ),
                           ),
-                  ),
-              ],
-            );
-          }),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 116 + (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0.0, 2.0).toDouble() * 64,
-            child: _businessAssetsLoading
-                ? const SixVisualAssetShimmer(borderRadius: 18)
-                : _AtendimentoEditorialCard(
-                    data: cash,
-                    horizontal: true,
-                    subtitle: _txt('atendimento.mobile.cashSummary', 'Abertura, movimentações e fechamento'),
-                  ),
+                  );
+                }),
+              );
+            },
           ),
         ],
       ),
