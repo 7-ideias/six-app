@@ -3030,6 +3030,10 @@ class _VisualAssetsTexts {
       'VENDAS_MOBILE_RECEBER': ['Vendas · A receber', 'Sales · Receivables', 'Ventas · Por cobrar'],
       'VENDAS_MOBILE_CONSULTAR': ['Vendas · Consultar vendas', 'Sales · History', 'Ventas · Consultar ventas'],
       'WEB_INICIO_HEADER': ['Web · Início', 'Web · Home', 'Web · Inicio'],
+      'CATALOGO_WEB_PRODUTOS': ['Catálogo Web · Produtos', 'Web catalog · Products', 'Catálogo Web · Productos'],
+      'CATALOGO_WEB_SERVICOS': ['Catálogo Web · Serviços', 'Web catalog · Services', 'Catálogo Web · Servicios'],
+      'CATALOGO_WEB_CATEGORIAS': ['Catálogo Web · Categorias', 'Web catalog · Categories', 'Catálogo Web · Categorías'],
+      'CATALOGO_WEB_ETIQUETAS': ['Catálogo Web · Etiquetas', 'Web catalog · Labels', 'Catálogo Web · Etiquetas'],
     }[slot.slot];
     return context.t(
       slot.labelKey,

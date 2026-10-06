@@ -69,7 +69,7 @@ class PerfilNegocioService {
       WebHeaderAssetsModel.fromJson(
         await _request(
           'GET',
-          '/web-header/assets?incluirOperacionais=true',
+          '/web-header/assets?incluirOperacionais=true&incluirCatalogo=true',
           empresaId,
         ),
       );
