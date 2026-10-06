@@ -7,6 +7,7 @@ import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 
 class AgendaFinanceiraLancamentoService {
+  String espacoFinanceiro = 'EMPRESA';
   final http.Client _httpClient;
 
   AgendaFinanceiraLancamentoService({http.Client? httpClient})
@@ -36,6 +37,7 @@ class AgendaFinanceiraLancamentoService {
 
     return {
       'Content-Type': 'application/json',
+      'espacoFinanceiro': espacoFinanceiro,
       'idUnicoDaEmpresa': empresaId ?? '',
       authorizationHeaderName: '$bearerPrefix $token',
     };

@@ -8,12 +8,14 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet
 class AgendaCentroCustoMobileField extends StatefulWidget {
   const AgendaCentroCustoMobileField({
     super.key,
+    this.service,
     this.initialId,
     this.initialName,
     required this.onChanged,
     this.enabled = true,
   });
 
+  final AgendaFinanceiraLancamentoService? service;
   final String? initialId;
   final String? initialName;
   final ValueChanged<CentroCustoModel?> onChanged;
@@ -26,8 +28,8 @@ class AgendaCentroCustoMobileField extends StatefulWidget {
 
 class _AgendaCentroCustoMobileFieldState
     extends State<AgendaCentroCustoMobileField> {
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
+  late final AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
   List<CentroCustoModel> _centros = <CentroCustoModel>[];
   String? _selecionadoId;
   bool _carregando = true;
@@ -58,8 +60,8 @@ class _AgendaCentroCustoMobileFieldState
 
   Future<void> _carregar() async {
     try {
-      final List<CentroCustoModel> centros = await _service
-          .listarCentrosCusto();
+      final List<CentroCustoModel> centros =
+          await _service.listarCentrosCusto();
       if (!mounted) return;
       setState(() {
         _centros = centros;
@@ -84,10 +86,11 @@ class _AgendaCentroCustoMobileFieldState
           useSafeArea: true,
           backgroundColor: Colors.transparent,
           barrierColor: Colors.black.withValues(alpha: 0.44),
-          builder: (BuildContext context) => _CentroCustoSelectionSheet(
-            centros: _centros,
-            selecionadoId: _selecionadoId,
-          ),
+          builder:
+              (BuildContext context) => _CentroCustoSelectionSheet(
+                centros: _centros,
+                selecionadoId: _selecionadoId,
+              ),
         );
     if (result == null || !mounted) return;
     switch (result.action) {
@@ -119,18 +122,19 @@ class _AgendaCentroCustoMobileFieldState
           useSafeArea: true,
           backgroundColor: Colors.transparent,
           barrierColor: Colors.black.withValues(alpha: 0.44),
-          builder: (BuildContext context) => _CentroCustoCreateSheet(
-            onSave:
-                ({
-                  required String nome,
-                  required String codigo,
-                  required String tipo,
-                }) => _service.criarCentroCusto(
-                  nome: nome,
-                  codigo: codigo,
-                  tipo: tipo,
-                ),
-          ),
+          builder:
+              (BuildContext context) => _CentroCustoCreateSheet(
+                onSave:
+                    ({
+                      required String nome,
+                      required String codigo,
+                      required String tipo,
+                    }) => _service.criarCentroCusto(
+                      nome: nome,
+                      codigo: codigo,
+                      tipo: tipo,
+                    ),
+              ),
         );
     if (criado == null || !mounted) return;
     setState(() {
@@ -151,11 +155,15 @@ class _AgendaCentroCustoMobileFieldState
           barrierColor: Colors.black.withValues(alpha: 0.44),
           isDismissible: false,
           enableDrag: false,
-          builder: (BuildContext context) => _CentroCustoRenameSheet(
-            centro: centro,
-            onConfirm: (String nome) =>
-                _service.atualizarCentroCusto(centro: centro, nome: nome),
-          ),
+          builder:
+              (BuildContext context) => _CentroCustoRenameSheet(
+                centro: centro,
+                onConfirm:
+                    (String nome) => _service.atualizarCentroCusto(
+                      centro: centro,
+                      nome: nome,
+                    ),
+              ),
         );
     if (atualizado == null || !mounted) return;
     setState(() {
@@ -175,12 +183,13 @@ class _AgendaCentroCustoMobileFieldState
     return SixMobileSelectionField(
       label: context.t('agenda.costCenter.label', fallback: 'Centro de custos'),
       value: nome,
-      hint: _carregando
-          ? context.t('common.loading', fallback: 'Carregando...')
-          : context.t(
-              'agenda.costCenter.none',
-              fallback: 'Sem centro de custos',
-            ),
+      hint:
+          _carregando
+              ? context.t('common.loading', fallback: 'Carregando...')
+              : context.t(
+                'agenda.costCenter.none',
+                fallback: 'Sem centro de custos',
+              ),
       icon: Icons.account_tree_outlined,
       enabled: widget.enabled && !_carregando,
       onTap: _abrirSeletor,
@@ -233,11 +242,12 @@ class _CentroCustoSelectionSheet extends StatelessWidget {
                               'agenda.costCenter.selectTitle',
                               fallback: 'Selecionar centro de custos',
                             ),
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  color: colors.titleText,
-                                  fontWeight: FontWeight.w900,
-                                ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(
+                              color: colors.titleText,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -269,9 +279,10 @@ class _CentroCustoSelectionSheet extends StatelessWidget {
                       ),
                       selected: selecionadoId == null,
                       icon: Icons.remove_circle_outline_rounded,
-                      onTap: () => Navigator.of(
-                        context,
-                      ).pop(const _CentroMobileResult.clear()),
+                      onTap:
+                          () => Navigator.of(
+                            context,
+                          ).pop(const _CentroMobileResult.clear()),
                     ),
                     ...centros.map(
                       (CentroCustoModel centro) => _CentroCustoMobileTile(
@@ -279,19 +290,22 @@ class _CentroCustoSelectionSheet extends StatelessWidget {
                         subtitle: _mostrarCodigo(centro) ? centro.codigo : null,
                         selected: centro.id == selecionadoId,
                         icon: Icons.account_tree_outlined,
-                        onTap: () => Navigator.of(
-                          context,
-                        ).pop(_CentroMobileResult.select(centro)),
-                        onEdit: () => Navigator.of(
-                          context,
-                        ).pop(_CentroMobileResult.edit(centro)),
+                        onTap:
+                            () => Navigator.of(
+                              context,
+                            ).pop(_CentroMobileResult.select(centro)),
+                        onEdit:
+                            () => Navigator.of(
+                              context,
+                            ).pop(_CentroMobileResult.edit(centro)),
                       ),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pop(const _CentroMobileResult.create()),
+                      onPressed:
+                          () => Navigator.of(
+                            context,
+                          ).pop(const _CentroMobileResult.create()),
                       icon: const Icon(Icons.add_circle_outline_rounded),
                       label: Text(
                         context.t(
@@ -559,12 +573,13 @@ class _CentroCustoCreateSheetState extends State<_CentroCustoCreateSheet> {
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: _salvando ? null : _salvar,
-                  icon: _salvando
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.add_rounded),
+                  icon:
+                      _salvando
+                          ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.add_rounded),
                   label: Text(
                     context.t(
                       'agenda.costCenter.createAction',
@@ -573,9 +588,8 @@ class _CentroCustoCreateSheetState extends State<_CentroCustoCreateSheet> {
                   ),
                 ),
                 TextButton(
-                  onPressed: _salvando
-                      ? null
-                      : () => Navigator.of(context).pop(),
+                  onPressed:
+                      _salvando ? null : () => Navigator.of(context).pop(),
                   child: Text(context.t('common.cancel', fallback: 'Cancelar')),
                 ),
               ],
@@ -696,22 +710,22 @@ class _CentroCustoRenameSheetState extends State<_CentroCustoRenameSheet> {
           children: <Widget>[
             success
                 ? Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: colors.accent,
-                    size: 54,
-                  )
+                  Icons.check_circle_outline_rounded,
+                  color: colors.accent,
+                  size: 54,
+                )
                 : CircularProgressIndicator(color: colors.accent),
             const SizedBox(height: 18),
             Text(
               success
                   ? context.t(
-                      'agenda.costCenter.rename.success',
-                      fallback: 'Nome atualizado',
-                    )
+                    'agenda.costCenter.rename.success',
+                    fallback: 'Nome atualizado',
+                  )
                   : context.t(
-                      'agenda.costCenter.rename.processing',
-                      fallback: 'Atualizando centro de custos...',
-                    ),
+                    'agenda.costCenter.rename.processing',
+                    fallback: 'Atualizando centro de custos...',
+                  ),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: colors.titleText,
                 fontWeight: FontWeight.w900,
@@ -742,13 +756,13 @@ class _CentroCustoRenameSheetState extends State<_CentroCustoRenameSheet> {
           Text(
             _step == _RenameMobileStep.edit
                 ? context.t(
-                    'agenda.costCenter.rename.title',
-                    fallback: 'Alterar nome do centro de custos',
-                  )
+                  'agenda.costCenter.rename.title',
+                  fallback: 'Alterar nome do centro de custos',
+                )
                 : context.t(
-                    'agenda.costCenter.rename.confirmTitle',
-                    fallback: 'Confirmar alteração?',
-                  ),
+                  'agenda.costCenter.rename.confirmTitle',
+                  fallback: 'Confirmar alteração?',
+                ),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: colors.titleText,
               fontWeight: FontWeight.w900,
@@ -812,12 +826,13 @@ class _CentroCustoRenameSheetState extends State<_CentroCustoRenameSheet> {
           ],
           const SizedBox(height: 20),
           FilledButton.icon(
-            onPressed: _step == _RenameMobileStep.edit
-                ? (_controller.text.trim().isEmpty ||
-                          _controller.text.trim() == widget.centro.nome.trim()
-                      ? null
-                      : _revisar)
-                : _confirmar,
+            onPressed:
+                _step == _RenameMobileStep.edit
+                    ? (_controller.text.trim().isEmpty ||
+                            _controller.text.trim() == widget.centro.nome.trim()
+                        ? null
+                        : _revisar)
+                    : _confirmar,
             icon: Icon(
               _step == _RenameMobileStep.edit
                   ? Icons.arrow_forward_rounded
@@ -826,25 +841,26 @@ class _CentroCustoRenameSheetState extends State<_CentroCustoRenameSheet> {
             label: Text(
               _step == _RenameMobileStep.edit
                   ? context.t(
-                      'agenda.costCenter.rename.reviewAction',
-                      fallback: 'Revisar alteração',
-                    )
+                    'agenda.costCenter.rename.reviewAction',
+                    fallback: 'Revisar alteração',
+                  )
                   : context.t(
-                      'agenda.costCenter.rename.confirmAction',
-                      fallback: 'Confirmar alteração',
-                    ),
+                    'agenda.costCenter.rename.confirmAction',
+                    fallback: 'Confirmar alteração',
+                  ),
             ),
           ),
           TextButton(
-            onPressed: _busy
-                ? null
-                : () {
-                    if (_step == _RenameMobileStep.edit) {
-                      Navigator.of(context).pop();
-                    } else {
-                      setState(() => _step = _RenameMobileStep.edit);
-                    }
-                  },
+            onPressed:
+                _busy
+                    ? null
+                    : () {
+                      if (_step == _RenameMobileStep.edit) {
+                        Navigator.of(context).pop();
+                      } else {
+                        setState(() => _step = _RenameMobileStep.edit);
+                      }
+                    },
             child: Text(
               _step == _RenameMobileStep.edit
                   ? context.t('common.cancel', fallback: 'Cancelar')

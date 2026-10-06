@@ -8,12 +8,14 @@ import 'package:sixpos/presentation/components/web/six_web_centro_custo_rename_d
 class AgendaCentroCustoWebField extends StatefulWidget {
   const AgendaCentroCustoWebField({
     super.key,
+    this.service,
     this.initialId,
     this.initialName,
     required this.onChanged,
     this.enabled = true,
   });
 
+  final AgendaFinanceiraLancamentoService? service;
   final String? initialId;
   final String? initialName;
   final ValueChanged<CentroCustoModel?> onChanged;
@@ -25,8 +27,8 @@ class AgendaCentroCustoWebField extends StatefulWidget {
 }
 
 class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
+  late final AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
   final GlobalKey _fieldKey = GlobalKey();
   List<CentroCustoModel> _centros = <CentroCustoModel>[];
   String? _selecionadoId;
@@ -59,8 +61,8 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
 
   Future<void> _carregar() async {
     try {
-      final List<CentroCustoModel> centros = await _service
-          .listarCentrosCusto();
+      final List<CentroCustoModel> centros =
+          await _service.listarCentrosCusto();
       if (!mounted) return;
       setState(() {
         _centros = centros;
@@ -147,9 +149,10 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
                 centro.id == _selecionadoId
                     ? Icons.check_circle_rounded
                     : Icons.account_tree_outlined,
-                color: centro.id == _selecionadoId
-                    ? colors.primary
-                    : colors.onSurfaceVariant,
+                color:
+                    centro.id == _selecionadoId
+                        ? colors.primary
+                        : colors.onSurfaceVariant,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -183,8 +186,10 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
                   'agenda.costCenter.edit',
                   fallback: 'Editar centro de custos',
                 ),
-                onPressed: () =>
-                    Navigator.of(context).pop(_CentroMenuResult.edit(centro)),
+                onPressed:
+                    () => Navigator.of(
+                      context,
+                    ).pop(_CentroMenuResult.edit(centro)),
                 icon: const Icon(Icons.edit_outlined, size: 19),
               ),
             ],
@@ -249,8 +254,9 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
         await showSixWebCentroCustoRenameDialog(
           context: context,
           centro: centro,
-          onConfirm: (String nome) =>
-              _service.atualizarCentroCusto(centro: centro, nome: nome),
+          onConfirm:
+              (String nome) =>
+                  _service.atualizarCentroCusto(centro: centro, nome: nome),
         );
     if (atualizado == null || !mounted) return;
     setState(() {
@@ -276,149 +282,159 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
         'agenda.costCenter.create',
         fallback: 'Novo centro de custos',
       ),
-      builder: (BuildContext dialogContext) => StatefulBuilder(
-        builder: (BuildContext context, StateSetter setDialogState) {
-          return AlertDialog(
-            title: Text(
-              context.t(
-                'agenda.costCenter.create',
-                fallback: 'Novo centro de custos',
-              ),
-            ),
-            content: SizedBox(
-              width: 440,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  TextField(
-                    controller: nomeController,
-                    autofocus: true,
-                    maxLength: 120,
-                    decoration: InputDecoration(
-                      labelText: context.t(
-                        'agenda.costCenter.name',
-                        fallback: 'Nome',
-                      ),
-                      prefixIcon: const Icon(Icons.account_tree_outlined),
-                    ),
+      builder:
+          (BuildContext dialogContext) => StatefulBuilder(
+            builder: (BuildContext context, StateSetter setDialogState) {
+              return AlertDialog(
+                title: Text(
+                  context.t(
+                    'agenda.costCenter.create',
+                    fallback: 'Novo centro de custos',
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: codigoController,
-                    maxLength: 30,
-                    decoration: InputDecoration(
-                      labelText: context.t(
-                        'agenda.costCenter.codeOptional',
-                        fallback: 'Código (opcional)',
+                ),
+                content: SizedBox(
+                  width: 440,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      TextField(
+                        controller: nomeController,
+                        autofocus: true,
+                        maxLength: 120,
+                        decoration: InputDecoration(
+                          labelText: context.t(
+                            'agenda.costCenter.name',
+                            fallback: 'Nome',
+                          ),
+                          prefixIcon: const Icon(Icons.account_tree_outlined),
+                        ),
                       ),
-                      hintText: context.t(
-                        'agenda.costCenter.codeHint',
-                        fallback: 'Ex.: ADM, LOJA-01',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: tipo,
-                    decoration: InputDecoration(
-                      labelText: context.t(
-                        'agenda.costCenter.type',
-                        fallback: 'Tipo',
-                      ),
-                    ),
-                    items: <DropdownMenuItem<String>>[
-                      DropdownMenuItem(
-                        value: 'AMBOS',
-                        child: Text(
-                          context.t(
-                            'agenda.costCenter.type.both',
-                            fallback: 'Custo e resultado',
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: codigoController,
+                        maxLength: 30,
+                        decoration: InputDecoration(
+                          labelText: context.t(
+                            'agenda.costCenter.codeOptional',
+                            fallback: 'Código (opcional)',
+                          ),
+                          hintText: context.t(
+                            'agenda.costCenter.codeHint',
+                            fallback: 'Ex.: ADM, LOJA-01',
                           ),
                         ),
                       ),
-                      DropdownMenuItem(
-                        value: 'CUSTO',
-                        child: Text(
-                          context.t(
-                            'agenda.costCenter.type.cost',
-                            fallback: 'Somente custo',
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: tipo,
+                        decoration: InputDecoration(
+                          labelText: context.t(
+                            'agenda.costCenter.type',
+                            fallback: 'Tipo',
                           ),
                         ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'RESULTADO',
-                        child: Text(
-                          context.t(
-                            'agenda.costCenter.type.result',
-                            fallback: 'Somente resultado',
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: salvando
-                        ? null
-                        : (value) =>
-                              setDialogState(() => tipo = value ?? 'AMBOS'),
-                  ),
-                ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: salvando
-                    ? null
-                    : () => Navigator.of(dialogContext).pop(),
-                child: Text(context.t('common.cancel', fallback: 'Cancelar')),
-              ),
-              FilledButton(
-                onPressed: salvando
-                    ? null
-                    : () async {
-                        final String nome = nomeController.text.trim();
-                        if (nome.isEmpty) return;
-                        setDialogState(() => salvando = true);
-                        try {
-                          final CentroCustoModel centro = await _service
-                              .criarCentroCusto(
-                                nome: nome,
-                                codigo: codigoController.text,
-                                tipo: tipo,
-                              );
-                          if (dialogContext.mounted) {
-                            Navigator.of(dialogContext).pop(centro);
-                          }
-                        } catch (_) {
-                          if (!dialogContext.mounted) return;
-                          setDialogState(() => salvando = false);
-                          ScaffoldMessenger.of(dialogContext).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                context.t(
-                                  'agenda.costCenter.createError',
-                                  fallback:
-                                      'Não foi possível cadastrar o centro de custos.',
-                                ),
+                        items: <DropdownMenuItem<String>>[
+                          DropdownMenuItem(
+                            value: 'AMBOS',
+                            child: Text(
+                              context.t(
+                                'agenda.costCenter.type.both',
+                                fallback: 'Custo e resultado',
                               ),
                             ),
-                          );
-                        }
-                      },
-                child: salvando
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        context.t(
-                          'agenda.costCenter.createAction',
-                          fallback: 'Cadastrar',
-                        ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'CUSTO',
+                            child: Text(
+                              context.t(
+                                'agenda.costCenter.type.cost',
+                                fallback: 'Somente custo',
+                              ),
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'RESULTADO',
+                            child: Text(
+                              context.t(
+                                'agenda.costCenter.type.result',
+                                fallback: 'Somente resultado',
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged:
+                            salvando
+                                ? null
+                                : (value) => setDialogState(
+                                  () => tipo = value ?? 'AMBOS',
+                                ),
                       ),
-              ),
-            ],
-          );
-        },
-      ),
+                    ],
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed:
+                        salvando
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
+                    child: Text(
+                      context.t('common.cancel', fallback: 'Cancelar'),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed:
+                        salvando
+                            ? null
+                            : () async {
+                              final String nome = nomeController.text.trim();
+                              if (nome.isEmpty) return;
+                              setDialogState(() => salvando = true);
+                              try {
+                                final CentroCustoModel centro = await _service
+                                    .criarCentroCusto(
+                                      nome: nome,
+                                      codigo: codigoController.text,
+                                      tipo: tipo,
+                                    );
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop(centro);
+                                }
+                              } catch (_) {
+                                if (!dialogContext.mounted) return;
+                                setDialogState(() => salvando = false);
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      context.t(
+                                        'agenda.costCenter.createError',
+                                        fallback:
+                                            'Não foi possível cadastrar o centro de custos.',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                    child:
+                        salvando
+                            ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : Text(
+                              context.t(
+                                'agenda.costCenter.createAction',
+                                fallback: 'Cadastrar',
+                              ),
+                            ),
+                  ),
+                ],
+              );
+            },
+          ),
     );
     nomeController.dispose();
     codigoController.dispose();
@@ -440,9 +456,9 @@ class _AgendaCentroCustoWebFieldState extends State<AgendaCentroCustoWebField> {
         _selecionado?.nome ??
         (legado.isEmpty
             ? context.t(
-                'agenda.costCenter.none',
-                fallback: 'Sem centro de custos',
-              )
+              'agenda.costCenter.none',
+              fallback: 'Sem centro de custos',
+            )
             : legado);
     return Semantics(
       button: true,

@@ -1,3 +1,5 @@
+import 'configuracoes_espaco_web.dart';
+import '../components/web/conta_financeira_web_field.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_financial_launch_delete_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
@@ -38,11 +40,71 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+  bool _trocandoEspaco = false;
+  Future<void> _trocarEspaco(String espaco) async {
+    if (_trocandoEspaco ||
+        _carregando ||
+        _executandoAcao ||
+        _service.espacoFinanceiro == espaco)
+      return;
+    setState(() {
+      _trocandoEspaco = true;
+      _gruposAgenda.clear();
+      _itensConfirmados.clear();
+      _centrosCustoSelecionados.clear();
+      _formasPagamentoSelecionadas.clear();
+      _service.espacoFinanceiro = espaco;
+      _acoesService.espacoFinanceiro = espaco;
+      _centrosCusto = [];
+    });
+    await _carregarTiposPagamentoConfigurados();
+    await _carregarCentrosCusto();
+    if (mounted) await _consultar(mostrarFeedback: true);
+    if (mounted) setState(() => _trocandoEspaco = false);
+  }
+
+  Future<void> _configurarEspaco() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder:
+            (_) => ConfiguracoesEspacoWeb(espaco: _service.espacoFinanceiro),
+      ),
+    );
+    if (mounted) await _carregarCentrosCusto();
+  }
+
+  Widget _seletorEspaco() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      for (final tipo in ['EMPRESA', 'PESSOAL'])
+        ChoiceChip(
+          label: Text(context.t('space.' + tipo)),
+          selected: _service.espacoFinanceiro == tipo,
+          onSelected:
+              (_trocandoEspaco || _carregando || _executandoAcao)
+                  ? null
+                  : (_) => _trocarEspaco(tipo),
+        ),
+      IconButton(
+        tooltip: context.t('space.settings'),
+        onPressed:
+            (_trocandoEspaco || _carregando || _executandoAcao)
+                ? null
+                : _configurarEspaco,
+        icon: const Icon(Icons.account_balance_outlined),
+      ),
+    ],
+  );
+
   final AgendaFinanceiraLancamentoService _service =
       AgendaFinanceiraLancamentoService();
   final AgendaFinanceiraAcoesFinanceiras _acoesService =
       AgendaFinanceiraAcoesFinanceiras();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final CaixaApiClient _caixaApiClient = HttpCaixaApiClient(
+    espacoFinanceiro: () => _service.espacoFinanceiro,
+  );
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
@@ -899,6 +961,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
+      'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
@@ -931,6 +994,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
+      'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
@@ -1202,12 +1266,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
+    final contaFinanceiraId = await selecionarContaWeb(
+      context,
+      _service.espacoFinanceiro,
+    );
+    if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
-      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
+      final String? idSessaoCaixa =
+          _service.espacoFinanceiro == 'PESSOAL'
+              ? null
+              : await _buscarIdSessaoCaixaAberta();
       if (resultado.total) {
         await _acoesService.executarTotal(
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraLiquidacaoRequest(
+            contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'TOTAL',
             dataLiquidacao:
                 DateTime.tryParse(
@@ -1226,6 +1299,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         await _acoesService.executarAbatimento(
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraParcialRequest(
+            contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'PARCIAL',
             dataLiquidacao:
                 DateTime.tryParse(
@@ -1288,6 +1362,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _novoLancamento() async {
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
+      service: _service,
       empresaSelecionada: 'Empresa',
       empresas: const <String>['Empresa'],
     );
@@ -1324,6 +1399,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
     final atualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
+      service: _service,
       empresaSelecionada: empresas.first,
       empresas: empresas,
       modoEdicao: true,
@@ -1512,7 +1588,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     ),
                     SixWebPageShell.sectionGap,
                     _buildFiltros(theme),
-                    if (_carregando || _executandoAcao) ...const <Widget>[
+                    if (_trocandoEspaco ||
+                        _carregando ||
+                        _executandoAcao) ...const <Widget>[
                       SizedBox(height: 10),
                       LinearProgressIndicator(minHeight: 3),
                     ],
@@ -1601,6 +1679,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         runSpacing: 12,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
+          _seletorEspaco(),
           _drop('Período', _periodoSelecionado, _periodos, _selecionarPeriodo),
           if (_usaPeriodoPersonalizado) ...<Widget>[
             _dateFilterField(
@@ -1784,9 +1863,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  ButtonStyle _secondaryCtaStyle(ThemeData theme) => SixWebActionStyles.secondary(context);
+  ButtonStyle _secondaryCtaStyle(ThemeData theme) =>
+      SixWebActionStyles.secondary(context);
 
-  ButtonStyle _primaryCtaStyle(ThemeData theme) => SixWebActionStyles.primary(context);
+  ButtonStyle _primaryCtaStyle(ThemeData theme) =>
+      SixWebActionStyles.primary(context);
 
   Color _agendaTipoAccent(String? tipo) {
     final tokens = WebThemeTokens.of(context);
@@ -2593,7 +2674,11 @@ class _AgendaMultiSelectMenuEntryState
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.payments_outlined, color: Theme.of(context).colorScheme.primary, size: 18),
+                Icon(
+                  Icons.payments_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2703,7 +2788,10 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
                   selected
                       ? Icons.check_box_rounded
                       : Icons.check_box_outline_blank_rounded,
-                  color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
+                  color:
+                      selected
+                          ? Theme.of(context).colorScheme.primary
+                          : tokens.mutedText,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -2803,7 +2891,11 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    Icon(widget.icon, size: 18, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      widget.icon,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -2839,7 +2931,10 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                       curve: Curves.easeOutCubic,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: active ? Theme.of(context).colorScheme.primary : tokens.mutedText,
+                        color:
+                            active
+                                ? Theme.of(context).colorScheme.primary
+                                : tokens.mutedText,
                         size: 20,
                       ),
                     ),
@@ -2877,7 +2972,10 @@ class _AgendaFilterMenuItem extends StatelessWidget {
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
-            color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
+            color:
+                selected
+                    ? Theme.of(context).colorScheme.primary
+                    : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -3513,6 +3611,12 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                   liquidacao['formaPagamentoRealizada']?.toString(),
                 ),
               ),
+              if ((liquidacao['contaFinanceiraNome']?.toString() ?? '')
+                  .isNotEmpty)
+                _info(
+                  context.t('space.actualAccount'),
+                  liquidacao['contaFinanceiraNome'].toString(),
+                ),
               if (idLiquidacao.isNotEmpty)
                 TextButton.icon(
                   onPressed: () async {

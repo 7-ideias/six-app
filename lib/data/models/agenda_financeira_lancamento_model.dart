@@ -2,7 +2,9 @@ import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
 class LancamentoAgendaFinanceiraRequest {
+  final String? contaFinanceiraId;
   LancamentoAgendaFinanceiraRequest({
+    this.contaFinanceiraId,
     required this.uuidOperacaoApp,
     required this.descricao,
     required this.tipoOperacao,
@@ -105,6 +107,8 @@ class LancamentoAgendaFinanceiraRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
+      'atualizarContaFinanceira': true,
       'uuidOperacaoApp': uuidOperacaoApp,
       'descricao': descricao,
       'tipoOperacao': tipoOperacao,
@@ -304,7 +308,9 @@ class AgendaFinanceiraLancamentoDetalhe {
 }
 
 class AgendaFinanceiraLiquidacaoRequest {
+  final String? contaFinanceiraId;
   AgendaFinanceiraLiquidacaoRequest({
+    this.contaFinanceiraId,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -328,6 +334,7 @@ class AgendaFinanceiraLiquidacaoRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
@@ -345,7 +352,9 @@ class AgendaFinanceiraLiquidacaoRequest {
 }
 
 class AgendaFinanceiraParcialRequest {
+  final String? contaFinanceiraId;
   AgendaFinanceiraParcialRequest({
+    this.contaFinanceiraId,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -365,6 +374,7 @@ class AgendaFinanceiraParcialRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,

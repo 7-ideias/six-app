@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
@@ -110,6 +111,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
   required List<String> empresas,
   bool modoEdicao = false,
   Map<String, dynamic>? lancamentoInicial,
+  AgendaFinanceiraLancamentoService? service,
 }) {
   return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
@@ -132,6 +134,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
                 ? context.t('agenda.form.edit')
                 : context.t('agenda.form.create'),
         body: _LancamentoAgendaFinanceiraWebBody(
+          service: service,
           empresaSelecionada: empresaSelecionada,
           empresas: empresas,
           modoEdicao: modoEdicao,
@@ -144,12 +147,14 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 
 class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
   const _LancamentoAgendaFinanceiraWebBody({
+    this.service,
     required this.empresaSelecionada,
     required this.empresas,
     required this.modoEdicao,
     this.lancamentoInicial,
   });
 
+  final AgendaFinanceiraLancamentoService? service;
   final String empresaSelecionada;
   final List<String> empresas;
   final bool modoEdicao;
@@ -166,13 +171,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
+  late final CaixaApiClient _caixaApiClient = HttpCaixaApiClient(
+    espacoFinanceiro: () => _service.espacoFinanceiro,
+  );
 
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _contatoController = TextEditingController();
   final TextEditingController _idContatoController = TextEditingController();
+  String? _contaFinanceiraId;
   final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _valorConfirmadoController =
@@ -369,6 +377,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _descricaoController.text = item['descricao']?.toString() ?? '';
     _contatoController.text = item['contato']?.toString() ?? '';
     _idContatoController.text = item['idContato']?.toString() ?? '';
+    _contaFinanceiraId = item['contaFinanceiraId']?.toString();
     _categoriaController.text = item['categoria']?.toString() ?? '';
     _valorController.text = _formatarValorParaCampo(valorOriginal);
     _valorConfirmadoController.text = _formatarValorParaCampo(valorConfirmado);
@@ -684,6 +693,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       formaPagamento: formaPagamento,
       empresa: _empresaSelecionada,
       categoria: _categoriaController.text.trim(),
+      contaFinanceiraId: _contaFinanceiraId,
       idColaborador: 'web-user',
       nomeColaborador: _responsavelController.text.trim(),
       idCliente:
@@ -1356,7 +1366,27 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 label: _label('category'),
                 requiredField: true,
               ),
+              Text(context.t('space.' + _service.espacoFinanceiro)),
+              ContaFinanceiraWebField(
+                espaco: _service.espacoFinanceiro,
+                value: _contaFinanceiraId,
+                onChanged: (id) => setState(() => _contaFinanceiraId = id),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  final nome = await selecionarContaWeb(
+                    context,
+                    _service.espacoFinanceiro,
+                    grupo: 'CATEGORIAS',
+                  );
+                  if (nome != null && mounted)
+                    setState(() => _categoriaController.text = nome);
+                },
+                icon: const Icon(Icons.category_outlined),
+                label: Text(context.t('space.CATEGORIAS')),
+              ),
               AgendaCentroCustoWebField(
+                service: _service,
                 initialId: _centroCustoId,
                 initialName: _centroCustoController.text,
                 enabled: !_isLoading,
@@ -1410,14 +1440,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   onChanged:
                       (value) => setState(() => _origemSelecionada = value!),
                 ),
-                _buildDropdownField(
-                  label: _label('company'),
-                  value: _empresaSelecionada,
-                  items:
-                      widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
-                  onChanged:
-                      (value) => setState(() => _empresaSelecionada = value!),
-                ),
+                if (_service.espacoFinanceiro == 'EMPRESA')
+                  _buildDropdownField(
+                    label: _label('company'),
+                    value: _empresaSelecionada,
+                    items:
+                        widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
+                    onChanged:
+                        (value) => setState(() => _empresaSelecionada = value!),
+                  ),
                 _buildDateField(
                   label: _label('transactionDate'),
                   controller: _dataOperacaoController,
