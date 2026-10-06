@@ -1846,14 +1846,14 @@ class _UploadCropGuidePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final bool showCropGuide =
-        _isLargerThanRecommended && !_sameAspectRatio;
+        _hasDimensions && !_sameAspectRatio;
     final bool resizeOnly =
         _isLargerThanRecommended && _sameAspectRatio;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        if (_isLargerThanRecommended) ...<Widget>[
+        if (showCropGuide || resizeOnly) ...<Widget>[
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 10),
