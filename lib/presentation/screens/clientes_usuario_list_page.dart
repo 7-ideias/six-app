@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
@@ -328,7 +329,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
         onChanged: (String value) => setState(() => _filter = value),
         decoration: InputDecoration(
           hintText: 'Buscar nome, documento, telefone ou e-mail...',
-          prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
+          prefixIcon: Icon(Icons.search_rounded, color: Theme.of(context).colorScheme.primary),
           filled: true,
           fillColor: tokens.inputBackground,
           suffixIcon:
@@ -713,52 +714,11 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     );
   }
 
-  ButtonStyle _outlinedCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      side: BorderSide(color: tokens.cardBorder),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    ).copyWith(
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return tokens.disabledBackground.withValues(alpha: 0.22);
-        }
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.pressed)) {
-          return tokens.info.withValues(alpha: 0.08);
-        }
-        return Colors.transparent;
-      }),
-    );
-  }
+  ButtonStyle _outlinedCtaStyle() => SixWebActionStyles.secondary(context);
 
-  ButtonStyle _filledCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return FilledButton.styleFrom(
-      foregroundColor: tokens.onInfo,
-      backgroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      disabledBackgroundColor: tokens.disabledBackground,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _filledCtaStyle() => SixWebActionStyles.primary(context);
 
-  ButtonStyle _textCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return TextButton.styleFrom(
-      foregroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _textCtaStyle() => SixWebActionStyles.text(context);
 }
 
 class _LoadingClientes extends StatelessWidget {

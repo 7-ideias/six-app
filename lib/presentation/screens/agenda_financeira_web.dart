@@ -7,6 +7,7 @@ import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
@@ -1135,10 +1136,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 onPressed: () => Navigator.of(dialogContext).pop(true),
                 icon: const Icon(Icons.delete_outline_rounded),
                 label: const Text('Excluir parcial'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
-                ),
+                style: SixWebActionStyles.danger(dialogContext),
               ),
             ],
           ),
@@ -1397,45 +1395,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: tokens.surfaceMuted,
-          foregroundColor: tokens.info,
-          disabledBackgroundColor: tokens.disabledBackground,
-          disabledForegroundColor: tokens.disabledForeground,
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          side: BorderSide(
-            color: tokens.info.withValues(alpha: 0.24),
-            width: 1.1,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-        ),
+        style: SixWebActionStyles.secondary(context),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: tokens.info,
-          foregroundColor: tokens.onInfo,
-          disabledBackgroundColor: tokens.disabledBackground,
-          disabledForegroundColor: tokens.disabledForeground,
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-        ),
+        style: SixWebActionStyles.primary(context),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: tokens.secondaryText,
-          disabledForegroundColor: tokens.disabledForeground,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        ),
+        style: SixWebActionStyles.text(context),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -1815,41 +1781,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  ButtonStyle _secondaryCtaStyle(ThemeData theme) {
-    final tokens = WebThemeTokens.of(context);
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      backgroundColor: Color.alphaBlend(
-        tokens.info.withValues(alpha: 0.06),
-        tokens.cardBackground,
-      ),
-      side: BorderSide(color: tokens.selectedBorder.withValues(alpha: 0.78)),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      textStyle: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
+  ButtonStyle _secondaryCtaStyle(ThemeData theme) => SixWebActionStyles.secondary(context);
 
-  ButtonStyle _primaryCtaStyle(ThemeData theme) {
-    final tokens = WebThemeTokens.of(context);
-    final Color primary = theme.colorScheme.primary;
-    return FilledButton.styleFrom(
-      foregroundColor: theme.colorScheme.onPrimary,
-      backgroundColor: Color.alphaBlend(
-        primary.withValues(alpha: 0.92),
-        tokens.surfaceElevated,
-      ),
-      disabledBackgroundColor: tokens.disabledBackground,
-      disabledForegroundColor: tokens.disabledForeground,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      textStyle: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
+  ButtonStyle _primaryCtaStyle(ThemeData theme) => SixWebActionStyles.primary(context);
 
   Color _agendaTipoAccent(String? tipo) {
     final tokens = WebThemeTokens.of(context);
@@ -2656,7 +2590,7 @@ class _AgendaMultiSelectMenuEntryState
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.payments_outlined, color: tokens.info, size: 18),
+                Icon(Icons.payments_outlined, color: Theme.of(context).colorScheme.primary, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2766,7 +2700,7 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
                   selected
                       ? Icons.check_box_rounded
                       : Icons.check_box_outline_blank_rounded,
-                  color: selected ? tokens.info : tokens.mutedText,
+                  color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -2866,7 +2800,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    Icon(widget.icon, size: 18, color: tokens.info),
+                    Icon(widget.icon, size: 18, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -2902,7 +2836,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                       curve: Curves.easeOutCubic,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: active ? tokens.info : tokens.mutedText,
+                        color: active ? Theme.of(context).colorScheme.primary : tokens.mutedText,
                         size: 20,
                       ),
                     ),
@@ -2940,7 +2874,7 @@ class _AgendaFilterMenuItem extends StatelessWidget {
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
-            color: selected ? tokens.info : tokens.mutedText,
+            color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -3097,9 +3031,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                       },
                       icon: const Icon(Icons.delete_forever_outlined),
                       label: const Text('Excluir lançamento'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: tokens.danger,
-                      ),
+                      style: SixWebActionStyles.dangerText(context),
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(false),
@@ -3588,7 +3520,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                   },
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
                   label: const Text('Excluir parcial'),
-                  style: TextButton.styleFrom(foregroundColor: tokens.danger),
+                  style: SixWebActionStyles.dangerText(context),
                 ),
             ],
           ),

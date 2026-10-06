@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -838,7 +839,7 @@ class _ColaboradoresUsuarioListPageState
         children: <Widget>[
           Icon(
             Icons.admin_panel_settings_outlined,
-            color: tokens.info,
+            color: Theme.of(context).colorScheme.primary,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -1079,52 +1080,11 @@ class _ColaboradoresUsuarioListPageState
     );
   }
 
-  ButtonStyle _outlinedCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      side: BorderSide(color: tokens.cardBorder),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    ).copyWith(
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return tokens.disabledBackground.withValues(alpha: 0.22);
-        }
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.pressed)) {
-          return tokens.info.withValues(alpha: 0.08);
-        }
-        return Colors.transparent;
-      }),
-    );
-  }
+  ButtonStyle _outlinedCtaStyle() => SixWebActionStyles.secondary(context);
 
-  ButtonStyle _filledCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return FilledButton.styleFrom(
-      foregroundColor: tokens.onInfo,
-      backgroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      disabledBackgroundColor: tokens.disabledBackground,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _filledCtaStyle() => SixWebActionStyles.primary(context);
 
-  ButtonStyle _textCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return TextButton.styleFrom(
-      foregroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _textCtaStyle() => SixWebActionStyles.text(context);
 }
 
 class _HoverableColaboradorCard extends StatefulWidget {
@@ -1519,7 +1479,7 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: tokens.info),
+      prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
       filled: true,
       fillColor: tokens.inputBackground,
       enabledBorder: OutlineInputBorder(
@@ -1554,7 +1514,7 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         value: value,
         onChanged: onChanged,
-        activeThumbColor: tokens.info,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
         title: Text(
           title,
           style: TextStyle(

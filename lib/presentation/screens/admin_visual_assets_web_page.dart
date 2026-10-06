@@ -907,7 +907,7 @@ class _AdminVisualSelectFieldState<T>
                       borderRadius: BorderRadius.circular(AdminRadius.lg),
                       border: Border.all(
                         color: active
-                            ? AdminPalette.success
+                            ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.outlineVariant,
                         width: active ? 1.3 : 1,
                       ),
@@ -928,7 +928,7 @@ class _AdminVisualSelectFieldState<T>
                           widget.icon,
                           size: 18,
                           color: active
-                              ? AdminPalette.success
+                              ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 10),
@@ -969,7 +969,7 @@ class _AdminVisualSelectFieldState<T>
                           child: Icon(
                             Icons.keyboard_arrow_down_rounded,
                             color: active
-                                ? AdminPalette.success
+                                ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -1005,7 +1005,7 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AdminRadius.md),
         border: Border.all(
-          color: selected ? AdminPalette.success : Colors.transparent,
+          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
         ),
       ),
       child: Row(
@@ -1013,7 +1013,7 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
           Icon(
             selected ? Icons.check_circle_rounded : Icons.circle_outlined,
             size: 18,
-            color: selected ? AdminPalette.success : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1054,7 +1054,7 @@ class _VersionBadge extends StatelessWidget {
           Icon(
             Icons.memory_rounded,
             size: 17,
-            color: AdminPalette.success,
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 8),
           Text(

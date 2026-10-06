@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
 import 'package:sixpos/presentation/components/web/six_managed_web_hero.dart';
@@ -809,7 +810,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.2,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
                         ),
                       )
                       : const Icon(Icons.storefront_outlined, size: 18),
@@ -819,15 +820,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                   fallback: 'Abrir catálogo virtual',
                 ),
               ),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              style: SixWebActionStyles.primary(context),
             ),
             OutlinedButton.icon(
               onPressed:
@@ -839,18 +832,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                       ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: Text(context.t('common.refresh', fallback: 'Atualizar')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: tokens.info,
-                backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-                side: BorderSide(color: tokens.selectedBorder),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              style: SixWebActionStyles.secondary(context),
             ),
           ],
         ),
@@ -1109,13 +1091,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                         fallback: 'Limpar filtros',
                       ),
                     ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: tokens.secondaryText,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
+                    style: SixWebActionStyles.text(context),
                   ),
               ],
             );
@@ -1685,7 +1661,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, color: tokens.info),
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1870,7 +1846,7 @@ class _CatalogoReservaFilterTriggerState
                         Icon(
                           widget.icon,
                           size: 18,
-                          color: active ? tokens.info : tokens.secondaryText,
+                          color: active ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                         ),
                         const SizedBox(width: 10),
                       ],
@@ -1908,7 +1884,7 @@ class _CatalogoReservaFilterTriggerState
                         curve: WebThemeTokens.transitionCurve,
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: active ? tokens.info : tokens.secondaryText,
+                          color: active ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                         ),
                       ),
                     ],
@@ -2099,7 +2075,7 @@ class _CatalogoReservaMultiSelectMenuEntryState<T>
               children: <Widget>[
                 Icon(
                   widget.icon ?? Icons.filter_alt_outlined,
-                  color: tokens.info,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -2222,7 +2198,7 @@ class _CatalogoReservaMultiSelectMenuTile extends StatelessWidget {
                         ? Icons.check_circle_rounded
                         : Icons.circle_outlined,
                     size: 18,
-                    color: selected ? tokens.info : tokens.mutedText,
+                    color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2389,7 +2365,7 @@ class _CatalogoReservaFilterMenuItem extends StatelessWidget {
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
-            color: selected ? tokens.info : tokens.mutedText,
+            color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -2490,7 +2466,7 @@ class _CatalogoReservaDropdownState<T>
                           ? Icons.check_circle_rounded
                           : Icons.circle_outlined,
                       size: 18,
-                      color: selected ? tokens.info : tokens.mutedText,
+                      color: selected ? Theme.of(context).colorScheme.primary : tokens.mutedText,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -2606,7 +2582,7 @@ class _CatalogoReservaDropdownState<T>
                         curve: WebThemeTokens.transitionCurve,
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: active ? tokens.info : tokens.secondaryText,
+                          color: active ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                         ),
                       ),
                     ],

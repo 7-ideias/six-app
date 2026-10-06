@@ -498,7 +498,7 @@ class _CatalogHealthDetails extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Icon(Icons.monitor_heart_outlined, color: tokens.info),
+            Icon(Icons.monitor_heart_outlined, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -613,7 +613,7 @@ class _CatalogCountCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: tokens.info, size: 22),
+              Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -973,7 +973,7 @@ class _CatalogModuleCard extends StatelessWidget {
                       color: tokens.info.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(13),
                     ),
-                    child: Icon(data.icon, color: tokens.info, size: 21),
+                    child: Icon(data.icon, color: Theme.of(context).colorScheme.primary, size: 21),
                   ),
                   const Spacer(),
                   Icon(Icons.arrow_forward_rounded, color: tokens.mutedText),
@@ -1040,7 +1040,7 @@ class _StockBoundaryCard extends StatelessWidget {
               color: tokens.info.withValues(alpha: 0.11),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(Icons.warehouse_outlined, color: tokens.info),
+            child: Icon(Icons.warehouse_outlined, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1126,7 +1126,7 @@ class _CatalogStatePanel extends StatelessWidget {
               color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: tokens.info),
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 16),
           Expanded(

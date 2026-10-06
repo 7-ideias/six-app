@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
@@ -600,7 +601,7 @@ class _DesempenhoColaboradorWebPageState
                   color: tokens.info.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(Icons.flag_outlined, color: tokens.info, size: 20),
+                child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -840,52 +841,11 @@ class _DesempenhoColaboradorWebPageState
     );
   }
 
-  ButtonStyle _outlinedCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      side: BorderSide(color: tokens.cardBorder),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    ).copyWith(
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return tokens.disabledBackground.withValues(alpha: 0.22);
-        }
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.pressed)) {
-          return tokens.info.withValues(alpha: 0.08);
-        }
-        return Colors.transparent;
-      }),
-    );
-  }
+  ButtonStyle _outlinedCtaStyle() => SixWebActionStyles.secondary(context);
 
-  ButtonStyle _filledCtaStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return FilledButton.styleFrom(
-      foregroundColor: tokens.onInfo,
-      backgroundColor: tokens.info,
-      disabledForegroundColor: tokens.disabledForeground,
-      disabledBackgroundColor: tokens.disabledBackground,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
+  ButtonStyle _filledCtaStyle() => SixWebActionStyles.primary(context);
 
-  ButtonStyle _iconActionStyle() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return IconButton.styleFrom(
-      foregroundColor: tokens.primaryText,
-      disabledForegroundColor: tokens.disabledForeground,
-      backgroundColor: Colors.transparent,
-      hoverColor: tokens.info.withValues(alpha: 0.08),
-      focusColor: tokens.info.withValues(alpha: 0.10),
-    );
-  }
+  ButtonStyle _iconActionStyle() => SixWebActionStyles.icon(context);
 }
 
 class _GoalForm extends StatefulWidget {
@@ -1117,18 +1077,7 @@ class _GoalFormState extends State<_GoalForm> {
                   label: Text(
                     widget.meta == null ? 'Cadastrar meta' : 'Salvar meta',
                   ),
-                  style: FilledButton.styleFrom(
-                    foregroundColor: tokens.onInfo,
-                    backgroundColor: tokens.info,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                  style: SixWebActionStyles.primary(context),
                 ),
               ),
             ],
@@ -1485,7 +1434,7 @@ class _KpiCard extends StatelessWidget {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(data.icon, color: tokens.info),
+            child: Icon(data.icon, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1620,7 +1569,7 @@ class _SelectorTile extends StatelessWidget {
               children: <Widget>[
                 Icon(
                   icon,
-                  color: selected ? tokens.info : tokens.secondaryText,
+                  color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1649,7 +1598,7 @@ class _SelectorTile extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  Icon(Icons.check_circle_rounded, color: tokens.info),
+                  Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary),
               ],
             ),
           ),

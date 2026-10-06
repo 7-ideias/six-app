@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -718,15 +719,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       runSpacing: 10,
       children: <Widget>[
         OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: tokens.info,
-            backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-            side: BorderSide(color: tokens.selectedBorder),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
+          style: SixWebActionStyles.secondary(context),
           onPressed: _carregando ? null : () => _carregar(),
           icon: const Icon(Icons.refresh_rounded),
           label: Text(
@@ -907,7 +900,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         color: tokens.mutedText,
         fontWeight: FontWeight.w500,
       ),
-      prefixIconColor: tokens.info,
+      prefixIconColor: Theme.of(context).colorScheme.primary,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -938,7 +931,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(Icons.filter_alt_outlined, color: tokens.info),
+                  Icon(Icons.filter_alt_outlined, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1286,20 +1279,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                     children: <Widget>[
                       if (_temFiltrosAtivos)
                         OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: tokens.info,
-                            backgroundColor: tokens.surfaceMuted.withValues(
-                              alpha: 0.35,
-                            ),
-                            side: BorderSide(color: tokens.selectedBorder),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
+                          style: SixWebActionStyles.secondary(context),
                           onPressed: _carregando ? null : _limparFiltros,
                           icon: const Icon(Icons.filter_alt_off_outlined),
                           label: Text(
@@ -1613,17 +1593,11 @@ class _DateFilterButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          side: BorderSide(color: tokens.cardBorder),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
+        style: SixWebActionStyles.secondary(context),
         onPressed: onPressed,
         child: Row(
           children: <Widget>[
-            Icon(Icons.calendar_today_outlined, size: 18, color: tokens.info),
+            Icon(Icons.calendar_today_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 9),
             Expanded(
               child: Column(
@@ -2473,7 +2447,7 @@ class _VendaDetalheDialogState extends State<_VendaDetalheDialog> {
                                   ),
                                   child: Icon(
                                     Icons.receipt_long_outlined,
-                                    color: tokens.info,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                                 const SizedBox(width: 14),
@@ -2883,7 +2857,7 @@ class _DetalheResumoHeader extends StatelessWidget {
                                 icon: Icon(
                                   Icons.content_copy_rounded,
                                   size: 18,
-                                  color: tokens.info,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ),
@@ -2999,15 +2973,7 @@ class _DetalheResumoHeader extends StatelessWidget {
             final Widget actionButton = FilledButton.icon(
               onPressed: onAbrirDevolucoes,
               icon: const Icon(Icons.assignment_return_outlined, size: 18),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              style: SixWebActionStyles.primary(context),
               label: Text(
                 _t(
                   context,

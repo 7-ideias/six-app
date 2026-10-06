@@ -226,3 +226,51 @@ Para validar localmente, atualize frontend e backend desta branch:
    confira o padrão global no painel e na tela operacional.
 4. Em imagens com múltiplas especialidades, confirme que as demais continuam
    usando a imagem original; confira também DEV/LIVE e a ativação agendada.
+
+## CTAs e paleta de Aparência
+
+Os CTAs das 15 telas revisadas usam `SixWebActionStyles`, que deriva os estilos
+do `AppTheme` e do `ColorScheme` atual. O `SixWebPageShell` aplica esse padrão
+aos botões herdados, inclusive Produtos, Usuários do Sixo e painel SUPER.
+Estilos explícitos nas outras páginas delegam à mesma fonte.
+
+- Ações principais: cor primária cadastrada (`primaryContainer`) e texto com
+  contraste calculado pelo tema da aplicação.
+- Atualizar, filtros e ações secundárias: padrão contornado do tema, com os
+  mesmos estados de hover, foco e desabilitado.
+- Links e botões de ícone: respectivos estilos do tema da aplicação.
+- Seleções e ícones de filtros acompanham a paleta. Indicadores de status mantêm
+  sua semântica; ações destrutivas usam a cor de alerta da paleta.
+
+A troca da configuração de Aparência reconstrói os estilos sem precisar abrir
+novamente a tela. O ajuste se restringe à composição Web; Devoluções mantém
+a aplicação condicional para Web na jornada existente.
+
+Validação: teste de troca de paleta roxa/amarela em light/dark, contraste dos
+botões e estado desabilitado; Home nas cinco larguras de referência e build Web.
+
+### Cache persistente de imagens no Web
+
+- `SixCachedNetworkImage` usa `SixWebCachedImageProvider` no Web, com Cache
+  Storage (`six_visual_assets_web_v1`) e o cache de memória do Flutter.
+- As imagens são armazenadas à medida que os cabeçalhos são visitados. A chave
+  inclui a URL completa e `v`: a versão enviada pelo backend/WebSocket e pelo
+  botão de atualização forçada continua invalidando o conteúdo automaticamente.
+- O manifesto continua vindo do backend, respeitando empresa, segmento,
+  especialidade e fallback global. Não são persistidas respostas de APIs privadas,
+  tokens ou cookies neste cache; as imagens são requisitadas sem credenciais.
+- Limites: 200 entradas, 64 MiB no total, 8 MiB por imagem e validade de 365 dias.
+  A limpeza remove entradas antigas; downloads simultâneos da mesma URL são
+  deduplicados. Falha de armazenamento não impede exibir a imagem pela rede.
+- O placeholder permanece até a decodificação terminar. Falhas de decodificação
+  removem a entrada para permitir uma nova tentativa.
+- Disponível em HTTPS e localhost. O cache sobrevive a recargas e novas sessões
+  normais, mas pode ser removido pelo navegador ou pelo usuário ao limpar os dados
+  do site. Isso não torna as telas ou os dados de negócio disponíveis offline.
+- Mobile mantém seu `flutter_cache_manager` existente.
+
+Validação local sugerida: em DevTools → Application → Cache Storage, conferir a
+entrada após visitar uma tela; fechar/reabrir o navegador e conferir a reutilização.
+Depois usar a atualização forçada do painel e confirmar uma nova URL com `v`.
+Neste ambiente de implementação, a análise estática e a compilação Web passaram;
+a execução do Chromium foi bloqueada pela política de sockets do ambiente.

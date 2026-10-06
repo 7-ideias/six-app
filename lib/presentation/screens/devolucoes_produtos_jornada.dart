@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../theme/six_web_action_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/caixa_models.dart';
@@ -645,8 +646,6 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
   }
 
   Widget _buildBuscaVenda() {
-    final WebThemeTokens? tokens =
-        widget.web ? WebThemeTokens.of(context) : null;
     return _SectionCard(
       title: '1. Localizar venda',
       subtitle:
@@ -665,7 +664,7 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
             ),
           );
           final Widget botao = FilledButton.icon(
-            style: widget.web ? _webPrimaryButtonStyle(tokens!) : null,
+            style: widget.web ? _webPrimaryButtonStyle(context) : null,
             onPressed: _buscandoVenda ? null : _buscarVenda,
             icon:
                 _buscandoVenda
@@ -1000,7 +999,7 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
                 },
               );
               final Widget botao = FilledButton.icon(
-                style: widget.web ? _webPrimaryButtonStyle(tokens!) : null,
+                style: widget.web ? _webPrimaryButtonStyle(context) : null,
                 onPressed:
                     _produtoTrocaSelecionadoId == null
                         ? null
@@ -1199,7 +1198,7 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
           ),
           const SizedBox(height: 10),
           FilledButton.icon(
-            style: widget.web ? _webPrimaryButtonStyle(tokens!) : null,
+            style: widget.web ? _webPrimaryButtonStyle(context) : null,
             onPressed: _salvando ? null : _registrar,
             icon:
                 _salvando
@@ -1521,13 +1520,4 @@ InputDecorationTheme _buildWebInputDecorationTheme(WebThemeTokens tokens) {
   );
 }
 
-ButtonStyle _webPrimaryButtonStyle(WebThemeTokens tokens) {
-  return FilledButton.styleFrom(
-    backgroundColor: tokens.info,
-    foregroundColor: tokens.onInfo,
-    disabledBackgroundColor: tokens.disabledBackground,
-    disabledForegroundColor: tokens.disabledForeground,
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-  );
-}
+ButtonStyle _webPrimaryButtonStyle(BuildContext context) => SixWebActionStyles.primary(context);
