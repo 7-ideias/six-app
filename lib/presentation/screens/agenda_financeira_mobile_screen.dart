@@ -1,3 +1,4 @@
+import 'recebiveis_vendas_mobile.dart';
 import 'configuracoes_espaco_mobile.dart';
 import '../components/mobile/conta_financeira_mobile_field.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
@@ -90,6 +91,17 @@ class _AgendaFinanceiraMobileScreenState
               (_trocandoEspaco || _carregando || _executandoAcao)
                   ? null
                   : (_) => _trocarEspaco(tipo),
+        ),
+      if (_service.espacoFinanceiro == 'EMPRESA')
+        OutlinedButton.icon(
+          icon: const Icon(Icons.payments_outlined),
+          label: Text(context.t('machine.receivables')),
+          onPressed:
+              () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const RecebiveisVendasMobile(),
+                ),
+              ),
         ),
       IconButton(
         tooltip: context.t('space.settings'),
@@ -1023,6 +1035,10 @@ class _AgendaFinanceiraMobileScreenState
     );
     final resultado = await SixMobileRecebimentoBottomSheet.show(
       context,
+      destinosFinanceiros:
+          !pagamento &&
+          _service.espacoFinanceiro == 'EMPRESA' &&
+          item['origem']?.toString().toUpperCase() == 'VENDA',
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -1042,10 +1058,9 @@ class _AgendaFinanceiraMobileScreenState
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId = await selecionarContaMobile(
-      context,
-      _service.espacoFinanceiro,
-    );
+    final contaFinanceiraId =
+        resultado.recebimentos.first.contaFinanceiraId ??
+        await selecionarContaMobile(context, _service.espacoFinanceiro);
     if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa =

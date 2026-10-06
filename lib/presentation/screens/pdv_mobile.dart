@@ -439,6 +439,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     final VendaNaoLiquidadaModel? venda = widget.vendaNaoLiquidada;
     return SixMobileRecebimentoBottomSheet.show(
       context,
+      destinosFinanceiros: true,
       titulo:
           _editandoVendaNaoLiquidada
               ? _txt(
@@ -465,11 +466,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       valorJaRecebido: 0,
       valorAberto: _total,
       codigoTipoInicial: venda?.codigoTipoRecebimento,
-      idUnicoDaOperacao: venda == null
-          ? null
-          : (venda.idOperacaoApp.trim().isNotEmpty
-              ? venda.idOperacaoApp
-              : venda.idOperacaoFinanceira),
+      idUnicoDaOperacao:
+          venda == null
+              ? null
+              : (venda.idOperacaoApp.trim().isNotEmpty
+                  ? venda.idOperacaoApp
+                  : venda.idOperacaoFinanceira),
       dataOperacao: venda?.dataCompetencia,
       permitirParcial: true,
       observacaoInicial:
@@ -718,6 +720,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           (RecebimentoFormaInput recebimento) => FormaPagamentoSelecionada(
             codigo: recebimento.codigo.trim().toUpperCase(),
             valor: recebimento.valor,
+            financeiro: recebimento,
           ),
         )
         .toList(growable: false);

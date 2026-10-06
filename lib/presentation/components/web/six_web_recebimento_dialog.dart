@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'destinos_recebimento_web.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,6 +58,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     this.contato,
     this.permitirParcial = true,
     this.pagamento = false,
+    this.destinosFinanceiros = false,
     this.tipoInicial = SixWebRecebimentoTipo.total,
     this.observacaoInicial,
     this.codigoTipoInicial,
@@ -69,6 +71,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final String? contato;
   final bool permitirParcial;
   final bool pagamento;
+  final bool destinosFinanceiros;
   final SixWebRecebimentoTipo tipoInicial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
@@ -81,6 +84,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     String? contato,
     bool permitirParcial = true,
     bool pagamento = false,
+    bool destinosFinanceiros = false,
     SixWebRecebimentoTipo tipoInicial = SixWebRecebimentoTipo.total,
     String? observacaoInicial,
     String? codigoTipoInicial,
@@ -110,6 +114,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
             contato: contato,
             permitirParcial: permitirParcial,
             pagamento: pagamento,
+            destinosFinanceiros: destinosFinanceiros,
             tipoInicial: tipoInicial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
@@ -329,7 +334,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     });
   }
 
-  void _confirmar() {
+  Future<void> _confirmar() async {
     if (_processando) return;
     final Set<String> codigos = <String>{};
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
@@ -404,6 +409,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       return;
     }
 
+    if (widget.destinosFinanceiros) {
+      final destinos = await selecionarDestinosWeb(context, recebimentos);
+      if (destinos == null || !mounted) return;
+      recebimentos.clear();
+      recebimentos.addAll(destinos);
+    }
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     setState(() => _processando = true);
     final SixWebRecebimentoResultado resultado = SixWebRecebimentoResultado(

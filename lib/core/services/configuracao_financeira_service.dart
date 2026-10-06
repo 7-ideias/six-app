@@ -14,10 +14,12 @@ class ConfiguracaoFinanceira {
     this.ativo = true,
     this.codigo,
     this.centroPaiId,
+    this.contaDestinoId,
   });
   final String id, nome, tipo, instituicao;
   final bool ativo;
   final String? codigo;
+  final String? contaDestinoId;
   final String? centroPaiId;
   factory ConfiguracaoFinanceira.fromJson(Map<String, dynamic> json) =>
       ConfiguracaoFinanceira(
@@ -27,6 +29,7 @@ class ConfiguracaoFinanceira {
         instituicao: json['instituicao']?.toString() ?? '',
         ativo: json['ativo'] == true,
         codigo: json['codigo']?.toString(),
+        contaDestinoId: json['contaDestinoId']?.toString(),
         centroPaiId: json['centroPaiId']?.toString(),
       );
 }
@@ -71,12 +74,14 @@ class ConfiguracaoFinanceiraService {
     required String tipo,
     required String instituicao,
     required bool ativo,
+    String? contaDestinoId,
   }) async {
     final payload = {
       'nome': nome.trim(),
       'tipo': tipo,
       'instituicao': instituicao.trim(),
       'ativo': ativo,
+      'contaDestinoId': contaDestinoId,
       if (grupo == 'CENTROS') 'codigo': original?.codigo,
       if (grupo == 'CENTROS') 'centroPaiId': original?.centroPaiId,
     };

@@ -165,6 +165,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     final SixWebRecebimentoResultado? resultado =
         await SixWebRecebimentoDialog.show(
           context,
+          destinosFinanceiros: true,
           titulo: 'Receber venda em aberto',
           descricao: venda.descricao,
           contato:

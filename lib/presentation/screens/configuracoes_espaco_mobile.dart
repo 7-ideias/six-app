@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/presentation/components/mobile/conta_financeira_mobile_field.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
@@ -82,7 +83,12 @@ class _ConfiguracoesEspacoMobileState extends State<ConfiguracoesEspacoMobile> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final grupo in ['CONTAS', 'CATEGORIAS', 'CENTROS'])
+          for (final grupo in [
+            'CONTAS',
+            'MAQUININHAS',
+            'CATEGORIAS',
+            'CENTROS',
+          ])
             ChoiceChip(
               label: Text(context.t('space.' + grupo)),
               selected: _grupo == grupo,
@@ -194,6 +200,7 @@ class _MobileConfigEditorState extends State<_MobileConfigEditor> {
   late String _tipo =
       widget.item?.tipo ?? (widget.grupo == 'CONTAS' ? 'BANCO' : 'AMBOS');
   late bool _ativo = widget.item?.ativo ?? true;
+  late String? _contaDestinoId = widget.item?.contaDestinoId;
   bool _saving = false;
   bool _error = false;
   final _form = GlobalKey<FormState>();
@@ -215,7 +222,8 @@ class _MobileConfigEditorState extends State<_MobileConfigEditor> {
         widget.grupo,
         original: widget.item,
         nome: _nome.text,
-        tipo: _tipo,
+        tipo: widget.grupo == 'MAQUININHAS' ? 'MAQUININHA' : _tipo,
+        contaDestinoId: _contaDestinoId,
         instituicao: _instituicao.text,
         ativo: _ativo,
       );
@@ -262,32 +270,46 @@ class _MobileConfigEditorState extends State<_MobileConfigEditor> {
                             ? context.t('space.required')
                             : null,
               ),
-              if (widget.grupo == 'CONTAS')
+              if (widget.grupo == 'CONTAS' || widget.grupo == 'MAQUININHAS')
                 TextField(
                   controller: _instituicao,
                   enabled: !_saving,
                   maxLength: 120,
                   decoration: InputDecoration(
-                    labelText: context.t('space.institution'),
+                    labelText: context.t(
+                      widget.grupo == 'MAQUININHAS'
+                          ? 'machine.operator'
+                          : 'space.institution',
+                    ),
                   ),
                 ),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final tipo
-                      in (widget.grupo == 'CONTAS'
-                          ? ['BANCO', 'CARTEIRA', 'CAIXA']
-                          : widget.grupo == 'CENTROS'
-                          ? ['CUSTO', 'RESULTADO', 'AMBOS']
-                          : ['RECEITA', 'DESPESA', 'AMBOS']))
-                    ChoiceChip(
-                      label: Text(context.t('space.' + tipo)),
-                      selected: tipo == _tipo,
-                      onSelected:
-                          _saving ? null : (_) => setState(() => _tipo = tipo),
-                    ),
-                ],
-              ),
+              if (widget.grupo == 'MAQUININHAS')
+                ContaFinanceiraMobileField(
+                  espaco: widget.service.espaco,
+                  value: _contaDestinoId,
+                  enabled: !_saving,
+                  onChanged: (v) => setState(() => _contaDestinoId = v),
+                ),
+              if (widget.grupo != 'MAQUININHAS')
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final tipo
+                        in (widget.grupo == 'CONTAS'
+                            ? ['BANCO', 'CARTEIRA', 'CAIXA']
+                            : widget.grupo == 'CENTROS'
+                            ? ['CUSTO', 'RESULTADO', 'AMBOS']
+                            : ['RECEITA', 'DESPESA', 'AMBOS']))
+                      ChoiceChip(
+                        label: Text(context.t('space.' + tipo)),
+                        selected: tipo == _tipo,
+                        onSelected:
+                            _saving
+                                ? null
+                                : (_) => setState(() => _tipo = tipo),
+                      ),
+                  ],
+                ),
               SwitchListTile.adaptive(
                 title: Text(context.t('space.active')),
                 value: _ativo,

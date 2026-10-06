@@ -50,7 +50,7 @@ Future<String?> selecionarContaWeb(
                 onTap:
                     () => Navigator.of(
                       context,
-                    ).pop(grupo == 'CONTAS' ? item.id : item.nome),
+                    ).pop(grupo != 'CATEGORIAS' ? item.id : item.nome),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

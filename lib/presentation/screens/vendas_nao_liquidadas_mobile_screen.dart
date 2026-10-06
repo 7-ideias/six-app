@@ -220,6 +220,7 @@ class _VendasNaoLiquidadasMobileScreenState
     final SixMobileRecebimentoResultado? resultado =
         await SixMobileRecebimentoBottomSheet.show(
           context,
+          destinosFinanceiros: true,
           titulo: _txt(
             'vendasNaoLiquidadas.receberTitulo',
             'Receber venda em aberto',

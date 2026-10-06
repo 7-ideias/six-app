@@ -329,6 +329,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final SixWebRecebimentoResultado? resultado =
         await SixWebRecebimentoDialog.show(
           context,
+          destinosFinanceiros: true,
           titulo: context.t(
             'pdv.openSale.receiveTitle',
             fallback: 'Receber saldo da venda',

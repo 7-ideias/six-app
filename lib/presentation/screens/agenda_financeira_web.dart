@@ -1,3 +1,4 @@
+import 'recebiveis_vendas_web.dart';
 import 'configuracoes_espaco_web.dart';
 import '../components/web/conta_financeira_web_field.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
@@ -86,6 +87,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               (_trocandoEspaco || _carregando || _executandoAcao)
                   ? null
                   : (_) => _trocarEspaco(tipo),
+        ),
+      if (_service.espacoFinanceiro == 'EMPRESA')
+        OutlinedButton.icon(
+          icon: const Icon(Icons.payments_outlined),
+          label: Text(context.t('machine.receivables')),
+          onPressed:
+              () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const RecebiveisVendasWeb(),
+                ),
+              ),
         ),
       IconButton(
         tooltip: context.t('space.settings'),
@@ -1249,6 +1261,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
     final resultado = await SixWebRecebimentoDialog.show(
       context,
+      destinosFinanceiros:
+          !pagamento &&
+          _service.espacoFinanceiro == 'EMPRESA' &&
+          item['origem']?.toString().toUpperCase() == 'VENDA',
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -1266,10 +1282,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId = await selecionarContaWeb(
-      context,
-      _service.espacoFinanceiro,
-    );
+    final contaFinanceiraId =
+        resultado.recebimentos.first.contaFinanceiraId ??
+        await selecionarContaWeb(context, _service.espacoFinanceiro);
     if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa =
