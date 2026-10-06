@@ -8,6 +8,7 @@ void main() {
     WidgetTester tester,
     Future<void> Function() action, {
     bool dark = false,
+    bool scheduled = false,
     bool reduceMotion = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(600, 800));
@@ -31,6 +32,7 @@ void main() {
                         context: context,
                         title: 'Home',
                         target: 'Retail · Bikes',
+                        scheduled: scheduled,
                         onConfirm: action,
                       ),
                   child: const Text('Open'),
@@ -95,6 +97,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls, 2);
     expect(find.byType(SixWebDeleteVisualAssetDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scheduled removal explains that the current image is kept', (
+    tester,
+  ) async {
+    await open(tester, () async {}, scheduled: true, dark: true);
+    expect(find.textContaining('current image will be kept'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete image'));
+    await tester.pump();
+    expect(find.text('Scheduled image removed.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 

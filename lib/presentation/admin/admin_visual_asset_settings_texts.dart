@@ -79,6 +79,23 @@ class AdminVisualAssetSettingsTexts {
     'Image removed. Global default applied.',
     'Imagen eliminada. Valor global aplicado.',
   );
+  String get deleteScheduled =>
+      pick('Apagar agendada', 'Delete scheduled image', 'Eliminar programada');
+  String get scheduledConsequence => pick(
+    'Esta imagem agendada será removida de todos os contextos do seu cadastro e não será ativada. A imagem atual será mantida.',
+    'This scheduled image will be removed from all contexts in its registration and will not activate. The current image will be kept.',
+    'Esta imagen programada se eliminará de todos los contextos de su registro y no se activará. La imagen actual se conservará.',
+  );
+  String get scheduledDeleted => pick(
+    'Imagem agendada removida.',
+    'Scheduled image removed.',
+    'Imagen programada eliminada.',
+  );
+  String get protectedGlobal => pick(
+    'Este é o padrão global. Use adicionar/substituir para manter uma imagem de fallback disponível.',
+    'This is the global default. Add or replace it to keep a fallback image available.',
+    'Esta es la imagen global. Añádela o sustitúyela para mantener una imagen de respaldo.',
+  );
   String get globalRequired => pick(
     'Cadastre primeiro uma imagem no padrão global desta posição.',
     'First register a global default image for this position.',

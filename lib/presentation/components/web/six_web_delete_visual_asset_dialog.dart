@@ -7,6 +7,7 @@ Future<bool> showSixWebDeleteVisualAssetDialog({
   required BuildContext context,
   required String title,
   required String target,
+  bool scheduled = false,
   required Future<void> Function() onConfirm,
 }) async =>
     await showSixWebAnimatedDialog<bool>(
@@ -17,6 +18,7 @@ Future<bool> showSixWebDeleteVisualAssetDialog({
           (_) => SixWebDeleteVisualAssetDialog(
             title: title,
             target: target,
+            scheduled: scheduled,
             onConfirm: onConfirm,
           ),
     ) ??
@@ -29,9 +31,11 @@ class SixWebDeleteVisualAssetDialog extends StatefulWidget {
     super.key,
     required this.title,
     required this.target,
+    this.scheduled = false,
     required this.onConfirm,
   });
   final String title, target;
+  final bool scheduled;
   final Future<void> Function() onConfirm;
   @override
   State<SixWebDeleteVisualAssetDialog> createState() =>
@@ -108,7 +112,9 @@ class _SixWebDeleteVisualAssetDialogState
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    success ? t.deleted : t.delete,
+                    success
+                        ? (widget.scheduled ? t.scheduledDeleted : t.deleted)
+                        : t.delete,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
@@ -118,7 +124,9 @@ class _SixWebDeleteVisualAssetDialogState
                   ),
                   Text(widget.target),
                   const SizedBox(height: 12),
-                  Text(t.consequence),
+                  Text(
+                    widget.scheduled ? t.scheduledConsequence : t.consequence,
+                  ),
                   if (_state == _DeleteState.processing) ...[
                     const SizedBox(height: 16),
                     const LinearProgressIndicator(),

@@ -210,17 +210,17 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     if (changed == true) await _reload();
   }
 
-  Future<void> _deleteImage(AdminVisualAssetSlotPanel slot) async {
-    final item = slot.current;
+  Future<void> _deleteImage(AdminVisualAssetSlotPanel slot, {bool scheduled = false}) async {
+    final item = scheduled ? slot.next : slot.current;
     if (item == null) return;
     final texts = _VisualAssetsTexts.of(context);
     final changed = await showSixWebDeleteVisualAssetDialog(
       context: context,
       title: texts.slotTitle(context, slot),
-      target: [_segment, _subsegment]
-          .whereType<String>()
-          .map(_prettyCode)
-          .join(' · '),
+      scheduled: scheduled,
+      target: _scope == 'EMPRESA'
+          ? (_selectedCompany?.name ?? '')
+          : [_segment, _subsegment].whereType<String>().map(_prettyCode).join(' · '),
       onConfirm: () => _service.delete(item.id, subsegment: _subsegment),
     );
     if (changed && mounted) await _reload();
@@ -527,7 +527,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             texts: texts,
             onUpload: _upload,
             onHistory: _showHistory,
-            onDelete: _scope == 'GLOBAL' && _segment != null ? _deleteImage : null,
+            onDelete: _deleteImage,
+            onDeleteScheduled: (slot) => _deleteImage(slot, scheduled: true),
             environment: panel.environment,
           ),
           SixWebPageShell.sectionGap,
@@ -543,7 +544,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             texts: texts,
             onUpload: _upload,
             onHistory: _showHistory,
-            onDelete: _scope == 'GLOBAL' && _segment != null ? _deleteImage : null,
+            onDelete: _deleteImage,
+            onDeleteScheduled: (slot) => _deleteImage(slot, scheduled: true),
             environment: panel.environment,
           ),
         ],
@@ -1164,6 +1166,7 @@ class _PlatformSection extends StatelessWidget {
     required this.onUpload,
     required this.onHistory,
     this.onDelete,
+    this.onDeleteScheduled,
     required this.environment,
   });
 
@@ -1175,6 +1178,7 @@ class _PlatformSection extends StatelessWidget {
   final ValueChanged<AdminVisualAssetSlotPanel> onUpload;
   final ValueChanged<AdminVisualAssetSlotPanel> onHistory;
   final ValueChanged<AdminVisualAssetSlotPanel>? onDelete;
+  final ValueChanged<AdminVisualAssetSlotPanel>? onDeleteScheduled;
   final String environment;
 
   @override
@@ -1224,8 +1228,10 @@ class _PlatformSection extends StatelessWidget {
                         texts: texts,
                         onUpload: () => onUpload(slot),
                         onHistory: () => onHistory(slot),
-                        onDelete: onDelete != null &&
-                                slot.current?.environment == environment
+                        onDeleteScheduled: onDeleteScheduled != null && slot.next?.environment == environment
+                            ? () => onDeleteScheduled!(slot) : null,
+                        onDelete: onDelete != null && slot.current != null &&
+                                (slot.current!.scope == 'EMPRESA' || slot.current!.segment != null)
                             ? () => onDelete!(slot)
                             : null,
                       ),
@@ -1248,6 +1254,7 @@ class _SlotCard extends StatelessWidget {
     required this.onUpload,
     required this.onHistory,
     this.onDelete,
+    this.onDeleteScheduled,
   });
 
   final AdminVisualAssetSlotPanel slot;
@@ -1256,6 +1263,7 @@ class _SlotCard extends StatelessWidget {
   final VoidCallback onUpload;
   final VoidCallback onHistory;
   final VoidCallback? onDelete;
+  final VoidCallback? onDeleteScheduled;
 
   @override
   Widget build(BuildContext context) {
@@ -1328,12 +1336,26 @@ class _SlotCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (onDelete != null) ...<Widget>[
+            if (onDeleteScheduled != null) TextButton.icon(
+              onPressed: onDeleteScheduled,
+              icon: const Icon(Icons.event_busy_outlined),
+              label: Text(AdminVisualAssetSettingsTexts(context).deleteScheduled),
+            ),
+            if (slot.current != null) ...<Widget>[
               const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline),
-                label: Text(AdminVisualAssetSettingsTexts(context).delete),
+              Tooltip(
+                message: onDelete == null
+                    ? AdminVisualAssetSettingsTexts(context).protectedGlobal
+                    : AdminVisualAssetSettingsTexts(context).consequence,
+                child: TextButton.icon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(AdminVisualAssetSettingsTexts(context).delete),
+                ),
+              ),
+              if (onDelete == null) Text(
+                AdminVisualAssetSettingsTexts(context).protectedGlobal,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
             const SizedBox(height: 14),
@@ -1623,21 +1645,23 @@ class _PlatformPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final isWeb = platform == 'WEB';
+    final color = isWeb
+        ? (dark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+        : (dark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: color.withValues(alpha: dark ? .16 : .09),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: color.withValues(alpha: .4)),
       ),
-      child: Text(
-        platform,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(isWeb ? Icons.desktop_windows_outlined : Icons.phone_android, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(platform, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900)),
+      ]),
     );
   }
 }
@@ -2994,6 +3018,9 @@ class _VisualAssetsTexts {
         'Web · Sixo users',
         'Web · Usuarios de Sixo',
       ],
+      'VENDAS_MOBILE_VENDAS': ['Vendas · Nova venda', 'Sales · New sale', 'Ventas · Nueva venta'],
+      'VENDAS_MOBILE_RECEBER': ['Vendas · A receber', 'Sales · Receivables', 'Ventas · Por cobrar'],
+      'VENDAS_MOBILE_CONSULTAR': ['Vendas · Consultar vendas', 'Sales · History', 'Ventas · Consultar ventas'],
       'WEB_INICIO_HEADER': ['Web · Início', 'Web · Home', 'Web · Inicio'],
     }[slot.slot];
     return context.t(

@@ -11,10 +11,12 @@ import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
-import '../controllers/mobile_business_visual_context_controller.dart';
+import '../components/six_cached_network_image.dart';
+import '../components/six_visual_asset_shimmer.dart';
+import '../controllers/vendas_mobile_assets_context_controller.dart';
 import '../controllers/mobile_card_order_preference_controller.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
-import '../models/mobile_business_visual_assets.dart';
+import '../../data/models/vendas_mobile_assets_model.dart';
 import 'consulta_vendas_mobile_screen.dart';
 import 'pdv_mobile_screen.dart';
 import 'vendas_nao_liquidadas_mobile_screen.dart';
@@ -62,7 +64,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   late final MobileCardOrderPreferenceController<VendasMobileCardPreferencia>
   _ordemCardsController;
-  late final MobileBusinessVisualContextController _businessVisuals;
+  late final VendasMobileAssetsContextController _businessVisuals;
   bool _openingNewSale = false;
 
   @override
@@ -86,7 +88,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
           ..addListener(_aoAlterarOrdemDosCards)
           ..inicializar();
     _businessVisuals =
-        MobileBusinessVisualContextController(debugLabel: 'VendasMobile')
+        VendasMobileAssetsContextController()
           ..addListener(_aoAlterarVisualDoNegocio)
           ..initialize();
   }
@@ -110,8 +112,8 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
     if (mounted) setState(() {});
   }
 
-  String? _businessImageUrl(VendasMobileBusinessAsset asset) =>
-      _businessVisuals.assets?.vendasUrl(asset);
+  String? _businessImageUrl(VendasMobileAssetSlot asset) =>
+      _businessVisuals.assets?.asset(asset)?.imagemUrl;
 
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
@@ -130,9 +132,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             ),
             assetContorno: _saleAssetContorno,
             assetAcento: _saleAssetAcento,
-            backgroundImageUrl: _businessImageUrl(
-              VendasMobileBusinessAsset.vendas,
-            ),
+            backgroundImageUrl: _businessImageUrl(VendasMobileAssetSlot.vendas),
             accentColor: _accentColor,
             loading: _openingNewSale,
             onTap: _startNewSale,
@@ -153,7 +153,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             assetContorno: _receiveAssetContorno,
             assetAcento: _receiveAssetAcento,
             backgroundImageUrl: _businessImageUrl(
-              VendasMobileBusinessAsset.vendasAReceber,
+              VendasMobileAssetSlot.vendasAReceber,
             ),
             accentColor: _receiveAccentColor,
             onTap: () => _go(VendasNaoLiquidadasMobileScreen()),
@@ -174,7 +174,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             assetContorno: _consultAssetContorno,
             assetAcento: _consultAssetAcento,
             backgroundImageUrl: _businessImageUrl(
-              VendasMobileBusinessAsset.consultarVendas,
+              VendasMobileAssetSlot.consultarVendas,
             ),
             accentColor: _accentColor,
             compact: true,
@@ -275,6 +275,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                                     assetAcento: actions[index].assetAcento,
                                     accentColor: actions[index].accentColor,
                                   ),
+                                  imageLoading: _businessVisuals.loading,
                                   loading: actions[index].loading,
                                   onTap: actions[index].onTap,
                                 ),
@@ -328,6 +329,7 @@ class _OperationActionCard extends StatelessWidget {
     required this.onTap,
     this.backgroundImageUrl,
     this.loading = false,
+    this.imageLoading = false,
     this.height,
     this.compact = false,
   });
@@ -339,6 +341,7 @@ class _OperationActionCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? backgroundImageUrl;
   final bool loading;
+  final bool imageLoading;
   final double? height;
   final bool compact;
 
@@ -346,7 +349,8 @@ class _OperationActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool available = !loading && onTap != null;
     final VoidCallback? effectiveTap = available ? onTap : null;
-    final bool contextual = backgroundImageUrl?.isNotEmpty ?? false;
+    final bool contextual =
+        imageLoading || (backgroundImageUrl?.isNotEmpty ?? false);
     final Color titleColor =
         contextual ? SixMobilePalette.onPrimary : accentColor;
     final Color subtitleColor =
@@ -398,32 +402,37 @@ class _OperationActionCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: <Widget>[
                   if (contextual) ...<Widget>[
-                    Image.network(
-                      backgroundImageUrl!,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (
-                        BuildContext context,
-                        Object error,
-                        StackTrace? stackTrace,
-                      ) {
-                        debugPrint(
-                          '[VendasMobile] Falha ao carregar imagem contextual '
-                          'url=$backgroundImageUrl error=$error',
-                        );
-                        return const SizedBox.shrink();
-                      },
-                      loadingBuilder:
-                          (
-                            BuildContext context,
-                            Widget child,
-                            ImageChunkEvent? loadingProgress,
-                          ) =>
-                              loadingProgress == null
-                                  ? child
-                                  : const SizedBox.shrink(),
-                    ),
+                    if (imageLoading)
+                      const SixVisualAssetShimmer()
+                    else
+                      SixCachedNetworkImage(
+                        key: ValueKey(backgroundImageUrl),
+                        imageUrl: backgroundImageUrl!,
+                        placeholder: const SixVisualAssetShimmer(),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (
+                          BuildContext context,
+                          Object error,
+                          StackTrace? stackTrace,
+                        ) {
+                          debugPrint(
+                            '[VendasMobile] Falha ao carregar imagem contextual '
+                            'url=$backgroundImageUrl error=$error',
+                          );
+                          return const SizedBox.shrink();
+                        },
+                        loadingBuilder:
+                            (
+                              BuildContext context,
+                              Widget child,
+                              ImageChunkEvent? loadingProgress,
+                            ) =>
+                                loadingProgress == null
+                                    ? child
+                                    : const SizedBox.shrink(),
+                      ),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

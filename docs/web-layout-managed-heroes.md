@@ -274,3 +274,53 @@ entrada após visitar uma tela; fechar/reabrir o navegador e conferir a reutiliz
 Depois usar a atualização forçada do painel e confirmar uma nova URL com `v`.
 Neste ambiente de implementação, a análise estática e a compilação Web passaram;
 a execução do Chromium foi bloqueada pela política de sockets do ambiente.
+
+## Revisão de cobertura do controle visual — 06/10/2026
+
+| Grupo | Posições no painel | Origem / consumo |
+|---|---:|---|
+| Cabeçalhos Web | 14 | `web/header-assets.json` / `/web-header/assets` |
+| Banners de início Web | 8 | `home/banners.json` / `/home/banners?plataforma=WEB` |
+| Banners de início Mobile | 8 | `home/banners.json` / `/home/banners?plataforma=MOBILE` |
+| Atendimento Mobile | 5 | `mobile/atendimento-assets.json` / `/atendimento-mobile/assets` |
+| Gestão Mobile | 5 | `mobile/gestao-assets.json` / `/gestao-mobile/assets` |
+| Vendas Mobile | 3 | `mobile/vendas-assets.json` / `/vendas-mobile/assets` |
+| **Total** | **43** | Todas disponíveis para upload imediato ou agendado |
+
+Achados e correções:
+
+- Atendimento, Gestão e headers só eram importados quando a coleção estava vazia.
+  O backend agora incorpora entradas ausentes de forma idempotente, inclusive em
+  bases existentes, respeitando os catálogos configurados por propriedades.
+  Reconhece sementes antigas por origem, preserva registros removidos e não dá
+  prioridade a imagens legadas sobre uma personalização já publicada.
+- Vendas Mobile montava três URLs no Flutter, fora do catálogo gerenciado. Agora
+  nova venda, vendas a receber e consulta usam o novo endpoint autenticado e o
+  mesmo resolver de ambiente/empresa/perfil. As imagens automotivas existentes
+  foram mantidas; os padrões globais reutilizam arquivos de fallback já conhecidos.
+  O controlador reage a troca de empresa, perfil e versão por WebSocket; mostra
+  shimmer e utiliza o cache de imagens Mobile.
+- O painel passa a mostrar também registros compartilhados que incluem o contexto
+  sem especialidade. Remover esse vínculo preserva as especialidades restantes.
+- A exclusão está disponível nos cards de segmento/especialidade e de empresa.
+  Em DEV, uma imagem herdada de LIVE recebe um marcador local de fallback, sem
+  modificar o registro de LIVE. É necessário haver uma imagem global ativa.
+- Imagens agendadas podem ser apagadas diretamente no card. A confirmação explica
+  que toda a programação daquele registro será removida e a imagem atual mantida.
+- O padrão global mantém a ação desabilitada com explicação: deve ser substituído
+  para conservar o fallback. Imagens herdadas já em fallback não ganham um botão
+  que apagaria indevidamente a origem global.
+- Tags Web azuis e Mobile roxas, com ícones distintos e contraste para light/dark.
+
+O catálogo de banners tem oito posições por plataforma, mesmo quando não existe
+arquivo para determinado tema: o painel continua oferecendo cadastro/agendamento,
+sem inventar URLs. Fotos de produtos, usuários, documentos e anexos são conteúdo
+de negócio, não ilustrações deste catálogo. As artes locais do perfil de negócio
+não são fornecidas por estes endpoints. O painel administrativo em si não possui
+um header de imagem independente; sua prévia usa um dos headers configuráveis.
+
+Validação: build Web, análise dos arquivos alterados (somente três apontamentos
+preexistentes no painel), testes de confirmação/navegação/modelos e verificações
+Java de migração idempotente, exclusão, ambientes, resolver e Vendas Mobile.
+Para disponibilizar as novas posições, atualizar primeiro o backend e depois o
+frontend/Mobile. Não é necessário copiar novas artes para a VPS nesta alteração.
