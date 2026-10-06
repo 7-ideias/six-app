@@ -170,7 +170,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     final String empresaId = await _perfilNegocioService.empresaAtual();
     await _assetSync.restoreLocalState();
 
-    bool restored = false;
     final String? environment = _assetSync.environment;
     if (environment != null) {
       final Map<String, dynamic>? cached = await _manifestCache.load(
@@ -185,7 +184,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             _businessAssets =
                 AtendimentoMobileAssetsModel.fromJson(cached);
           });
-          restored = true;
         } catch (error) {
           debugPrint(
             '[AtendimentoMobile] manifesto local inválido: $error',
@@ -194,8 +192,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       }
     }
 
-    final bool versionChanged = await _assetSync.initialize();
-    if (mounted && (!restored || versionChanged)) {
+    await _assetSync.initialize();
+    // The shared version may already be current while this screen's saved
+    // manifest is older. Always reconcile it with the backend on entry.
+    if (mounted) {
       await _reloadBusinessAssetsWithShimmer();
     }
   }
@@ -240,7 +240,19 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
       final String environment = _assetSync.environment ?? 'LIVE';
       final String version = _assetSync.version ?? '000000000000';
-      final bool cached = await _manifestCache.prefetchAndSave(
+      debugPrint('[AtendimentoMobile] ambiente=$environment versão=$version');
+      for (final item in resolved.assets) {
+        debugPrint('[AtendimentoMobile] slot=${item.slot} id=${item.id} '
+            'fallback=${item.imagemFallback}');
+      }
+      // Show the selected manifest immediately. Downloading other cards for
+      // offline use must not delay the newly published image.
+      setState(() {
+        _businessAssetsEmpresaId = empresaId;
+        _businessAssets = resolved;
+        _businessAssetsLoading = false;
+      });
+      await _manifestCache.prefetchAndSave(
         kind: 'atendimento_mobile',
         companyId: empresaId,
         environment: environment,
@@ -250,19 +262,12 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           (AtendimentoMobileAssetModel item) => item.imagemUrl,
         ),
       );
-      if (!mounted || generation != _businessAssetsLoadGeneration) return;
-      if (!cached && _businessAssets != null) return;
-
-      setState(() {
-        _businessAssetsEmpresaId = empresaId;
-        _businessAssets = resolved;
-        _businessAssetsLoading = false;
-      });
     } catch (error) {
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
       debugPrint(
         '[AtendimentoMobile] Falha ao carregar assets do backend: $error',
       );
+      if (_businessAssets != null) return;
       setState(() {
         _businessAssets = null;
         _businessAssetsEmpresaId = null;
@@ -1052,7 +1057,7 @@ class _ContextualFullCardContent extends StatelessWidget {
       children: <Widget>[
         SixCachedNetworkImage(
           imageUrl: url,
-          key: ValueKey<String>('atendimento-contextual-fullcard-${data.id}'),
+          key: ValueKey<String>('atendimento-contextual-fullcard-${data.id}-$url'),
           fit: BoxFit.cover,
           alignment: Alignment.center,
           filterQuality: FilterQuality.high,

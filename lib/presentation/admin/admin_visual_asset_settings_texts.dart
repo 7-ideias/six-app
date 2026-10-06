@@ -92,9 +92,9 @@ class AdminVisualAssetSettingsTexts {
     'Imagen programada eliminada.',
   );
   String get protectedGlobal => pick(
-    'Este é o padrão global. Use adicionar/substituir para manter uma imagem de fallback disponível.',
-    'This is the global default. Add or replace it to keep a fallback image available.',
-    'Esta es la imagen global. Añádela o sustitúyela para mantener una imagen de respaldo.',
+    'Este é o padrão global, usado quando não há imagem específica para o comércio, segmento ou especialidade. Use adicionar/substituir para atualizar esse padrão.',
+    'This global default is used when no image is configured for the business, segment or specialty. Add or replace it to update this default.',
+    'Este valor global se usa cuando no hay imagen específica para el negocio, segmento o especialidad. Añádela o sustitúyela para actualizarlo.',
   );
   String get globalRequired => pick(
     'Cadastre primeiro uma imagem no padrão global desta posição.',

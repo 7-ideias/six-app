@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +11,7 @@ import 'auth_service.dart';
 import 'http_client_factory.dart';
 import 'websocket_service.dart';
 
-class VisualAssetSyncService {
+class VisualAssetSyncService with WidgetsBindingObserver {
   VisualAssetSyncService._();
 
   static final VisualAssetSyncService instance = VisualAssetSyncService._();
@@ -26,6 +27,7 @@ class VisualAssetSyncService {
 
   StreamSubscription<Map<String, dynamic>>? _stompSubscription;
   Timer? _activationTimer;
+  Timer? _recoveryTimer;
   bool _initialized = false;
   bool _localStateRestored = false;
   bool _synchronizing = false;
@@ -41,8 +43,24 @@ class VisualAssetSyncService {
     if (!_initialized) {
       _initialized = true;
       _stompSubscription = stompMessages.listen(_handleStompMessage);
+      WidgetsBinding.instance.addObserver(this);
+      _recoveryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+        final state = WidgetsBinding.instance.lifecycleState;
+        if (_changes.hasListener &&
+            (state == null || state == AppLifecycleState.resumed)) {
+          unawaited(synchronize());
+        }
+      });
     }
     return synchronize();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _changes.hasListener) {
+      // Recover events missed while the app was suspended.
+      unawaited(synchronize(notifyWhenSame: true));
+    }
   }
 
   Future<void> restoreLocalState() async {
@@ -105,6 +123,7 @@ class VisualAssetSyncService {
         return false;
       }
 
+      final bool environmentChanged = _environment != serverEnvironment;
       await _selectEnvironment(serverEnvironment);
       final bool changed = _isNewer(serverVersion, _version);
       if (changed) {
@@ -115,10 +134,10 @@ class VisualAssetSyncService {
         DateTime.tryParse(json['proximaAtivacaoUtc']?.toString() ?? ''),
       );
 
-      if (changed || notifyWhenSame) {
+      if (changed || environmentChanged || notifyWhenSame) {
         _changes.add(null);
       }
-      return changed;
+      return changed || environmentChanged;
     } catch (error) {
       debugPrint('[VisualAssets] falha ao sincronizar versão: $error');
       return false;
