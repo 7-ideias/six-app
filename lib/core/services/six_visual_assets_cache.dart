@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
+import 'web_visual_asset_cache.dart';
+
 class SixVisualAssetsCache {
   SixVisualAssetsCache._();
 
@@ -13,18 +15,20 @@ class SixVisualAssetsCache {
   );
 
   static Future<bool> prefetchAll(Iterable<String> urls) async {
-    if (kIsWeb) return true;
-
-    final Set<String> unique = urls
-        .map((String value) => value.trim())
-        .where((String value) => value.isNotEmpty)
-        .toSet();
+    final Set<String> unique =
+        urls
+            .map((String value) => value.trim())
+            .where((String value) => value.isNotEmpty)
+            .toSet();
 
     if (unique.isEmpty) return true;
 
     try {
       await Future.wait(
-        unique.map((String url) => instance.getSingleFile(url)),
+        unique.map(
+          (String url) =>
+              kIsWeb ? loadWebVisualAsset(url) : instance.getSingleFile(url),
+        ),
       );
       return true;
     } catch (error) {

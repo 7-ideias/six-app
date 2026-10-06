@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/services/six_visual_assets_cache.dart';
+import 'six_web_cached_image_provider.dart';
 
 class SixCachedNetworkImage extends StatelessWidget {
   const SixCachedNetworkImage({
@@ -31,8 +32,12 @@ class SixCachedNetworkImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return Image.network(
-        imageUrl,
+      return Image(
+        image: SixWebCachedImageProvider(imageUrl),
+        gaplessPlayback: false,
+        frameBuilder:
+            (context, child, frame, synchronous) =>
+                synchronous || frame != null ? child : (placeholder ?? child),
         width: width,
         height: height,
         fit: fit,
