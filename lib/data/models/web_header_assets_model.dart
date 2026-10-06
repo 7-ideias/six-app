@@ -16,7 +16,11 @@ enum WebHeaderAssetPage {
   desempenho('DESEMPENHO'),
   agendaFinanceira('AGENDA_FINANCEIRA'),
   usuariosSixo('USUARIOS_SIXO'),
-  inicio('INICIO');
+  inicio('INICIO'),
+  catalogoProdutos('CATALOGO_PRODUTOS'),
+  catalogoServicos('CATALOGO_SERVICOS'),
+  catalogoCategorias('CATALOGO_CATEGORIAS'),
+  catalogoEtiquetas('CATALOGO_ETIQUETAS');
 
   const WebHeaderAssetPage(this.backendCode);
   final String backendCode;
@@ -30,7 +34,8 @@ enum WebHeaderAssetPage {
 }
 
 enum WebHeaderAssetDisplayMode {
-  headerHero('HEADER_HERO');
+  headerHero('HEADER_HERO'),
+  fullCard('FULL_CARD');
 
   const WebHeaderAssetDisplayMode(this.backendCode);
   final String backendCode;

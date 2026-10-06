@@ -1,3 +1,6 @@
+import 'package:sixpos/presentation/controllers/web_header_assets_context_controller.dart';
+import 'package:sixpos/presentation/components/six_cached_network_image.dart';
+import 'package:sixpos/presentation/components/six_visual_asset_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
@@ -838,6 +841,7 @@ class _CatalogManagementSection extends StatelessWidget {
             fallback: 'Cadastre, revise e publique itens de venda.',
           ),
           onTap: onOpenProducts,
+          imagePage: WebHeaderAssetPage.catalogoProdutos,
         ),
         _CatalogModuleData(
           icon: Icons.home_repair_service_outlined,
@@ -847,6 +851,7 @@ class _CatalogManagementSection extends StatelessWidget {
             fallback: 'Organize serviços, preços e garantias.',
           ),
           onTap: onOpenServices,
+          imagePage: WebHeaderAssetPage.catalogoServicos,
         ),
         _CatalogModuleData(
           icon: Icons.category_outlined,
@@ -859,6 +864,7 @@ class _CatalogManagementSection extends StatelessWidget {
             fallback: 'Agrupe produtos e serviços para facilitar a operação.',
           ),
           onTap: onOpenCategories,
+          imagePage: WebHeaderAssetPage.catalogoCategorias,
         ),
       ],
       if (canOpenLabels)
@@ -870,6 +876,7 @@ class _CatalogManagementSection extends StatelessWidget {
             fallback: 'Crie modelos e imprima etiquetas de produtos.',
           ),
           onTap: onOpenLabels,
+          imagePage: WebHeaderAssetPage.catalogoEtiquetas,
         ),
       if (canManage)
         _CatalogModuleData(
@@ -887,40 +894,43 @@ class _CatalogManagementSection extends StatelessWidget {
         ),
     ];
 
-    return SixWebSectionCard(
-      title: context.t(
-        'catalogHub.management.title',
-        fallback: 'Gestão do catálogo',
-      ),
-      subtitle: context.t(
-        'catalogHub.management.subtitle',
-        fallback:
-            'Cadastros e ferramentas do catálogo ficam centralizados aqui.',
-      ),
-      icon: Icons.widgets_outlined,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final int columns = constraints.maxWidth >= 1180
-              ? 4
-              : constraints.maxWidth >= 720
-              ? 2
-              : 1;
-          const double spacing = 12;
-          final double width =
-              (constraints.maxWidth - spacing * (columns - 1)) / columns;
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: modules
-                .map(
-                  (_CatalogModuleData module) => SizedBox(
-                    width: width,
-                    child: _CatalogModuleCard(data: module),
-                  ),
-                )
-                .toList(growable: false),
-          );
-        },
+    return ChangeNotifierProvider<WebHeaderAssetsContextController>(
+      create: (_) => WebHeaderAssetsContextController()..initialize(),
+      child: SixWebSectionCard(
+        title: context.t(
+          'catalogHub.management.title',
+          fallback: 'Gestão do catálogo',
+        ),
+        subtitle: context.t(
+          'catalogHub.management.subtitle',
+          fallback:
+              'Cadastros e ferramentas do catálogo ficam centralizados aqui.',
+        ),
+        icon: Icons.widgets_outlined,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final int columns = constraints.maxWidth >= 1180
+                ? 4
+                : constraints.maxWidth >= 720
+                ? 2
+                : 1;
+            const double spacing = 12;
+            final double width =
+                (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: modules
+                  .map(
+                    (_CatalogModuleData module) => SizedBox(
+                      width: width,
+                      child: _CatalogModuleCard(data: module),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          },
+        ),
       ),
     );
   }
@@ -932,12 +942,14 @@ class _CatalogModuleData {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.imagePage,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  final WebHeaderAssetPage? imagePage;
 }
 
 class _CatalogModuleCard extends StatelessWidget {
@@ -948,57 +960,95 @@ class _CatalogModuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ThemeData theme = Theme.of(context);
+    final assets = context.watch<WebHeaderAssetsContextController>();
+    final page = data.imagePage;
+    final String? resolvedUrl = page == null
+        ? null
+        : assets.assets?.asset(page)?.imagemUrl;
+    final String? version = assets.assetsVersion;
+    final Uri? uri = resolvedUrl == null ? null : Uri.parse(resolvedUrl);
+    final String? url = uri == null
+        ? null
+        : uri.replace(queryParameters: <String, String>{
+            ...uri.queryParameters,
+            if (version != null) 'v': version,
+          }).toString();
+    final Widget unavailable = ColoredBox(
+      color: tokens.surfaceMuted,
+      child: Center(child: Icon(data.icon, color: tokens.mutedText, size: 36)),
+    );
+
     return Material(
       color: tokens.surfaceMuted,
-      borderRadius: BorderRadius.circular(18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: data.onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 132),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: tokens.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (page != null)
+              AspectRatio(
+                aspectRatio: 1.5,
+                child: ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: assets.isLoading
+                        ? const SixVisualAssetShimmer(borderRadius: 0)
+                        : url == null
+                        ? unavailable
+                        : SixCachedNetworkImage(
+                            key: ValueKey<String>(url),
+                            imageUrl: url,
+                            fit: BoxFit.cover,
+                            placeholder: const SixVisualAssetShimmer(borderRadius: 0),
+                            loadingBuilder: (context, child, progress) =>
+                                progress == null
+                                    ? child
+                                    : const SixVisualAssetShimmer(borderRadius: 0),
+                            errorBuilder: (context, error, stackTrace) => unavailable,
+                          ),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Container(
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: tokens.info.withValues(alpha: 0.10),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(13),
                     ),
-                    child: Icon(data.icon, color: Theme.of(context).colorScheme.primary, size: 21),
+                    child: Icon(data.icon, color: theme.colorScheme.primary, size: 21),
                   ),
-                  const Spacer(),
-                  Icon(Icons.arrow_forward_rounded, color: tokens.mutedText),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(data.title, style: theme.textTheme.titleSmall?.copyWith(
+                          color: tokens.primaryText, fontWeight: FontWeight.w900,
+                        )),
+                        const SizedBox(height: 5),
+                        Text(data.subtitle, style: theme.textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText, height: 1.35,
+                        )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, color: tokens.mutedText, size: 20),
                 ],
               ),
-              const SizedBox(height: 13),
-              Text(
-                data.title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                data.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: tokens.secondaryText,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
