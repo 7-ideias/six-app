@@ -85,8 +85,8 @@ class LancamentoAgendaFinanceiraRequest {
       {
         'recorrente': recorrente,
         'frequenciaRecorrencia': frequenciaRecorrencia,
-        'recorrenciaInicio': (recorrenciaInicio ?? dataVencimento)
-            .toIso8601String(),
+        'recorrenciaInicio':
+            (recorrenciaInicio ?? dataVencimento).toIso8601String(),
         'recorrenciaFim': recorrenciaFim?.toIso8601String(),
         'quantidadeParcelas': quantidadeParcelas,
         'diaVencimentoRecorrencia':
@@ -184,9 +184,10 @@ class LancamentoAgendaFinanceiraRequest {
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
       ],
-      'acoes': tipoRecebimento
-          ? ['Receber', 'Enviar cobrança', 'Detalhes']
-          : ['Pagar', 'Reagendar', 'Detalhes'],
+      'acoes':
+          tipoRecebimento
+              ? ['Receber', 'Enviar cobrança', 'Detalhes']
+              : ['Pagar', 'Reagendar', 'Detalhes'],
     };
   }
 
@@ -248,6 +249,51 @@ class AgendaFinanceiraLancamentoDetalhe {
       codigoOperacao: codigo.isEmpty ? null : codigo,
       dados: Map<String, dynamic>.from(json),
     );
+  }
+
+  /// Combina dados persistidos com os labels da consulta sem trocar IDs por textos.
+  Map<String, dynamic> paraEdicao(Map<String, dynamic> item) {
+    final contato = dados['contato'];
+    final categoria = dados['categoria'];
+    final responsavel = dados['responsavel'];
+    final edicao = dados['dadosEdicao'];
+    return {
+      ...item,
+      if (edicao is Map) ...Map<String, dynamic>.from(edicao),
+      for (final key in [
+        'dataCriacao',
+        'dataOperacao',
+        'dataCompetencia',
+        'dataLiquidacao',
+        'dataPrevisaoPagamento',
+        'descricao',
+        'observacoes',
+        'codigoOperacao',
+        'uuidOperacaoApp',
+        'recorrente',
+        'frequenciaRecorrencia',
+        'recorrenciaInicio',
+        'recorrenciaFim',
+        'quantidadeParcelas',
+        'diaVencimentoRecorrencia',
+        'serieRecorrenciaId',
+        'numeroOcorrencia',
+      ])
+        if (dados.containsKey(key)) key: dados[key],
+      if (dados['dataVencimento'] != null)
+        'vencimento': dados['dataVencimento'],
+      if (dados['valorOriginal'] != null)
+        'valorOriginal': dados['valorOriginal'],
+      if (dados['valorPagoRecebido'] != null)
+        'valorConfirmado': dados['valorPagoRecebido'],
+      if (dados['valorAberto'] != null) 'valorRestante': dados['valorAberto'],
+      if (contato is Map) ...{
+        'idContato': contato['id'],
+        'contato': contato['nome'],
+      },
+      if (categoria is Map) 'categoria': categoria['nome'],
+      if (responsavel is Map) 'responsavel': responsavel['nome'],
+    };
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{

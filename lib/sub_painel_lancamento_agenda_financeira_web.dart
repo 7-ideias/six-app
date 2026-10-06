@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
@@ -49,8 +51,8 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
               child: AnimatedContainer(
                 duration: WebThemeTokens.transitionDuration,
                 curve: WebThemeTokens.transitionCurve,
-                width: MediaQuery.of(context).size.width * 0.9,
-                height: MediaQuery.of(context).size.height * 0.9,
+                width: MediaQuery.of(context).size.width * 0.97,
+                height: MediaQuery.of(context).size.height * 0.96,
                 decoration: BoxDecoration(
                   color: tokens.surfaceElevated,
                   borderRadius: BorderRadius.circular(24),
@@ -67,7 +69,9 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
                 child: Scaffold(
                   backgroundColor: tokens.workspaceBackground,
                   appBar: AppBar(
-                    titleSpacing: 22,
+                    automaticallyImplyLeading: false,
+                    centerTitle: false,
+                    titleSpacing: 24,
                     title: Text(
                       textoDaAppBar,
                       style: TextStyle(
@@ -125,8 +129,8 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
       return SubPainelLancamentoAgendaFinanceiraWeb(
         textoDaAppBar:
             modoEdicao
-                ? 'Editar lançamento financeiro'
-                : 'Novo lançamento financeiro',
+                ? context.t('agenda.form.edit')
+                : context.t('agenda.form.create'),
         body: _LancamentoAgendaFinanceiraWebBody(
           empresaSelecionada: empresaSelecionada,
           empresas: empresas,
@@ -185,6 +189,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
   final TextEditingController _dataCompetenciaController =
       TextEditingController();
 
+  final _dataPrevisaoController = TextEditingController();
+  DateTime? _dataPrevisaoPagamento;
+  DateTime? _dataCriacao;
+  DateTime? _dataQuitacao;
+  bool _registrarPagamento = false;
+  DateTime _dataPagamentoRealizado = DateTime.now();
+  final _dataPagamentoController = TextEditingController();
   bool _isLoading = false;
   bool _statusQuitada = false;
   bool _bloquearTipoStatusPorConfirmacao = false;
@@ -202,7 +213,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime _dataVencimento = DateTime.now();
   DateTime _dataCompetencia = DateTime.now();
 
-  static const List<String> _tipos = <String>['Pagar', 'Receber'];
   static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _origens = <String>[
     'Venda',
@@ -256,13 +266,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
 
     _sincronizarTextosData();
+    if (!widget.modoEdicao)
+      _valorConfirmadoController.text = _formatarValorParaCampo(0);
+    _valorController.addListener(_atualizarResumo);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarTiposRecebimentoAtivos();
     });
   }
 
+  void _atualizarResumo() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _valorController.removeListener(_atualizarResumo);
+    _dataPrevisaoController.dispose();
+    _dataPagamentoController.dispose();
     _descricaoController.dispose();
     _contatoController.dispose();
     _idContatoController.dispose();
@@ -359,6 +379,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _centroCustoController.text = item['centroDeCusto']?.toString() ?? '';
     _centroCustoId = item['centroCustoId']?.toString();
 
+    _dataCriacao = DateTime.tryParse(item['dataCriacao']?.toString() ?? '');
+    _dataQuitacao = DateTime.tryParse(item['dataLiquidacao']?.toString() ?? '');
+    _dataPrevisaoPagamento = DateTime.tryParse(
+      item['dataPrevisaoPagamento']?.toString() ?? '',
+    );
     _dataVencimento = _parseData(item['vencimento'], fallback: _dataVencimento);
     _dataOperacao = _parseData(item['dataOperacao'], fallback: _dataVencimento);
     _dataCompetencia = _parseData(
@@ -496,23 +521,26 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   String _formatarValorParaCampo(dynamic valor) {
-    if (valor is num) return valor.toStringAsFixed(2).replaceAll('.', ',');
-    final String texto = valor?.toString().trim() ?? '';
-    final double? numero = double.tryParse(texto.replaceAll(',', '.'));
-    if (numero != null) return numero.toStringAsFixed(2).replaceAll('.', ',');
-    return texto;
+    final numero =
+        valor is num ? valor : double.tryParse(valor?.toString() ?? '') ?? 0;
+    return context.read<LocaleSettingsProvider>().formatDecimal(numero);
   }
 
   double _toDouble(String text) {
-    final String normalizado =
-        text.replaceAll('.', '').replaceAll(',', '.').trim();
-    return double.tryParse(normalizado) ?? 0;
+    final regional = context.read<LocaleSettingsProvider>();
+    final limpo =
+        regional
+            .stripCurrencyMarkers(text)
+            .replaceAll(regional.thousandSeparator, '')
+            .replaceAll(regional.decimalSeparator, '.')
+            .trim();
+    final valor = double.tryParse(limpo);
+    return valor != null && valor.isFinite ? valor : 0;
   }
 
   double _toDoubleDynamic(dynamic value) {
     if (value is num) return value.toDouble();
-    if (value is String) return _toDouble(value);
-    return 0;
+    return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   DateTime _normalizarData(DateTime data) =>
@@ -539,16 +567,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _sincronizarTextosData() {
+    _dataPagamentoController.text = _formatarDataBr(_dataPagamentoRealizado);
+    _dataPrevisaoController.text =
+        _dataPrevisaoPagamento == null
+            ? ''
+            : _formatarDataBr(_dataPrevisaoPagamento!);
     _dataOperacaoController.text = _formatarDataBr(_dataOperacao);
     _dataVencimentoController.text = _formatarDataBr(_dataVencimento);
     _dataCompetenciaController.text = _formatarDataBr(_dataCompetencia);
   }
 
-  String _formatarDataBr(DateTime data) {
-    final String dia = data.day.toString().padLeft(2, '0');
-    final String mes = data.month.toString().padLeft(2, '0');
-    return '$dia/$mes/${data.year}';
-  }
+  String _formatarDataBr(DateTime data) =>
+      context.read<LocaleSettingsProvider>().formatDate(data);
 
   bool _origemSugerePagar(String origem) =>
       origem == 'Despesa manual' || origem == 'Compra';
@@ -628,6 +658,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
         'origemFiltro': origem,
         'empresaFiltro': _empresaSelecionada,
         'formaPrevistaPagamento': formaPagamento,
+        'atualizarPrevisaoPagamento': true,
+        'dataPrevisaoPagamento':
+            _dataPrevisaoPagamento?.toIso8601String().split('T').first,
       },
       'contato': <String, dynamic>{
         'id': contatoIdDigitado,
@@ -643,7 +676,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       dataOperacao: _dataOperacao,
       dataVencimento: _dataVencimento,
       dataCompetencia: _dataCompetencia,
-      dataQuitacao: _statusQuitada ? DateTime.now() : null,
+      dataQuitacao: _statusQuitada ? _dataQuitacao : null,
       statusQuitada: _statusQuitada,
       operacaoFinalizadaProntaCaixa: _statusQuitada,
       clientePediuParaApagar: false,
@@ -750,7 +783,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
         ),
       ),
     );
-    Navigator.of(context).pop(request.toAgendaItem(idFallback: idGerado));
+    Navigator.of(context).pop({
+      ...request.toAgendaItem(idFallback: idGerado),
+      'registrarPagamento': _registrarPagamento,
+      'dataLiquidacaoSolicitada': _dataPagamentoRealizado.toIso8601String(),
+    });
   }
 
   Future<void> _confirmarExcluirLancamento() async {
@@ -843,25 +880,31 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.always,
       hintText: hintText,
-      prefixIcon: icon == null ? null : Icon(icon, size: 20),
+      prefixIcon:
+          icon == null
+              ? null
+              : Icon(icon, size: 18, color: tokens.secondaryText),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: tokens.inputBackground,
       labelStyle: TextStyle(color: tokens.secondaryText),
       hintStyle: TextStyle(color: tokens.mutedText),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: tokens.cardBorder),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: tokens.secondaryText.withValues(alpha: 0.22),
+        ),
       ),
       disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: tokens.disabledBackground),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
     );
@@ -887,7 +930,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           requiredField
               ? (String? value) =>
                   value == null || value.trim().isEmpty
-                      ? 'Campo obrigatório'
+                      ? context.t('agenda.form.required')
                       : null
               : null,
     );
@@ -900,6 +943,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     required ValueChanged<DateTime> onChanged,
     bool requiredField = false,
     bool enabled = true,
+    bool clearable = false,
+    DateTime? lastDate,
     IconData icon = Icons.event_outlined,
   }) {
     return TextFormField(
@@ -909,12 +954,25 @@ class _LancamentoAgendaFinanceiraWebBodyState
       decoration: _inputDecoration(
         label,
         icon: icon,
-        suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+        suffixIcon:
+            clearable && controller.text.isNotEmpty
+                ? IconButton(
+                  tooltip: context.t('agenda.form.clearForecast'),
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed:
+                      () => setState(() {
+                        _dataPrevisaoPagamento = null;
+                        _sincronizarTextosData();
+                      }),
+                )
+                : const Icon(Icons.keyboard_arrow_down_rounded),
       ),
       validator:
           requiredField
               ? (String? v) =>
-                  v == null || v.trim().isEmpty ? 'Campo obrigatório' : null
+                  v == null || v.trim().isEmpty
+                      ? context.t('agenda.form.required')
+                      : null
               : null,
       onTap:
           !enabled
@@ -924,9 +982,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   context: context,
                   initialDate: initialDate,
                   firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
+                  lastDate: lastDate ?? DateTime(2100),
                 );
-                if (selecionada == null) return;
+                if (!mounted || selecionada == null) return;
                 onChanged(_normalizarData(selecionada));
                 _sincronizarTextosData();
                 setState(() {});
@@ -957,222 +1015,437 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
-  Widget _buildAvisoLancamentoConfirmado() {
-    if (!_bloquearTipoStatus) return const SizedBox.shrink();
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
+  String _label(String key) => context.t('agenda.form.$key');
+
+  String get _situacaoLabel => _label(switch (_statusSelecionado) {
+    'Pendente' => 'open',
+    'Previsto' => 'planned',
+    'Parcial' => 'partial',
+    'Pago' => 'paid',
+    'Recebido' => 'received',
+    'Cancelado' => 'cancelled',
+    _ => 'open',
+  });
+
+  int get _diasAtraso {
+    if (_statusQuitada || _statusSelecionado == 'Cancelado') return 0;
+    final now = DateTime.now();
+    final hoje = DateTime.utc(now.year, now.month, now.day);
+    final vencimento = DateTime.utc(
+      _dataVencimento.year,
+      _dataVencimento.month,
+      _dataVencimento.day,
+    );
+    return hoje.difference(vencimento).inDays.clamp(0, 100000);
+  }
+
+  Widget _section(String title, List<Widget> children) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        _label(title),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 20),
+      ...children,
+    ],
+  );
+
+  Widget _fields(List<Widget> fields, {int columns = 2}) => LayoutBuilder(
+    builder: (context, constraints) {
+      final count = constraints.maxWidth < 560 ? 1 : columns;
+      final width = (constraints.maxWidth - 16 * (count - 1)) / count;
+      return Wrap(
+        spacing: 16,
+        runSpacing: 20,
+        children: [
+          for (final field in fields) SizedBox(width: width, child: field),
+        ],
+      );
+    },
+  );
+
+  Widget _helper(String key) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Text(
+      _label(key),
+      style: TextStyle(
+        fontSize: 12,
+        color: WebThemeTokens.of(context).secondaryText,
+      ),
+    ),
+  );
+
+  Widget _notice(String text, {bool warning = false}) {
+    final tokens = WebThemeTokens.of(context);
+    final color = warning ? tokens.warning : tokens.secondaryText;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          warning ? Icons.error_outline : Icons.info_outline,
+          color: color,
+          size: 18,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text, style: TextStyle(color: color, fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  Widget _panel(Widget child) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: tokens.selectedBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.selectedBorder),
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.secondaryText.withValues(alpha: 0.18)),
       ),
+      child: child,
+    );
+  }
+
+  Widget _summary() {
+    final regional = context.watch<LocaleSettingsProvider>();
+    final tokens = WebThemeTokens.of(context);
+    Widget row(String key, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 11),
       child: Row(
-        children: <Widget>[
-          Icon(Icons.lock_outline_rounded, color: tokens.info, size: 20),
-          const SizedBox(width: 10),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Expanded(
             child: Text(
-              'Este lançamento já foi confirmado em sua totalidade. Tipo, status e marcação de quitação ficam bloqueados para evitar inconsistência financeira.',
-              style: TextStyle(
-                color: tokens.primaryText,
-                fontWeight: FontWeight.w700,
-              ),
+              _label(key),
+              style: TextStyle(color: tokens.secondaryText, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildFieldSlot({required double width, required Widget child}) {
-    return SizedBox(width: width, child: child);
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Widget child,
-  }) {
-    final ThemeData theme = Theme.of(context);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tokens.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
+    return _panel(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: tokens.selectedBackground,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: tokens.info),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: tokens.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: tokens.secondaryText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        children: [
+          Text(
+            _label('summary'),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
+          const SizedBox(height: 24),
+          Text(
+            _label(_tipoSelecionado == 'Receber' ? 'receivable' : 'payable'),
+            style: TextStyle(color: tokens.secondaryText),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            regional.formatCurrency(_toDouble(_valorController.text)),
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          row('situation', _situacaoLabel),
+          row('due', regional.formatDate(_dataVencimento)),
+          row(
+            _tipoSelecionado == 'Receber' ? 'forecastReceive' : 'forecastPay',
+            _dataPrevisaoPagamento == null
+                ? _label('notSet')
+                : regional.formatDate(_dataPrevisaoPagamento!),
+          ),
+          row(
+            _tipoSelecionado == 'Receber' ? 'receivedValue' : 'paidValue',
+            regional.formatCurrency(_toDouble(_valorConfirmadoController.text)),
+          ),
+          if (_diasAtraso > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: _notice(
+                _label(
+                  _diasAtraso == 1 ? 'overdueOne' : 'overdue',
+                ).replaceAll('{days}', '$_diasAtraso'),
+                warning: true,
+              ),
+            ),
+          const Divider(),
+          row(
+            'registered',
+            _dataCriacao == null
+                ? (widget.modoEdicao ? _label('notSet') : _label('onSave'))
+                : regional.formatDate(_dataCriacao!),
+          ),
+          _helper('registeredHint'),
           const SizedBox(height: 20),
-          child,
+          _notice(_label('settlementHint')),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    final ThemeData theme = Theme.of(context);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool isReceber = _tipoSelecionado == 'Receber';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: tokens.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
+  Widget _formContent() {
+    final tokens = WebThemeTokens.of(context);
+    final receber = _tipoSelecionado == 'Receber';
+    Widget separator() => const Padding(
+      padding: EdgeInsets.symmetric(vertical: 22),
+      child: Divider(height: 1),
+    );
+    return _panel(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: tokens.selectedBackground,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              widget.modoEdicao
-                  ? Icons.edit_note_rounded
-                  : Icons.add_card_rounded,
-              color: tokens.info,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  widget.modoEdicao
-                      ? 'Editar lançamento financeiro'
-                      : 'Novo lançamento financeiro',
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
+        children: [
+          _section('main', [
+            _fields([
+              SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'Pagar', label: Text(_label('payable'))),
+                  ButtonSegment(
+                    value: 'Receber',
+                    label: Text(_label('receivable')),
                   ),
+                ],
+                selected: {_tipoSelecionado},
+                onSelectionChanged:
+                    _bloquearTipoStatus
+                        ? null
+                        : (value) => setState(
+                          () => _aplicarTipoSelecionado(value.first),
+                        ),
+                style: SegmentedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  'Organize vencimento, classificação e contato sem alterar o fluxo da Agenda Financeira.',
-                  style: TextStyle(
-                    color: tokens.secondaryText,
-                    fontWeight: FontWeight.w600,
+              ),
+              _buildTextField(
+                controller: _descricaoController,
+                label: _label('description'),
+                requiredField: true,
+              ),
+            ]),
+            const SizedBox(height: 22),
+            _fields([
+              _buildTextField(
+                controller: _valorController,
+                label: _label('amount'),
+                requiredField: true,
+                enabled: !_bloquearTipoStatus,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: _statusSelecionado,
+                isExpanded: true,
+                decoration: _inputDecoration(_label('situation')),
+                items: [
+                  for (final status
+                      in (_status.contains(_statusSelecionado)
+                          ? _status
+                          : [_statusSelecionado]))
+                    DropdownMenuItem(
+                      value: status,
+                      child: Text(
+                        status == 'Pendente'
+                            ? _label('open')
+                            : status == 'Previsto'
+                            ? _label('planned')
+                            : _situacaoLabel,
+                      ),
+                    ),
+                ],
+                onChanged:
+                    _bloquearTipoStatus
+                        ? null
+                        : (value) =>
+                            setState(() => _statusSelecionado = value!),
+              ),
+              _buildDateField(
+                label: _label('competence'),
+                controller: _dataCompetenciaController,
+                initialDate: _dataCompetencia,
+                onChanged: (date) => _dataCompetencia = date,
+              ),
+            ], columns: 3),
+            _helper('competenceHint'),
+            if (_bloquearTipoStatus)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: _notice(_label('locked')),
+              ),
+          ]),
+          separator(),
+          _section('dates', [
+            _fields([
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDateField(
+                    label: _label('due'),
+                    controller: _dataVencimentoController,
+                    initialDate: _dataVencimento,
+                    requiredField: true,
+                    onChanged: (date) => _dataVencimento = date,
                   ),
+                  _helper('dueHint'),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDateField(
+                    label: _label(receber ? 'forecastReceive' : 'forecastPay'),
+                    controller: _dataPrevisaoController,
+                    initialDate: _dataPrevisaoPagamento ?? DateTime.now(),
+                    clearable: true,
+                    onChanged: (date) => _dataPrevisaoPagamento = date,
+                  ),
+                  _helper(receber ? 'forecastReceiveHint' : 'forecastPayHint'),
+                ],
+              ),
+            ]),
+            Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: _notice(_label('forecastHint'), warning: _diasAtraso > 0),
+            ),
+            if (!_bloquearTipoStatus) ...[
+              const SizedBox(height: 14),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _registrarPagamento,
+                title: Text(
+                  _label(receber ? 'alreadyReceived' : 'alreadyPaid'),
                 ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    _buildHeaderChip(
-                      icon:
-                          isReceber
-                              ? Icons.south_west_rounded
-                              : Icons.north_east_rounded,
-                      label: _tipoSelecionado,
-                    ),
-                    _buildHeaderChip(
-                      icon: Icons.flag_outlined,
-                      label: _statusSelecionado,
-                    ),
-                    _buildHeaderChip(
-                      icon: Icons.event_outlined,
-                      label: _dataVencimentoController.text,
-                    ),
-                  ],
+                subtitle: Text(
+                  _label('settleAfterSave'),
+                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+                ),
+                onChanged:
+                    (value) =>
+                        setState(() => _registrarPagamento = value ?? false),
+              ),
+              if (_registrarPagamento) ...[
+                const SizedBox(height: 16),
+                _buildDateField(
+                  label: _label('actualDate'),
+                  controller: _dataPagamentoController,
+                  initialDate: _dataPagamentoRealizado,
+                  lastDate: DateTime.now(),
+                  onChanged: (date) => _dataPagamentoRealizado = date,
                 ),
               ],
-            ),
+            ],
+          ]),
+          separator(),
+          _section('classification', [
+            _fields([
+              _buildTextField(
+                controller: _contatoController,
+                label: _label(receber ? 'customer' : 'supplier'),
+              ),
+              _buildTextField(
+                controller: _categoriaController,
+                label: _label('category'),
+                requiredField: true,
+              ),
+              AgendaCentroCustoWebField(
+                initialId: _centroCustoId,
+                initialName: _centroCustoController.text,
+                enabled: !_isLoading,
+                onChanged:
+                    (centro) => setState(() {
+                      _centroCustoId = centro?.id;
+                      _centroCustoController.text = centro?.nome ?? '';
+                    }),
+              ),
+              _buildDropdownField(
+                label: _label('paymentMethod'),
+                value: _formaPagamentoSelecionada,
+                items: _formasPagamento,
+                enabled: !_carregandoTiposRecebimento,
+                onChanged:
+                    (value) =>
+                        setState(() => _formaPagamentoSelecionada = value!),
+              ),
+            ]),
+          ]),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _responsavelController,
+            label: _label('responsible'),
+            requiredField: true,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderChip({required IconData icon, required String label}) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: tokens.selectedBackground,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: tokens.selectedBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 16, color: tokens.info),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: tokens.info,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+          const SizedBox(height: 20),
+          AgendaRecorrenciaWebFields(
+            compact: true,
+            config: _recorrencia,
+            vencimento: _dataVencimento,
+            enabled: !_isLoading,
+            onChanged: () => setState(() {}),
+          ),
+          if (_recorrencia.ativa && _dataPrevisaoPagamento != null)
+            _helper('forecastRecurrenceHint'),
+          const SizedBox(height: 16),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text(
+              _label('additional'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
+            childrenPadding: const EdgeInsets.only(top: 12, bottom: 20),
+            children: [
+              _fields([
+                _buildDropdownField(
+                  label: _label('origin'),
+                  value: _origemSelecionada,
+                  items: _origens,
+                  onChanged:
+                      (value) => setState(() => _origemSelecionada = value!),
+                ),
+                _buildDropdownField(
+                  label: _label('company'),
+                  value: _empresaSelecionada,
+                  items:
+                      widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
+                  onChanged:
+                      (value) => setState(() => _empresaSelecionada = value!),
+                ),
+                _buildDateField(
+                  label: _label('transactionDate'),
+                  controller: _dataOperacaoController,
+                  initialDate: _dataOperacao,
+                  onChanged: (date) => _dataOperacao = date,
+                ),
+
+                _buildTextField(
+                  controller: _documentoFiscalController,
+                  label: _label('document'),
+                ),
+                _buildTextField(
+                  controller: _referenciaController,
+                  label: _label('reference'),
+                ),
+                _buildTextField(
+                  controller: _idContatoController,
+                  label: _label(receber ? 'customerId' : 'supplierId'),
+                ),
+              ]),
+              _helper('transactionHint'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _observacoesController,
+            label: _label('notes'),
+            maxLines: 2,
           ),
         ],
       ),
@@ -1180,425 +1453,101 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildActionsBar() {
-    final ThemeData theme = Theme.of(context);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tokens.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+        border: Border(top: BorderSide(color: tokens.divider)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          if (widget.modoEdicao)
+            TextButton.icon(
+              onPressed: _isLoading ? null : _confirmarExcluirLancamento,
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: Text(_label('delete')),
+              style: TextButton.styleFrom(foregroundColor: tokens.danger),
+            ),
+          OutlinedButton(
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            child: Text(_label('cancel')),
+          ),
+          FilledButton(
+            onPressed: _isLoading ? null : _salvar,
+            child: Text(
+              _label(
+                _isLoading
+                    ? 'saving'
+                    : _registrarPagamento
+                    ? (_tipoSelecionado == 'Receber'
+                        ? 'saveReceive'
+                        : 'saveContinue')
+                    : widget.modoEdicao
+                    ? 'update'
+                    : 'save',
+              ),
+            ),
           ),
         ],
-      ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compacto = constraints.maxWidth < 720;
-          final Widget copy = Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.fact_check_outlined, color: tokens.info, size: 22),
-              const SizedBox(width: 12),
-              const Flexible(
-                child: Text(
-                  'Revise os dados do lançamento antes de concluir.',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                ),
-              ),
-            ],
-          );
-          final Widget actions = Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: compacto ? WrapAlignment.start : WrapAlignment.end,
-            children: <Widget>[
-              if (widget.modoEdicao)
-                OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _confirmarExcluirLancamento,
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Excluir/apagar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: tokens.danger,
-                    side: BorderSide(color: tokens.danger),
-                  ),
-                ),
-              OutlinedButton(
-                onPressed:
-                    _isLoading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _salvar,
-                icon:
-                    _isLoading
-                        ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.save_outlined),
-                label: Text(
-                  _isLoading
-                      ? (widget.modoEdicao ? 'Atualizando...' : 'Salvando...')
-                      : (widget.modoEdicao
-                          ? 'Atualizar lançamento'
-                          : 'Salvar lançamento'),
-                ),
-              ),
-            ],
-          );
-
-          if (compacto) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[copy, const SizedBox(height: 14), actions],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              Expanded(child: copy),
-              const SizedBox(width: 16),
-              actions,
-            ],
-          );
-        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool telaGrande = constraints.maxWidth >= 1080;
-        final bool telaMedia = constraints.maxWidth >= 760;
-        final double larguraTotal =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 1100;
-        final double larguraConteudo =
-            telaGrande
-                ? larguraTotal.clamp(0, 1180).toDouble()
-                : double.infinity;
-        double larguraCampo(double grande, double media) =>
-            telaGrande ? grande : (telaMedia ? media : double.infinity);
-
-        return Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(18),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: larguraConteudo),
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: AbsorbPointer(
+              absorbing: _isLoading,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
-                  children: <Widget>[
-                    _buildHeader(),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child:
-                          _isLoading
-                              ? const Padding(
-                                key: ValueKey<String>('saving-progress'),
-                                padding: EdgeInsets.only(top: 12),
-                                child: LinearProgressIndicator(minHeight: 3),
-                              )
-                              : const SizedBox(
-                                key: ValueKey<String>('saving-idle'),
-                                height: 18,
-                              ),
-                    ),
-                    _buildSectionCard(
-                      title: 'Dados principais',
-                      subtitle:
-                          'Campos que alimentam filtros e detalhes da Agenda Financeira.',
-                      icon: Icons.badge_outlined,
-                      child: Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: <Widget>[
-                          if (_bloquearTipoStatus)
-                            _buildFieldSlot(
-                              width: larguraCampo(1100, 680),
-                              child: _buildAvisoLancamentoConfirmado(),
-                            ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildDropdownField(
-                              label: 'Tipo',
-                              value: _tipoSelecionado,
-                              items: _tipos,
-                              icon: Icons.swap_vert_rounded,
-                              enabled: !_bloquearTipoStatus,
-                              onChanged:
-                                  (String? v) => setState(
-                                    () => _aplicarTipoSelecionado(v!),
-                                  ),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildDropdownField(
-                              label: 'Status',
-                              value: _statusSelecionado,
-                              items:
-                                  _status.contains(_statusSelecionado)
-                                      ? _status
-                                      : <String>[_statusSelecionado],
-                              icon: Icons.flag_outlined,
-                              enabled: !_bloquearTipoStatus,
-                              onChanged:
-                                  (String? v) =>
-                                      setState(() => _statusSelecionado = v!),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(340, 300),
-                            child: _buildTextField(
-                              controller: _descricaoController,
-                              label: 'Descrição',
-                              requiredField: true,
-                              icon: Icons.description_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildTextField(
-                              controller: _valorController,
-                              label: 'Valor total',
-                              requiredField: true,
-                              enabled: !_bloquearTipoStatus,
-                              icon: Icons.attach_money_rounded,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildTextField(
-                              controller: _valorConfirmadoController,
-                              label: 'Valor confirmado',
-                              enabled: false,
-                              icon: Icons.verified_outlined,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildDateField(
-                              label: 'Data de vencimento',
-                              controller: _dataVencimentoController,
-                              initialDate: _dataVencimento,
-                              requiredField: true,
-                              onChanged:
-                                  (DateTime date) => _dataVencimento = date,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildDateField(
-                              label: 'Data da operação',
-                              controller: _dataOperacaoController,
-                              initialDate: _dataOperacao,
-                              requiredField: true,
-                              icon: Icons.today_outlined,
-                              onChanged:
-                                  (DateTime date) => _dataOperacao = date,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildDateField(
-                              label: 'Competência',
-                              controller: _dataCompetenciaController,
-                              initialDate: _dataCompetencia,
-                              icon: Icons.date_range_outlined,
-                              onChanged:
-                                  (DateTime date) => _dataCompetencia = date,
-                            ),
-                          ),
-                        ],
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _label('subtitle'),
+                      style: TextStyle(
+                        color: WebThemeTokens.of(context).secondaryText,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    AgendaRecorrenciaWebFields(
-                      config: _recorrencia,
-                      vencimento: _dataVencimento,
-                      enabled: !_isLoading,
-                      onChanged: () => setState(() {}),
+                    const SizedBox(height: 20),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 1050)
+                          return Column(
+                            children: [
+                              _formContent(),
+                              const SizedBox(height: 20),
+                              _summary(),
+                            ],
+                          );
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 7, child: _formContent()),
+                            const SizedBox(width: 20),
+                            Expanded(flex: 3, child: _summary()),
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: 'Classificação e filtros',
-                      subtitle:
-                          'Informações usadas para segmentação por origem, empresa e forma prevista de pagamento.',
-                      icon: Icons.filter_alt_outlined,
-                      child: Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: <Widget>[
-                          _buildFieldSlot(
-                            width: larguraCampo(280, 240),
-                            child: _buildDropdownField(
-                              label: 'Origem',
-                              value: _origemSelecionada,
-                              items: _origens,
-                              icon: Icons.source_outlined,
-                              onChanged:
-                                  (String? v) =>
-                                      setState(() => _origemSelecionada = v!),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(280, 240),
-                            child: _buildDropdownField(
-                              label: 'Empresa',
-                              value: _empresaSelecionada,
-                              items:
-                                  widget.empresas.isEmpty
-                                      ? <String>['Empresa']
-                                      : widget.empresas,
-                              icon: Icons.storefront_outlined,
-                              onChanged:
-                                  (String? v) =>
-                                      setState(() => _empresaSelecionada = v!),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(320, 280),
-                            child: _buildDropdownField(
-                              label: 'Forma prevista de pagamento',
-                              value: _formaPagamentoSelecionada,
-                              items: _formasPagamento,
-                              icon: Icons.payments_outlined,
-                              trailing:
-                                  _carregandoTiposRecebimento
-                                      ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                      : null,
-                              onChanged:
-                                  (String? v) => setState(
-                                    () => _formaPagamentoSelecionada = v!,
-                                  ),
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(320, 280),
-                            child: _buildTextField(
-                              controller: _categoriaController,
-                              label: 'Categoria',
-                              icon: Icons.category_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(320, 280),
-                            child: AgendaCentroCustoWebField(
-                              initialId: _centroCustoId,
-                              initialName: _centroCustoController.text,
-                              enabled: !_isLoading,
-                              onChanged: (centro) {
-                                setState(() {
-                                  _centroCustoId = centro?.id;
-                                  _centroCustoController.text =
-                                      centro?.nome ?? '';
-                                });
-                              },
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildTextField(
-                              controller: _documentoFiscalController,
-                              label: 'Documento fiscal',
-                              icon: Icons.receipt_long_outlined,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: 'Contato e responsabilidade',
-                      subtitle:
-                          'Dados opcionais exibidos nos cards da agenda e usados para cobrança/pagamento.',
-                      icon: Icons.person_outline,
-                      child: Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: <Widget>[
-                          _buildFieldSlot(
-                            width: larguraCampo(260, 220),
-                            child: _buildTextField(
-                              controller: _idContatoController,
-                              label:
-                                  _tipoSelecionado == 'Receber'
-                                      ? 'ID do cliente'
-                                      : 'ID do fornecedor',
-                              icon: Icons.badge_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(340, 280),
-                            child: _buildTextField(
-                              controller: _contatoController,
-                              label:
-                                  _tipoSelecionado == 'Receber'
-                                      ? 'Cliente'
-                                      : 'Fornecedor',
-                              icon: Icons.person_search_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(320, 280),
-                            child: _buildTextField(
-                              controller: _responsavelController,
-                              label: 'Responsável',
-                              icon: Icons.assignment_ind_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(320, 280),
-                            child: _buildTextField(
-                              controller: _referenciaController,
-                              label: 'Referência externa',
-                              icon: Icons.link_outlined,
-                            ),
-                          ),
-                          _buildFieldSlot(
-                            width: larguraCampo(900, 680),
-                            child: _buildTextField(
-                              controller: _observacoesController,
-                              label: 'Observações',
-                              icon: Icons.notes_outlined,
-                              maxLines: 3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActionsBar(),
                   ],
                 ),
               ),
             ),
           ),
-        );
-      },
+          _buildActionsBar(),
+        ],
+      ),
     );
   }
 }
@@ -1676,7 +1625,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                     vertical: 2,
                   ),
                   child: _SixWebSelectMenuItem(
-                    label: item,
+                    label: _agendaOptionLabel(context, item),
                     selected: item == safeValue,
                   ),
                 ),
@@ -1697,7 +1646,9 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = widget.enabled && (_open || _hover);
     final Color borderColor =
-        active ? tokens.selectedBorder : tokens.cardBorder;
+        active
+            ? tokens.selectedBorder
+            : tokens.secondaryText.withValues(alpha: 0.22);
     final Color backgroundColor =
         widget.enabled
             ? (active ? tokens.selectedBackground : tokens.inputBackground)
@@ -1719,9 +1670,9 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
           onExit: (_) => setState(() => _hover = false),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
               onTap: widget.enabled ? _showMenu : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -1733,7 +1684,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                 ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: borderColor),
                   boxShadow:
                       active
@@ -1753,7 +1704,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                       size: 20,
                       color:
                           widget.enabled
-                              ? tokens.info
+                              ? tokens.secondaryText
                               : tokens.disabledForeground,
                     ),
                     const SizedBox(width: 10),
@@ -1773,7 +1724,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _safeValue,
+                            _agendaOptionLabel(context, _safeValue),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -1852,4 +1803,23 @@ class _SixWebSelectMenuItem extends StatelessWidget {
       ),
     );
   }
+}
+
+String _agendaOptionLabel(BuildContext context, String value) {
+  const keys = <String, String>{
+    'Venda': 'sale',
+    'Ordem de serviço': 'service',
+    'Despesa manual': 'expense',
+    'Compra': 'purchase',
+    'Parcela': 'installment',
+    'Movimentação de caixa': 'cashMovement',
+    'Boleto': 'bankSlip',
+    'Transferência': 'transfer',
+    'Cartão de crédito': 'credit',
+    'Cartão de débito': 'debit',
+    'Débito automático': 'directDebit',
+    'Dinheiro': 'cash',
+  };
+  final key = keys[value];
+  return key == null ? value : context.t('agenda.form.option.$key');
 }

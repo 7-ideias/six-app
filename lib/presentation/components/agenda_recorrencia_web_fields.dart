@@ -14,11 +14,13 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
     required this.vencimento,
     required this.onChanged,
     this.enabled = true,
+    this.compact = false,
   });
   final AgendaFinanceiraRecorrencia config;
   final DateTime vencimento;
   final VoidCallback onChanged;
   final bool enabled;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -85,27 +87,32 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
     );
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: tokens.cardBorder),
-      ),
+      padding: compact ? EdgeInsets.zero : const EdgeInsets.all(18),
+      decoration:
+          compact
+              ? null
+              : BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: tokens.cardBorder),
+              ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            recorrenciaLabel(context, 'title'),
-            style: TextStyle(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w800,
+          if (!compact) ...[
+            Text(
+              recorrenciaLabel(context, 'title'),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            recorrenciaLabel(context, 'hint'),
-            style: TextStyle(color: tokens.secondaryText),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              recorrenciaLabel(context, 'hint'),
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+          ],
           if (config.serieId != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),

@@ -27,6 +27,7 @@ import '../components/web/six_web_select_field.dart';
 import '../components/web/six_web_settings_dialog.dart';
 import '../theme/web_theme_tokens.dart';
 import 'documentos_personalizados_web_content.dart';
+import 'formas_recebimento_configuracao_content.dart';
 import 'operational_procedures_web_content.dart';
 
 void showConfiguracoesSixWebDialog(BuildContext context) {
@@ -70,6 +71,7 @@ enum SecaoConfiguracaoSix {
   operacao,
   seguranca,
   preferenciasUsuario,
+  formasRecebimento,
 }
 
 class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
@@ -1402,6 +1404,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _tituloSecao(SecaoConfiguracaoSix secao) {
     switch (secao) {
+      case SecaoConfiguracaoSix.formasRecebimento:
+        return context.t('paymentSettings.title');
       case SecaoConfiguracaoSix.geral:
         return 'Geral';
       case SecaoConfiguracaoSix.regionalizacao:
@@ -1425,6 +1429,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _descricaoSecao(SecaoConfiguracaoSix secao) {
     switch (secao) {
+      case SecaoConfiguracaoSix.formasRecebimento:
+        return context.t('paymentSettings.hint');
       case SecaoConfiguracaoSix.geral:
         return 'Dados institucionais, identidade do comércio e informações principais para documentos e comunicação.';
       case SecaoConfiguracaoSix.regionalizacao:
@@ -2052,6 +2058,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final tokens = WebThemeTokens.of(context);
 
     final itens = [
+      (
+        secao: SecaoConfiguracaoSix.formasRecebimento,
+        titulo: context.t('paymentSettings.title'),
+        icone: Icons.payments_outlined,
+      ),
       (
         secao: SecaoConfiguracaoSix.geral,
         titulo: 'Geral',
@@ -2922,6 +2933,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildConteudoSecao() {
     switch (_secaoAtual) {
+      case SecaoConfiguracaoSix.formasRecebimento:
+        return SizedBox(
+          height: (MediaQuery.sizeOf(context).height * 0.8).clamp(
+            600.0,
+            1000.0,
+          ),
+          child: const FormasRecebimentoConfiguracaoContent(),
+        );
       case SecaoConfiguracaoSix.geral:
         return _buildSecaoGeral();
       case SecaoConfiguracaoSix.regionalizacao:
@@ -6491,11 +6510,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       child: Stack(
         children: [
           Positioned.fill(child: bodyContent),
-          Positioned(
-            right: compactActions ? 24 : 36,
-            bottom: compactActions ? 24 : 36,
-            child: _buildFloatingActions(),
-          ),
+          if (_secaoAtual != SecaoConfiguracaoSix.formasRecebimento)
+            Positioned(
+              right: compactActions ? 24 : 36,
+              bottom: compactActions ? 24 : 36,
+              child: _buildFloatingActions(),
+            ),
         ],
       ),
     );
