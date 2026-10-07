@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../data/models/destino_recebimento_draft.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
@@ -65,6 +66,23 @@ class ConfiguracaoFinanceiraService {
           (e) => ConfiguracaoFinanceira.fromJson(Map<String, dynamic>.from(e)),
         )
         .toList();
+  }
+
+  /// O recebimento em espécie usa uma conta Caixa ativa do comércio.
+  /// Não escolhe arbitrariamente entre contas financeiras distintas.
+  void direcionarDinheiroAoCaixa(
+    List<DestinoRecebimentoDraft> drafts,
+    List<ConfiguracaoFinanceira> contas,
+  ) {
+    final dinheiro = drafts.where((d) => d.dinheiro).toList();
+    if (dinheiro.isEmpty) return;
+    final caixas = contas.where((c) => c.ativo && c.tipo == 'CAIXA').toList();
+    if (caixas.length != 1) {
+      throw StateError('CAIXA_FINANCEIRO_CONFIGURACAO_INVALIDA');
+    }
+    for (final draft in dinheiro) {
+      draft.direcionarAoCaixa(caixas.single.id);
+    }
   }
 
   Future<void> salvar(
