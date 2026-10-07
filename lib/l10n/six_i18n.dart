@@ -111,6 +111,9 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível salvar. Verifique sua permissão e tente novamente.',
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
+    'space.formSpace': 'Espaço financeiro',
+    'space.editLocked':
+        'O espaço de um lançamento existente não pode ser alterado neste formulário.',
     'agenda.settlement.sourceAccount': 'Conta de saída',
     'agenda.settlement.destinationAccount': 'Conta de destino',
     'agenda.settlement.accountRequired': 'Selecione a conta para confirmar.',
@@ -2886,6 +2889,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.saveError': 'Unable to save. Check your permission and try again.',
     'space.history': 'Deactivation preserves entries and history.',
     'space.account': 'Planned account',
+    'space.formSpace': 'Financial space',
+    'space.editLocked':
+        'An existing entry cannot be moved to another space in this form.',
     'agenda.settlement.sourceAccount': 'Payment account',
     'agenda.settlement.destinationAccount': 'Receiving account',
     'agenda.settlement.accountRequired': 'Select an account to confirm.',
@@ -5446,6 +5452,9 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudo guardar. Revise sus permisos e inténtelo de nuevo.',
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
+    'space.formSpace': 'Espacio financiero',
+    'space.editLocked':
+        'No se puede cambiar el espacio de un movimiento existente en este formulario.',
     'agenda.settlement.sourceAccount': 'Cuenta de salida',
     'agenda.settlement.destinationAccount': 'Cuenta de destino',
     'agenda.settlement.accountRequired':

@@ -1,3 +1,6 @@
+import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
+import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
+import 'package:sixpos/presentation/components/mobile/conta_financeira_mobile_field.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -55,6 +58,10 @@ class _Caixa implements CaixaApiClient {
 }
 
 class _Service extends AgendaFinanceiraLancamentoService {
+  @override
+  AgendaFinanceiraLancamentoService paraEspaco(String espaco) =>
+      _Service()..espacoFinanceiro = espaco;
+
   Map<String, dynamic> detail = {
     'idLancamento': 'entry',
     'tipo': 'PAGAR',
@@ -228,6 +235,105 @@ const _item = <String, dynamic>{
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  for (final web in [true, false]) {
+    testWidgets(
+      '$web: novo permite escolher espaço sem alterar a Agenda ao cancelar',
+      (tester) async {
+        final service = _Service();
+        await _pump(
+          tester,
+          Builder(
+            builder:
+                (context) => Scaffold(
+                  body: TextButton(
+                    child: const Text('Abrir formulário'),
+                    onPressed: () {
+                      if (web) {
+                        showSubPainelLancamentoAgendaFinanceiraWeb(
+                          context,
+                          service: service,
+                          empresaSelecionada: 'Empresa',
+                          empresas: const ['Empresa'],
+                        );
+                      } else {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (_) =>
+                                    AgendaFinanceiraLancamentoMobileCreateScreen(
+                                      service: service,
+                                      caixaApiClient: _Caixa(),
+                                    ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+          ),
+        );
+        if (web) {
+          tester.view.physicalSize = const Size(1200, 1000);
+          await tester.pumpAndSettle();
+        }
+        await _tap(tester, find.text('Abrir formulário'));
+        final selector = find.byKey(const ValueKey('lancamento-espaco'));
+        if (selector.evaluate().isEmpty) {
+          await tester.scrollUntilVisible(
+            selector,
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+        }
+        await tester.ensureVisible(selector);
+        await tester.pumpAndSettle();
+        if (web) {
+          tester
+              .widget<ContaFinanceiraWebField>(
+                find.byType(ContaFinanceiraWebField),
+              )
+              .onChanged('conta-empresa');
+        } else {
+          tester
+              .widget<ContaFinanceiraMobileField>(
+                find.byType(ContaFinanceiraMobileField),
+              )
+              .onChanged('conta-empresa');
+        }
+        await tester.pumpAndSettle();
+        final widget = tester.widget<SegmentedButton<String>>(selector);
+        final pessoal =
+            widget.segments.firstWhere((s) => s.value == 'PESSOAL').label
+                as Text;
+        await _tap(
+          tester,
+          find.descendant(of: selector, matching: find.text(pessoal.data!)),
+        );
+        expect(tester.widget<SegmentedButton<String>>(selector).selected, {
+          'PESSOAL',
+        });
+        if (web) {
+          final account = tester.widget<ContaFinanceiraWebField>(
+            find.byType(ContaFinanceiraWebField),
+          );
+          expect(account.espaco, 'PESSOAL');
+          expect(account.value, isNull);
+        } else {
+          final account = tester.widget<ContaFinanceiraMobileField>(
+            find.byType(ContaFinanceiraMobileField),
+          );
+          expect(account.espaco, 'PESSOAL');
+          expect(account.value, isNull);
+        }
+        expect(service.espacoFinanceiro, 'EMPRESA');
+        Navigator.of(tester.element(selector)).pop();
+        await tester.pumpAndSettle();
+        expect(service.espacoFinanceiro, 'EMPRESA');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   test(
     'detail supports nested dates and explicit null overrides stale nested data',

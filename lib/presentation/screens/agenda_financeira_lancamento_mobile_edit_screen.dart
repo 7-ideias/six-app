@@ -941,7 +941,20 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                         icon: Icons.badge_outlined,
                       ),
                       const SizedBox(height: 12),
-                      Text(context.t('space.' + _service.espacoFinanceiro)),
+                      Text(context.t('space.formSpace')),
+                      SegmentedButton<String>(
+                        key: const ValueKey('lancamento-espaco'),
+                        segments: [
+                          for (final espaco in ['EMPRESA', 'PESSOAL'])
+                            ButtonSegment(
+                              value: espaco,
+                              label: Text(context.t('space.' + espaco)),
+                            ),
+                        ],
+                        selected: {_service.espacoFinanceiro},
+                        onSelectionChanged: null,
+                      ),
+                      Text(context.t('space.editLocked')),
                       ContaFinanceiraMobileField(
                         espaco: _service.espacoFinanceiro,
                         value: _contaFinanceiraId,

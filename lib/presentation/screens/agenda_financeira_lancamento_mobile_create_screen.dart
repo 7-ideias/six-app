@@ -49,9 +49,9 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       AgendaFinanceiraRecorrencia();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final AgendaFinanceiraLancamentoService _service =
+  late AgendaFinanceiraLancamentoService _service =
       widget.service ?? AgendaFinanceiraLancamentoService();
-  late final CaixaApiClient _caixaApiClient =
+  late CaixaApiClient _caixaApiClient =
       widget.caixaApiClient ??
       HttpCaixaApiClient(espacoFinanceiro: () => _service.espacoFinanceiro);
 
@@ -437,7 +437,28 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           icon: Icons.badge_outlined,
         ),
         SizedBox(height: 12),
-        Text(context.t('space.' + _service.espacoFinanceiro)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.t('space.formSpace')),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              key: const ValueKey('lancamento-espaco'),
+              segments: [
+                for (final espaco in ['EMPRESA', 'PESSOAL'])
+                  ButtonSegment(
+                    value: espaco,
+                    label: Text(context.t('space.' + espaco)),
+                  ),
+              ],
+              selected: {_service.espacoFinanceiro},
+              onSelectionChanged:
+                  _salvando
+                      ? null
+                      : (values) => _selecionarEspaco(values.single),
+            ),
+          ],
+        ),
         ContaFinanceiraMobileField(
           espaco: _service.espacoFinanceiro,
           value: _contaFinanceiraId,
@@ -458,6 +479,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           label: Text(context.t('space.CATEGORIAS')),
         ),
         AgendaCentroCustoMobileField(
+          key: ValueKey(_service.espacoFinanceiro),
           service: _service,
           initialId: _centroCustoId,
           initialName: _centroCustoController.text,
@@ -845,11 +867,34 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     setState(() => onSelected(_normalizarData(selected)));
   }
 
+  Future<void> _selecionarEspaco(String espaco) async {
+    if (_salvando || _service.espacoFinanceiro == espaco) return;
+    setState(() {
+      _service = _service.paraEspaco(espaco);
+      _contaFinanceiraId = null;
+      _centroCustoId = null;
+      _centroCustoController.clear();
+      _categoriaController.clear();
+      _contatoController.clear();
+      _responsavelController.clear();
+      _formasPagamento = [];
+      _codigoTipoRecebimentoSelecionado = '';
+      _codigoTipoPorDescricaoFormaPagamento.clear();
+      _descricaoPorCodigoTipoFormaPagamento.clear();
+      _caixaApiClient = HttpCaixaApiClient(
+        espacoFinanceiro: () => _service.espacoFinanceiro,
+      );
+    });
+    await _carregarTiposRecebimentoAtivos();
+  }
+
   Future<void> _carregarTiposRecebimentoAtivos() async {
+    final espaco = _service.espacoFinanceiro;
     setState(() => _carregandoTiposRecebimento = true);
     try {
       final InformacoesBasicasCaixaResponse informacoes =
           await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoAtivas(
         informacoes.tiposRecebimento,
       );
@@ -867,7 +912,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     } catch (_) {
       // Sem fallback local: as formas de recebimento devem vir do backend.
     } finally {
-      if (mounted) setState(() => _carregandoTiposRecebimento = false);
+      if (mounted && espaco == _service.espacoFinanceiro)
+        setState(() => _carregandoTiposRecebimento = false);
     }
   }
 
@@ -960,6 +1006,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           response.id.isEmpty ? request.uuidOperacaoApp : response.id;
       Navigator.of(context).pop({
         ...request.toAgendaItem(idFallback: idRetorno),
+        'espacoFinanceiro': _service.espacoFinanceiro,
         'registrarPagamento': _registrarPagamento,
         'dataLiquidacaoSolicitada': _dataPagamentoRealizado.toIso8601String(),
       });

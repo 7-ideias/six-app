@@ -980,6 +980,11 @@ class _AgendaFinanceiraMobileScreenState
       ),
     );
     if (!mounted || item == null) return;
+    final espaco = item['espacoFinanceiro']?.toString();
+    if (espaco != null && espaco != _service.espacoFinanceiro) {
+      await _trocarEspaco(espaco);
+      if (!mounted) return;
+    }
     if (item['registrarPagamento'] == true) {
       await _liquidarComFormas(item, parcialInicial: false);
     }

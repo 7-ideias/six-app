@@ -1416,6 +1416,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (!mounted || item == null) {
       return;
     }
+    final espaco = item['espacoFinanceiro']?.toString();
+    if (espaco != null && espaco != _service.espacoFinanceiro) {
+      await _trocarEspaco(espaco);
+      if (!mounted) return;
+    }
     if (item['registrarPagamento'] == true) {
       await _confirmarTotal(item, 'Liquidar');
     }

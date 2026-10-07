@@ -13,6 +13,11 @@ class AgendaFinanceiraLancamentoService {
   AgendaFinanceiraLancamentoService({http.Client? httpClient})
     : _httpClient = httpClient ?? createHttpClient();
 
+  // Mantém o cliente HTTP, sem alterar o espaço da tela que abriu o formulário.
+  AgendaFinanceiraLancamentoService paraEspaco(String espaco) =>
+      AgendaFinanceiraLancamentoService(httpClient: _httpClient)
+        ..espacoFinanceiro = espaco;
+
   String get _endpointCadastro =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos2';
 

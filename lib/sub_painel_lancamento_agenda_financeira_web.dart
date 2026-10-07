@@ -171,7 +171,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final AgendaFinanceiraLancamentoService _service =
+  late AgendaFinanceiraLancamentoService _service =
       widget.service ?? AgendaFinanceiraLancamentoService();
   late final CaixaApiClient _caixaApiClient = HttpCaixaApiClient(
     espacoFinanceiro: () => _service.espacoFinanceiro,
@@ -401,11 +401,31 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  Future<void> _selecionarEspaco(String espaco) async {
+    if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
+      return;
+    setState(() {
+      _service = _service.paraEspaco(espaco);
+      _contaFinanceiraId = null;
+      _centroCustoId = null;
+      _centroCustoController.clear();
+      _categoriaController.clear();
+      _contatoController.clear();
+      _responsavelController.clear();
+      _idContatoController.clear();
+      _formasPagamento = List<String>.from(_formasPagamentoPadrao);
+      _formaPagamentoSelecionada = _formasPagamento.first;
+    });
+    await _carregarTiposRecebimentoAtivos();
+  }
+
   Future<void> _carregarTiposRecebimentoAtivos() async {
+    final espaco = _service.espacoFinanceiro;
     setState(() => _carregandoTiposRecebimento = true);
     try {
       final InformacoesBasicasCaixaResponse informacoes =
           await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoAtivas(
         informacoes.tiposRecebimento,
       );
@@ -419,7 +439,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } catch (_) {
       // Mantém os valores padrão para não impedir o lançamento caso o endpoint falhe.
     } finally {
-      if (mounted) setState(() => _carregandoTiposRecebimento = false);
+      if (mounted && espaco == _service.espacoFinanceiro)
+        setState(() => _carregandoTiposRecebimento = false);
     }
   }
 
@@ -795,6 +816,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
     Navigator.of(context).pop({
       ...request.toAgendaItem(idFallback: idGerado),
+      'espacoFinanceiro': _service.espacoFinanceiro,
       'registrarPagamento': _registrarPagamento,
       'dataLiquidacaoSolicitada': _dataPagamentoRealizado.toIso8601String(),
     });
@@ -1366,7 +1388,29 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 label: _label('category'),
                 requiredField: true,
               ),
-              Text(context.t('space.' + _service.espacoFinanceiro)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.t('space.formSpace')),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    key: const ValueKey('lancamento-espaco'),
+                    segments: [
+                      for (final espaco in ['EMPRESA', 'PESSOAL'])
+                        ButtonSegment(
+                          value: espaco,
+                          label: Text(context.t('space.' + espaco)),
+                        ),
+                    ],
+                    selected: {_service.espacoFinanceiro},
+                    onSelectionChanged:
+                        _isLoading || widget.modoEdicao
+                            ? null
+                            : (values) => _selecionarEspaco(values.single),
+                  ),
+                  if (widget.modoEdicao) Text(context.t('space.editLocked')),
+                ],
+              ),
               ContaFinanceiraWebField(
                 espaco: _service.espacoFinanceiro,
                 value: _contaFinanceiraId,
@@ -1386,6 +1430,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 label: Text(context.t('space.CATEGORIAS')),
               ),
               AgendaCentroCustoWebField(
+                key: ValueKey(_service.espacoFinanceiro),
                 service: _service,
                 initialId: _centroCustoId,
                 initialName: _centroCustoController.text,
