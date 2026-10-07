@@ -48,21 +48,19 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: StatefulBuilder(
-              builder:
-                  (_, setState) => SingleChildScrollView(
-                    child:
-                        web
-                            ? AgendaImpostoRendaWebFields(
-                              draft: draft,
-                              picker: _Picker(),
-                              onChanged: () => setState(() {}),
-                            )
-                            : AgendaImpostoRendaMobileFields(
-                              draft: draft,
-                              picker: _Picker(),
-                              onChanged: () => setState(() {}),
-                            ),
-                  ),
+              builder: (_, setState) => SingleChildScrollView(
+                child: web
+                    ? AgendaImpostoRendaWebFields(
+                        draft: draft,
+                        picker: _Picker(),
+                        onChanged: () => setState(() {}),
+                      )
+                    : AgendaImpostoRendaMobileFields(
+                        draft: draft,
+                        picker: _Picker(),
+                        onChanged: () => setState(() {}),
+                      ),
+              ),
             ),
           ),
         ),
@@ -75,7 +73,7 @@ void main() {
       expect(find.text('recibo.png'), findsOneWidget);
       expect(draft.carregando, isFalse);
       expect(draft.toPayload()['comprovantesImpostoRenda'], hasLength(1));
-      await tester.tap(find.text('recibo.png'));
+      await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pumpAndSettle();
       expect(find.byType(InteractiveViewer), findsOneWidget);
       await tester.tap(find.byIcon(Icons.close).last);
@@ -95,18 +93,17 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body:
-                web
-                    ? AgendaImpostoRendaWebFields(
-                      draft: draft,
-                      enabled: false,
-                      onChanged: () => fail('readonly'),
-                    )
-                    : AgendaImpostoRendaMobileFields(
-                      draft: draft,
-                      enabled: false,
-                      onChanged: () => fail('readonly'),
-                    ),
+            body: web
+                ? AgendaImpostoRendaWebFields(
+                    draft: draft,
+                    enabled: false,
+                    onChanged: () => fail('readonly'),
+                  )
+                : AgendaImpostoRendaMobileFields(
+                    draft: draft,
+                    enabled: false,
+                    onChanged: () => fail('readonly'),
+                  ),
           ),
         ),
       );
@@ -124,7 +121,7 @@ void main() {
             .onPressed,
         isNull,
       );
-      await tester.tap(find.text('recibo.png'));
+      await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pumpAndSettle();
       expect(find.byType(InteractiveViewer), findsOneWidget);
       expect(tester.takeException(), isNull);

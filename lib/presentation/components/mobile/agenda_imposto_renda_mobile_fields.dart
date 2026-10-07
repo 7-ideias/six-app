@@ -48,32 +48,29 @@ class _AgendaImpostoRendaMobileFieldsState
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder:
-          (context) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(context).height * .8,
-              child: Column(
-                children: [
-                  IconButton(
-                    tooltip:
-                        MaterialLocalizations.of(context).closeButtonTooltip,
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Expanded(
-                    child: InteractiveViewer(
-                      child: Image.memory(
-                        arquivo.bytes,
-                        errorBuilder:
-                            (_, __, ___) =>
-                                const Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
-                  ),
-                ],
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .8,
+          child: Column(
+            children: [
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
               ),
-            ),
+              Expanded(
+                child: InteractiveViewer(
+                  child: Image.memory(
+                    arquivo.bytes,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.broken_image_outlined),
+                  ),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -98,13 +95,12 @@ class _AgendaImpostoRendaMobileFieldsState
             title: Text(context.t('ir.title')),
             subtitle: Text(context.t('ir.hint')),
             value: draft.marcado,
-            onChanged:
-                ativo
-                    ? (value) {
-                      draft.marcado = value;
-                      widget.onChanged();
-                    }
-                    : null,
+            onChanged: ativo
+                ? (value) {
+                    draft.marcado = value;
+                    widget.onChanged();
+                  }
+                : null,
           ),
           if (draft.marcado || draft.comprovantes.isNotEmpty) ...[
             Text(context.t('ir.limit')),
@@ -118,16 +114,25 @@ class _AgendaImpostoRendaMobileFieldsState
                   overflow: TextOverflow.ellipsis,
                 ),
                 onTap: () => _visualizar(arquivo),
-                trailing: IconButton(
-                  tooltip: context.t('ir.remove'),
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed:
-                      ativo
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: context.t('ir.view'),
+                      icon: const Icon(Icons.visibility_outlined),
+                      onPressed: () => _visualizar(arquivo),
+                    ),
+                    IconButton(
+                      tooltip: context.t('ir.remove'),
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: ativo
                           ? () {
-                            draft.comprovantes.remove(arquivo);
-                            widget.onChanged();
-                          }
+                              draft.comprovantes.remove(arquivo);
+                              widget.onChanged();
+                            }
                           : null,
+                    ),
+                  ],
                 ),
               ),
             Wrap(
@@ -136,18 +141,16 @@ class _AgendaImpostoRendaMobileFieldsState
               children: [
                 OutlinedButton.icon(
                   key: const ValueKey('ir-add'),
-                  onPressed:
-                      ativo && draft.comprovantes.length < 3
-                          ? () => _anexar()
-                          : null,
+                  onPressed: ativo && draft.comprovantes.length < 3
+                      ? () => _anexar()
+                      : null,
                   icon: const Icon(Icons.attach_file),
                   label: Text(context.t('ir.add')),
                 ),
                 OutlinedButton.icon(
-                  onPressed:
-                      ativo && draft.comprovantes.length < 3
-                          ? () => _anexar(camera: true)
-                          : null,
+                  onPressed: ativo && draft.comprovantes.length < 3
+                      ? () => _anexar(camera: true)
+                      : null,
                   icon: const Icon(Icons.camera_alt_outlined),
                   label: Text(context.t('ir.camera')),
                 ),

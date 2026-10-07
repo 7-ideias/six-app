@@ -120,6 +120,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'ir.fileError':
         'Não foi possível anexar. Use uma imagem JPG, PNG ou WebP de até 2 MB.',
     'ir.remove': 'Remover comprovante',
+    'ir.view': 'Visualizar comprovante',
     'ir.filter': 'Separados para IR',
 
     'space.formSpace': 'Espaço financeiro',
@@ -2909,6 +2910,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'ir.fileError':
         'Unable to attach. Use a JPG, PNG or WebP image up to 2 MB.',
     'ir.remove': 'Remove receipt',
+    'ir.view': 'View receipt',
     'ir.filter': 'Set aside for tax',
 
     'space.formSpace': 'Financial space',
@@ -5484,6 +5486,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'ir.fileError':
         'No se pudo adjuntar. Utilice una imagen JPG, PNG o WebP de hasta 2 MB.',
     'ir.remove': 'Eliminar comprobante',
+    'ir.view': 'Ver comprobante',
     'ir.filter': 'Separados para impuestos',
 
     'space.formSpace': 'Espacio financiero',

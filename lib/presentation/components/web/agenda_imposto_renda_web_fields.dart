@@ -46,36 +46,33 @@ class _AgendaImpostoRendaWebFieldsState
   Future<void> _visualizar(AgendaComprovanteIr arquivo) async {
     await showDialog<void>(
       context: context,
-      builder:
-          (context) => Dialog(
-            child: SizedBox(
-              width: 900,
-              height: 650,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: InteractiveViewer(
-                      child: Image.memory(
-                        arquivo.bytes,
-                        errorBuilder:
-                            (_, __, ___) =>
-                                const Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
+      builder: (context) => Dialog(
+        child: SizedBox(
+          width: 900,
+          height: 650,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: InteractiveViewer(
+                  child: Image.memory(
+                    arquivo.bytes,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.broken_image_outlined),
                   ),
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      tooltip:
-                          MaterialLocalizations.of(context).closeButtonTooltip,
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -100,13 +97,12 @@ class _AgendaImpostoRendaWebFieldsState
             title: Text(context.t('ir.title')),
             subtitle: Text(context.t('ir.hint')),
             value: draft.marcado,
-            onChanged:
-                ativo
-                    ? (value) {
-                      draft.marcado = value;
-                      widget.onChanged();
-                    }
-                    : null,
+            onChanged: ativo
+                ? (value) {
+                    draft.marcado = value;
+                    widget.onChanged();
+                  }
+                : null,
           ),
           if (draft.marcado || draft.comprovantes.isNotEmpty) ...[
             Text(context.t('ir.limit')),
@@ -120,16 +116,25 @@ class _AgendaImpostoRendaWebFieldsState
                   overflow: TextOverflow.ellipsis,
                 ),
                 onTap: () => _visualizar(arquivo),
-                trailing: IconButton(
-                  tooltip: context.t('ir.remove'),
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed:
-                      ativo
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: context.t('ir.view'),
+                      icon: const Icon(Icons.visibility_outlined),
+                      onPressed: () => _visualizar(arquivo),
+                    ),
+                    IconButton(
+                      tooltip: context.t('ir.remove'),
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: ativo
                           ? () {
-                            draft.comprovantes.remove(arquivo);
-                            widget.onChanged();
-                          }
+                              draft.comprovantes.remove(arquivo);
+                              widget.onChanged();
+                            }
                           : null,
+                    ),
+                  ],
                 ),
               ),
             Wrap(
@@ -138,10 +143,9 @@ class _AgendaImpostoRendaWebFieldsState
               children: [
                 OutlinedButton.icon(
                   key: const ValueKey('ir-add'),
-                  onPressed:
-                      ativo && draft.comprovantes.length < 3
-                          ? () => _anexar()
-                          : null,
+                  onPressed: ativo && draft.comprovantes.length < 3
+                      ? () => _anexar()
+                      : null,
                   icon: const Icon(Icons.attach_file),
                   label: Text(context.t('ir.add')),
                 ),
