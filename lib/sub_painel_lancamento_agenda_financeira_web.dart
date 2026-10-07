@@ -1,3 +1,6 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
+import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
@@ -110,6 +113,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
   required List<String> empresas,
   bool modoEdicao = false,
   Map<String, dynamic>? lancamentoInicial,
+  AgendaFinanceiraLancamentoService? service,
 }) {
   return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
@@ -132,6 +136,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
                 ? context.t('agenda.form.edit')
                 : context.t('agenda.form.create'),
         body: _LancamentoAgendaFinanceiraWebBody(
+          service: service,
           empresaSelecionada: empresaSelecionada,
           empresas: empresas,
           modoEdicao: modoEdicao,
@@ -144,12 +149,14 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 
 class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
   const _LancamentoAgendaFinanceiraWebBody({
+    this.service,
     required this.empresaSelecionada,
     required this.empresas,
     required this.modoEdicao,
     this.lancamentoInicial,
   });
 
+  final AgendaFinanceiraLancamentoService? service;
   final String empresaSelecionada;
   final List<String> empresas;
   final bool modoEdicao;
@@ -165,14 +172,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
   final String _uuidCriacao = 'web-${DateTime.now().microsecondsSinceEpoch}';
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
+  AgendaImpostoRenda _ir = AgendaImpostoRenda();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
+  late final CaixaApiClient _caixaApiClient = HttpCaixaApiClient(
+    espacoFinanceiro: () => _service.espacoFinanceiro,
+  );
 
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _contatoController = TextEditingController();
   final TextEditingController _idContatoController = TextEditingController();
+  String? _contaFinanceiraId;
   final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _valorConfirmadoController =
@@ -301,6 +313,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _preencherCamposEdicao(Map<String, dynamic> item) {
+    _ir = AgendaImpostoRenda.fromJson(item);
     _recorrencia = AgendaFinanceiraRecorrencia.fromJson(item);
     _idLancamentoEdicao = item['id']?.toString();
     _uuidOperacaoAppEdicao =
@@ -369,6 +382,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _descricaoController.text = item['descricao']?.toString() ?? '';
     _contatoController.text = item['contato']?.toString() ?? '';
     _idContatoController.text = item['idContato']?.toString() ?? '';
+    _contaFinanceiraId = item['contaFinanceiraId']?.toString();
     _categoriaController.text = item['categoria']?.toString() ?? '';
     _valorController.text = _formatarValorParaCampo(valorOriginal);
     _valorConfirmadoController.text = _formatarValorParaCampo(valorConfirmado);
@@ -392,11 +406,31 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  Future<void> _selecionarEspaco(String espaco) async {
+    if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
+      return;
+    setState(() {
+      _service = _service.paraEspaco(espaco);
+      _contaFinanceiraId = null;
+      _centroCustoId = null;
+      _centroCustoController.clear();
+      _categoriaController.clear();
+      _contatoController.clear();
+      _responsavelController.clear();
+      _idContatoController.clear();
+      _formasPagamento = List<String>.from(_formasPagamentoPadrao);
+      _formaPagamentoSelecionada = _formasPagamento.first;
+    });
+    await _carregarTiposRecebimentoAtivos();
+  }
+
   Future<void> _carregarTiposRecebimentoAtivos() async {
+    final espaco = _service.espacoFinanceiro;
     setState(() => _carregandoTiposRecebimento = true);
     try {
       final InformacoesBasicasCaixaResponse informacoes =
           await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoAtivas(
         informacoes.tiposRecebimento,
       );
@@ -410,7 +444,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } catch (_) {
       // Mantém os valores padrão para não impedir o lançamento caso o endpoint falhe.
     } finally {
-      if (mounted) setState(() => _carregandoTiposRecebimento = false);
+      if (mounted && espaco == _service.espacoFinanceiro)
+        setState(() => _carregandoTiposRecebimento = false);
     }
   }
 
@@ -658,6 +693,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         'origemFiltro': origem,
         'empresaFiltro': _empresaSelecionada,
         'formaPrevistaPagamento': formaPagamento,
+        ..._ir.toPayload(),
         'atualizarPrevisaoPagamento': true,
         'dataPrevisaoPagamento':
             _dataPrevisaoPagamento?.toIso8601String().split('T').first,
@@ -684,6 +720,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       formaPagamento: formaPagamento,
       empresa: _empresaSelecionada,
       categoria: _categoriaController.text.trim(),
+      contaFinanceiraId: _contaFinanceiraId,
       idColaborador: 'web-user',
       nomeColaborador: _responsavelController.text.trim(),
       idCliente:
@@ -718,6 +755,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Future<void> _salvar() async {
+    if (_ir.carregando) return;
     if (!_formKey.currentState!.validate()) return;
     if (_toDouble(_valorController.text) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -785,6 +823,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
     Navigator.of(context).pop({
       ...request.toAgendaItem(idFallback: idGerado),
+      'espacoFinanceiro': _service.espacoFinanceiro,
       'registrarPagamento': _registrarPagamento,
       'dataLiquidacaoSolicitada': _dataPagamentoRealizado.toIso8601String(),
     });
@@ -1345,6 +1384,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
             ],
           ]),
           separator(),
+          AgendaImpostoRendaWebFields(
+            draft: _ir,
+            enabled: !_isLoading,
+            onChanged: () => setState(() {}),
+          ),
+          const SizedBox(height: 16),
           _section('classification', [
             _fields([
               _buildTextField(
@@ -1354,9 +1399,52 @@ class _LancamentoAgendaFinanceiraWebBodyState
               _buildTextField(
                 controller: _categoriaController,
                 label: _label('category'),
-                requiredField: true,
+                requiredField: false,
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.t('space.formSpace')),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    key: const ValueKey('lancamento-espaco'),
+                    segments: [
+                      for (final espaco in ['EMPRESA', 'PESSOAL'])
+                        ButtonSegment(
+                          value: espaco,
+                          label: Text(context.t('space.' + espaco)),
+                        ),
+                    ],
+                    selected: {_service.espacoFinanceiro},
+                    onSelectionChanged:
+                        _isLoading || widget.modoEdicao
+                            ? null
+                            : (values) => _selecionarEspaco(values.single),
+                  ),
+                  if (widget.modoEdicao) Text(context.t('space.editLocked')),
+                ],
+              ),
+              ContaFinanceiraWebField(
+                espaco: _service.espacoFinanceiro,
+                value: _contaFinanceiraId,
+                onChanged: (id) => setState(() => _contaFinanceiraId = id),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  final nome = await selecionarContaWeb(
+                    context,
+                    _service.espacoFinanceiro,
+                    grupo: 'CATEGORIAS',
+                  );
+                  if (nome != null && mounted)
+                    setState(() => _categoriaController.text = nome);
+                },
+                icon: const Icon(Icons.category_outlined),
+                label: Text(context.t('space.CATEGORIAS')),
               ),
               AgendaCentroCustoWebField(
+                key: ValueKey(_service.espacoFinanceiro),
+                service: _service,
                 initialId: _centroCustoId,
                 initialName: _centroCustoController.text,
                 enabled: !_isLoading,
@@ -1381,7 +1469,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           _buildTextField(
             controller: _responsavelController,
             label: _label('responsible'),
-            requiredField: true,
+            requiredField: false,
           ),
           const SizedBox(height: 20),
           AgendaRecorrenciaWebFields(
@@ -1410,14 +1498,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   onChanged:
                       (value) => setState(() => _origemSelecionada = value!),
                 ),
-                _buildDropdownField(
-                  label: _label('company'),
-                  value: _empresaSelecionada,
-                  items:
-                      widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
-                  onChanged:
-                      (value) => setState(() => _empresaSelecionada = value!),
-                ),
+                if (_service.espacoFinanceiro == 'EMPRESA')
+                  _buildDropdownField(
+                    label: _label('company'),
+                    value: _empresaSelecionada,
+                    items:
+                        widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
+                    onChanged:
+                        (value) => setState(() => _empresaSelecionada = value!),
+                  ),
                 _buildDateField(
                   label: _label('transactionDate'),
                   controller: _dataOperacaoController,
@@ -1468,17 +1557,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
         children: [
           if (widget.modoEdicao)
             TextButton.icon(
-              onPressed: _isLoading ? null : _confirmarExcluirLancamento,
+              onPressed:
+                  (_isLoading || _ir.carregando)
+                      ? null
+                      : _confirmarExcluirLancamento,
               icon: const Icon(Icons.delete_outline, size: 18),
               label: Text(_label('delete')),
               style: TextButton.styleFrom(foregroundColor: tokens.danger),
             ),
           OutlinedButton(
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            onPressed:
+                (_isLoading || _ir.carregando)
+                    ? null
+                    : () => Navigator.of(context).pop(),
             child: Text(_label('cancel')),
           ),
           FilledButton(
-            onPressed: _isLoading ? null : _salvar,
+            onPressed: (_isLoading || _ir.carregando) ? null : _salvar,
             child: Text(
               _label(
                 _isLoading

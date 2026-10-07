@@ -2,7 +2,9 @@ import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
 class LancamentoAgendaFinanceiraRequest {
+  final String? contaFinanceiraId;
   LancamentoAgendaFinanceiraRequest({
+    this.contaFinanceiraId,
     required this.uuidOperacaoApp,
     required this.descricao,
     required this.tipoOperacao,
@@ -105,6 +107,8 @@ class LancamentoAgendaFinanceiraRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
+      'atualizarContaFinanceira': true,
       'uuidOperacaoApp': uuidOperacaoApp,
       'descricao': descricao,
       'tipoOperacao': tipoOperacao,
@@ -251,6 +255,29 @@ class AgendaFinanceiraLancamentoDetalhe {
     );
   }
 
+  // O detalhe é autoritativo, inclusive quando a previsão foi removida.
+  // dadosEdicao mantém compatibilidade com respostas que encapsulam os campos.
+  DateTime? _dataPersistida(String key, {String? alias}) {
+    final edicao = dados['dadosEdicao'];
+    final campos = edicao is Map ? edicao : const <String, dynamic>{};
+    final value =
+        dados.containsKey(key)
+            ? dados[key]
+            : campos.containsKey(key)
+            ? campos[key]
+            : alias == null
+            ? null
+            : dados[alias] ?? campos[alias];
+    return value is DateTime
+        ? value
+        : DateTime.tryParse(value?.toString() ?? '');
+  }
+
+  DateTime? get dataPrevisaoPagamento =>
+      _dataPersistida('dataPrevisaoPagamento');
+  DateTime? get dataLiquidacao =>
+      _dataPersistida('dataLiquidacao', alias: 'dataQuitacao');
+
   /// Combina dados persistidos com os labels da consulta sem trocar IDs por textos.
   Map<String, dynamic> paraEdicao(Map<String, dynamic> item) {
     final contato = dados['contato'];
@@ -304,7 +331,9 @@ class AgendaFinanceiraLancamentoDetalhe {
 }
 
 class AgendaFinanceiraLiquidacaoRequest {
+  final String? contaFinanceiraId;
   AgendaFinanceiraLiquidacaoRequest({
+    this.contaFinanceiraId,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -328,6 +357,7 @@ class AgendaFinanceiraLiquidacaoRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
@@ -345,7 +375,9 @@ class AgendaFinanceiraLiquidacaoRequest {
 }
 
 class AgendaFinanceiraParcialRequest {
+  final String? contaFinanceiraId;
   AgendaFinanceiraParcialRequest({
+    this.contaFinanceiraId,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -365,6 +397,7 @@ class AgendaFinanceiraParcialRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      'contaFinanceiraId': contaFinanceiraId,
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
@@ -430,6 +463,7 @@ class AgendaFinanceiraFiltrosRequest {
     required this.centrosCusto,
     this.clienteFornecedor,
     required this.somenteCriticos,
+    this.somenteImpostoRenda = false,
   });
 
   final String tipo;
@@ -441,6 +475,7 @@ class AgendaFinanceiraFiltrosRequest {
   final List<String> centrosCusto;
   final String? clienteFornecedor;
   final bool somenteCriticos;
+  final bool somenteImpostoRenda;
 
   Map<String, dynamic> toJson() {
     return {
@@ -453,6 +488,7 @@ class AgendaFinanceiraFiltrosRequest {
       'centrosCusto': centrosCusto,
       'clienteFornecedor': clienteFornecedor,
       'somenteCriticos': somenteCriticos,
+      'somenteImpostoRenda': somenteImpostoRenda,
     };
   }
 }

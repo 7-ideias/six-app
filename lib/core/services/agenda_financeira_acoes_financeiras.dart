@@ -9,14 +9,18 @@ import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'agenda_financeira_lancamento_service.dart';
 
 class AgendaFinanceiraAcoesFinanceiras {
+  String espacoFinanceiro = 'EMPRESA';
   AgendaFinanceiraAcoesFinanceiras({http.Client? httpClient})
     : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 
-  String get _basePath => '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos';
-  String _endpoint(String idLancamento, String acao) => '$_basePath/$idLancamento/$acao';
-  String _endpointLiquidacao(String idLancamento, String idLiquidacao) => '$_basePath/$idLancamento/liquidacoes/$idLiquidacao';
+  String get _basePath =>
+      '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos';
+  String _endpoint(String idLancamento, String acao) =>
+      '$_basePath/$idLancamento/$acao';
+  String _endpointLiquidacao(String idLancamento, String idLiquidacao) =>
+      '$_basePath/$idLancamento/liquidacoes/$idLiquidacao';
 
   Future<Map<String, String>> _buildHeaders() async {
     final authService = AuthService();
@@ -27,6 +31,7 @@ class AgendaFinanceiraAcoesFinanceiras {
 
     return {
       'Content-Type': 'application/json',
+      'espacoFinanceiro': espacoFinanceiro,
       'idUnicoDaEmpresa': empresaId ?? '',
       authorizationHeaderName: '$bearerPrefix $token',
     };
@@ -80,12 +85,18 @@ class AgendaFinanceiraAcoesFinanceiras {
     }
 
     if (response.body.trim().isEmpty) {
-      return LancamentoAgendaFinanceiraResponse(id: idFallback, status: statusFallback);
+      return LancamentoAgendaFinanceiraResponse(
+        id: idFallback,
+        status: statusFallback,
+      );
     }
 
     final dynamic decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
-      return LancamentoAgendaFinanceiraResponse(id: idFallback, status: statusFallback);
+      return LancamentoAgendaFinanceiraResponse(
+        id: idFallback,
+        status: statusFallback,
+      );
     }
 
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);

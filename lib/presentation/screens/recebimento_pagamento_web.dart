@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:sixpos/data/models/recebimento_forma_input.dart';
+import 'package:sixpos/presentation/components/web/destinos_recebimento_web.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -46,38 +48,37 @@ Future<void> showRecebimentoPagamentoWebDialog({
     barrierColor: Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 260),
-    pageBuilder:
-        (
-          BuildContext routeContext,
-          Animation<double> animation,
-          Animation<double> secondaryAnimation,
-        ) {
-          return _RecebimentoPagamentoRouteSurface(
-            animation: animation,
-            reduceMotion: reduceMotion,
-            child: RecebimentoPagamentoWeb(
-              embedded: true,
-              somenteSelecao: somenteSelecao,
-              formasPagamentoIniciais: formasPagamentoIniciais,
-              descricoesFormasIniciais: descricoesFormasIniciais,
-              recebimentoParcialInicial: recebimentoParcialInicial,
-              onBack: () => Navigator.of(routeContext).maybePop(),
-              onSelecaoConfirmada: onSelecaoConfirmada,
-              onSuccess: () {
-                onSuccess?.call();
-                Navigator.of(routeContext).maybePop();
-              },
-              valorTotalVenda: valorTotalVenda,
-              itensResumo: itensResumo,
-              clienteNome: clienteNome,
-              numeroVenda: numeroVenda,
-              idColaborador: idColaborador,
-              nomeColaborador: nomeColaborador,
-              operacaoService: operacaoService,
-              procedureCoordinator: procedureCoordinator,
-            ),
-          );
-        },
+    pageBuilder: (
+      BuildContext routeContext,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+    ) {
+      return _RecebimentoPagamentoRouteSurface(
+        animation: animation,
+        reduceMotion: reduceMotion,
+        child: RecebimentoPagamentoWeb(
+          embedded: true,
+          somenteSelecao: somenteSelecao,
+          formasPagamentoIniciais: formasPagamentoIniciais,
+          descricoesFormasIniciais: descricoesFormasIniciais,
+          recebimentoParcialInicial: recebimentoParcialInicial,
+          onBack: () => Navigator.of(routeContext).maybePop(),
+          onSelecaoConfirmada: onSelecaoConfirmada,
+          onSuccess: () {
+            onSuccess?.call();
+            Navigator.of(routeContext).maybePop();
+          },
+          valorTotalVenda: valorTotalVenda,
+          itensResumo: itensResumo,
+          clienteNome: clienteNome,
+          numeroVenda: numeroVenda,
+          idColaborador: idColaborador,
+          nomeColaborador: nomeColaborador,
+          operacaoService: operacaoService,
+          procedureCoordinator: procedureCoordinator,
+        ),
+      );
+    },
     transitionBuilder:
         (
           BuildContext context,
@@ -331,8 +332,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   Future<void> _carregarFormasPagamentoConfiguradas() async {
     try {
-      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
-          .getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes =
+          await _caixaApiClient.getInformacoesBasicasDoCaixa();
       final List<_FormaPagamentoWeb> formas =
           _montarFormasPagamentoConfiguradas(informacoes.tiposRecebimento);
       if (!mounted) return;
@@ -376,17 +377,19 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         continue;
       }
 
-      final String titulo = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : _descricaoPadraoPorCodigo(codigo);
+      final String titulo =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : _descricaoPadraoPorCodigo(codigo);
 
       formas.add(
         _FormaPagamentoWeb(
           codigo: codigo,
           titulo: titulo,
-          descricao: tipo.naturezaRecebimento.trim().isNotEmpty
-              ? tipo.naturezaRecebimento.trim()
-              : _descricaoPadraoPorCodigo(codigo),
+          descricao:
+              tipo.naturezaRecebimento.trim().isNotEmpty
+                  ? tipo.naturezaRecebimento.trim()
+                  : _descricaoPadraoPorCodigo(codigo),
           icone: _iconePorCodigo(codigo),
           selecionado: false,
           valor: 0,
@@ -427,9 +430,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             final String? descricaoInicial =
                 widget.descricoesFormasIniciais[forma.codigo];
             return forma.copyWith(
-              titulo: descricaoInicial?.trim().isNotEmpty == true
-                  ? descricaoInicial!.trim()
-                  : forma.titulo,
+              titulo:
+                  descricaoInicial?.trim().isNotEmpty == true
+                      ? descricaoInicial!.trim()
+                      : forma.titulo,
               selecionado: inicial != null && inicial.valor > 0,
               valor: inicial?.valor ?? 0,
             );
@@ -562,9 +566,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             .map(
               (forma) => forma.copyWith(
                 selecionado: forma.codigo == codigoInicial,
-                valor: !parcial && forma.codigo == codigoInicial
-                    ? widget.valorTotalVenda
-                    : 0,
+                valor:
+                    !parcial && forma.codigo == codigoInicial
+                        ? widget.valorTotalVenda
+                        : 0,
               ),
             )
             .toList(growable: false);
@@ -713,21 +718,20 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     final _FormaPagamentoWeb? formaAdicionada = novaForma;
     if (formaAdicionada == null) return;
 
-    final double valorInicial = _valorRestante()
-        .clamp(0, double.infinity)
-        .toDouble();
+    final double valorInicial =
+        _valorRestante().clamp(0, double.infinity).toDouble();
     setState(() {
       _formasPagamento = _formasPagamento
           .map(
-            (_FormaPagamentoWeb forma) => forma.codigo == formaAdicionada.codigo
-                ? forma.copyWith(selecionado: true, valor: valorInicial)
-                : forma,
+            (_FormaPagamentoWeb forma) =>
+                forma.codigo == formaAdicionada.codigo
+                    ? forma.copyWith(selecionado: true, valor: valorInicial)
+                    : forma,
           )
           .toList(growable: false);
     });
-    _controllerFor(formaAdicionada).text = valorInicial > 0
-        ? valorInicial.toStringAsFixed(2)
-        : '';
+    _controllerFor(formaAdicionada).text =
+        valorInicial > 0 ? valorInicial.toStringAsFixed(2) : '';
   }
 
   void _removerForma(_FormaPagamentoWeb forma) {
@@ -763,9 +767,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     });
 
     _valorControllers[formaAtual.codigo]?.clear();
-    _controllerFor(formaSubstituta).text = valorAtual > 0
-        ? valorAtual.toStringAsFixed(2)
-        : '';
+    _controllerFor(formaSubstituta).text =
+        valorAtual > 0 ? valorAtual.toStringAsFixed(2) : '';
   }
 
   Future<void> _mostrarDialogMensagem({
@@ -779,9 +782,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         return AlertDialog(
           icon: Icon(
             sucesso ? Icons.check_circle_outline : Icons.info_outline,
-            color: sucesso
-                ? const Color(0xFF2E7D32)
-                : Theme.of(context).colorScheme.primary,
+            color:
+                sucesso
+                    ? const Color(0xFF2E7D32)
+                    : Theme.of(context).colorScheme.primary,
             size: 34,
           ),
           title: Text(titulo),
@@ -867,7 +871,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   Future<void> _confirmarOperacao() async {
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final List<FormaPagamentoSelecionada> formasSelecionadas =
+    List<FormaPagamentoSelecionada> formasSelecionadas =
         _montarFormasSelecionadas();
 
     if (formasSelecionadas.isEmpty) {
@@ -892,17 +896,41 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         (!_recebimentoParcial && !totalValido)) {
       await _mostrarDialogMensagem(
         titulo: l10n?.pdvWebPaymentMismatchTitle ?? 'Revise a distribuição',
-        mensagem: _recebimentoParcial
-            ? _txt(
-                'recebimento.erroParcialMenorQueAberto',
-                'O valor parcial deve ser maior que zero e menor que o total da venda.',
-              )
-            : (l10n?.pdvWebPaymentMismatchMessage ??
-                  'A soma das formas deve ser igual ao total da venda.'),
+        mensagem:
+            _recebimentoParcial
+                ? _txt(
+                  'recebimento.erroParcialMenorQueAberto',
+                  'O valor parcial deve ser maior que zero e menor que o total da venda.',
+                )
+                : (l10n?.pdvWebPaymentMismatchMessage ??
+                    'A soma das formas deve ser igual ao total da venda.'),
       );
       return;
     }
 
+    final destinos = await selecionarDestinosWeb(
+      context,
+      formasSelecionadas
+          .map(
+            (f) => RecebimentoFormaInput(
+              codigo: f.codigo,
+              valor: f.valor,
+              descricao: _mapaDescricaoSelecionada()[f.codigo],
+            ),
+          )
+          .toList(),
+    );
+    if (destinos == null || !mounted) return;
+    formasSelecionadas =
+        destinos
+            .map(
+              (f) => FormaPagamentoSelecionada(
+                codigo: f.codigo.toUpperCase(),
+                valor: f.valor,
+                financeiro: f,
+              ),
+            )
+            .toList();
     if (widget.somenteSelecao) {
       widget.onSelecaoConfirmada?.call(
         RecebimentoPagamentoSelecaoResultado(
@@ -929,7 +957,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 _recebimentoParcial
                     ? _txt('recebimento.receberParcial', 'Receber parcial')
                     : (l10n?.pdvWebConfirmReceiveAction ??
-                          'Confirmar recebimento'),
+                        'Confirmar recebimento'),
               ),
               content: Text(
                 _recebimentoParcial
@@ -947,7 +975,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                     _recebimentoParcial
                         ? _txt('recebimento.receberParcial', 'Receber parcial')
                         : (l10n?.pdvWebConfirmReceiveAction ??
-                              'Confirmar recebimento'),
+                            'Confirmar recebimento'),
                   ),
                 ),
               ],
@@ -1157,12 +1185,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     final bool completo = restante.abs() <= 0.009;
     final bool parcialValido =
         _recebimentoParcial && totalDistribuido > 0.009 && restante > 0.009;
-    final bool distribuicaoValida = _recebimentoParcial
-        ? parcialValido
-        : completo;
-    final Color statusColor = distribuicaoValida
-        ? (_recebimentoParcial ? theme.colorScheme.primary : tokens.success)
-        : tokens.warning;
+    final bool distribuicaoValida =
+        _recebimentoParcial ? parcialValido : completo;
+    final Color statusColor =
+        distribuicaoValida
+            ? (_recebimentoParcial ? theme.colorScheme.primary : tokens.success)
+            : tokens.warning;
     final String statusLabel;
     if (parcialValido) {
       statusLabel = _txt(
@@ -1273,31 +1301,34 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
           duration: const Duration(milliseconds: 220),
           height: 48,
           decoration: BoxDecoration(
-            color: selected
-                ? Color.alphaBlend(
-                    color.withValues(alpha: 0.12),
-                    tokens.surfaceElevated,
-                  )
-                : tokens.surfaceElevated,
+            color:
+                selected
+                    ? Color.alphaBlend(
+                      color.withValues(alpha: 0.12),
+                      tokens.surfaceElevated,
+                    )
+                    : tokens.surfaceElevated,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected ? color : tokens.cardBorder,
               width: selected ? 1.5 : 1,
             ),
-            boxShadow: selected
-                ? <BoxShadow>[
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.10),
-                      blurRadius: 18,
-                    ),
-                  ]
-                : null,
+            boxShadow:
+                selected
+                    ? <BoxShadow>[
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.10),
+                        blurRadius: 18,
+                      ),
+                    ]
+                    : null,
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
-            onTap: _salvandoOperacao
-                ? null
-                : () => _alterarTipoRecebimento(parcial),
+            onTap:
+                _salvandoOperacao
+                    ? null
+                    : () => _alterarTipoRecebimento(parcial),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -1423,9 +1454,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                       tooltip:
                           l10n?.pdvWebCompleteRemainingAction ??
                           'Completar restante',
-                      onPressed: _salvandoOperacao
-                          ? null
-                          : () => _preencherValorRestante(forma),
+                      onPressed:
+                          _salvandoOperacao
+                              ? null
+                              : () => _preencherValorRestante(forma),
                       icon: const Icon(Icons.auto_fix_high_rounded, size: 19),
                     ),
                     filled: true,
@@ -1441,9 +1473,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: _txt('recebimento.removerForma', 'Remover forma'),
-                  onPressed: _salvandoOperacao
-                      ? null
-                      : () => _removerForma(forma),
+                  onPressed:
+                      _salvandoOperacao ? null : () => _removerForma(forma),
                   icon: Icon(
                     Icons.delete_outline_rounded,
                     color: tokens.danger,
@@ -1496,11 +1527,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                   ),
                 )
                 .toList(growable: false),
-            onChanged: _salvandoOperacao
-                ? null
-                : (String? codigo) {
-                    if (codigo != null) _substituirForma(forma, codigo);
-                  },
+            onChanged:
+                _salvandoOperacao
+                    ? null
+                    : (String? codigo) {
+                      if (codigo != null) _substituirForma(forma, codigo);
+                    },
           ),
         ],
       ),
@@ -1516,19 +1548,22 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       (_FormaPagamentoWeb forma) => !forma.selecionado,
     );
     final ButtonStyle addMethodStyle = OutlinedButton.styleFrom(
-      foregroundColor: theme.brightness == Brightness.dark
-          ? theme.colorScheme.primary
-          : tokens.primaryText,
-      backgroundColor: theme.brightness == Brightness.dark
-          ? theme.colorScheme.primary.withValues(alpha: 0.10)
-          : Colors.transparent,
+      foregroundColor:
+          theme.brightness == Brightness.dark
+              ? theme.colorScheme.primary
+              : tokens.primaryText,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? theme.colorScheme.primary.withValues(alpha: 0.10)
+              : Colors.transparent,
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,
       minimumSize: const Size.fromHeight(48),
       side: BorderSide(
-        color: theme.brightness == Brightness.dark
-            ? theme.colorScheme.primary.withValues(alpha: 0.34)
-            : tokens.cardBorder,
+        color:
+            theme.brightness == Brightness.dark
+                ? theme.colorScheme.primary.withValues(alpha: 0.34)
+                : tokens.cardBorder,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     );
@@ -1600,9 +1635,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: podeAdicionar && !_salvandoOperacao
-                      ? _adicionarForma
-                      : null,
+                  onPressed:
+                      podeAdicionar && !_salvandoOperacao
+                          ? _adicionarForma
+                          : null,
                   icon: const Icon(Icons.add_rounded),
                   label: Text(
                     _txt('recebimento.adicionarForma', 'Adicionar forma'),
@@ -1622,12 +1658,14 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool distribuicaoValida = _distribuicaoValida();
     final ButtonStyle cancelActionStyle = TextButton.styleFrom(
-      foregroundColor: theme.brightness == Brightness.dark
-          ? tokens.primaryText
-          : theme.colorScheme.primary,
-      backgroundColor: theme.brightness == Brightness.dark
-          ? tokens.surfaceMuted.withValues(alpha: 0.92)
-          : theme.colorScheme.primary.withValues(alpha: 0.08),
+      foregroundColor:
+          theme.brightness == Brightness.dark
+              ? tokens.primaryText
+              : theme.colorScheme.primary,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? tokens.surfaceMuted.withValues(alpha: 0.92)
+              : theme.colorScheme.primary.withValues(alpha: 0.08),
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -1650,29 +1688,31 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
           ),
           const SizedBox(width: 10),
           FilledButton.icon(
-            onPressed: !_salvandoOperacao && distribuicaoValida
-                ? _confirmarOperacao
-                : null,
-            icon: _salvandoOperacao
-                ? const SizedBox(
-                    width: 17,
-                    height: 17,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check_circle_outline_rounded),
+            onPressed:
+                !_salvandoOperacao && distribuicaoValida
+                    ? _confirmarOperacao
+                    : null,
+            icon:
+                _salvandoOperacao
+                    ? const SizedBox(
+                      width: 17,
+                      height: 17,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.check_circle_outline_rounded),
             label: Text(
               _salvandoOperacao
                   ? (l10n?.pdvWebProcessingReceiveAction ?? 'Processando...')
                   : (widget.somenteSelecao
-                        ? (l10n?.pdvWebConfirmDistributionAction ??
-                              'Confirmar distribuição')
-                        : (_recebimentoParcial
-                              ? _txt(
-                                  'recebimento.receberParcial',
-                                  'Receber parcial',
-                                )
-                              : (l10n?.pdvWebConfirmReceiveAction ??
-                                    'Confirmar recebimento'))),
+                      ? (l10n?.pdvWebConfirmDistributionAction ??
+                          'Confirmar distribuição')
+                      : (_recebimentoParcial
+                          ? _txt(
+                            'recebimento.receberParcial',
+                            'Receber parcial',
+                          )
+                          : (l10n?.pdvWebConfirmReceiveAction ??
+                              'Confirmar recebimento'))),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 48),
@@ -1694,8 +1734,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       context.read<LocaleSettingsProvider>().currencySymbol;
 
   String _formatarValorDigitavel(double valor) {
-    final LocaleSettingsProvider regionalizacao = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.read<LocaleSettingsProvider>();
     return regionalizacao.formatCurrency(
       valor,
       showCurrencySymbol: false,
@@ -1704,8 +1744,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   }
 
   double _parseValor(String value) {
-    final LocaleSettingsProvider regionalizacao = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.read<LocaleSettingsProvider>();
     String texto = regionalizacao.stripCurrencyMarkers(value).trim();
     if (regionalizacao.thousandSeparator.isNotEmpty) {
       texto = texto.replaceAll(regionalizacao.thousandSeparator, '');
@@ -1759,11 +1799,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                     right: 0,
                     child: Container(
                       height: 3,
-                      color: !_tipoRecebimentoEscolhido
-                          ? Theme.of(context).colorScheme.primary
-                          : (_recebimentoParcial
-                                ? _partialReceiptColor
-                                : _totalReceiptColor),
+                      color:
+                          !_tipoRecebimentoEscolhido
+                              ? Theme.of(context).colorScheme.primary
+                              : (_recebimentoParcial
+                                  ? _partialReceiptColor
+                                  : _totalReceiptColor),
                     ),
                   ),
                   if (_salvandoOperacao)
@@ -1833,9 +1874,10 @@ class _RecebimentoPagamentoRouteSurface extends StatelessWidget {
         child: AnimatedBuilder(
           animation: animation,
           builder: (BuildContext context, Widget? animatedChild) {
-            final double progress = reduceMotion
-                ? 1
-                : Curves.easeOutCubic.transform(animation.value);
+            final double progress =
+                reduceMotion
+                    ? 1
+                    : Curves.easeOutCubic.transform(animation.value);
             return Stack(
               fit: StackFit.expand,
               children: <Widget>[
@@ -1855,28 +1897,28 @@ class _RecebimentoPagamentoRouteSurface extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: LayoutBuilder(
-                        builder:
-                            (BuildContext context, BoxConstraints constraints) {
-                              final double availableHeight =
-                                  constraints.maxHeight;
-                              final double dialogHeight = availableHeight > 780
-                                  ? 780
-                                  : availableHeight;
-                              return Opacity(
-                                opacity: progress,
-                                child: Transform.translate(
-                                  offset: Offset(0, 16 * (1 - progress)),
-                                  child: Transform.scale(
-                                    scale: 0.96 + (0.04 * progress),
-                                    child: SizedBox(
-                                      width: 680,
-                                      height: dialogHeight,
-                                      child: animatedChild,
-                                    ),
-                                  ),
+                        builder: (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) {
+                          final double availableHeight = constraints.maxHeight;
+                          final double dialogHeight =
+                              availableHeight > 780 ? 780 : availableHeight;
+                          return Opacity(
+                            opacity: progress,
+                            child: Transform.translate(
+                              offset: Offset(0, 16 * (1 - progress)),
+                              child: Transform.scale(
+                                scale: 0.96 + (0.04 * progress),
+                                child: SizedBox(
+                                  width: 680,
+                                  height: dialogHeight,
+                                  child: animatedChild,
                                 ),
-                              );
-                            },
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -1904,9 +1946,10 @@ class _RecebimentoPagamentoProcessingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent = theme.brightness == Brightness.dark
-        ? const Color(0xFF60A5FA)
-        : theme.colorScheme.primary;
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : theme.colorScheme.primary;
 
     return IgnorePointer(
       child: Container(

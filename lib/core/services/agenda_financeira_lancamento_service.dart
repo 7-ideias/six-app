@@ -7,10 +7,16 @@ import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 
 class AgendaFinanceiraLancamentoService {
+  String espacoFinanceiro = 'EMPRESA';
   final http.Client _httpClient;
 
   AgendaFinanceiraLancamentoService({http.Client? httpClient})
     : _httpClient = httpClient ?? createHttpClient();
+
+  // Mantém o cliente HTTP, sem alterar o espaço da tela que abriu o formulário.
+  AgendaFinanceiraLancamentoService paraEspaco(String espaco) =>
+      AgendaFinanceiraLancamentoService(httpClient: _httpClient)
+        ..espacoFinanceiro = espaco;
 
   String get _endpointCadastro =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos2';
@@ -36,6 +42,7 @@ class AgendaFinanceiraLancamentoService {
 
     return {
       'Content-Type': 'application/json',
+      'espacoFinanceiro': espacoFinanceiro,
       'idUnicoDaEmpresa': empresaId ?? '',
       authorizationHeaderName: '$bearerPrefix $token',
     };

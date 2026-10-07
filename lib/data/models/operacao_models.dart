@@ -1,3 +1,5 @@
+import 'recebimento_forma_input.dart';
+
 class OperacaoInserirRequest {
   OperacaoInserirRequest({
     required this.descricao,
@@ -10,6 +12,7 @@ class OperacaoInserirRequest {
     required this.servicoList,
     required this.objRecebimentosList,
     required this.objLogsList,
+    this.recebimentosFinanceiros,
   });
 
   final String descricao;
@@ -22,10 +25,14 @@ class OperacaoInserirRequest {
   final List<ServicoItemRequest> servicoList;
   final List<RecebimentoRequest> objRecebimentosList;
   final List<OperacaoLogRequest> objLogsList;
+  final List<RecebimentoFormaInput>? recebimentosFinanceiros;
 
   Map<String, dynamic> toJson() {
     return {
       'descricao': descricao,
+      if (recebimentosFinanceiros != null)
+        'recebimentosFinanceiros':
+            recebimentosFinanceiros!.map((f) => f.toJson()).toList(),
       'dataOperacao': dataOperacao,
       'tipoDeOperacaoEnum': tipoDeOperacaoEnum,
       'statusQuitada': statusQuitada,
@@ -210,7 +217,13 @@ class OperacaoInserirResponse {
 }
 
 class FormaPagamentoSelecionada {
-  FormaPagamentoSelecionada({required this.codigo, required this.valor});
+  FormaPagamentoSelecionada({
+    required this.codigo,
+    required this.valor,
+    this.financeiro,
+  });
+
+  final RecebimentoFormaInput? financeiro;
 
   final String codigo;
   final double valor;

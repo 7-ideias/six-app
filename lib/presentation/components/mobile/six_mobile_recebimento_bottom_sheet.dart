@@ -1,4 +1,7 @@
+import 'conta_financeira_mobile_field.dart';
+import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:flutter/material.dart';
+import 'destinos_recebimento_mobile.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/caixa_models.dart';
@@ -59,6 +62,11 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     this.contato,
     this.permitirParcial = true,
     this.pagamento = false,
+    this.destinosFinanceiros = false,
+    this.exigirConta = false,
+    this.espacoFinanceiro = 'EMPRESA',
+    this.contaFinanceiraInicial,
+    this.contaService,
     this.tipoInicial,
     this.observacaoInicial,
     this.codigoTipoInicial,
@@ -75,6 +83,11 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final String? contato;
   final bool permitirParcial;
   final bool pagamento;
+  final bool destinosFinanceiros;
+  final bool exigirConta;
+  final String espacoFinanceiro;
+  final String? contaFinanceiraInicial;
+  final ConfiguracaoFinanceiraService? contaService;
   final SixMobileRecebimentoTipo? tipoInicial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
@@ -92,6 +105,11 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     String? contato,
     bool permitirParcial = true,
     bool pagamento = false,
+    bool destinosFinanceiros = false,
+    bool exigirConta = false,
+    String espacoFinanceiro = 'EMPRESA',
+    String? contaFinanceiraInicial,
+    ConfiguracaoFinanceiraService? contaService,
     SixMobileRecebimentoTipo? tipoInicial,
     String? observacaoInicial,
     String? codigoTipoInicial,
@@ -119,6 +137,11 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
             contato: contato,
             permitirParcial: permitirParcial,
             pagamento: pagamento,
+            destinosFinanceiros: destinosFinanceiros,
+            exigirConta: exigirConta,
+            espacoFinanceiro: espacoFinanceiro,
+            contaFinanceiraInicial: contaFinanceiraInicial,
+            contaService: contaService,
             tipoInicial: tipoInicial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
@@ -149,6 +172,7 @@ class _SixMobileRecebimentoBottomSheetState
 
   bool _carregandoTipos = true;
   String? _erroValor;
+  String? _contaFinanceiraId;
   SixMobileRecebimentoTipo? _tipo;
   List<SixMobileTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
 
@@ -201,6 +225,7 @@ class _SixMobileRecebimentoBottomSheetState
   @override
   void initState() {
     super.initState();
+    _contaFinanceiraId = widget.contaFinanceiraInicial;
     _tipo =
         widget.permitirParcial
             ? widget.tipoInicial
@@ -250,17 +275,18 @@ class _SixMobileRecebimentoBottomSheetState
   List<SixMobileTipoRecebimentoOpcao> _montarOpcoes(
     List<TiposRecebimento> tipos,
   ) {
-    final List<TiposRecebimento> ativos = tipos
-        .where((TiposRecebimento tipo) => tipo.ativo)
-        .where(
-          (TiposRecebimento tipo) =>
-              tipo.naturezaRecebimento.trim().toUpperCase() != 'FUTURO',
-        )
-        .toList()
-      ..sort(
-        (TiposRecebimento a, TiposRecebimento b) =>
-            a.ordemExibicao.compareTo(b.ordemExibicao),
-      );
+    final List<TiposRecebimento> ativos =
+        tipos
+            .where((TiposRecebimento tipo) => tipo.ativo)
+            .where(
+              (TiposRecebimento tipo) =>
+                  tipo.naturezaRecebimento.trim().toUpperCase() != 'FUTURO',
+            )
+            .toList()
+          ..sort(
+            (TiposRecebimento a, TiposRecebimento b) =>
+                a.ordemExibicao.compareTo(b.ordemExibicao),
+          );
 
     final List<SixMobileTipoRecebimentoOpcao> opcoes =
         <SixMobileTipoRecebimentoOpcao>[];
@@ -268,9 +294,10 @@ class _SixMobileRecebimentoBottomSheetState
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       final String? backend = _formaPagamentoBackendPorCodigo(codigo);
       if (backend == null) continue;
-      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : _descricaoPadraoPorBackend(backend);
+      final String descricao =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : _descricaoPadraoPorBackend(backend);
       if (descricao.isEmpty ||
           opcoes.any((opcao) => opcao.codigoTipo == codigo)) {
         continue;
@@ -338,9 +365,10 @@ class _SixMobileRecebimentoBottomSheetState
     return _RecebimentoFormaDraft(
       opcao: _resolverInicial(_opcoes),
       controller: TextEditingController(
-        text: tipo == SixMobileRecebimentoTipo.total
-            ? _formatarValorDigitavel(widget.valorAberto)
-            : '',
+        text:
+            tipo == SixMobileRecebimentoTipo.total
+                ? _formatarValorDigitavel(widget.valorAberto)
+                : '',
       ),
       focusNode: FocusNode(),
     );
@@ -370,7 +398,13 @@ class _SixMobileRecebimentoBottomSheetState
     }
   }
 
-  void _confirmar() {
+  Future<void> _confirmar() async {
+    if (widget.exigirConta && (_contaFinanceiraId?.trim().isEmpty ?? true)) {
+      setState(
+        () => _erroValor = context.t('agenda.settlement.accountRequired'),
+      );
+      return;
+    }
     final SixMobileRecebimentoTipo? tipo = _tipo;
     if (tipo == null) return;
 
@@ -404,6 +438,7 @@ class _SixMobileRecebimentoBottomSheetState
       }
       recebimentos.add(
         RecebimentoFormaInput(
+          contaFinanceiraId: widget.exigirConta ? _contaFinanceiraId : null,
           codigo: forma.opcao.codigoTipo,
           descricao: forma.opcao.descricao,
           valor: valor,
@@ -438,6 +473,12 @@ class _SixMobileRecebimentoBottomSheetState
       return;
     }
 
+    if (widget.destinosFinanceiros) {
+      final destinos = await selecionarDestinosMobile(context, recebimentos);
+      if (destinos == null || !mounted) return;
+      recebimentos.clear();
+      recebimentos.addAll(destinos);
+    }
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     Navigator.of(context).pop(
       SixMobileRecebimentoResultado(
@@ -447,9 +488,10 @@ class _SixMobileRecebimentoBottomSheetState
         descricaoTipoRecebimento: primeiraForma.opcao.descricao,
         formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
         recebimentos: recebimentos,
-        observacao: _observacaoController.text.trim().isEmpty
-            ? null
-            : _observacaoController.text.trim(),
+        observacao:
+            _observacaoController.text.trim().isEmpty
+                ? null
+                : _observacaoController.text.trim(),
       ),
     );
   }
@@ -459,9 +501,10 @@ class _SixMobileRecebimentoBottomSheetState
     final ThemeData theme = Theme.of(context);
     final SixMobileColorScheme colors = _colors;
     final EdgeInsets viewInsets = MediaQuery.of(context).viewInsets;
-    final Color? stateColor = _tipo == SixMobileRecebimentoTipo.total
-        ? _totalColor
-        : _tipo == SixMobileRecebimentoTipo.parcial
+    final Color? stateColor =
+        _tipo == SixMobileRecebimentoTipo.total
+            ? _totalColor
+            : _tipo == SixMobileRecebimentoTipo.parcial
             ? _partialColor
             : null;
 
@@ -536,6 +579,25 @@ class _SixMobileRecebimentoBottomSheetState
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
                               const SizedBox(height: 16),
+                              if (widget.exigirConta) ...[
+                                ContaFinanceiraMobileField(
+                                  key: const ValueKey('settlement-account'),
+                                  espaco: widget.espacoFinanceiro,
+                                  service: widget.contaService,
+                                  value: _contaFinanceiraId,
+                                  label: context.t(
+                                    widget.pagamento
+                                        ? 'agenda.settlement.sourceAccount'
+                                        : 'agenda.settlement.destinationAccount',
+                                  ),
+                                  onChanged:
+                                      (value) => setState(() {
+                                        _contaFinanceiraId = value;
+                                        _erroValor = null;
+                                      }),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
                               _formasRecebimentoSection(),
                               const SizedBox(height: 14),
                               TextField(
@@ -640,7 +702,8 @@ class _SixMobileRecebimentoBottomSheetState
                   ),
                 ),
               ],
-              if (metadata.data != null || metadata.idOperacao != null) ...<Widget>[
+              if (metadata.data != null ||
+                  metadata.idOperacao != null) ...<Widget>[
                 const SizedBox(height: 8),
                 _metadataRow(metadata),
               ],
@@ -656,9 +719,10 @@ class _SixMobileRecebimentoBottomSheetState
     final String? id = metadata.idOperacao;
     final LocaleSettingsProvider formatter =
         context.read<LocaleSettingsProvider>();
-    final String? dataFormatada = data == null
-        ? null
-        : '${formatter.formatDate(data.toLocal())} • ${formatter.formatTime(data.toLocal())}';
+    final String? dataFormatada =
+        data == null
+            ? null
+            : '${formatter.formatDate(data.toLocal())} • ${formatter.formatTime(data.toLocal())}';
 
     return Row(
       children: <Widget>[
@@ -727,10 +791,11 @@ class _SixMobileRecebimentoBottomSheetState
       }
     }
 
-    descricao = descricao
-        .replaceAll(RegExp(r'\s{2,}'), ' ')
-        .replaceAll(RegExp(r'[•|\-]\s*$'), '')
-        .trim();
+    descricao =
+        descricao
+            .replaceAll(RegExp(r'\s{2,}'), ' ')
+            .replaceAll(RegExp(r'[•|\-]\s*$'), '')
+            .trim();
 
     return _DescricaoMetadata(
       descricaoLimpa: descricao.isEmpty ? widget.descricao.trim() : descricao,
@@ -894,7 +959,8 @@ class _SixMobileRecebimentoBottomSheetState
     required Color color,
     required String animationKey,
   }) {
-    final bool reduceMotion = MediaQuery.disableAnimationsOf(context) ||
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
 
     return TweenAnimationBuilder<double>(
@@ -958,23 +1024,25 @@ class _SixMobileRecebimentoBottomSheetState
       duration: const Duration(milliseconds: 220),
       height: 48,
       decoration: BoxDecoration(
-        color: selecionado
-            ? selectedColor.withValues(alpha: 0.16)
-            : colors.surfaceElevated,
+        color:
+            selecionado
+                ? selectedColor.withValues(alpha: 0.16)
+                : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: selecionado ? selectedColor : colors.border,
           width: selecionado ? 1.4 : 1,
         ),
-        boxShadow: selecionado
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: selectedColor.withValues(alpha: 0.10),
-                  blurRadius: 18,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
+        boxShadow:
+            selecionado
+                ? <BoxShadow>[
+                  BoxShadow(
+                    color: selectedColor.withValues(alpha: 0.10),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+                : null,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -1121,10 +1189,11 @@ class _SixMobileRecebimentoBottomSheetState
     final SixMobileColorScheme colors = _colors;
     final LocaleSettingsProvider formatter =
         context.watch<LocaleSettingsProvider>();
-    final Set<String> usadosEmOutrasFormas = _formas
-        .where((item) => !identical(item, forma))
-        .map((item) => item.opcao.codigoTipo)
-        .toSet();
+    final Set<String> usadosEmOutrasFormas =
+        _formas
+            .where((item) => !identical(item, forma))
+            .map((item) => item.opcao.codigoTipo)
+            .toSet();
     final List<SixMobileTipoRecebimentoOpcao> opcoesDisponiveis = _opcoes
         .where(
           (opcao) =>
@@ -1299,9 +1368,10 @@ class _SixMobileRecebimentoBottomSheetState
         _RecebimentoFormaDraft(
           opcao: novaOpcao!,
           controller: TextEditingController(
-            text: _tipo == SixMobileRecebimentoTipo.total && restante > 0
-                ? _formatarValorDigitavel(restante)
-                : '',
+            text:
+                _tipo == SixMobileRecebimentoTipo.total && restante > 0
+                    ? _formatarValorDigitavel(restante)
+                    : '',
           ),
           focusNode: FocusNode(),
         ),

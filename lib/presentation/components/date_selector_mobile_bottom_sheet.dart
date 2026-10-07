@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -9,14 +11,14 @@ class DateSelectorMobileBottomSheet extends StatefulWidget {
     required this.initialDate,
     required this.firstDate,
     required this.lastDate,
-    this.applyButtonLabel = 'Aplicar data',
+    this.applyButtonLabel,
   });
 
   final String title;
   final DateTime initialDate;
   final DateTime firstDate;
   final DateTime lastDate;
-  final String applyButtonLabel;
+  final String? applyButtonLabel;
 
   @override
   State<DateSelectorMobileBottomSheet> createState() =>
@@ -136,7 +138,7 @@ class _DateSelectorMobileBottomSheetState
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Escolha uma data sem sair do atendimento.',
+                  context.t('dateSelector.hint'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -227,11 +229,23 @@ class _DateSelectorMobileBottomSheetState
 
   Widget _quickShortcuts() {
     final List<_DateShortcut> shortcuts = <_DateShortcut>[
-      _DateShortcut('Hoje', _today),
-      _DateShortcut('Amanhã', _today.add(const Duration(days: 1))),
-      _DateShortcut('Em 7 dias', _today.add(const Duration(days: 7))),
-      _DateShortcut('Em 15 dias', _today.add(const Duration(days: 15))),
-      _DateShortcut('Em 30 dias', _today.add(const Duration(days: 30))),
+      _DateShortcut(context.t('dateSelector.today'), _today),
+      _DateShortcut(
+        context.t('dateSelector.tomorrow'),
+        _today.add(const Duration(days: 1)),
+      ),
+      _DateShortcut(
+        context.t('dateSelector.inDays').replaceAll('{days}', '7'),
+        _today.add(const Duration(days: 7)),
+      ),
+      _DateShortcut(
+        context.t('dateSelector.inDays').replaceAll('{days}', '15'),
+        _today.add(const Duration(days: 15)),
+      ),
+      _DateShortcut(
+        context.t('dateSelector.inDays').replaceAll('{days}', '30'),
+        _today.add(const Duration(days: 30)),
+      ),
     ].where((shortcut) => _isAllowed(shortcut.date)).toList(growable: false);
 
     return Container(
@@ -246,7 +260,7 @@ class _DateSelectorMobileBottomSheetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Atalhos rápidos',
+            context.t('dateSelector.shortcuts'),
             style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
@@ -325,7 +339,7 @@ class _DateSelectorMobileBottomSheetState
         ),
         Expanded(
           child: Text(
-            '${_monthName(_visibleMonth.month)} de ${_visibleMonth.year}',
+            MaterialLocalizations.of(context).formatMonthYear(_visibleMonth),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -348,15 +362,7 @@ class _DateSelectorMobileBottomSheetState
   }
 
   Widget _weekdayHeader() {
-    const List<String> weekdays = <String>[
-      'Dom',
-      'Seg',
-      'Ter',
-      'Qua',
-      'Qui',
-      'Sex',
-      'Sáb',
-    ];
+    final weekdays = MaterialLocalizations.of(context).narrowWeekdays;
     return Row(
       children: weekdays
           .map((String day) {
@@ -428,14 +434,16 @@ class _DateSelectorMobileBottomSheetState
           Expanded(
             child: OutlinedButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
+              child: Text(context.t('common.cancel')),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: FilledButton(
               onPressed: () => Navigator.of(context).pop(_selectedDate),
-              child: Text(widget.applyButtonLabel),
+              child: Text(
+                widget.applyButtonLabel ?? context.t('dateSelector.applyDate'),
+              ),
             ),
           ),
         ],
@@ -501,42 +509,12 @@ class _DateSelectorMobileBottomSheetState
         first.day == second.day;
   }
 
-  static String _formatDate(DateTime value) {
-    final String day = value.day.toString().padLeft(2, '0');
-    final String month = value.month.toString().padLeft(2, '0');
-    return '$day/$month/${value.year}';
-  }
+  String _formatDate(DateTime value) =>
+      MaterialLocalizations.of(context).formatCompactDate(value);
 
-  static String _weekdayName(DateTime value) {
-    const List<String> weekdays = <String>[
-      'segunda-feira',
-      'terça-feira',
-      'quarta-feira',
-      'quinta-feira',
-      'sexta-feira',
-      'sábado',
-      'domingo',
-    ];
-    return weekdays[value.weekday - 1];
-  }
-
-  static String _monthName(int month) {
-    const List<String> months = <String>[
-      'janeiro',
-      'fevereiro',
-      'março',
-      'abril',
-      'maio',
-      'junho',
-      'julho',
-      'agosto',
-      'setembro',
-      'outubro',
-      'novembro',
-      'dezembro',
-    ];
-    return months[month - 1];
-  }
+  String _weekdayName(DateTime value) => DateFormat.EEEE(
+    Localizations.localeOf(context).toLanguageTag(),
+  ).format(value);
 }
 
 class _DayCell extends StatelessWidget {

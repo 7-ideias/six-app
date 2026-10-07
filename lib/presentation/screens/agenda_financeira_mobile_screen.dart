@@ -1,3 +1,7 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
+import 'recebiveis_vendas_mobile.dart';
+import 'configuracoes_espaco_mobile.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
@@ -42,6 +46,89 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
 
 class _AgendaFinanceiraMobileScreenState
     extends State<AgendaFinanceiraMobileScreen> {
+  bool _trocandoEspaco = false;
+  Future<void> _trocarEspaco(String espaco) async {
+    if (_trocandoEspaco ||
+        _carregando ||
+        _executandoAcao ||
+        _service.espacoFinanceiro == espaco)
+      return;
+    setState(() {
+      _trocandoEspaco = true;
+      _gruposAgenda.clear();
+      _itensConfirmados.clear();
+      _centrosCustoSelecionados.clear();
+      _formasPagamentoSelecionadas.clear();
+      _service.espacoFinanceiro = espaco;
+      _acoesService.espacoFinanceiro = espaco;
+      _centrosCusto = [];
+    });
+    await _carregarTiposPagamentoConfigurados();
+    await _carregarCentrosCusto();
+    if (mounted) await _consultar(mostrarFeedback: true);
+    if (mounted) setState(() => _trocandoEspaco = false);
+  }
+
+  Future<void> _configurarEspaco() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder:
+            (_) => ConfiguracoesEspacoMobile(espaco: _service.espacoFinanceiro),
+      ),
+    );
+    if (mounted) await _carregarCentrosCusto();
+  }
+
+  bool _somenteImpostoRenda = false;
+
+  Widget _seletorEspaco() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      FilterChip(
+        key: const ValueKey('ir-filter'),
+        label: Text(context.t('ir.filter')),
+        selected: _somenteImpostoRenda,
+        onSelected:
+            (_trocandoEspaco || _carregando || _executandoAcao)
+                ? null
+                : (value) async {
+                  setState(() => _somenteImpostoRenda = value);
+                  await _consultar(mostrarFeedback: true);
+                },
+      ),
+      for (final tipo in ['EMPRESA', 'PESSOAL'])
+        ChoiceChip(
+          label: Text(context.t('space.' + tipo)),
+          selected: _service.espacoFinanceiro == tipo,
+          onSelected:
+              (_trocandoEspaco || _carregando || _executandoAcao)
+                  ? null
+                  : (_) => _trocarEspaco(tipo),
+        ),
+      if (_service.espacoFinanceiro == 'EMPRESA')
+        OutlinedButton.icon(
+          icon: const Icon(Icons.payments_outlined),
+          label: Text(context.t('machine.receivables')),
+          onPressed:
+              () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const RecebiveisVendasMobile(),
+                ),
+              ),
+        ),
+      IconButton(
+        tooltip: context.t('space.settings'),
+        onPressed:
+            (_trocandoEspaco || _carregando || _executandoAcao)
+                ? null
+                : _configurarEspaco,
+        icon: const Icon(Icons.account_balance_outlined),
+      ),
+    ],
+  );
+
   static const String _periodoIntervaloPersonalizado =
       'Intervalo personalizado';
 
@@ -64,7 +151,8 @@ class _AgendaFinanceiraMobileScreenState
   late final AgendaFinanceiraAcoesFinanceiras _acoesService =
       widget.acoesFinanceiras ?? AgendaFinanceiraAcoesFinanceiras();
   late final CaixaApiClient _caixaApiClient =
-      widget.caixaApiClient ?? HttpCaixaApiClient();
+      widget.caixaApiClient ??
+      HttpCaixaApiClient(espacoFinanceiro: () => _service.espacoFinanceiro);
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final ScrollController _periodosScrollController = ScrollController();
@@ -207,11 +295,12 @@ class _AgendaFinanceiraMobileScreenState
     final String periodo = _periodoLabelPreferencia(filtros.periodo);
     final String tipo = _tipoLabelPreferencia(filtros.tipo);
     final String status = _statusLabelPreferencia(filtros.status);
-    final Set<String> formasPagamento = filtros.tiposDePagamento
-        .map(_formaPagamentoLabelPorCodigoPreferencia)
-        .whereType<String>()
-        .where(_formasPagamentoFiltro.contains)
-        .toSet();
+    final Set<String> formasPagamento =
+        filtros.tiposDePagamento
+            .map(_formaPagamentoLabelPorCodigoPreferencia)
+            .whereType<String>()
+            .where(_formasPagamentoFiltro.contains)
+            .toSet();
 
     _aplicandoPreferencias = true;
     setState(() {
@@ -241,9 +330,8 @@ class _AgendaFinanceiraMobileScreenState
             _periodoCodigoPreferencia(_periodoSelecionado),
             AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
           ),
-          dataInicio: _usaPeriodoPersonalizado
-              ? _dataInicioPersonalizada
-              : null,
+          dataInicio:
+              _usaPeriodoPersonalizado ? _dataInicioPersonalizada : null,
           dataFim: _usaPeriodoPersonalizado ? _dataFimPersonalizada : null,
           tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
             _tipoCodigoPreferencia(_tipoSelecionado),
@@ -292,9 +380,10 @@ class _AgendaFinanceiraMobileScreenState
   List<Map<String, dynamic>> get _itensConfirmadosFiltrados =>
       _itensConfirmados.where(_passaFiltrosLocais).toList();
 
-  List<Map<String, dynamic>> get _itensSomaveis => _itensAgenda
-      .where((item) => item['status']?.toString() != 'Cancelado')
-      .toList();
+  List<Map<String, dynamic>> get _itensSomaveis =>
+      _itensAgenda
+          .where((item) => item['status']?.toString() != 'Cancelado')
+          .toList();
 
   double get _totalReceberPrevisto =>
       _somar(_itensSomaveis, 'receber', 'valorRestante');
@@ -353,8 +442,9 @@ class _AgendaFinanceiraMobileScreenState
     if (_carregando) return;
     final String? erroPeriodo = _validarPeriodoSelecionado();
     if (erroPeriodo != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(erroPeriodo)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(erroPeriodo)));
       return;
     }
     setState(() => _carregando = true);
@@ -411,9 +501,10 @@ class _AgendaFinanceiraMobileScreenState
     return AgendaFinanceiraConsultaRequest(
       periodo: _periodoRequest(),
       filtros: AgendaFinanceiraFiltrosRequest(
-        tipo: _tipoSelecionado == 'Todos'
-            ? 'TODOS'
-            : _tipoSelecionado.toUpperCase(),
+        tipo:
+            _tipoSelecionado == 'Todos'
+                ? 'TODOS'
+                : _tipoSelecionado.toUpperCase(),
         status: _statusFiltro(),
         origens: <String>[],
         categorias: <String>[],
@@ -422,6 +513,7 @@ class _AgendaFinanceiraMobileScreenState
         centrosCusto: _centrosCustoSelecionados.toList(growable: false),
         clienteFornecedor: null,
         somenteCriticos: false,
+        somenteImpostoRenda: _somenteImpostoRenda,
       ),
       visaoSelecionada: _abas[_abaSelecionada].toUpperCase().replaceAll(
         ' ',
@@ -432,8 +524,8 @@ class _AgendaFinanceiraMobileScreenState
 
   Future<void> _carregarTiposPagamentoConfigurados() async {
     try {
-      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
-          .getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes =
+          await _caixaApiClient.getInformacoesBasicasDoCaixa();
       final List<String> formas = _montarFormasPagamentoFiltro(
         informacoes.tiposRecebimento,
       );
@@ -475,9 +567,10 @@ class _AgendaFinanceiraMobileScreenState
     for (final TiposRecebimento tipo in ativos) {
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       if (codigo.isEmpty) continue;
-      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : (_descricaoPorCodigoTipoFormaPagamento[codigo] ?? codigo);
+      final String descricao =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : (_descricaoPorCodigoTipoFormaPagamento[codigo] ?? codigo);
       if (descricao.isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
       codigosAtualizados[descricao] = codigo;
@@ -691,14 +784,12 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   List<String> _codigosTipoPagamentoPreferencia(Set<String> formasPagamento) {
-    final List<String> codigos =
-        formasPagamento
-            .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
-            .whereType<String>()
-            .where((String codigo) => codigo.trim().isNotEmpty)
-            .toSet()
-            .toList(growable: false)
-          ..sort();
+    final List<String> codigos = formasPagamento
+      .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
+      .whereType<String>()
+      .where((String codigo) => codigo.trim().isNotEmpty)
+      .toSet()
+      .toList(growable: false)..sort();
     return codigos;
   }
 
@@ -740,12 +831,13 @@ class _AgendaFinanceiraMobileScreenState
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens': itensRaw is List
-              ? itensRaw
-                    .whereType<Map<String, dynamic>>()
-                    .map(_mapearItemAgenda)
-                    .toList()
-              : <Map<String, dynamic>>[],
+          'itens':
+              itensRaw is List
+                  ? itensRaw
+                      .whereType<Map<String, dynamic>>()
+                      .map(_mapearItemAgenda)
+                      .toList()
+                  : <Map<String, dynamic>>[],
         });
       }
     }
@@ -761,33 +853,40 @@ class _AgendaFinanceiraMobileScreenState
       ..addAll(
         itens is List
             ? itens
-                  .whereType<Map<String, dynamic>>()
-                  .map(_mapearItemConfirmado)
-                  .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(_mapearItemConfirmado)
+                .toList()
             : <Map<String, dynamic>>[],
       );
   }
 
   Map<String, dynamic> _mapearItemAgenda(Map<String, dynamic> item) {
-    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
-        ? 'pagar'
-        : 'receber';
+    final tipo =
+        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     final valorOriginal = _toDouble(item['valorOriginal'] ?? item['valor']);
-    final valorConfirmado = _toDouble(item['valorConfirmado']);
+    final quitado = const [
+      'PAGO',
+      'RECEBIDO',
+    ].contains(item['status']?.toString().toUpperCase());
+    final valorConfirmado = _toDouble(
+      item['valorConfirmado'] ?? (quitado ? valorOriginal : 0),
+    );
     final valorRestante = _toDouble(
       item['valorRestante'] ?? (valorOriginal - valorConfirmado),
     );
     final acoesRaw = item['acoesDisponiveis'];
-    final acoes = acoesRaw is List
-        ? acoesRaw
-              .map((acao) => _acaoLabel(acao?.toString()))
-              .where((acao) => acao.isNotEmpty)
-              .toList()
-        : <String>[];
+    final acoes =
+        acoesRaw is List
+            ? acoesRaw
+                .map((acao) => _acaoLabel(acao?.toString()))
+                .where((acao) => acao.isNotEmpty)
+                .toList()
+            : <String>[];
 
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
+      'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
       'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
@@ -810,9 +909,10 @@ class _AgendaFinanceiraMobileScreenState
       'centroDeCusto': item['centroDeCusto']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'acoes': acoes.isNotEmpty
-          ? acoes
-          : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
+      'acoes':
+          acoes.isNotEmpty
+              ? acoes
+              : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
       'dataOperacao': item['dataOperacao']?.toString(),
       'dataCompetencia': item['dataCompetencia']?.toString(),
@@ -820,12 +920,12 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
-    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
-        ? 'pagar'
-        : 'receber';
+    final tipo =
+        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
+      'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
@@ -853,9 +953,9 @@ class _AgendaFinanceiraMobileScreenState
   List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) {
     return raw is List
         ? raw
-              .whereType<Map<String, dynamic>>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList()
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
         : <Map<String, dynamic>>[];
   }
 
@@ -870,7 +970,10 @@ class _AgendaFinanceiraMobileScreenState
         if (confirmado == null) continue;
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
-        item['valor'] = confirmado['valorRestante'];
+        item['valor'] =
+            _toDouble(confirmado['valorRestante']) > 0
+                ? confirmado['valorRestante']
+                : item['valorOriginal'];
         item['liquidacoes'] =
             confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
         item['quantidadeConfirmacoes'] =
@@ -886,28 +989,44 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _novoLancamento() async {
     final item = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute<Map<String, dynamic>>(
-        builder: (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
-          service: _service,
-          caixaApiClient: _caixaApiClient,
-        ),
+        builder:
+            (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
+              service: _service,
+              caixaApiClient: _caixaApiClient,
+            ),
       ),
     );
     if (!mounted || item == null) return;
+    final espaco = item['espacoFinanceiro']?.toString();
+    if (espaco != null && espaco != _service.espacoFinanceiro) {
+      await _trocarEspaco(espaco);
+      if (!mounted) return;
+    }
+    if (item['registrarPagamento'] == true) {
+      await _liquidarComFormas(item, parcialInicial: false);
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
-    final itemAtualizado = await Navigator.of(context)
-        .push<Map<String, dynamic>>(
-          MaterialPageRoute<Map<String, dynamic>>(
-            builder: (_) => AgendaFinanceiraLancamentoMobileEditScreen(
+    final itemAtualizado = await Navigator.of(
+      context,
+    ).push<Map<String, dynamic>>(
+      MaterialPageRoute<Map<String, dynamic>>(
+        builder:
+            (_) => AgendaFinanceiraLancamentoMobileEditScreen(
               lancamento: item,
               service: _service,
               caixaApiClient: _caixaApiClient,
             ),
-          ),
-        );
+      ),
+    );
     if (!mounted || itemAtualizado == null) return;
+    if (itemAtualizado['registrarPagamento'] == true) {
+      await _liquidarComFormas(itemAtualizado, parcialInicial: false);
+    }
+    if (!mounted) return;
     await _consultar(mostrarFeedback: true);
   }
 
@@ -952,8 +1071,38 @@ class _AgendaFinanceiraMobileScreenState
     final double valorAberto = _toDouble(
       item['valorRestante'] ?? item['valor'],
     );
+    final destinosFinanceiros =
+        !pagamento &&
+        _service.espacoFinanceiro == 'EMPRESA' &&
+        item['origem']?.toString().toUpperCase() == 'VENDA';
+    String? contaInicial = item['contaFinanceiraId']?.toString();
+    setState(() => _executandoAcao = true);
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(
+        item['id'].toString(),
+      );
+      if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      contaInicial =
+          AgendaFinanceiraLancamentoDetalhe.fromJson(
+            detalhe,
+          ).paraEdicao(item)['contaFinanceiraId']?.toString();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (!mounted) return;
     final resultado = await SixMobileRecebimentoBottomSheet.show(
       context,
+      destinosFinanceiros: destinosFinanceiros,
+      exigirConta: true,
+      espacoFinanceiro: _service.espacoFinanceiro,
+      contaFinanceiraInicial: contaInicial,
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -965,21 +1114,32 @@ class _AgendaFinanceiraMobileScreenState
       valorOriginal: _toDouble(item['valorOriginal'] ?? item['valor']),
       valorJaRecebido: _toDouble(item['valorConfirmado']),
       pagamento: pagamento,
-      tipoInicial: parcialInicial
-          ? SixMobileRecebimentoTipo.parcial
-          : SixMobileRecebimentoTipo.total,
+      tipoInicial:
+          parcialInicial
+              ? SixMobileRecebimentoTipo.parcial
+              : SixMobileRecebimentoTipo.total,
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
+    final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
+    if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
-      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
+      final String? idSessaoCaixa =
+          _service.espacoFinanceiro == 'PESSOAL'
+              ? null
+              : await _buscarIdSessaoCaixaAberta();
       if (resultado.total) {
         await _acoesService.executarTotal(
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraLiquidacaoRequest(
+            contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'TOTAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
@@ -992,8 +1152,13 @@ class _AgendaFinanceiraMobileScreenState
         await _acoesService.executarAbatimento(
           idLancamento: item['id'].toString(),
           request: AgendaFinanceiraParcialRequest(
+            contaFinanceiraId: contaFinanceiraId,
             tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao:
+                DateTime.tryParse(
+                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
+                ) ??
+                DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
@@ -1107,13 +1272,14 @@ class _AgendaFinanceiraMobileScreenState
           physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
           children: <Widget>[
+            _seletorEspaco(),
             SixStaggeredEntry(child: _buildHeaderCard()),
             SizedBox(height: 12),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 60),
               child: _buildFilterCard(),
             ),
-            if (_carregando || _executandoAcao) ...<Widget>[
+            if (_trocandoEspaco || _carregando || _executandoAcao) ...<Widget>[
               SizedBox(height: 10),
               LinearProgressIndicator(minHeight: 3),
             ],
@@ -1265,9 +1431,10 @@ class _AgendaFinanceiraMobileScreenState
                 style: _outlinedCtaStyle(),
               ),
               FilledButton.icon(
-                onPressed: _carregando
-                    ? null
-                    : () => _consultar(mostrarFeedback: true),
+                onPressed:
+                    _carregando
+                        ? null
+                        : () => _consultar(mostrarFeedback: true),
                 icon: Icon(Icons.search_rounded, size: 18),
                 label: Text('Buscar'),
                 style: _filledCtaStyle(),
@@ -1298,17 +1465,18 @@ class _AgendaFinanceiraMobileScreenState
                 selected: selected,
                 visualDensity: VisualDensity.compact,
                 label: Text(periodo),
-                onSelected: _carregando
-                    ? null
-                    : (_) {
-                        setState(() {
-                          _periodoSelecionado = periodo;
-                          if (_usaPeriodoPersonalizado) {
-                            _ajustarPeriodoPersonalizadoSeguro();
-                          }
-                        });
-                        _salvarPreferenciasAgendaFinanceiraMobile();
-                      },
+                onSelected:
+                    _carregando
+                        ? null
+                        : (_) {
+                          setState(() {
+                            _periodoSelecionado = periodo;
+                            if (_usaPeriodoPersonalizado) {
+                              _ajustarPeriodoPersonalizadoSeguro();
+                            }
+                          });
+                          _salvarPreferenciasAgendaFinanceiraMobile();
+                        },
                 selectedColor: _primaryColor,
                 backgroundColor: _softSurfaceColor,
                 side: BorderSide(
@@ -1320,13 +1488,14 @@ class _AgendaFinanceiraMobileScreenState
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
                 ),
-                avatar: selected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 15,
-                        color: _colors.onPrimary,
-                      )
-                    : null,
+                avatar:
+                    selected
+                        ? Icon(
+                          Icons.check_rounded,
+                          size: 15,
+                          color: _colors.onPrimary,
+                        )
+                        : null,
               );
             },
           ),
@@ -1523,8 +1692,8 @@ class _AgendaFinanceiraMobileScreenState
                                       );
                                   final DateTime ultimaData =
                                       limite.isAfter(DateTime(2100, 12, 31))
-                                      ? DateTime(2100, 12, 31)
-                                      : limite;
+                                          ? DateTime(2100, 12, 31)
+                                          : limite;
                                   final DateTime? selecionada =
                                       await _abrirSeletorDataMobile(
                                         sheetContext,
@@ -1538,9 +1707,10 @@ class _AgendaFinanceiraMobileScreenState
                                     return;
                                   }
                                   setModalState(
-                                    () => dataFimTemp = _normalizarData(
-                                      selecionada,
-                                    ),
+                                    () =>
+                                        dataFimTemp = _normalizarData(
+                                          selecionada,
+                                        ),
                                   );
                                 },
                               ),
@@ -1553,16 +1723,16 @@ class _AgendaFinanceiraMobileScreenState
                         title: 'Tipo',
                         values: _tipos,
                         selected: tipoTemp,
-                        onSelected: (value) =>
-                            setModalState(() => tipoTemp = value),
+                        onSelected:
+                            (value) => setModalState(() => tipoTemp = value),
                       ),
                       SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Status',
                         values: _status,
                         selected: statusTemp,
-                        onSelected: (value) =>
-                            setModalState(() => statusTemp = value),
+                        onSelected:
+                            (value) => setModalState(() => statusTemp = value),
                       ),
                       SizedBox(height: 16),
                       _buildFilterOptions(
@@ -1680,12 +1850,13 @@ class _AgendaFinanceiraMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) => DateSelectorMobileBottomSheet(
-        title: titulo,
-        initialDate: dataInicial,
-        firstDate: primeiraData,
-        lastDate: ultimaData,
-      ),
+      builder:
+          (BuildContext context) => DateSelectorMobileBottomSheet(
+            title: titulo,
+            initialDate: dataInicial,
+            firstDate: primeiraData,
+            lastDate: ultimaData,
+          ),
     );
   }
 
@@ -1762,29 +1933,31 @@ class _AgendaFinanceiraMobileScreenState
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: values.map((value) {
-            final bool isMultiSelection = selectedValues != null;
-            final isSelected = isMultiSelection
-                ? (value == 'Todos'
-                      ? selectedValues.isEmpty
-                      : selectedValues.contains(value))
-                : value == selected;
-            return ChoiceChip(
-              selected: isSelected,
-              label: Text(value),
-              onSelected: (_) => onSelected(value),
-              selectedColor: _primaryColor,
-              backgroundColor: _softSurfaceColor,
-              side: BorderSide(
-                color: isSelected ? _primaryColor : _borderColor,
-              ),
-              showCheckmark: false,
-              labelStyle: TextStyle(
-                color: isSelected ? _colors.onPrimary : _titleTextColor,
-                fontWeight: FontWeight.w700,
-              ),
-            );
-          }).toList(),
+          children:
+              values.map((value) {
+                final bool isMultiSelection = selectedValues != null;
+                final isSelected =
+                    isMultiSelection
+                        ? (value == 'Todos'
+                            ? selectedValues.isEmpty
+                            : selectedValues.contains(value))
+                        : value == selected;
+                return ChoiceChip(
+                  selected: isSelected,
+                  label: Text(value),
+                  onSelected: (_) => onSelected(value),
+                  selectedColor: _primaryColor,
+                  backgroundColor: _softSurfaceColor,
+                  side: BorderSide(
+                    color: isSelected ? _primaryColor : _borderColor,
+                  ),
+                  showCheckmark: false,
+                  labelStyle: TextStyle(
+                    color: isSelected ? _colors.onPrimary : _titleTextColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              }).toList(),
         ),
       ],
     );
@@ -1960,15 +2133,16 @@ class _AgendaFinanceiraMobileScreenState
                 tween: Tween<double>(begin: 0, end: item.value),
                 duration: Duration(milliseconds: 650),
                 curve: Curves.easeOutCubic,
-                builder: (context, value, child) => Text(
-                  _formatarMoeda(value),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                builder:
+                    (context, value, child) => Text(
+                      _formatarMoeda(value),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
               ),
             ],
           ),
@@ -2052,9 +2226,10 @@ class _AgendaFinanceiraMobileScreenState
     final double valorAberto = _toDouble(
       item['valorRestante'] ?? item['valor'],
     );
-    final double valorExibido = valorAberto > 0
-        ? valorAberto
-        : _toDouble(item['valorOriginal'] ?? item['valor']);
+    final double valorExibido =
+        valorAberto > 0
+            ? valorAberto
+            : _toDouble(item['valorOriginal'] ?? item['valor']);
     final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
     final String subtitulo =
         '${item['recorrente'] == true ? '${recorrenciaLabel(context, 'badge')} • ' : ''}${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
@@ -2088,9 +2263,10 @@ class _AgendaFinanceiraMobileScreenState
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: tipoEntrada
-                        ? _softBlueColor
-                        : _colors.error.withValues(alpha: 0.12),
+                    color:
+                        tipoEntrada
+                            ? _softBlueColor
+                            : _colors.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -2161,9 +2337,12 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _abrirAcoesLancamento(Map<String, dynamic> item) {
-    final Set<String> acoesInformadas = item['acoes'] is List
-        ? (item['acoes'] as List).map((dynamic acao) => acao.toString()).toSet()
-        : <String>{};
+    final Set<String> acoesInformadas =
+        item['acoes'] is List
+            ? (item['acoes'] as List)
+                .map((dynamic acao) => acao.toString())
+                .toSet()
+            : <String>{};
     acoesInformadas
       ..add('Editar')
       ..add('Detalhes');
@@ -2223,9 +2402,10 @@ class _AgendaFinanceiraMobileScreenState
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: tipoEntrada
-                              ? _softBlueColor
-                              : _colors.error.withValues(alpha: 0.12),
+                          color:
+                              tipoEntrada
+                                  ? _softBlueColor
+                                  : _colors.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Icon(
@@ -2353,13 +2533,14 @@ class _AgendaFinanceiraMobileScreenState
                       child: SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: _executandoAcao
-                              ? null
-                              : () => _executarAcaoDoBottomSheet(
-                                  sheetContext,
-                                  acao,
-                                  item,
-                                ),
+                          onPressed:
+                              _executandoAcao
+                                  ? null
+                                  : () => _executarAcaoDoBottomSheet(
+                                    sheetContext,
+                                    acao,
+                                    item,
+                                  ),
                           icon: Icon(_iconeAcaoAgenda(acao), size: 19),
                           label: Text(acao),
                           style: _outlinedCtaStyle(),
@@ -2421,42 +2602,43 @@ class _AgendaFinanceiraMobileScreenState
       itensPorData.putIfAbsent(data, () => <Map<String, dynamic>>[]).add(item);
     }
     return Column(
-      children: itensPorData.entries.map((entry) {
-        return Container(
-          margin: EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      color: _accentColor,
-                      size: 18,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      entry.key,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
+      children:
+          itensPorData.entries.map((entry) {
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
               ),
-              ...entry.value.map((item) => _buildCalendarioItem(item)),
-            ],
-          ),
-        );
-      }).toList(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          color: _accentColor,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          entry.key,
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...entry.value.map((item) => _buildCalendarioItem(item)),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -2523,9 +2705,10 @@ class _AgendaFinanceiraMobileScreenState
     final fluxoPorMes = <String, Map<String, double>>{};
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
-      final mes = data == null
-          ? 'Sem competência'
-          : '${data.year}-${data.month.toString().padLeft(2, '0')}';
+      final mes =
+          data == null
+              ? 'Sem competência'
+              : '${data.year}-${data.month.toString().padLeft(2, '0')}';
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
       final registro = fluxoPorMes.putIfAbsent(
         mes,
@@ -2546,66 +2729,67 @@ class _AgendaFinanceiraMobileScreenState
     }
     final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
     return Column(
-      children: mesesOrdenados.map((mes) {
-        final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
-        final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
-        final saldo = entrada - saida;
-        return Container(
-          margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children:
+          mesesOrdenados.map((mes) {
+            final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
+            final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
+            final saldo = entrada - saida;
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    mes,
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        mes,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        'Saldo: ${_formatarMoeda(saldo)}',
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'Saldo: ${_formatarMoeda(saldo)}',
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  SizedBox(height: 14),
+                  _buildFluxoBarra(entrada: entrada, saida: saida),
+                  SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _fluxoValor(
+                          'Entradas',
+                          entrada,
+                          Icons.south_west_rounded,
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: _fluxoValor(
+                          'Saídas',
+                          saida,
+                          Icons.north_east_rounded,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              SizedBox(height: 14),
-              _buildFluxoBarra(entrada: entrada, saida: saida),
-              SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _fluxoValor(
-                      'Entradas',
-                      entrada,
-                      Icons.south_west_rounded,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: _fluxoValor(
-                      'Saídas',
-                      saida,
-                      Icons.north_east_rounded,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -2695,69 +2879,73 @@ class _AgendaFinanceiraMobileScreenState
       );
     }
     return Column(
-      children: _itensConfirmados.map((item) {
-        final tipoEntrada = item['tipo'] == 'receber';
-        return Container(
-          margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: _softBlueColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  tipoEntrada
-                      ? Icons.south_west_rounded
-                      : Icons.north_east_rounded,
-                  color: _accentColor,
-                  size: 20,
-                ),
+      children:
+          _itensConfirmados.map((item) {
+            final tipoEntrada = item['tipo'] == 'receber';
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      item['descricao']?.toString() ?? '-',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                      ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _softBlueColor,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      '${item['contato']} • ${item['data']} • ${item['formaPagamento']}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                    child: Icon(
+                      tipoEntrada
+                          ? Icons.south_west_rounded
+                          : Icons.north_east_rounded,
+                      color: _accentColor,
+                      size: 20,
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          item['descricao']?.toString() ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '${item['contato']} • ${item['data']} • ${item['formaPagamento']}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _mutedTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    _formatarMoeda(_toDouble(item['valorConfirmado'])),
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 10),
-              Text(
-                _formatarMoeda(_toDouble(item['valorConfirmado'])),
-                style: TextStyle(
-                  color: _titleTextColor,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -2851,9 +3039,8 @@ class _AgendaFinanceiraMobileScreenState
           ),
           SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed: _carregando
-                ? null
-                : () => _consultar(mostrarFeedback: true),
+            onPressed:
+                _carregando ? null : () => _consultar(mostrarFeedback: true),
             icon: Icon(Icons.refresh_rounded),
             label: Text('Tentar novamente'),
             style: _outlinedCtaStyle(),
@@ -2873,6 +3060,7 @@ class _AgendaFinanceiraMobileScreenState
           item = <String, dynamic>{
             ...item,
             'codigoOperacao': detalhe['codigoOperacao']?.toString(),
+            'dadosEdicao': detalhe['dadosEdicao'],
           };
         }
       } catch (_) {
@@ -2923,6 +3111,13 @@ class _AgendaFinanceiraMobileScreenState
                     ),
                   ),
                   SizedBox(height: 14),
+                  if (AgendaImpostoRenda.fromJson(item).marcado ||
+                      AgendaImpostoRenda.fromJson(item).comprovantes.isNotEmpty)
+                    AgendaImpostoRendaMobileFields(
+                      draft: AgendaImpostoRenda.fromJson(item),
+                      enabled: false,
+                      onChanged: () {},
+                    ),
                   _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
                   _detalheLinha(
                     'Vencimento',
@@ -2945,6 +3140,15 @@ class _AgendaFinanceiraMobileScreenState
                     'Forma de recebimento',
                     item['formaPagamento']?.toString() ?? '-',
                   ),
+                  for (final liquidacao in _mapearLiquidacoes(
+                    item['liquidacoes'],
+                  ))
+                    if ((liquidacao['contaFinanceiraNome']?.toString() ?? '')
+                        .isNotEmpty)
+                      _detalheLinha(
+                        context.t('space.actualAccount'),
+                        '${liquidacao['contaFinanceiraNome']} · ${_formatarMoeda(_toDouble(liquidacao['valorLiquidado']))}',
+                      ),
                   _detalheLinha(
                     'Valor original',
                     _formatarMoeda(_toDouble(item['valorOriginal'])),
@@ -3092,10 +3296,8 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
-    final codigo = item['codigoTipoRecebimento']
-        ?.toString()
-        .trim()
-        .toLowerCase();
+    final codigo =
+        item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
     if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
       return codigo;
     }
@@ -3172,9 +3374,10 @@ class _AgendaFinanceiraMobileScreenState
     if (value is num) return value.toDouble();
     if (value is String) {
       final texto = value.trim();
-      final normalizado = texto.contains(',') && texto.contains('.')
-          ? texto.replaceAll('.', '').replaceAll(',', '.')
-          : texto.replaceAll(',', '.');
+      final normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;

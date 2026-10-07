@@ -32,10 +32,11 @@ abstract class CaixaApiClient {
 }
 
 class HttpCaixaApiClient implements CaixaApiClient {
-  HttpCaixaApiClient({http.Client? httpClient})
+  HttpCaixaApiClient({http.Client? httpClient, this.espacoFinanceiro})
     : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
+  final String Function()? espacoFinanceiro;
 
   Future<Map<String, String>> _getHeaders() async {
     final authService = AuthService();
@@ -52,9 +53,17 @@ class HttpCaixaApiClient implements CaixaApiClient {
   @override
   Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa() async {
     final uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/caixa/informacoes-basicas',
+      espacoFinanceiro == null
+          ? '${AppConfig.baseUrl}/private/api/caixa/informacoes-basicas'
+          : '${AppConfig.baseUrl}/private/api/agenda-financeira/formas-recebimento',
     );
-    final response = await _httpClient.get(uri, headers: await _getHeaders());
+    final response = await _httpClient.get(
+      uri,
+      headers: {
+        ...await _getHeaders(),
+        if (espacoFinanceiro != null) 'espacoFinanceiro': espacoFinanceiro!(),
+      },
+    );
 
     if (response.statusCode != 200) {
       throw CaixaApiException(

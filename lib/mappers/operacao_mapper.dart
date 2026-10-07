@@ -2,37 +2,39 @@ import '../data/models/operacao_models.dart';
 
 class OperacaoRequestMapper {
   OperacaoInserirRequest toRequest(OperacaoVendaInput input) {
-    final dataOperacao = (input.dataOperacao ?? DateTime.now())
-        .toIso8601String();
+    final dataOperacao =
+        (input.dataOperacao ?? DateTime.now()).toIso8601String();
     final receberDepois = input.receberDepois;
 
-    final vendaList = input.itens
-        .where((item) => !item.ehServico)
-        .map(
-          (item) => VendaItemRequest(
-            idSKU: item.idProduto,
-            descricaoProduto: item.nome,
-            qt: item.quantidade,
-            vlUnitario: item.valorUnitario,
-            idColaboradorResponsavelPeloServico: input.idColaborador,
-            nomeColaboradorResponsavel: input.nomeColaborador,
-          ),
-        )
-        .toList();
+    final vendaList =
+        input.itens
+            .where((item) => !item.ehServico)
+            .map(
+              (item) => VendaItemRequest(
+                idSKU: item.idProduto,
+                descricaoProduto: item.nome,
+                qt: item.quantidade,
+                vlUnitario: item.valorUnitario,
+                idColaboradorResponsavelPeloServico: input.idColaborador,
+                nomeColaboradorResponsavel: input.nomeColaborador,
+              ),
+            )
+            .toList();
 
-    final servicoList = input.itens
-        .where((item) => item.ehServico)
-        .map(
-          (item) => ServicoItemRequest(
-            idCodigoUnicoDoProduto: item.idProduto,
-            descricaoProduto: item.nome,
-            qt: item.quantidade,
-            vlUnitario: item.valorUnitario,
-            idColaboradorResponsavelPeloServico: input.idColaborador,
-            nomeColaboradorResponsavel: input.nomeColaborador,
-          ),
-        )
-        .toList();
+    final servicoList =
+        input.itens
+            .where((item) => item.ehServico)
+            .map(
+              (item) => ServicoItemRequest(
+                idCodigoUnicoDoProduto: item.idProduto,
+                descricaoProduto: item.nome,
+                qt: item.quantidade,
+                vlUnitario: item.valorUnitario,
+                idColaboradorResponsavelPeloServico: input.idColaborador,
+                nomeColaboradorResponsavel: input.nomeColaborador,
+              ),
+            )
+            .toList();
 
     final totalTIPO1 = _somarPorCodigo(input.formasPagamento, 'TIPO1');
     final totalTIPO2 = _somarPorCodigo(input.formasPagamento, 'TIPO2');
@@ -50,6 +52,11 @@ class OperacaoRequestMapper {
 
     return OperacaoInserirRequest(
       descricao: input.descricao,
+      recebimentosFinanceiros:
+          input.formasPagamento.isNotEmpty &&
+                  input.formasPagamento.every((f) => f.financeiro != null)
+              ? input.formasPagamento.map((f) => f.financeiro!).toList()
+              : null,
       dataOperacao: dataOperacao,
       tipoDeOperacaoEnum: 'VENDA',
       statusQuitada: !receberDepois,
@@ -59,35 +66,37 @@ class OperacaoRequestMapper {
       servicoList: servicoList,
       // Uma venda parcial permanece não quitada, mas o valor já recebido deve
       // acompanhar a operação para que somente o saldo siga em aberto.
-      objRecebimentosList: !possuiRecebimento
-          ? <RecebimentoRequest>[]
-          : <RecebimentoRequest>[
-              RecebimentoRequest(
-                localDateTimeDoRecebimento: dataOperacao,
-                idUnicoDoColaborador: input.idColaborador,
-                objGrana: GranaRequest(
-                  tipo1: totalTIPO1,
-                  tipo2: totalTIPO2,
-                  tipo3: totalTIPO3,
-                  tipo4: totalTIPO4,
-                  tipo5: totalTIPO5,
-                  tipo6: totalTIPO6,
-                  tipo7: totalTIPO7,
-                  tipo8: totalTIPO8,
-                  tipo9: totalTIPO9,
-                  tipo10: totalTIPO10,
+      objRecebimentosList:
+          !possuiRecebimento
+              ? <RecebimentoRequest>[]
+              : <RecebimentoRequest>[
+                RecebimentoRequest(
+                  localDateTimeDoRecebimento: dataOperacao,
+                  idUnicoDoColaborador: input.idColaborador,
+                  objGrana: GranaRequest(
+                    tipo1: totalTIPO1,
+                    tipo2: totalTIPO2,
+                    tipo3: totalTIPO3,
+                    tipo4: totalTIPO4,
+                    tipo5: totalTIPO5,
+                    tipo6: totalTIPO6,
+                    tipo7: totalTIPO7,
+                    tipo8: totalTIPO8,
+                    tipo9: totalTIPO9,
+                    tipo10: totalTIPO10,
+                  ),
                 ),
-              ),
-            ],
+              ],
       objLogsList: [
         OperacaoLogRequest(
           objInformacoesDoCadastro: InformacoesCadastroRequest(
             idDeQuemCadastrou: input.idColaborador,
             dataCadastro: dataOperacao,
           ),
-          ocorrencia: receberDepois
-              ? 'OPERACAO_DE_VENDA_NAO_LIQUIDADA'
-              : 'OPERACAO_DE_VENDA',
+          ocorrencia:
+              receberDepois
+                  ? 'OPERACAO_DE_VENDA_NAO_LIQUIDADA'
+                  : 'OPERACAO_DE_VENDA',
         ),
       ],
     );
