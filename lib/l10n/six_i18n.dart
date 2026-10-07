@@ -112,6 +112,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
     'machine.cashAutomatic': 'Entrada automática no caixa',
+    'pdv.receipt.amountEntered': 'Valor informado',
+    'pdv.receipt.readyToFinish': 'Tudo pronto para concluir',
+    'pdv.receipt.readyPartial': 'Tudo pronto para confirmar o parcial',
     'ir.title': 'Separar para o Imposto de Renda',
     'ir.hint': 'Marcar para revisão na declaração. Não indica dedutibilidade.',
     'ir.limit':
@@ -2903,6 +2906,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Deactivation preserves entries and history.',
     'space.account': 'Planned account',
     'machine.cashAutomatic': 'Automatically received in cash',
+    'pdv.receipt.amountEntered': 'Entered amount',
+    'pdv.receipt.readyToFinish': 'Ready to complete',
+    'pdv.receipt.readyPartial': 'Ready to confirm partial payment',
     'ir.title': 'Set aside for income tax',
     'ir.hint':
         'Mark for tax return review. This does not indicate deductibility.',
@@ -5479,6 +5485,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
     'machine.cashAutomatic': 'Entrada automática en caja',
+    'pdv.receipt.amountEntered': 'Importe indicado',
+    'pdv.receipt.readyToFinish': 'Todo listo para finalizar',
+    'pdv.receipt.readyPartial': 'Todo listo para confirmar el pago parcial',
     'ir.title': 'Separar para el impuesto sobre la renta',
     'ir.hint':
         'Marcar para revisar en la declaración. No indica deducibilidad.',
