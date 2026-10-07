@@ -2443,12 +2443,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                             : Icons.payments_rounded),
                 label: Text(labelAcaoPrincipal, maxLines: 2, textAlign: TextAlign.center),
                 style: prontoParaConfirmar
-                    ? _pdvFilledCtaStyle().merge(FilledButton.styleFrom(
+                    ? FilledButton.styleFrom(
                         backgroundColor: tokens.success,
                         foregroundColor: tokens.onSuccess,
                         minimumSize: const Size(0, 52),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      ))
+                      ).merge(_pdvFilledCtaStyle())
                     : _pdvFilledCtaStyle(),
               ),
 
