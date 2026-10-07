@@ -199,6 +199,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   late List<_FormaPagamentoWeb> _formasPagamento;
   bool _salvandoOperacao = false;
   bool _operacaoConcluida = false;
+  bool _revisandoRecebimento = false;
+  bool _preparandoResumo = false;
+  List<FormaPagamentoSelecionada>? _formasPreparadas;
+
+  bool get _exibirResumo =>
+      _revisandoRecebimento && !_carregandoFormas && _distribuicaoValida();
   bool _carregandoFormas = true;
   bool _estadoInicialAplicado = false;
   late bool _recebimentoParcial;
@@ -301,6 +307,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     );
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
     _recebimentoParcial = widget.recebimentoParcialInicial;
+    _revisandoRecebimento =
+        !widget.somenteSelecao && widget.formasPagamentoIniciais.isNotEmpty;
+    if (widget.formasPagamentoIniciais.isNotEmpty &&
+        widget.formasPagamentoIniciais.every((forma) => forma.financeiro != null)) {
+      _formasPreparadas = List.of(widget.formasPagamentoIniciais);
+    }
     _tipoRecebimentoEscolhido =
         widget.formasPagamentoIniciais.isNotEmpty ||
         widget.descricoesFormasIniciais.isNotEmpty;
@@ -448,6 +460,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         continue;
       }
       _controllerFor(forma).text = forma.valor.toStringAsFixed(2);
+    }
+    if (!_distribuicaoValida()) {
+      setState(() => _revisandoRecebimento = false);
     }
   }
 
@@ -871,7 +886,16 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   }
 
   Future<void> _confirmarOperacao() async {
-    if (_salvandoOperacao || _operacaoConcluida) return;
+    if (_salvandoOperacao || _operacaoConcluida || _preparandoResumo) return;
+    setState(() => _preparandoResumo = true);
+    try {
+      await _processarConfirmacao();
+    } finally {
+      if (mounted) setState(() => _preparandoResumo = false);
+    }
+  }
+
+  Future<void> _processarConfirmacao() async {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     List<FormaPagamentoSelecionada> formasSelecionadas =
         _montarFormasSelecionadas();
@@ -910,30 +934,44 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       return;
     }
 
-    final destinos = await selecionarDestinosWeb(
-      context,
-      formasSelecionadas
-          .map(
-            (f) => RecebimentoFormaInput(
-              codigo: f.codigo,
-              valor: f.valor,
-              descricao: _mapaDescricaoSelecionada()[f.codigo],
-            ),
-          )
-          .toList(),
-    );
-    if (destinos == null || !mounted) return;
-    formasSelecionadas =
-        destinos
+    final preparadas = _formasPreparadas;
+    final bool podeReutilizar = preparadas != null &&
+        preparadas.length == formasSelecionadas.length &&
+        formasSelecionadas.every((forma) => preparadas.any((preparada) =>
+            preparada.codigo == forma.codigo &&
+            (preparada.valor - forma.valor).abs() < 0.001));
+    if (podeReutilizar) {
+      formasSelecionadas = List.of(preparadas!);
+    } else {
+      final destinos = await selecionarDestinosWeb(
+        context,
+        formasSelecionadas
             .map(
-              (f) => FormaPagamentoSelecionada(
-                codigo: f.codigo.toUpperCase(),
+              (f) => RecebimentoFormaInput(
+                codigo: f.codigo,
                 valor: f.valor,
-                financeiro: f,
+                descricao: _mapaDescricaoSelecionada()[f.codigo],
               ),
             )
-            .toList();
+            .toList(),
+      );
+      if (destinos == null || !mounted) return;
+      formasSelecionadas =
+          destinos
+              .map(
+                (f) => FormaPagamentoSelecionada(
+                  codigo: f.codigo.toUpperCase(),
+                  valor: f.valor,
+                  financeiro: f,
+                ),
+              )
+              .toList();
+      _formasPreparadas = formasSelecionadas;
+    }
     if (widget.somenteSelecao) {
+      setState(() => _preparandoResumo = false);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
       widget.onSelecaoConfirmada?.call(
         RecebimentoPagamentoSelecaoResultado(
           formasPagamento: formasSelecionadas,
@@ -945,48 +983,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       return;
     }
 
-    final bool confirmar =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              icon: Icon(
-                Icons.verified_outlined,
-                color: Theme.of(context).colorScheme.primary,
-                size: 34,
-              ),
-              title: Text(
-                _recebimentoParcial
-                    ? _txt('recebimento.receberParcial', 'Receber parcial')
-                    : (l10n?.pdvWebConfirmReceiveAction ??
-                        'Confirmar recebimento'),
-              ),
-              content: Text(
-                _recebimentoParcial
-                    ? '${_txt('pdv.receipt.confirmPartialMessage', 'Deseja receber')} ${_formatarValor(totalDistribuido)} ${_txt('pdv.receipt.keepOpenBalance', 'e manter o saldo restante em aberto')}?'
-                    : '${l10n?.pdvWebConfirmReceiveMessagePrefix ?? 'Deseja confirmar o recebimento no valor de'} ${_formatarValor(widget.valorTotalVenda)}?',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(l10n?.pdvWebBackAction ?? 'Voltar'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text(
-                    _recebimentoParcial
-                        ? _txt('recebimento.receberParcial', 'Receber parcial')
-                        : (l10n?.pdvWebConfirmReceiveAction ??
-                            'Confirmar recebimento'),
-                  ),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-
-    if (!confirmar) return;
+    if (!_exibirResumo) {
+      setState(() => _revisandoRecebimento = true);
+      return;
+    }
 
     if (!await _executarProcedimentoAntesDeFinalizarVenda()) {
       return;
@@ -1061,7 +1061,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
       if (!mounted) return;
       // Atualiza o PopScope antes de o callback tentar fechar a rota.
-      setState(() => _salvandoOperacao = false);
+      setState(() {
+          _salvandoOperacao = false;
+          _preparandoResumo = false;
+        });
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
       if (widget.embedded) {
@@ -1077,7 +1080,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       );
     } finally {
       if (mounted) {
-        setState(() => _salvandoOperacao = false);
+        setState(() {
+          _salvandoOperacao = false;
+          _preparandoResumo = false;
+        });
       }
     }
   }
@@ -1145,7 +1151,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
           ),
           IconButton(
             tooltip: l10n?.pdvWebClosePaymentAction ?? 'Fechar recebimento',
-            onPressed: _salvandoOperacao ? null : _fecharTela,
+            onPressed: _salvandoOperacao || _preparandoResumo ? null : _fecharTela,
             icon: const Icon(Icons.close_rounded),
           ),
         ],
@@ -1659,6 +1665,43 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     );
   }
 
+  Widget _buildResumoRecebimento() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            _txt('pdv.receipt.summary', 'Resumo do recebimento'),
+            style: TextStyle(color: tokens.secondaryText),
+          ),
+          const SizedBox(height: 12),
+          for (final forma in _formasPagamentoVisiveis())
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: <Widget>[
+                  Icon(forma.icone, size: 20, color: tokens.secondaryText),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(forma.titulo)),
+                  const SizedBox(width: 12),
+                  Text(_formatarValor(forma.valor),
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          if (_recebimentoParcial)
+            Text(
+              '${_txt('pdv.receipt.remainingOpen', 'Saldo em aberto')}: '
+              '${_formatarValor(_valorRestante())}',
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBarraAcoes() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
@@ -1681,22 +1724,36 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: tokens.surfaceElevated,
         border: Border(top: BorderSide(color: tokens.divider)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 10,
+        runSpacing: 10,
         children: <Widget>[
           TextButton(
             style: cancelActionStyle,
-            onPressed: _salvandoOperacao ? null : _fecharTela,
+            onPressed: _salvandoOperacao || _preparandoResumo ? null : _fecharTela,
             child: Text(_txt('common.cancel', 'Cancelar')),
           ),
-          const SizedBox(width: 10),
+          if (_exibirResumo)
+            OutlinedButton.icon(
+              onPressed: _salvandoOperacao || _preparandoResumo
+                  ? null
+                  : () => setState(() {
+                      _revisandoRecebimento = false;
+                      _formasPreparadas = null;
+                    }),
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(_txt('common.edit', 'Editar')),
+            ),
           FilledButton.icon(
             onPressed:
-                !_salvandoOperacao && !_operacaoConcluida && distribuicaoValida
+                !_salvandoOperacao && !_preparandoResumo &&
+                        !_carregandoFormas && !_operacaoConcluida && distribuicaoValida
                     ? _confirmarOperacao
                     : null,
             icon:
@@ -1710,7 +1767,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             label: Text(
               _salvandoOperacao
                   ? (l10n?.pdvWebProcessingReceiveAction ?? 'Processando...')
-                  : (widget.somenteSelecao
+                  : (!widget.somenteSelecao && !_exibirResumo
+                      ? _txt('common.continue', 'Continuar')
+                      : widget.somenteSelecao
                       ? (l10n?.pdvWebConfirmDistributionAction ??
                           'Confirmar distribuição')
                       : (_recebimentoParcial
@@ -1722,6 +1781,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                               'Confirmar recebimento'))),
             ),
             style: FilledButton.styleFrom(
+              backgroundColor: _exibirResumo ? tokens.success : null,
+              foregroundColor: _exibirResumo ? tokens.onSuccess : null,
               minimumSize: const Size(0, 48),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               shape: RoundedRectangleBorder(
@@ -1770,7 +1831,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         AppLocalizations.of(context)?.pdvWebPaymentOverlayTitle ??
         'Recebimento';
     final Widget conteudo = PopScope(
-      canPop: !_salvandoOperacao,
+      canPop: !_salvandoOperacao && !_preparandoResumo,
       child: Semantics(
         namesRoute: true,
         label: routeLabel,
@@ -1796,7 +1857,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                     children: <Widget>[
                       _buildCabecalhoCompacto(),
                       Divider(height: 1, color: tokens.divider),
-                      Expanded(child: _buildPainelPrincipal()),
+                      Expanded(child: _exibirResumo
+                          ? _buildResumoRecebimento()
+                          : _buildPainelPrincipal()),
                       _buildBarraAcoes(),
                     ],
                   ),
@@ -1836,8 +1899,22 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       ),
     );
 
+    final Widget painel = LayoutBuilder(
+      builder: (context, constraints) => Align(
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: double.infinity,
+          height: _exibirResumo
+              ? (280.0 + _formasPagamentoVisiveis().length * 48 +
+                      (_recebimentoParcial ? 40 : 0))
+                  .clamp(0.0, constraints.maxHeight).toDouble()
+              : constraints.maxHeight,
+          child: conteudo,
+        ),
+      ),
+    );
     if (widget.embedded) {
-      return conteudo;
+      return painel;
     }
 
     return Scaffold(
@@ -1848,7 +1925,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 680, maxHeight: 780),
-              child: conteudo,
+              child: painel,
             ),
           ),
         ),
