@@ -11,6 +11,15 @@ class DestinoRecebimentoDraft {
       taxa = origem.taxa,
       valor = origem.valor;
   final RecebimentoFormaInput origem;
+  bool get dinheiro => origem.codigo.trim().toLowerCase() == 'tipo1';
+
+  void direcionarAoCaixa(String id) {
+    contaId = id;
+    maquininhaId = null;
+    futuro = false;
+    taxa = 0;
+  }
+
   String? contaId, maquininhaId;
   bool futuro;
   DateTime data;

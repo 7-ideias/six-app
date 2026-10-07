@@ -40,6 +40,7 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
       widget.service ?? ConfiguracaoFinanceiraService('EMPRESA');
   List<ConfiguracaoFinanceira> _contas = [], _maquinas = [];
   bool _loading = true, _erro = false;
+  bool _erroCaixa = false;
   @override
   void initState() {
     super.initState();
@@ -56,13 +57,29 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
     setState(() {
       _loading = true;
       _erro = false;
+      _erroCaixa = false;
     });
     try {
       final result = await Future.wait([
         _service.listar('CONTAS'),
-        _service.listar('MAQUININHAS'),
+        _drafts.any((d) => !d.dinheiro)
+            ? _service.listar('MAQUININHAS')
+            : Future.value(<ConfiguracaoFinanceira>[]),
       ]);
       if (!mounted) return;
+      try {
+        _service.direcionarDinheiroAoCaixa(_drafts, result[0]);
+      } on StateError {
+        _erroCaixa = true;
+        rethrow;
+      }
+      if (_drafts.isNotEmpty &&
+          _drafts.every((d) => d.dinheiro) &&
+          distribuicaoFinanceiraValida(_drafts, widget.formas)) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
+        Navigator.pop(context, _drafts.map((d) => d.toInput()).toList());
+        return;
+      }
       setState(() {
         _contas = result[0];
         _maquinas = result[1];
@@ -119,6 +136,18 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
 
   Widget _item(DestinoRecebimentoDraft d, int index) {
     final locale = context.watch<LocaleSettingsProvider>();
+    if (d.dinheiro) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            '${d.origem.descricao ?? d.origem.codigo}: '
+            '${locale.formatCurrency(d.valor)} · '
+            '${context.t('machine.cashAutomatic')}',
+          ),
+        ),
+      );
+    }
     final fields = <Widget>[
       TextFormField(
         key: ValueKey('valor-$index-${_drafts.length}'),
@@ -243,7 +272,13 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
                       ? Center(
                         child: TextButton(
                           onPressed: _load,
-                          child: Text(context.t('space.retry')),
+                          child: Text(
+                            context.t(
+                              _erroCaixa
+                                  ? 'machine.cashConfiguration'
+                                  : 'space.retry',
+                            ),
+                          ),
                         ),
                       )
                       : ListView(
