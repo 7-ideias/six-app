@@ -93,5 +93,19 @@ void main() {
     !distribuicaoFinanceiraValida([DestinoRecebimentoDraft(a), other], [a, b]),
     'Troca de forma com mesmo total aceita',
   );
+  final cash = DestinoRecebimentoDraft(const RecebimentoFormaInput(
+    codigo: 'TIPO1', valor: 100, contaFinanceiraId: 'legada',
+    maquininhaId: 'legada', taxa: 5, recebimentoFuturo: true,
+    dataPrevista: '2026-10-10',
+  ));
+  cash.contaId = null;
+  check(cash.valido, 'Dinheiro exigiu conta financeira');
+  final cashInput = cash.toInput();
+  check(cashInput.contaFinanceiraId == null && cashInput.maquininhaId == null,
+      'Dinheiro manteve destino financeiro legado');
+  check(cashInput.taxa == 0 && !cashInput.recebimentoFuturo && cashInput.dataPrevista == null,
+      'Dinheiro manteve taxa ou previsão bancária');
+  check(distribuicaoFinanceiraValida([cash, DestinoRecebimentoDraft(a)], [cash.origem, a]),
+      'Pagamento misto válido rejeitado');
   print('$checks verificações de maquininhas passaram.');
 }
