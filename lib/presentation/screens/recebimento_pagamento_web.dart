@@ -198,6 +198,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   late List<_FormaPagamentoWeb> _formasPagamento;
   bool _salvandoOperacao = false;
+  bool _operacaoConcluida = false;
   bool _carregandoFormas = true;
   bool _estadoInicialAplicado = false;
   late bool _recebimentoParcial;
@@ -870,6 +871,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   }
 
   Future<void> _confirmarOperacao() async {
+    if (_salvandoOperacao || _operacaoConcluida) return;
     final AppLocalizations? l10n = AppLocalizations.of(context);
     List<FormaPagamentoSelecionada> formasSelecionadas =
         _montarFormasSelecionadas();
@@ -1010,6 +1012,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
       if (!mounted) return;
 
+      _operacaoConcluida = true;
       final String uuidOperacao = response.uuid.trim();
       if (uuidOperacao.isNotEmpty) {
         final _DecisaoImpressao decisao =
@@ -1056,6 +1059,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         }
       }
 
+      if (!mounted) return;
+      // Atualiza o PopScope antes de o callback tentar fechar a rota.
+      setState(() => _salvandoOperacao = false);
+      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
       if (widget.embedded) {
         widget.onSuccess?.call();
@@ -1689,7 +1696,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
           const SizedBox(width: 10),
           FilledButton.icon(
             onPressed:
-                !_salvandoOperacao && distribuicaoValida
+                !_salvandoOperacao && !_operacaoConcluida && distribuicaoValida
                     ? _confirmarOperacao
                     : null,
             icon:
