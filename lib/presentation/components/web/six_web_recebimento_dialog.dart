@@ -1,3 +1,5 @@
+import 'conta_financeira_web_field.dart';
+import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'dart:ui' as ui;
 import 'destinos_recebimento_web.dart';
 
@@ -59,6 +61,10 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     this.permitirParcial = true,
     this.pagamento = false,
     this.destinosFinanceiros = false,
+    this.exigirConta = false,
+    this.espacoFinanceiro = 'EMPRESA',
+    this.contaFinanceiraInicial,
+    this.contaService,
     this.tipoInicial = SixWebRecebimentoTipo.total,
     this.observacaoInicial,
     this.codigoTipoInicial,
@@ -72,6 +78,10 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final bool permitirParcial;
   final bool pagamento;
   final bool destinosFinanceiros;
+  final bool exigirConta;
+  final String espacoFinanceiro;
+  final String? contaFinanceiraInicial;
+  final ConfiguracaoFinanceiraService? contaService;
   final SixWebRecebimentoTipo tipoInicial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
@@ -85,6 +95,10 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     bool permitirParcial = true,
     bool pagamento = false,
     bool destinosFinanceiros = false,
+    bool exigirConta = false,
+    String espacoFinanceiro = 'EMPRESA',
+    String? contaFinanceiraInicial,
+    ConfiguracaoFinanceiraService? contaService,
     SixWebRecebimentoTipo tipoInicial = SixWebRecebimentoTipo.total,
     String? observacaoInicial,
     String? codigoTipoInicial,
@@ -115,6 +129,10 @@ class SixWebRecebimentoDialog extends StatefulWidget {
             permitirParcial: permitirParcial,
             pagamento: pagamento,
             destinosFinanceiros: destinosFinanceiros,
+            exigirConta: exigirConta,
+            espacoFinanceiro: espacoFinanceiro,
+            contaFinanceiraInicial: contaFinanceiraInicial,
+            contaService: contaService,
             tipoInicial: tipoInicial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
@@ -149,6 +167,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   bool _carregandoTipos = true;
   bool _processando = false;
   String? _erroValor;
+  String? _contaFinanceiraId;
   SixWebRecebimentoTipo _tipo = SixWebRecebimentoTipo.total;
   List<SixWebTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
 
@@ -195,6 +214,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   @override
   void initState() {
     super.initState();
+    _contaFinanceiraId = widget.contaFinanceiraInicial;
     _tipo =
         widget.permitirParcial
             ? widget.tipoInicial
@@ -335,6 +355,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   }
 
   Future<void> _confirmar() async {
+    if (widget.exigirConta && (_contaFinanceiraId?.trim().isEmpty ?? true)) {
+      setState(
+        () => _erroValor = context.t('agenda.settlement.accountRequired'),
+      );
+      return;
+    }
     if (_processando) return;
     final Set<String> codigos = <String>{};
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
@@ -366,6 +392,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       }
       recebimentos.add(
         RecebimentoFormaInput(
+          contaFinanceiraId: widget.exigirConta ? _contaFinanceiraId : null,
           codigo: forma.opcao.codigoTipo,
           descricao: forma.opcao.descricao,
           valor: valorForma,
@@ -787,6 +814,28 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                           ),
                                         if (widget.permitirParcial)
                                           const SizedBox(height: 16),
+                                        if (widget.exigirConta) ...[
+                                          ContaFinanceiraWebField(
+                                            key: const ValueKey(
+                                              'settlement-account',
+                                            ),
+                                            enabled: !_processando,
+                                            espaco: widget.espacoFinanceiro,
+                                            service: widget.contaService,
+                                            value: _contaFinanceiraId,
+                                            label: context.t(
+                                              widget.pagamento
+                                                  ? 'agenda.settlement.sourceAccount'
+                                                  : 'agenda.settlement.destinationAccount',
+                                            ),
+                                            onChanged:
+                                                (value) => setState(() {
+                                                  _contaFinanceiraId = value;
+                                                  _erroValor = null;
+                                                }),
+                                          ),
+                                          const SizedBox(height: 14),
+                                        ],
                                         _formasRecebimentoSection(),
                                         const SizedBox(height: 14),
                                         TextField(

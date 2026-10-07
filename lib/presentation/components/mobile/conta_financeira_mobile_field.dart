@@ -131,12 +131,14 @@ class ContaFinanceiraMobileField extends StatefulWidget {
     required this.espaco,
     required this.onChanged,
     this.value,
+    this.label,
     this.enabled = true,
     this.service,
   });
   final String espaco;
   final ConfiguracaoFinanceiraService? service;
   final String? value;
+  final String? label;
   final ValueChanged<String?> onChanged;
   final bool enabled;
   @override
@@ -204,7 +206,7 @@ class _ContaFinanceiraMobileFieldState
                 }
               },
       icon: const Icon(Icons.account_balance_outlined),
-      label: Text('${context.t('space.account')}: $label'),
+      label: Text('${widget.label ?? context.t('space.account')}: $label'),
     );
   }
 }

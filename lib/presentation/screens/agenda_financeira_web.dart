@@ -1,6 +1,5 @@
 import 'recebiveis_vendas_web.dart';
 import 'configuracoes_espaco_web.dart';
-import '../components/web/conta_financeira_web_field.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_financial_launch_delete_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
@@ -1259,12 +1258,38 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final double valorAberto = _toDouble(
       item['valorRestante'] ?? item['valor'],
     );
+    final destinosFinanceiros =
+        !pagamento &&
+        _service.espacoFinanceiro == 'EMPRESA' &&
+        item['origem']?.toString().toUpperCase() == 'VENDA';
+    String? contaInicial = item['contaFinanceiraId']?.toString();
+    setState(() => _executandoAcao = true);
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(
+        item['id'].toString(),
+      );
+      if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      contaInicial =
+          AgendaFinanceiraLancamentoDetalhe.fromJson(
+            detalhe,
+          ).paraEdicao(item)['contaFinanceiraId']?.toString();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (!mounted) return;
     final resultado = await SixWebRecebimentoDialog.show(
       context,
-      destinosFinanceiros:
-          !pagamento &&
-          _service.espacoFinanceiro == 'EMPRESA' &&
-          item['origem']?.toString().toUpperCase() == 'VENDA',
+      destinosFinanceiros: destinosFinanceiros,
+      exigirConta: true,
+      espacoFinanceiro: _service.espacoFinanceiro,
+      contaFinanceiraInicial: contaInicial,
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -1282,9 +1307,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId =
-        resultado.recebimentos.first.contaFinanceiraId ??
-        await selecionarContaWeb(context, _service.espacoFinanceiro);
+    final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
     if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa =

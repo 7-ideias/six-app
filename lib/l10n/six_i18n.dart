@@ -111,6 +111,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível salvar. Verifique sua permissão e tente novamente.',
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
+    'agenda.settlement.sourceAccount': 'Conta de saída',
+    'agenda.settlement.destinationAccount': 'Conta de destino',
+    'agenda.settlement.accountRequired': 'Selecione a conta para confirmar.',
+
     'space.none': 'Não informada',
     'paymentSettings.title': 'Formas de recebimento',
     'paymentSettings.hint':
@@ -2882,6 +2886,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.saveError': 'Unable to save. Check your permission and try again.',
     'space.history': 'Deactivation preserves entries and history.',
     'space.account': 'Planned account',
+    'agenda.settlement.sourceAccount': 'Payment account',
+    'agenda.settlement.destinationAccount': 'Receiving account',
+    'agenda.settlement.accountRequired': 'Select an account to confirm.',
+
     'space.none': 'Not specified',
     'paymentSettings.title': 'Payment methods',
     'paymentSettings.hint':
@@ -5438,6 +5446,11 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudo guardar. Revise sus permisos e inténtelo de nuevo.',
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
+    'agenda.settlement.sourceAccount': 'Cuenta de salida',
+    'agenda.settlement.destinationAccount': 'Cuenta de destino',
+    'agenda.settlement.accountRequired':
+        'Seleccione una cuenta para confirmar.',
+
     'space.none': 'Sin especificar',
     'paymentSettings.title': 'Formas de pago',
     'paymentSettings.hint':

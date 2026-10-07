@@ -1,6 +1,5 @@
 import 'recebiveis_vendas_mobile.dart';
 import 'configuracoes_espaco_mobile.dart';
-import '../components/mobile/conta_financeira_mobile_field.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
@@ -1041,12 +1040,38 @@ class _AgendaFinanceiraMobileScreenState
     final double valorAberto = _toDouble(
       item['valorRestante'] ?? item['valor'],
     );
+    final destinosFinanceiros =
+        !pagamento &&
+        _service.espacoFinanceiro == 'EMPRESA' &&
+        item['origem']?.toString().toUpperCase() == 'VENDA';
+    String? contaInicial = item['contaFinanceiraId']?.toString();
+    setState(() => _executandoAcao = true);
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(
+        item['id'].toString(),
+      );
+      if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      contaInicial =
+          AgendaFinanceiraLancamentoDetalhe.fromJson(
+            detalhe,
+          ).paraEdicao(item)['contaFinanceiraId']?.toString();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.t('space.retry'))));
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (!mounted) return;
     final resultado = await SixMobileRecebimentoBottomSheet.show(
       context,
-      destinosFinanceiros:
-          !pagamento &&
-          _service.espacoFinanceiro == 'EMPRESA' &&
-          item['origem']?.toString().toUpperCase() == 'VENDA',
+      destinosFinanceiros: destinosFinanceiros,
+      exigirConta: true,
+      espacoFinanceiro: _service.espacoFinanceiro,
+      contaFinanceiraInicial: contaInicial,
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -1066,9 +1091,7 @@ class _AgendaFinanceiraMobileScreenState
       caixaApiClient: _caixaApiClient,
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId =
-        resultado.recebimentos.first.contaFinanceiraId ??
-        await selecionarContaMobile(context, _service.espacoFinanceiro);
+    final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
     if (contaFinanceiraId == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa =
