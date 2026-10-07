@@ -1386,7 +1386,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
               _buildTextField(
                 controller: _categoriaController,
                 label: _label('category'),
-                requiredField: true,
+                requiredField: false,
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1456,7 +1456,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           _buildTextField(
             controller: _responsavelController,
             label: _label('responsible'),
-            requiredField: true,
+            requiredField: false,
           ),
           const SizedBox(height: 20),
           AgendaRecorrenciaWebFields(
