@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
 import 'recebiveis_vendas_mobile.dart';
 import 'configuracoes_espaco_mobile.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
@@ -77,11 +79,25 @@ class _AgendaFinanceiraMobileScreenState
     if (mounted) await _carregarCentrosCusto();
   }
 
+  bool _somenteImpostoRenda = false;
+
   Widget _seletorEspaco() => Wrap(
     spacing: 8,
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
+      FilterChip(
+        key: const ValueKey('ir-filter'),
+        label: Text(context.t('ir.filter')),
+        selected: _somenteImpostoRenda,
+        onSelected:
+            (_trocandoEspaco || _carregando || _executandoAcao)
+                ? null
+                : (value) async {
+                  setState(() => _somenteImpostoRenda = value);
+                  await _consultar(mostrarFeedback: true);
+                },
+      ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
         ChoiceChip(
           label: Text(context.t('space.' + tipo)),
@@ -497,6 +513,7 @@ class _AgendaFinanceiraMobileScreenState
         centrosCusto: _centrosCustoSelecionados.toList(growable: false),
         clienteFornecedor: null,
         somenteCriticos: false,
+        somenteImpostoRenda: _somenteImpostoRenda,
       ),
       visaoSelecionada: _abas[_abaSelecionada].toUpperCase().replaceAll(
         ' ',
@@ -3043,6 +3060,7 @@ class _AgendaFinanceiraMobileScreenState
           item = <String, dynamic>{
             ...item,
             'codigoOperacao': detalhe['codigoOperacao']?.toString(),
+            'dadosEdicao': detalhe['dadosEdicao'],
           };
         }
       } catch (_) {
@@ -3093,6 +3111,13 @@ class _AgendaFinanceiraMobileScreenState
                     ),
                   ),
                   SizedBox(height: 14),
+                  if (AgendaImpostoRenda.fromJson(item).marcado ||
+                      AgendaImpostoRenda.fromJson(item).comprovantes.isNotEmpty)
+                    AgendaImpostoRendaMobileFields(
+                      draft: AgendaImpostoRenda.fromJson(item),
+                      enabled: false,
+                      onChanged: () {},
+                    ),
                   _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
                   _detalheLinha(
                     'Vencimento',

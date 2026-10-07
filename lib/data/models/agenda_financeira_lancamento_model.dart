@@ -463,6 +463,7 @@ class AgendaFinanceiraFiltrosRequest {
     required this.centrosCusto,
     this.clienteFornecedor,
     required this.somenteCriticos,
+    this.somenteImpostoRenda = false,
   });
 
   final String tipo;
@@ -474,6 +475,7 @@ class AgendaFinanceiraFiltrosRequest {
   final List<String> centrosCusto;
   final String? clienteFornecedor;
   final bool somenteCriticos;
+  final bool somenteImpostoRenda;
 
   Map<String, dynamic> toJson() {
     return {
@@ -486,6 +488,7 @@ class AgendaFinanceiraFiltrosRequest {
       'centrosCusto': centrosCusto,
       'clienteFornecedor': clienteFornecedor,
       'somenteCriticos': somenteCriticos,
+      'somenteImpostoRenda': somenteImpostoRenda,
     };
   }
 }

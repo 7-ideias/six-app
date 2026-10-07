@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
 import 'recebiveis_vendas_web.dart';
 import 'configuracoes_espaco_web.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
@@ -73,11 +75,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (mounted) await _carregarCentrosCusto();
   }
 
+  bool _somenteImpostoRenda = false;
+
   Widget _seletorEspaco() => Wrap(
     spacing: 8,
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
+      FilterChip(
+        key: const ValueKey('ir-filter'),
+        label: Text(context.t('ir.filter')),
+        selected: _somenteImpostoRenda,
+        onSelected:
+            (_trocandoEspaco || _carregando || _executandoAcao)
+                ? null
+                : (value) async {
+                  setState(() => _somenteImpostoRenda = value);
+                  await _consultar(mostrarFeedback: true);
+                },
+      ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
         ChoiceChip(
           label: Text(context.t('space.' + tipo)),
@@ -538,6 +554,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         centrosCusto: _centrosCustoSelecionados.toList(growable: false),
         clienteFornecedor: null,
         somenteCriticos: false,
+        somenteImpostoRenda: _somenteImpostoRenda,
       ),
       visaoSelecionada:
           _abaSelecionada == 0
@@ -3409,6 +3426,15 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                       ),
                                     )
                                     .toList(),
+                              ),
+                            if (AgendaImpostoRenda.fromJson(detalhe).marcado ||
+                                AgendaImpostoRenda.fromJson(
+                                  detalhe,
+                                ).comprovantes.isNotEmpty)
+                              AgendaImpostoRendaWebFields(
+                                draft: AgendaImpostoRenda.fromJson(detalhe),
+                                enabled: false,
+                                onChanged: () {},
                               ),
                             if (comprovantes.isNotEmpty)
                               _section(

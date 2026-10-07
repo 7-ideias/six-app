@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
 import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -170,6 +172,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
   final String _uuidCriacao = 'web-${DateTime.now().microsecondsSinceEpoch}';
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
+  AgendaImpostoRenda _ir = AgendaImpostoRenda();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late AgendaFinanceiraLancamentoService _service =
       widget.service ?? AgendaFinanceiraLancamentoService();
@@ -309,6 +313,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _preencherCamposEdicao(Map<String, dynamic> item) {
+    _ir = AgendaImpostoRenda.fromJson(item);
     _recorrencia = AgendaFinanceiraRecorrencia.fromJson(item);
     _idLancamentoEdicao = item['id']?.toString();
     _uuidOperacaoAppEdicao =
@@ -688,6 +693,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         'origemFiltro': origem,
         'empresaFiltro': _empresaSelecionada,
         'formaPrevistaPagamento': formaPagamento,
+        ..._ir.toPayload(),
         'atualizarPrevisaoPagamento': true,
         'dataPrevisaoPagamento':
             _dataPrevisaoPagamento?.toIso8601String().split('T').first,
@@ -749,6 +755,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Future<void> _salvar() async {
+    if (_ir.carregando) return;
     if (!_formKey.currentState!.validate()) return;
     if (_toDouble(_valorController.text) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1377,6 +1384,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
             ],
           ]),
           separator(),
+          AgendaImpostoRendaWebFields(
+            draft: _ir,
+            enabled: !_isLoading,
+            onChanged: () => setState(() {}),
+          ),
+          const SizedBox(height: 16),
           _section('classification', [
             _fields([
               _buildTextField(
@@ -1544,17 +1557,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
         children: [
           if (widget.modoEdicao)
             TextButton.icon(
-              onPressed: _isLoading ? null : _confirmarExcluirLancamento,
+              onPressed:
+                  (_isLoading || _ir.carregando)
+                      ? null
+                      : _confirmarExcluirLancamento,
               icon: const Icon(Icons.delete_outline, size: 18),
               label: Text(_label('delete')),
               style: TextButton.styleFrom(foregroundColor: tokens.danger),
             ),
           OutlinedButton(
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            onPressed:
+                (_isLoading || _ir.carregando)
+                    ? null
+                    : () => Navigator.of(context).pop(),
             child: Text(_label('cancel')),
           ),
           FilledButton(
-            onPressed: _isLoading ? null : _salvar,
+            onPressed: (_isLoading || _ir.carregando) ? null : _salvar,
             child: Text(
               _label(
                 _isLoading

@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_pagamento_mobile_fields.dart';
@@ -47,6 +49,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
 
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
+
+  AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final AgendaFinanceiraLancamentoService _service =
@@ -220,6 +224,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   void _preencherComDetalhe(Map<String, dynamic> detalhe) {
+    _ir = AgendaImpostoRenda.fromJson(detalhe);
     final datas = AgendaFinanceiraLancamentoDetalhe.fromJson(detalhe);
     _dataPrevisaoPagamento = datas.dataPrevisaoPagamento;
     _dataQuitacao = datas.dataLiquidacao;
@@ -497,6 +502,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   );
 
   Future<void> _salvar() async {
+    if (_ir.carregando) return;
     if (_carregandoDetalhe || !_detalheDisponivel) return;
     final FormState? formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
@@ -584,6 +590,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       'origemFiltro': origem,
       'empresaFiltro': _empresa,
       'formaPrevistaPagamento': formaPagamento,
+      ..._ir.toPayload(),
       'atualizarPrevisaoPagamento': true,
       'dataPrevisaoPagamento':
           _dataPrevisaoPagamento?.toIso8601String().split('T').first,
@@ -907,6 +914,13 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     ],
                   ),
                   const SizedBox(height: 12),
+                  AgendaImpostoRendaMobileFields(
+                    draft: _ir,
+                    enabled:
+                        !_salvando && !_carregandoDetalhe && _detalheDisponivel,
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
                   _buildPagamentoFields(),
                   const SizedBox(height: 14),
                   AgendaRecorrenciaMobileFields(
@@ -1068,7 +1082,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 flex: 2,
                 child: FilledButton.icon(
                   onPressed:
-                      _salvando || _carregandoDetalhe || !_detalheDisponivel
+                      _salvando ||
+                              _ir.carregando ||
+                              _carregandoDetalhe ||
+                              !_detalheDisponivel
                           ? null
                           : _salvar,
                   icon:

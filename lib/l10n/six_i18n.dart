@@ -111,6 +111,17 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível salvar. Verifique sua permissão e tente novamente.',
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
+    'ir.title': 'Separar para o Imposto de Renda',
+    'ir.hint': 'Marcar para revisão na declaração. Não indica dedutibilidade.',
+    'ir.limit':
+        'Comprovantes: até 3 imagens JPG, PNG ou WebP, de até 2 MB cada.',
+    'ir.add': 'Adicionar comprovante',
+    'ir.camera': 'Fotografar',
+    'ir.fileError':
+        'Não foi possível anexar. Use uma imagem JPG, PNG ou WebP de até 2 MB.',
+    'ir.remove': 'Remover comprovante',
+    'ir.filter': 'Separados para IR',
+
     'space.formSpace': 'Espaço financeiro',
     'space.editLocked':
         'O espaço de um lançamento existente não pode ser alterado neste formulário.',
@@ -2889,6 +2900,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.saveError': 'Unable to save. Check your permission and try again.',
     'space.history': 'Deactivation preserves entries and history.',
     'space.account': 'Planned account',
+    'ir.title': 'Set aside for income tax',
+    'ir.hint':
+        'Mark for tax return review. This does not indicate deductibility.',
+    'ir.limit': 'Receipts: up to 3 JPG, PNG or WebP images, up to 2 MB each.',
+    'ir.add': 'Add receipt',
+    'ir.camera': 'Take photo',
+    'ir.fileError':
+        'Unable to attach. Use a JPG, PNG or WebP image up to 2 MB.',
+    'ir.remove': 'Remove receipt',
+    'ir.filter': 'Set aside for tax',
+
     'space.formSpace': 'Financial space',
     'space.editLocked':
         'An existing entry cannot be moved to another space in this form.',
@@ -5452,6 +5474,18 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudo guardar. Revise sus permisos e inténtelo de nuevo.',
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
+    'ir.title': 'Separar para el impuesto sobre la renta',
+    'ir.hint':
+        'Marcar para revisar en la declaración. No indica deducibilidad.',
+    'ir.limit':
+        'Comprobantes: hasta 3 imágenes JPG, PNG o WebP, de hasta 2 MB cada una.',
+    'ir.add': 'Añadir comprobante',
+    'ir.camera': 'Tomar foto',
+    'ir.fileError':
+        'No se pudo adjuntar. Utilice una imagen JPG, PNG o WebP de hasta 2 MB.',
+    'ir.remove': 'Eliminar comprobante',
+    'ir.filter': 'Separados para impuestos',
+
     'space.formSpace': 'Espacio financiero',
     'space.editLocked':
         'No se puede cambiar el espacio de un movimiento existente en este formulario.',

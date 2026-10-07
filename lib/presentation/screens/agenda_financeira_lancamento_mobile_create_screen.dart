@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/agenda_imposto_renda.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_pagamento_mobile_fields.dart';
@@ -47,6 +49,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   final String _uuidCriacao = 'mobile-${DateTime.now().microsecondsSinceEpoch}';
   final AgendaFinanceiraRecorrencia _recorrencia =
       AgendaFinanceiraRecorrencia();
+
+  AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late AgendaFinanceiraLancamentoService _service =
@@ -135,7 +139,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       leading: IconButton(
         tooltip: 'Voltar',
         icon: Icon(Icons.arrow_back_rounded),
-        onPressed: _salvando ? null : () => Navigator.of(context).maybePop(),
+        onPressed:
+            (_salvando || _ir.carregando)
+                ? null
+                : () => Navigator.of(context).maybePop(),
       ),
       bottomNavigationBar: _buildBottomBar(),
       bodyBuilder: _buildContent,
@@ -408,6 +415,12 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           ],
         ),
         const SizedBox(height: 12),
+        AgendaImpostoRendaMobileFields(
+          draft: _ir,
+          enabled: !_salvando,
+          onChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: 16),
         _buildPagamentoFields(),
       ],
     );
@@ -773,7 +786,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           children: <Widget>[
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _salvando ? null : () => Navigator.of(context).pop(),
+                onPressed:
+                    (_salvando || _ir.carregando)
+                        ? null
+                        : () => Navigator.of(context).pop(),
                 icon: Icon(Icons.close_rounded),
                 label: Text('Cancelar'),
               ),
@@ -782,7 +798,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             Expanded(
               flex: 2,
               child: FilledButton.icon(
-                onPressed: _salvando ? null : _salvar,
+                onPressed: (_salvando || _ir.carregando) ? null : _salvar,
                 icon:
                     _salvando
                         ? SizedBox(
@@ -968,6 +984,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   );
 
   Future<void> _salvar() async {
+    if (_ir.carregando) return;
     final FormState? formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
 
@@ -1043,6 +1060,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         'origemFiltro': origem,
         'empresaFiltro': _empresa,
         'formaPrevistaPagamento': formaPagamento,
+        ..._ir.toPayload(),
         'atualizarPrevisaoPagamento': true,
         'dataPrevisaoPagamento':
             _dataPrevisaoPagamento?.toIso8601String().split('T').first,
