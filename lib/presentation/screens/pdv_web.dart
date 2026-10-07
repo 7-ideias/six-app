@@ -2069,7 +2069,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           Divider(color: _pdvTheme.cardBorder, height: 1),
           const SizedBox(height: 8),
           _buildResumoLinhaValorAnimado(
-            l10n?.pdvWebReceivedTotalLabel ?? 'Total recebido',
+            context.t('pdv.receipt.amountEntered', fallback: 'Valor informado'),
             _totalPagamentoConfirmado(),
           ),
           _buildResumoLinhaValorAnimado(
@@ -2250,6 +2250,13 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           '${l10n?.pdvWebReceiveAction ?? 'Receber'} — ${_formatCurrency(total)}';
     }
 
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool prontoParaConfirmar =
+        temItens && podeReceber && podeLancarVenda &&
+        !_recebendoVendaNaoLiquidada && !_registrandoReceberDepois &&
+        !_consultandoVendaNaoLiquidada &&
+        (pagamentoCompleto || pagamentoParcial) && !pagamentoPrecisaRevisao;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -2258,12 +2265,13 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _pdvTheme.cardBorder),
       ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 10,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceBetween,
-        children: <Widget>[
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final Widget consultas = Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
           temItens
               ? Wrap(
                 spacing: 10,
@@ -2292,21 +2300,6 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     label:
                         '${_calcularQuantidadeItens()} ${l10n?.pdvWebItemsCounterLabel ?? 'itens'}',
                   ),
-                  _buildAtalhoPdvChip(
-                    icon: Icons.payments_outlined,
-                    label:
-                        _consultandoVendaNaoLiquidada
-                            ? context.t(
-                              _vendaNaoLiquidadaPermiteEdicaoItens
-                                  ? 'pdv.openSale.currentTotal'
-                                  : 'pdv.openSale.openBalance',
-                              fallback:
-                                  _vendaNaoLiquidadaPermiteEdicaoItens
-                                      ? 'Novo total'
-                                      : 'Saldo em aberto',
-                            )
-                            : (l10n?.pdvWebSubtotalLabel ?? 'Subtotal'),
-                  ),
                   if (_vendaNaoLiquidadaPossuiAlteracoesNosItens)
                     _buildAtalhoPdvChip(
                       icon: Icons.pending_actions_outlined,
@@ -2314,26 +2307,6 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                         'pdv.openSale.pendingChanges',
                         fallback: 'Alterações pendentes',
                       ),
-                    ),
-                  if (pagamentoDefinido)
-                    _buildAtalhoPdvChip(
-                      icon:
-                          pagamentoCompleto
-                              ? Icons.verified_outlined
-                              : pagamentoParcial
-                              ? Icons.account_balance_wallet_outlined
-                              : Icons.warning_amber_rounded,
-                      label:
-                          pagamentoCompleto
-                              ? (l10n?.pdvWebPaymentDefinedLabel ??
-                                  'Pagamento definido')
-                              : pagamentoParcial
-                              ? context.t(
-                                'pdv.receipt.partialDefined',
-                                fallback: 'Parcial definido',
-                              )
-                              : (l10n?.pdvWebReviewPaymentAction ??
-                                  'Revisar pagamento'),
                     ),
                 ],
               )
@@ -2345,50 +2318,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              if (!_consultandoVendaNaoLiquidada)
-                OutlinedButton.icon(
-                  onPressed:
-                      temItens && podeLancarVenda && !_registrandoReceberDepois
-                          ? _pausarVenda
-                          : null,
-                  icon:
-                      _registrandoReceberDepois
-                          ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.schedule_send_outlined),
-                  label: Text(
-                    _registrandoReceberDepois
-                        ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
-                        : (l10n?.pdvWebReceiveLaterAction ?? 'Receber depois'),
-                  ),
-                  style: _pdvOutlinedCtaStyle(),
-                ),
-              FilledButton.icon(
-                onPressed:
-                    temItens &&
-                            podeReceber &&
-                            podeLancarVenda &&
-                            !_recebendoVendaNaoLiquidada
-                        ? _acionarRecebimentoPrincipal
-                        : null,
-                icon:
-                    _recebendoVendaNaoLiquidada
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.payments_rounded),
-                label: Text(labelAcaoPrincipal),
-                style: _pdvFilledCtaStyle(),
-              ),
+
               OutlinedButton.icon(
                 onPressed:
                     () =>
@@ -2402,6 +2332,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 ),
                 style: _pdvOutlinedCtaStyle(),
               ),
+
               OutlinedButton.icon(
                 onPressed: _abrirVendasAReceberWeb,
                 icon: const Icon(Icons.receipt_long_outlined),
@@ -2410,6 +2341,39 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 ),
                 style: _pdvOutlinedCtaStyle(),
               ),
+
+            ],
+          );
+          final Widget fechamento = Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              if (prontoParaConfirmar) ...<Widget>[
+                Semantics(
+                  liveRegion: true,
+                  child: Wrap(
+                    spacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      Icon(Icons.check_circle, size: 16, color: tokens.success),
+                      Text(
+                        context.t(
+                          pagamentoParcial ? 'pdv.receipt.readyPartial' : 'pdv.receipt.readyToFinish',
+                          fallback: pagamentoParcial ? 'Tudo pronto para confirmar o parcial' : 'Tudo pronto para concluir',
+                        ),
+                        style: TextStyle(color: tokens.success, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 12,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
               if (podeLimpar)
                 OutlinedButton.icon(
                   onPressed: _confirmarLimparVendaAtual,
@@ -2436,9 +2400,84 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           ? _pdvOutlinedCtaStyle()
                           : _pdvDangerOutlinedCtaStyle(),
                 ),
+
+              if (!_consultandoVendaNaoLiquidada)
+                OutlinedButton.icon(
+                  onPressed:
+                      temItens && podeLancarVenda && !_registrandoReceberDepois
+                          ? _pausarVenda
+                          : null,
+                  icon:
+                      _registrandoReceberDepois
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.schedule_send_outlined),
+                  label: Text(
+                    _registrandoReceberDepois
+                        ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
+                        : (l10n?.pdvWebReceiveLaterAction ?? 'Receber depois'),
+                  ),
+                  style: _pdvOutlinedCtaStyle(),
+                ),
+
+              FilledButton.icon(
+                onPressed:
+                    temItens &&
+                            podeReceber &&
+                            podeLancarVenda &&
+                            !_recebendoVendaNaoLiquidada
+                        ? _acionarRecebimentoPrincipal
+                        : null,
+                icon:
+                    _recebendoVendaNaoLiquidada
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Icon(prontoParaConfirmar
+                            ? Icons.check_circle_rounded
+                            : Icons.payments_rounded),
+                label: Text(labelAcaoPrincipal, maxLines: 2, textAlign: TextAlign.center),
+                style: prontoParaConfirmar
+                    ? _pdvFilledCtaStyle().merge(FilledButton.styleFrom(
+                        backgroundColor: tokens.success,
+                        foregroundColor: tokens.onSuccess,
+                        minimumSize: const Size(0, 52),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      ))
+                    : _pdvFilledCtaStyle(),
+              ),
+
+                ],
+              ),
             ],
-          ),
-        ],
+          );
+          if (constraints.maxWidth >= 1450) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Expanded(child: consultas),
+                const SizedBox(width: 24),
+                Expanded(child: fechamento),
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              consultas,
+              const SizedBox(height: 12),
+              Divider(height: 1, color: _pdvTheme.cardBorder),
+              const SizedBox(height: 12),
+              fechamento,
+            ],
+          );
+        },
       ),
     );
   }
