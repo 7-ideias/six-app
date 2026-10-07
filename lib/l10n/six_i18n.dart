@@ -112,8 +112,6 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Desativar preserva os lançamentos e o histórico.',
     'space.account': 'Conta prevista',
     'machine.cashAutomatic': 'Entrada automática no caixa',
-    'machine.cashConfiguration':
-        'Configure uma única conta Caixa ativa no espaço Empresa e tente novamente.',
     'ir.title': 'Separar para o Imposto de Renda',
     'ir.hint': 'Marcar para revisão na declaração. Não indica dedutibilidade.',
     'ir.limit':
@@ -2905,8 +2903,6 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Deactivation preserves entries and history.',
     'space.account': 'Planned account',
     'machine.cashAutomatic': 'Automatically received in cash',
-    'machine.cashConfiguration':
-        'Configure one active Cash account in the Business space and try again.',
     'ir.title': 'Set aside for income tax',
     'ir.hint':
         'Mark for tax return review. This does not indicate deductibility.',
@@ -5483,8 +5479,6 @@ const Map<String, Map<String, String>> _fallbacks = {
     'space.history': 'Desactivar conserva los registros y el historial.',
     'space.account': 'Cuenta prevista',
     'machine.cashAutomatic': 'Entrada automática en caja',
-    'machine.cashConfiguration':
-        'Configure una única cuenta Caja activa en el espacio Empresa e inténtelo de nuevo.',
     'ir.title': 'Separar para el impuesto sobre la renta',
     'ir.hint':
         'Marcar para revisar en la declaración. No indica deducibilidad.',

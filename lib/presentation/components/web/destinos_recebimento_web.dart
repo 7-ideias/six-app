@@ -12,6 +12,10 @@ Future<List<RecebimentoFormaInput>?> selecionarDestinosWeb(
   BuildContext context,
   List<RecebimentoFormaInput> formas,
 ) {
+  final drafts = formas.map(DestinoRecebimentoDraft.new).toList();
+  if (drafts.isNotEmpty && drafts.every((d) => d.dinheiro)) {
+    return Future.value(drafts.map((d) => d.toInput()).toList());
+  }
   return showDialog<List<RecebimentoFormaInput>>(
     context: context,
     barrierDismissible: false,
@@ -40,7 +44,6 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
       widget.service ?? ConfiguracaoFinanceiraService('EMPRESA');
   List<ConfiguracaoFinanceira> _contas = [], _maquinas = [];
   bool _loading = true, _erro = false;
-  bool _erroCaixa = false;
   @override
   void initState() {
     super.initState();
@@ -57,29 +60,13 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
     setState(() {
       _loading = true;
       _erro = false;
-      _erroCaixa = false;
     });
     try {
       final result = await Future.wait([
         _service.listar('CONTAS'),
-        _drafts.any((d) => !d.dinheiro)
-            ? _service.listar('MAQUININHAS')
-            : Future.value(<ConfiguracaoFinanceira>[]),
+        _service.listar('MAQUININHAS'),
       ]);
       if (!mounted) return;
-      try {
-        _service.direcionarDinheiroAoCaixa(_drafts, result[0]);
-      } on StateError {
-        _erroCaixa = true;
-        rethrow;
-      }
-      if (_drafts.isNotEmpty &&
-          _drafts.every((d) => d.dinheiro) &&
-          distribuicaoFinanceiraValida(_drafts, widget.formas)) {
-        if (ModalRoute.of(context)?.isCurrent != true) return;
-        Navigator.pop(context, _drafts.map((d) => d.toInput()).toList());
-        return;
-      }
       setState(() {
         _contas = result[0];
         _maquinas = result[1];
@@ -272,13 +259,7 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
                       ? Center(
                         child: TextButton(
                           onPressed: _load,
-                          child: Text(
-                            context.t(
-                              _erroCaixa
-                                  ? 'machine.cashConfiguration'
-                                  : 'space.retry',
-                            ),
-                          ),
+                          child: Text(context.t('space.retry')),
                         ),
                       )
                       : ListView(

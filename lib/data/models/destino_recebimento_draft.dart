@@ -13,13 +13,6 @@ class DestinoRecebimentoDraft {
   final RecebimentoFormaInput origem;
   bool get dinheiro => origem.codigo.trim().toLowerCase() == 'tipo1';
 
-  void direcionarAoCaixa(String id) {
-    contaId = id;
-    maquininhaId = null;
-    futuro = false;
-    taxa = 0;
-  }
-
   String? contaId, maquininhaId;
   bool futuro;
   DateTime data;
@@ -28,13 +21,13 @@ class DestinoRecebimentoDraft {
     codigo: origem.codigo,
     descricao: origem.descricao,
     valor: valor,
-    contaFinanceiraId: contaId,
-    maquininhaId: maquininhaId,
-    recebimentoFuturo: futuro,
-    taxa: taxa,
-    dataPrevista: futuro ? data.toIso8601String().split('T').first : null,
+    contaFinanceiraId: dinheiro ? null : contaId,
+    maquininhaId: dinheiro ? null : maquininhaId,
+    recebimentoFuturo: !dinheiro && futuro,
+    taxa: dinheiro ? 0 : taxa,
+    dataPrevista: !dinheiro && futuro ? data.toIso8601String().split('T').first : null,
   );
-  bool get valido => contaId != null && valor > 0 && taxa >= 0 && taxa < valor;
+  bool get valido => valor > 0 && (dinheiro || (contaId != null && taxa >= 0 && taxa < valor));
 }
 
 bool distribuicaoFinanceiraValida(
