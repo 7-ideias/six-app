@@ -114,6 +114,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'machine.cashAutomatic': 'Entrada automática no caixa',
     'pdv.receipt.amountEntered': 'Valor informado',
     'pdv.receipt.readyToFinish': 'Tudo pronto para concluir',
+    'pdv.receipt.summary': 'Resumo do recebimento',
+    'pdv.receipt.remainingOpen': 'Saldo em aberto',
     'pdv.receipt.readyPartial': 'Tudo pronto para confirmar o parcial',
     'ir.title': 'Separar para o Imposto de Renda',
     'ir.hint': 'Marcar para revisão na declaração. Não indica dedutibilidade.',
@@ -2908,6 +2910,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'machine.cashAutomatic': 'Automatically received in cash',
     'pdv.receipt.amountEntered': 'Entered amount',
     'pdv.receipt.readyToFinish': 'Ready to complete',
+    'pdv.receipt.summary': 'Payment summary',
+    'pdv.receipt.remainingOpen': 'Outstanding balance',
     'pdv.receipt.readyPartial': 'Ready to confirm partial payment',
     'ir.title': 'Set aside for income tax',
     'ir.hint':
@@ -5487,6 +5491,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'machine.cashAutomatic': 'Entrada automática en caja',
     'pdv.receipt.amountEntered': 'Importe indicado',
     'pdv.receipt.readyToFinish': 'Todo listo para finalizar',
+    'pdv.receipt.summary': 'Resumen del cobro',
+    'pdv.receipt.remainingOpen': 'Saldo pendiente',
     'pdv.receipt.readyPartial': 'Todo listo para confirmar el pago parcial',
     'ir.title': 'Separar para el impuesto sobre la renta',
     'ir.hint':
