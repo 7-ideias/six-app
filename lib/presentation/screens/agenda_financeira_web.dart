@@ -955,7 +955,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final tipo =
         item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     final valorOriginal = _toDouble(item['valorOriginal'] ?? item['valor']);
-    final valorConfirmado = _toDouble(item['valorConfirmado']);
+    final quitado = const [
+      'PAGO',
+      'RECEBIDO',
+    ].contains(item['status']?.toString().toUpperCase());
+    final valorConfirmado = _toDouble(
+      item['valorConfirmado'] ?? (quitado ? valorOriginal : 0),
+    );
     final valorRestante = _toDouble(
       item['valorRestante'] ?? (valorOriginal - valorConfirmado),
     );
@@ -1044,7 +1050,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         if (confirmado == null) continue;
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
-        item['valor'] = confirmado['valorRestante'];
+        item['valor'] =
+            _toDouble(confirmado['valorRestante']) > 0
+                ? confirmado['valorRestante']
+                : item['valorOriginal'];
         item['liquidacoes'] =
             confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
         if (_toDouble(confirmado['valorConfirmado']) > 0 &&
