@@ -168,6 +168,13 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   bool _processando = false;
   String? _erroValor;
   String? _contaFinanceiraId;
+
+  bool _formaExigeConta(_RecebimentoFormaDraft forma) =>
+      widget.exigirConta &&
+      (widget.pagamento ||
+          forma.opcao.codigoTipo.trim().toLowerCase() != 'tipo1');
+
+  bool get _exigeContaSelecionada => _formas.any(_formaExigeConta);
   SixWebRecebimentoTipo _tipo = SixWebRecebimentoTipo.total;
   List<SixWebTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
 
@@ -355,7 +362,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   }
 
   Future<void> _confirmar() async {
-    if (widget.exigirConta && (_contaFinanceiraId?.trim().isEmpty ?? true)) {
+    if (_exigeContaSelecionada &&
+        (_contaFinanceiraId?.trim().isEmpty ?? true)) {
       setState(
         () => _erroValor = context.t('agenda.settlement.accountRequired'),
       );
@@ -392,7 +400,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       }
       recebimentos.add(
         RecebimentoFormaInput(
-          contaFinanceiraId: widget.exigirConta ? _contaFinanceiraId : null,
+          contaFinanceiraId:
+              _formaExigeConta(forma) ? _contaFinanceiraId : null,
           codigo: forma.opcao.codigoTipo,
           descricao: forma.opcao.descricao,
           valor: valorForma,
@@ -814,7 +823,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                           ),
                                         if (widget.permitirParcial)
                                           const SizedBox(height: 16),
-                                        if (widget.exigirConta) ...[
+                                        if (_exigeContaSelecionada) ...[
                                           ContaFinanceiraWebField(
                                             key: const ValueKey(
                                               'settlement-account',
