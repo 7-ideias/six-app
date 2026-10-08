@@ -1,3 +1,4 @@
+import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 
@@ -972,9 +973,7 @@ class _AgendaFinanceiraMobileScreenState
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
-      'formaPagamento': _formaPagamentoLabel(
-        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
-      ),
+      'formaPagamento': agendaFormaPagamentoExibicao(item),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
       'centroCustoId': item['centroCustoId']?.toString(),
@@ -1011,9 +1010,7 @@ class _AgendaFinanceiraMobileScreenState
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
-      'formaPagamento': _formaPagamentoLabel(
-        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
-      ),
+      'formaPagamento': agendaFormaPagamentoExibicao(item),
       'empresa': item['empresa']?.toString() ?? '',
       'quantidadeConfirmacoes':
           item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
@@ -3363,37 +3360,6 @@ class _AgendaFinanceiraMobileScreenState
         return 'Previsto';
       default:
         return 'Pendente';
-    }
-  }
-
-  String _formaPagamentoLabel(String? formaPagamento) {
-    final String normalizada = (formaPagamento ?? '').trim();
-    final String? descricaoCodigo =
-        _descricaoPorCodigoTipoFormaPagamento[normalizada.toLowerCase()];
-    if (descricaoCodigo != null && descricaoCodigo.trim().isNotEmpty) {
-      return descricaoCodigo;
-    }
-    switch (normalizada.toUpperCase()) {
-      case 'BOLETO':
-        return _descricaoTipoRecebimentoOuFallback('tipo5', 'Boleto');
-      case 'TRANSFERENCIA':
-        return _descricaoTipoRecebimentoOuFallback('tipo8', 'Transferência');
-      case 'CARTAO_CREDITO':
-        return _descricaoTipoRecebimentoOuFallback(
-          'tipo3',
-          'Cartão de crédito',
-        );
-      case 'CARTAO_DEBITO':
-        return _descricaoTipoRecebimentoOuFallback('tipo4', 'Cartão de débito');
-      case 'DINHEIRO':
-        return _descricaoTipoRecebimentoOuFallback('tipo1', 'Dinheiro');
-      case 'DEBITO_AUTOMATICO':
-        return _descricaoTipoRecebimentoOuFallback(
-          'tipo7',
-          'Débito automático',
-        );
-      default:
-        return normalizada.isNotEmpty ? normalizada : 'Pix';
     }
   }
 

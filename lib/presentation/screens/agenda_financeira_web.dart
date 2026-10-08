@@ -1,3 +1,4 @@
+import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 
@@ -1077,9 +1078,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
-      'formaPagamento': _formaPagamentoLabel(
-        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
-      ),
+      'formaPagamento': agendaFormaPagamentoExibicao(item),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
       'centroCustoId': item['centroCustoId']?.toString(),
@@ -1109,9 +1108,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       'status': _statusLabel(item['status']?.toString()),
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
-      'formaPagamento': _formaPagamentoLabel(
-        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
-      ),
+      'formaPagamento': agendaFormaPagamentoExibicao(item),
       'empresa': _empresaNome(item['empresa']),
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
     };
@@ -1207,7 +1204,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             fallback: fallback,
             formatarMoeda: _formatarMoeda,
             formatarData: _formatarDataFlexivel,
-            formaPagamentoLabel: _formaPagamentoLabel,
             onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
             onExcluirLiquidacao:
                 (liquidacao) =>
@@ -2471,27 +2467,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
-  String _formaPagamentoLabel(String? formaPagamento) {
-    final backend = (formaPagamento ?? '').toUpperCase();
-    final codigoConfigurado = _codigoTipoPorBackendFormaPagamento(backend);
-    if (codigoConfigurado != null) {
-      final descricaoConfigurada =
-          _descricaoPorBackendFormaPagamento[codigoConfigurado];
-      if (descricaoConfigurada != null &&
-          descricaoConfigurada.trim().isNotEmpty) {
-        return descricaoConfigurada;
-      }
-    }
-    final configurada = _descricaoPorBackendFormaPagamento[backend];
-    if (configurada != null && configurada.trim().isNotEmpty) {
-      return configurada;
-    }
-    return _descricaoPorBackendFormaPagamento[backend] ??
-        (formaPagamento?.toString().trim().isNotEmpty == true
-            ? formaPagamento!
-            : 'Pix');
-  }
-
   String? _codigoTipoPorBackendFormaPagamento(String backend) {
     switch (backend.trim().toUpperCase()) {
       case 'DINHEIRO':
@@ -3206,7 +3181,6 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     required this.fallback,
     required this.formatarMoeda,
     required this.formatarData,
-    required this.formaPagamentoLabel,
     required this.onExcluirLancamento,
     required this.onExcluirLiquidacao,
   });
@@ -3216,7 +3190,6 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   final bool fallback;
   final String Function(double) formatarMoeda;
   final String Function(dynamic) formatarData;
-  final String Function(String?) formaPagamentoLabel;
   final Future<bool> Function() onExcluirLancamento;
   final Future<bool> Function(Map<String, dynamic> liquidacao)
   onExcluirLiquidacao;
@@ -3345,11 +3318,9 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                 ),
                                 _chip(
                                   theme,
-                                  formaPagamentoLabel(
-                                    _texto(
-                                      detalhe['formaPagamento'],
-                                      item['formaPagamento'],
-                                    ),
+                                  agendaFormaPagamentoExibicao(
+                                    detalhe,
+                                    fallback: item,
                                   ),
                                 ),
                                 _chip(
@@ -3790,9 +3761,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
               ),
               _info(
                 'Tipo de pagamento',
-                formaPagamentoLabel(
-                  liquidacao['formaPagamentoRealizada']?.toString(),
-                ),
+                agendaFormaPagamentoExibicao(liquidacao),
               ),
               if ((liquidacao['contaFinanceiraNome']?.toString() ?? '')
                   .isNotEmpty)
