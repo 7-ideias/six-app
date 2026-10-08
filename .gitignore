@@ -16,3 +16,6 @@
 *.mobileprovision
 *.mobileprovision.base64.txt
 *.p12.base64.txt
+
+# Mapeamento versionado da edicao contextual de pagamentos
+!/docs/financeiro/

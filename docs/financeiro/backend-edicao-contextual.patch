@@ -1,0 +1,197 @@
+--- a/src/main/java/br/com/seteideias/sixback/controller/caixa/ConfigTipoRecebimentoController.java
++++ b/src/main/java/br/com/seteideias/sixback/controller/caixa/ConfigTipoRecebimentoController.java
+@@ -4,6 +4,8 @@
+ import br.com.seteideias.sixback.service.UsuarioEmpresaVinculoService;
+ import br.com.seteideias.sixback.service.ValidadorAcessoEmpresaDoUsuario;
+ import br.com.seteideias.sixback.service.caixa.TipoRecebimentoEmpresaService;
++import br.com.seteideias.sixback.service.caixa.TipoRecebimentoPermissaoService;
++import org.springframework.web.server.ResponseStatusException;
+ import br.com.seteideias.sixback.util.ValidaUUID;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.http.HttpStatus;
+@@ -21,6 +23,7 @@
+ public class ConfigTipoRecebimentoController {
+ 
+     private final TipoRecebimentoEmpresaService service;
++    private final TipoRecebimentoPermissaoService permissoes;
+     private final ValidadorAcessoEmpresaDoUsuario validadorAcesso;
+     private final UsuarioEmpresaVinculoService vinculoService;
+ 
+@@ -41,7 +44,7 @@
+             @RequestBody TipoRecebimentoCaixaDto dto) {
+ 
+         validarAcesso(jwt, idUnicoDaEmpresa);
+-        validarAdmin(jwt, idUnicoDaEmpresa);
++        permissoes.validarEdicao(ValidaUUID.getIdUnicoDoUsuario(jwt), idUnicoDaEmpresa);
+         return ResponseEntity.ok(service.atualizar(idUnicoDaEmpresa, codigoTipo, dto));
+     }
+ 
+@@ -59,7 +62,7 @@
+     private void validarAcesso(Jwt jwt, String idUnicoDaEmpresa) {
+         String userId = ValidaUUID.getIdUnicoDoUsuario(jwt);
+         if (!validadorAcesso.possuiVinculoComEmpresa(userId, idUnicoDaEmpresa)) {
+-            throw new RuntimeException("Acesso negado ao comércio informado.");
++            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PERMISSAO_NEGADA");
+         }
+     }
+ 
+--- a/src/main/java/br/com/seteideias/sixback/controller/agendafinanceira/FormasFinanceirasController.java
++++ b/src/main/java/br/com/seteideias/sixback/controller/agendafinanceira/FormasFinanceirasController.java
+@@ -12,11 +12,14 @@
+ public class FormasFinanceirasController {
+     private final EspacoFinanceiroService espacos;
+     private final TipoRecebimentoEmpresaService tipos;
++    private final br.com.seteideias.sixback.service.caixa.TipoRecebimentoPermissaoService permissoes;
+     @GetMapping
+     public Map<String,Object> listar(@AuthenticationPrincipal Jwt jwt,
+        @RequestHeader(value="idUnicoDaEmpresa",required=false) String empresa,
+        @RequestHeader(value="espacoFinanceiro",defaultValue="EMPRESA") String tipo) {
+        String escopo=espacos.resolver(ValidaUUID.getIdUnicoDoUsuario(jwt),empresa,tipo);
+-       return Map.of("tiposRecebimento",EspacoFinanceiroService.pessoal(escopo)?tipos.padroesPessoais():tipos.listarAtivos(empresa));
++       return Map.of("tiposRecebimento", EspacoFinanceiroService.pessoal(escopo) ? tipos.padroesPessoais() : tipos.listarAtivos(empresa),
++               "podeEditarTiposRecebimento", !EspacoFinanceiroService.pessoal(escopo)
++                   && permissoes.podeEditar(ValidaUUID.getIdUnicoDoUsuario(jwt), empresa));
+     }
+ }
+--- a/src/main/java/br/com/seteideias/sixback/service/caixa/TipoRecebimentoEmpresaService.java
++++ b/src/main/java/br/com/seteideias/sixback/service/caixa/TipoRecebimentoEmpresaService.java
+@@ -99,7 +99,16 @@
+         ConfigTipoRecebimentoEmpresaEntity entity = repository.findByIdUnicoDaEmpresaAndCodigoTipo(idUnicoDaEmpresa, codigoTipo)
+                 .orElseThrow(() -> new RuntimeException("Configuração não encontrada para o código: " + codigoTipo));
+ 
+-        entity.setDescricaoExibicao(dto.getDescricaoExibicao().trim());
++        String descricao = dto.getDescricaoExibicao().trim();
++        if (descricao.length() > 100 || "Todos".equalsIgnoreCase(descricao)
++                || "All".equalsIgnoreCase(descricao) || repository.findAllByIdUnicoDaEmpresa(idUnicoDaEmpresa).stream()
++                .anyMatch(outro -> !codigoTipo.equals(outro.getCodigoTipo())
++                        && outro.getDescricaoExibicao() != null
++                        && descricao.equalsIgnoreCase(outro.getDescricaoExibicao().trim()))) {
++            throw new org.springframework.web.server.ResponseStatusException(
++                    org.springframework.http.HttpStatus.BAD_REQUEST, "DESCRICAO_INVALIDA_OU_DUPLICADA");
++        }
++        entity.setDescricaoExibicao(descricao);
+         entity.setNaturezaRecebimento(dto.getNaturezaRecebimento());
+         entity.setAtivo(dto.getAtivo());
+         entity.setAceitaParcelamento(dto.getAceitaParcelamento());
+--- /dev/null
++++ b/src/main/java/br/com/seteideias/sixback/service/caixa/TipoRecebimentoPermissaoService.java
+@@ -0,0 +1,36 @@
++package br.com.seteideias.sixback.service.caixa;
++
++import br.com.seteideias.sixback.service.UsuarioEmpresaVinculoService;
++import br.com.seteideias.sixback.service.ValidadorAcessoEmpresaDoUsuario;
++import lombok.RequiredArgsConstructor;
++import br.com.seteideias.sixback.repository.UsuarioEmpresaVinculoRepository;
++import org.springframework.http.HttpStatus;
++import org.springframework.stereotype.Service;
++import org.springframework.web.server.ResponseStatusException;
++
++@Service
++@RequiredArgsConstructor
++public class TipoRecebimentoPermissaoService {
++    // Opt-out: registros atuais e novos permanecem liberados por padrão.
++    public static final String BLOQUEAR_EDICAO = "TIPOS_RECEBIMENTO_EDITAR_NEGADO";
++    private final ValidadorAcessoEmpresaDoUsuario acesso;
++    private final UsuarioEmpresaVinculoService vinculos;
++    private final UsuarioEmpresaVinculoRepository repository;
++
++    public boolean podeEditar(String usuario, String empresa) {
++        if (repository.findByKeycloakIdAndIdUnicoDaEmpresa(usuario, empresa)
++                .map(v -> !v.estaAtivo()).orElse(false)) return false;
++        if (!acesso.possuiVinculoComEmpresa(usuario, empresa)) return false;
++        return vinculos.buscarVinculoAtivo(usuario, empresa)
++                .map(v -> v.ehAdministrador() || v.getPermissoes() == null
++                        || v.getPermissoes().stream().noneMatch(p ->
++                            p != null && BLOQUEAR_EDICAO.equalsIgnoreCase(p.trim())))
++                .orElse(true);
++    }
++
++    public void validarEdicao(String usuario, String empresa) {
++        if (!podeEditar(usuario, empresa)) {
++            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PERMISSAO_NEGADA");
++        }
++    }
++}
+--- /dev/null
++++ b/src/test/java/br/com/seteideias/sixback/service/caixa/TipoRecebimentoPermissaoServiceTest.java
+@@ -0,0 +1,59 @@
++package br.com.seteideias.sixback.service.caixa;
++
++import br.com.seteideias.sixback.enums.PapelVinculoEmpresaEnum;
++import br.com.seteideias.sixback.enums.StatusVinculoEmpresaEnum;
++import br.com.seteideias.sixback.repository.UsuarioEmpresaVinculoRepository;
++import br.com.seteideias.sixback.repository.entity.UsuarioEmpresaVinculoEntity;
++import br.com.seteideias.sixback.service.UsuarioEmpresaVinculoService;
++import br.com.seteideias.sixback.service.ValidadorAcessoEmpresaDoUsuario;
++import org.junit.jupiter.api.Test;
++import org.springframework.web.server.ResponseStatusException;
++import java.util.List;
++import java.util.Optional;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++class TipoRecebimentoPermissaoServiceTest {
++    final ValidadorAcessoEmpresaDoUsuario acesso = mock(ValidadorAcessoEmpresaDoUsuario.class, withSettings().mockMaker("mock-maker-subclass"));
++    final UsuarioEmpresaVinculoService vinculos = mock(UsuarioEmpresaVinculoService.class, withSettings().mockMaker("mock-maker-subclass"));
++    final UsuarioEmpresaVinculoRepository repository = mock(UsuarioEmpresaVinculoRepository.class, withSettings().mockMaker("mock-maker-subclass"));
++    final TipoRecebimentoPermissaoService service = new TipoRecebimentoPermissaoService(acesso, vinculos, repository);
++
++    private UsuarioEmpresaVinculoEntity vinculo(PapelVinculoEmpresaEnum papel, List<String> permissoes) {
++        var vinculo = UsuarioEmpresaVinculoEntity.builder().papel(papel)
++                .status(StatusVinculoEmpresaEnum.ATIVO).permissoes(permissoes).build();
++        when(acesso.possuiVinculoComEmpresa("usuario", "empresa")).thenReturn(true);
++        when(repository.findByKeycloakIdAndIdUnicoDaEmpresa("usuario", "empresa")).thenReturn(Optional.of(vinculo));
++        when(vinculos.buscarVinculoAtivo("usuario", "empresa")).thenReturn(Optional.of(vinculo));
++        return vinculo;
++    }
++
++    @Test void colaboradorSemConfiguracaoPodeEditarPorPadrao() {
++        vinculo(PapelVinculoEmpresaEnum.COLABORADOR, null);
++        assertTrue(service.podeEditar("usuario", "empresa"));
++    }
++    @Test void colaboradorComPermissoesLegadasContinuaLiberado() {
++        vinculo(PapelVinculoEmpresaEnum.COLABORADOR, List.of("VENDAS_CONSULTAR"));
++        assertTrue(service.podeEditar("usuario", "empresa"));
++    }
++    @Test void negativaExplicitaBloqueiaColaborador() {
++        vinculo(PapelVinculoEmpresaEnum.COLABORADOR, List.of(" tipos_recebimento_editar_negado "));
++        assertFalse(service.podeEditar("usuario", "empresa"));
++        assertEquals(403, assertThrows(ResponseStatusException.class,
++                () -> service.validarEdicao("usuario", "empresa")).getStatusCode().value());
++    }
++    @Test void administradorNaoPodeSerBloqueadoPelaPermissao() {
++        vinculo(PapelVinculoEmpresaEnum.ADMINISTRADOR, List.of(TipoRecebimentoPermissaoService.BLOQUEAR_EDICAO));
++        assertTrue(service.podeEditar("usuario", "empresa"));
++    }
++    @Test void outraEmpresaNaoHerdaPermissao() {
++        vinculo(PapelVinculoEmpresaEnum.ADMINISTRADOR, List.of());
++        assertFalse(service.podeEditar("usuario", "outraEmpresa"));
++    }
++    @Test void vinculoInativoNaoUsaFallbackLegado() {
++        var v = vinculo(PapelVinculoEmpresaEnum.COLABORADOR, List.of());
++        v.setStatus(StatusVinculoEmpresaEnum.PENDENTE);
++        assertFalse(service.podeEditar("usuario", "empresa"));
++        verifyNoInteractions(acesso);
++    }
++}
+--- /dev/null
++++ b/src/main/resources/i18n/pt-BR/payment_context.json
+@@ -0,0 +1,4 @@
++{
++  "paymentSettings.contextHint": "O novo nome será usado nas telas deste comércio. O tipo financeiro e os valores das operações permanecem os mesmos.",
++  "paymentSettings.forbidden": "Você não possui permissão para editar as formas de recebimento."
++}
+--- /dev/null
++++ b/src/main/resources/i18n/en-US/payment_context.json
+@@ -0,0 +1,4 @@
++{
++  "paymentSettings.contextHint": "The new name will be used across this business. The financial type and transaction amounts stay the same.",
++  "paymentSettings.forbidden": "You do not have permission to edit payment methods."
++}
+--- /dev/null
++++ b/src/main/resources/i18n/es-ES/payment_context.json
+@@ -0,0 +1,4 @@
++{
++  "paymentSettings.contextHint": "El nuevo nombre se usará en las pantallas de este comercio. El tipo financiero y los importes de las operaciones se mantienen.",
++  "paymentSettings.forbidden": "No tienes permiso para editar las formas de cobro."
++}

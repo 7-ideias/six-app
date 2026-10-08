@@ -1,7 +1,12 @@
+import '../components/web/payment_name_editor_web.dart';
+import '../../domain/services/caixa/caixa_service.dart';
+
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
+
 import 'recebiveis_vendas_web.dart';
 import 'configuracoes_espaco_web.dart';
+
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_financial_launch_delete_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
@@ -11,7 +16,9 @@ import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../theme/six_web_action_styles.dart';
+
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
@@ -42,6 +49,63 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+  List<TiposRecebimento> _tiposPagamentoEditaveis = [];
+  bool _podeEditarTiposPagamento = false;
+  bool _editandoTipoPagamento = false;
+
+  Future<String?> _editarNomeTipoPagamento(String nome) async {
+    if (!_podeEditarTiposPagamento ||
+        _editandoTipoPagamento ||
+        _service.espacoFinanceiro != 'EMPRESA')
+      return null;
+    final candidatos = _tiposPagamentoEditaveis.where(
+      (t) => t.descricaoExibicao.trim() == nome,
+    );
+    if (candidatos.length != 1) return null;
+    final tipo = candidatos.single;
+    _editandoTipoPagamento = true;
+    try {
+      final TiposRecebimento? salvo = await showDialog<TiposRecebimento>(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (_) => PaymentNameEditorWeb(
+              tipo: tipo,
+              service: CaixaService(apiClient: _caixaApiClient),
+            ),
+      );
+      if (!mounted || salvo == null) return null;
+      setState(() {
+        _tiposPagamentoEditaveis = [
+          for (final item in _tiposPagamentoEditaveis)
+            if (item.codigoTipo == salvo.codigoTipo) salvo else item,
+        ];
+        final selecionados =
+            _formasPagamentoSelecionadas
+                .map((label) => _codigoTipoPorDescricaoFormaPagamento[label])
+                .whereType<String>()
+                .toSet();
+        final formas = _montarFormasPagamento(_tiposPagamentoEditaveis);
+        _tiposRecebimentoFiltro = ['Todos', ...formas];
+        _formasPagamentoSelecionadas
+          ..clear()
+          ..addAll(
+            formas.where(
+              (label) => selecionados.contains(
+                _codigoTipoPorDescricaoFormaPagamento[label],
+              ),
+            ),
+          );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('paymentSettings.saved'))),
+      );
+      return salvo.descricaoExibicao;
+    } finally {
+      _editandoTipoPagamento = false;
+    }
+  }
+
   bool _trocandoEspaco = false;
   Future<void> _trocarEspaco(String espaco) async {
     if (_trocandoEspaco ||
@@ -380,11 +444,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _carregarTiposPagamentoConfigurados() async {
+    final espaco = _service.espacoFinanceiro;
+    _podeEditarTiposPagamento = false;
     try {
       final informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      if (!mounted || espaco != _service.espacoFinanceiro) return;
       final formas = _montarFormasPagamento(informacoes.tiposRecebimento);
-      if (!mounted || formas.isEmpty) return;
       setState(() {
+        _tiposPagamentoEditaveis = informacoes.tiposRecebimento;
+        _podeEditarTiposPagamento =
+            espaco == 'EMPRESA' && informacoes.podeEditarTiposRecebimento;
         _tiposRecebimentoFiltro = <String>['Todos', ...formas];
         _formasPagamentoSelecionadas.removeWhere(
           (forma) => !_tiposRecebimentoFiltro.contains(forma),
@@ -1798,6 +1867,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       selectedValues: _formasPagamentoSelecionadas,
       icon: Icons.payments_outlined,
       onChanged: _selecionarTiposPagamento,
+      onEdit: _podeEditarTiposPagamento ? _editarNomeTipoPagamento : null,
     );
   }
 
@@ -2600,6 +2670,7 @@ class _AgendaMultiSelectDropdown extends StatefulWidget {
     required this.value,
     required this.values,
     required this.selectedValues,
+    this.onEdit,
     required this.icon,
     required this.onChanged,
     this.width,
@@ -2609,6 +2680,7 @@ class _AgendaMultiSelectDropdown extends StatefulWidget {
   final String value;
   final List<String> values;
   final Set<String> selectedValues;
+  final Future<String?> Function(String)? onEdit;
   final IconData icon;
   final ValueChanged<Set<String>> onChanged;
   final double? width;
@@ -2654,6 +2726,7 @@ class _AgendaMultiSelectDropdownState
           label: widget.label,
           values: widget.values,
           selectedValues: widget.selectedValues,
+          onEdit: widget.onEdit,
         ),
       ],
     );
@@ -2683,11 +2756,13 @@ class _AgendaMultiSelectMenuEntry extends PopupMenuEntry<Set<String>> {
     required this.label,
     required this.values,
     required this.selectedValues,
+    this.onEdit,
   });
 
   final String label;
   final List<String> values;
   final Set<String> selectedValues;
+  final Future<String?> Function(String)? onEdit;
 
   @override
   double get height {
@@ -2713,11 +2788,29 @@ class _AgendaMultiSelectMenuEntry extends PopupMenuEntry<Set<String>> {
 class _AgendaMultiSelectMenuEntryState
     extends State<_AgendaMultiSelectMenuEntry> {
   late final Set<String> _selection;
+  late final List<String> _values;
+  bool _editing = false;
 
   @override
   void initState() {
     super.initState();
     _selection = Set<String>.from(widget.selectedValues);
+    _values = List<String>.from(widget.values);
+  }
+
+  Future<void> _edit(String value) async {
+    if (_editing) return;
+    setState(() => _editing = true);
+    try {
+      final updated = await widget.onEdit!(value);
+      if (!mounted || updated == null) return;
+      setState(() {
+        _values[_values.indexOf(value)] = updated;
+        if (_selection.remove(value)) _selection.add(updated);
+      });
+    } finally {
+      if (mounted) setState(() => _editing = false);
+    }
   }
 
   void _toggle(String value) {
@@ -2781,11 +2874,15 @@ class _AgendaMultiSelectMenuEntryState
                       onTap: () => setState(_selection.clear),
                     ),
                     const SizedBox(height: 4),
-                    ...widget.values.map(
+                    ..._values.map(
                       (value) => _AgendaMultiSelectMenuTile(
                         label: value,
                         selected: _selection.contains(value),
                         onTap: () => _toggle(value),
+                        onEdit:
+                            widget.onEdit == null || _editing
+                                ? null
+                                : () => _edit(value),
                       ),
                     ),
                   ],
@@ -2827,11 +2924,13 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.onEdit,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -2875,6 +2974,12 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onEdit != null)
+                  IconButton(
+                    tooltip: context.t('paymentSettings.edit'),
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                  ),
               ],
             ),
           ),

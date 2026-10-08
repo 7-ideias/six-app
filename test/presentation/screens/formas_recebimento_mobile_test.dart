@@ -46,7 +46,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'Somente administradores podem alterar as formas de recebimento.',
+          'Você não possui permissão para editar as formas de recebimento.',
         ),
         findsOneWidget,
       );

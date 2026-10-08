@@ -1,7 +1,12 @@
+import '../components/mobile/payment_name_editor_mobile.dart';
+import '../../domain/services/caixa/caixa_service.dart';
+
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
+
 import 'recebiveis_vendas_mobile.dart';
 import 'configuracoes_espaco_mobile.dart';
+
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
@@ -46,6 +51,68 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
 
 class _AgendaFinanceiraMobileScreenState
     extends State<AgendaFinanceiraMobileScreen> {
+  List<TiposRecebimento> _tiposPagamentoEditaveis = [];
+  bool _podeEditarTiposPagamento = false;
+  bool _editandoTipoPagamento = false;
+
+  Future<String?> _editarNomeTipoPagamento(String nome) async {
+    if (!_podeEditarTiposPagamento ||
+        _editandoTipoPagamento ||
+        _service.espacoFinanceiro != 'EMPRESA')
+      return null;
+    final candidatos = _tiposPagamentoEditaveis.where(
+      (t) => t.descricaoExibicao.trim() == nome,
+    );
+    if (candidatos.length != 1) return null;
+    final tipo = candidatos.single;
+    _editandoTipoPagamento = true;
+    try {
+      final TiposRecebimento? salvo =
+          await showModalBottomSheet<TiposRecebimento>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            isDismissible: false,
+            enableDrag: false,
+            backgroundColor: context.sixMobileColors.surface,
+            builder:
+                (_) => PaymentNameEditorMobile(
+                  tipo: tipo,
+                  service: CaixaService(apiClient: _caixaApiClient),
+                ),
+          );
+      if (!mounted || salvo == null) return null;
+      setState(() {
+        _tiposPagamentoEditaveis = [
+          for (final item in _tiposPagamentoEditaveis)
+            if (item.codigoTipo == salvo.codigoTipo) salvo else item,
+        ];
+        final selecionados =
+            _formasPagamentoSelecionadas
+                .map((label) => _codigoTipoPorDescricaoFormaPagamento[label])
+                .whereType<String>()
+                .toSet();
+        final formas = _montarFormasPagamentoFiltro(_tiposPagamentoEditaveis);
+        _formasPagamentoFiltro = ['Todos', ...formas];
+        _formasPagamentoSelecionadas
+          ..clear()
+          ..addAll(
+            formas.where(
+              (label) => selecionados.contains(
+                _codigoTipoPorDescricaoFormaPagamento[label],
+              ),
+            ),
+          );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('paymentSettings.saved'))),
+      );
+      return salvo.descricaoExibicao;
+    } finally {
+      _editandoTipoPagamento = false;
+    }
+  }
+
   bool _trocandoEspaco = false;
   Future<void> _trocarEspaco(String espaco) async {
     if (_trocandoEspaco ||
@@ -523,14 +590,19 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _carregarTiposPagamentoConfigurados() async {
+    final espaco = _service.espacoFinanceiro;
+    _podeEditarTiposPagamento = false;
     try {
       final InformacoesBasicasCaixaResponse informacoes =
           await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoFiltro(
         informacoes.tiposRecebimento,
       );
-      if (!mounted || formas.isEmpty) return;
       setState(() {
+        _tiposPagamentoEditaveis = informacoes.tiposRecebimento;
+        _podeEditarTiposPagamento =
+            espaco == 'EMPRESA' && informacoes.podeEditarTiposRecebimento;
         _formasPagamentoFiltro = <String>['Todos', ...formas];
         _formasPagamentoSelecionadas.removeWhere(
           (String forma) => !_formasPagamentoFiltro.contains(forma),
@@ -1737,6 +1809,19 @@ class _AgendaFinanceiraMobileScreenState
                       SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Tipo de pagamento',
+                        onEdit:
+                            !_podeEditarTiposPagamento
+                                ? null
+                                : (value) async {
+                                  final atualizado =
+                                      await _editarNomeTipoPagamento(value);
+                                  if (!context.mounted || atualizado == null)
+                                    return;
+                                  setModalState(() {
+                                    if (formasPagamentoTemp.remove(value))
+                                      formasPagamentoTemp.add(atualizado);
+                                  });
+                                },
                         values: _formasPagamentoFiltro,
                         selectedValues: formasPagamentoTemp,
                         onSelected: (value) {
@@ -1917,6 +2002,7 @@ class _AgendaFinanceiraMobileScreenState
     String? selected,
     Set<String>? selectedValues,
     required ValueChanged<String> onSelected,
+    Future<void> Function(String)? onEdit,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1942,7 +2028,7 @@ class _AgendaFinanceiraMobileScreenState
                             ? selectedValues.isEmpty
                             : selectedValues.contains(value))
                         : value == selected;
-                return ChoiceChip(
+                final chip = ChoiceChip(
                   selected: isSelected,
                   label: Text(value),
                   onSelected: (_) => onSelected(value),
@@ -1956,6 +2042,22 @@ class _AgendaFinanceiraMobileScreenState
                     color: isSelected ? _colors.onPrimary : _titleTextColor,
                     fontWeight: FontWeight.w700,
                   ),
+                );
+                if (onEdit == null || value == 'Todos') return chip;
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: chip),
+                    IconButton.filledTonal(
+                      tooltip: context.t('paymentSettings.edit'),
+                      style: IconButton.styleFrom(
+                        backgroundColor: _colors.softAccentSurface,
+                        foregroundColor: _colors.accent,
+                      ),
+                      onPressed: () => onEdit(value),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                    ),
+                  ],
                 );
               }).toList(),
         ),

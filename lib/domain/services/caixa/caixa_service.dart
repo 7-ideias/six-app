@@ -25,6 +25,18 @@ class CaixaService {
     );
   }
 
+  Future<TiposRecebimento> atualizarNomeTipoRecebimento({
+    required String codigoTipo,
+    required String nome,
+  }) async {
+    final tipos = await _apiClient.listarTiposRecebimentoConfiguraveis();
+    final atual = tipos.firstWhere((tipo) => tipo.codigoTipo == codigoTipo);
+    return _apiClient.atualizarTipoRecebimentoConfiguravel(
+      codigoTipo: codigoTipo,
+      request: atual.copyWith(descricaoExibicao: nome.trim()),
+    );
+  }
+
   Future<void> restaurarTiposRecebimentoPadrao() {
     return _apiClient.restaurarTiposRecebimentoPadrao();
   }
