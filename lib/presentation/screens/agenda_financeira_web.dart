@@ -1399,7 +1399,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
     if (resultado == null || !mounted) return;
     final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
-    if (contaFinanceiraId == null || !mounted) return;
+    // Dinheiro vai para o caixa; a conta pode ser nula após a validação do formulário.
     await _executarComLoading(() async {
       final String? idSessaoCaixa =
           _service.espacoFinanceiro == 'PESSOAL'
