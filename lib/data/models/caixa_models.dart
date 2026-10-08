@@ -2,6 +2,7 @@ import 'package:sixpos/data/models/regionalizacao_models.dart';
 
 class InformacoesBasicasCaixaResponse {
   final bool possuiSessaoAberta;
+  final bool podeEditarTiposRecebimento;
   final List<TiposRecebimento> tiposRecebimento;
   final List<String> caixas;
   final List<CaixaOuGuiche> caixaOuGuiche;
@@ -15,11 +16,13 @@ class InformacoesBasicasCaixaResponse {
     required this.caixaOuGuiche,
     required this.formas,
     this.regionalizacao,
+    this.podeEditarTiposRecebimento = false,
   });
 
   factory InformacoesBasicasCaixaResponse.fromJson(Map<String, dynamic> json) {
     return InformacoesBasicasCaixaResponse(
       possuiSessaoAberta: json['possuiSessaoAberta'] ?? false,
+      podeEditarTiposRecebimento: json['podeEditarTiposRecebimento'] == true,
       tiposRecebimento:
           (json['tiposRecebimento'] as List? ?? [])
               .map((item) => TiposRecebimento.fromJson(item))

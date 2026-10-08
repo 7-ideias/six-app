@@ -24,6 +24,43 @@ void main() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
   });
 
+  testWidgets('editing payment name preserves selection in the mobile filter', (
+    tester,
+  ) async {
+    final api = _EditableCaixaApiClient();
+    await _pumpAgenda(tester, service: _FakeAgendaService(), caixa: api);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Filtros'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Pix'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Pix'));
+    await tester.pump();
+    await tester.ensureVisible(find.byTooltip('Editar nome').last);
+    await tester.tap(find.byTooltip('Editar nome').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Pix da loja');
+    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(api.saved!.codigoTipo, 'tipo2');
+    expect(
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Pix da loja'))
+          .selected,
+      isTrue,
+    );
+    expect(find.widgetWithText(ChoiceChip, 'Pix'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('payment edit is hidden without backend permission', (
+    tester,
+  ) async {
+    await _pumpAgenda(tester, service: _FakeAgendaService());
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Filtros'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Editar nome'), findsNothing);
+  });
+
   testWidgets('agenda renders financial states with dark themed surfaces', (
     WidgetTester tester,
   ) async {
@@ -240,6 +277,7 @@ const List<LocalizationsDelegate<dynamic>> _testLocalizationsDelegates =
 Future<void> _pumpAgenda(
   WidgetTester tester, {
   required _FakeAgendaService service,
+  CaixaApiClient? caixa,
   Brightness brightness = Brightness.dark,
   bool settleInitialLoad = true,
 }) {
@@ -248,7 +286,7 @@ Future<void> _pumpAgenda(
     AgendaFinanceiraMobileScreen(
       lancamentoService: service,
       acoesFinanceiras: _FakeAgendaActions(),
-      caixaApiClient: _FakeCaixaApiClient(),
+      caixaApiClient: caixa ?? _FakeCaixaApiClient(),
       enablePeriodHint: false,
     ),
     brightness: brightness,
@@ -526,4 +564,34 @@ class _RegionalApi implements RegionalizacaoApiClient {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw StateError('Unexpected call');
+}
+
+class _EditableCaixaApiClient extends _FakeCaixaApiClient {
+  TiposRecebimento? saved;
+
+  @override
+  Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa() async {
+    final original = await super.getInformacoesBasicasDoCaixa();
+    return InformacoesBasicasCaixaResponse(
+      possuiSessaoAberta: false,
+      podeEditarTiposRecebimento: true,
+      tiposRecebimento: original.tiposRecebimento,
+      caixas: [],
+      caixaOuGuiche: [],
+      formas: [],
+    );
+  }
+
+  @override
+  Future<List<TiposRecebimento>> listarTiposRecebimentoConfiguraveis() async =>
+      (await getInformacoesBasicasDoCaixa()).tiposRecebimento;
+
+  @override
+  Future<TiposRecebimento> atualizarTipoRecebimentoConfiguravel({
+    required String codigoTipo,
+    required TiposRecebimento request,
+  }) async {
+    saved = request;
+    return request;
+  }
 }

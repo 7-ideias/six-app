@@ -137,6 +137,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.settlement.accountRequired': 'Selecione a conta para confirmar.',
 
     'space.none': 'Não informada',
+    'paymentSettings.contextHint':
+        'O novo nome será usado nas telas deste comércio. O tipo financeiro e os valores das operações permanecem os mesmos.',
     'paymentSettings.title': 'Formas de recebimento',
     'paymentSettings.hint':
         'Altere o nome exibido sem mudar o tipo financeiro.',
@@ -150,7 +152,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível carregar as formas de recebimento.',
     'paymentSettings.saveError': 'Não foi possível salvar. Tente novamente.',
     'paymentSettings.forbidden':
-        'Somente administradores podem alterar as formas de recebimento.',
+        'Você não possui permissão para editar as formas de recebimento.',
     'paymentSettings.expired': 'Sessão expirada. Faça login novamente.',
     'paymentSettings.saved': 'Forma de recebimento atualizada.',
     'paymentSettings.active': 'Ativo',
@@ -2933,6 +2935,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.settlement.accountRequired': 'Select an account to confirm.',
 
     'space.none': 'Not specified',
+    'paymentSettings.contextHint':
+        'The new name will be used across this business. The financial type and transaction amounts stay the same.',
     'paymentSettings.title': 'Payment methods',
     'paymentSettings.hint':
         'Change the displayed name without changing the financial type.',
@@ -2945,7 +2949,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'paymentSettings.loadError': 'Unable to load payment methods.',
     'paymentSettings.saveError': 'Unable to save. Try again.',
     'paymentSettings.forbidden':
-        'Only administrators can edit payment methods.',
+        'You do not have permission to edit payment methods.',
     'paymentSettings.expired': 'Session expired. Sign in again.',
     'paymentSettings.saved': 'Payment method updated.',
     'paymentSettings.active': 'Active',
@@ -5516,6 +5520,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Seleccione una cuenta para confirmar.',
 
     'space.none': 'Sin especificar',
+    'paymentSettings.contextHint':
+        'El nuevo nombre se usará en las pantallas de este comercio. El tipo financiero y los importes de las operaciones se mantienen.',
     'paymentSettings.title': 'Formas de pago',
     'paymentSettings.hint':
         'Cambie el nombre mostrado sin cambiar el tipo financiero.',
@@ -5528,7 +5534,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'paymentSettings.loadError': 'No se pudieron cargar las formas de pago.',
     'paymentSettings.saveError': 'No se pudo guardar. Inténtelo de nuevo.',
     'paymentSettings.forbidden':
-        'Solo los administradores pueden editar las formas de pago.',
+        'No tienes permiso para editar las formas de cobro.',
     'paymentSettings.expired': 'Sesión caducada. Inicie sesión nuevamente.',
     'paymentSettings.saved': 'Forma de pago actualizada.',
     'paymentSettings.active': 'Activo',
