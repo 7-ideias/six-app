@@ -875,6 +875,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
               Icons.person_outline_rounded,
               '${context.t('vendasAReceber.createdBy', fallback: 'Criada por')} $colaborador',
             ),
+            if (venda.formaPagamentoRealizada.trim().isNotEmpty)
+              _chip(Icons.payments_outlined, venda.formaPagamentoRealizada),
             _chip(Icons.schedule_rounded, _formatarData(venda.dataCompetencia)),
             _chip(
               Icons.inventory_2_outlined,

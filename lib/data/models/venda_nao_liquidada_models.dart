@@ -11,6 +11,7 @@ class VendaNaoLiquidadaModel {
     required this.valorAberto,
     required this.status,
     required this.codigoTipoRecebimento,
+    this.formaPagamentoRealizada = '',
     required this.dataCompetencia,
     required this.dataVencimento,
     required this.idCliente,
@@ -30,6 +31,7 @@ class VendaNaoLiquidadaModel {
   final double valorAberto;
   final String status;
   final String codigoTipoRecebimento;
+  final String formaPagamentoRealizada;
   final DateTime? dataCompetencia;
   final DateTime? dataVencimento;
   final String idCliente;
@@ -53,6 +55,8 @@ class VendaNaoLiquidadaModel {
       valorAberto: _toDouble(json['valorAberto']),
       status: (json['status'] ?? '').toString(),
       codigoTipoRecebimento: (json['codigoTipoRecebimento'] ?? '').toString(),
+      formaPagamentoRealizada:
+          (json['formaPagamentoRealizada'] ?? '').toString(),
       dataCompetencia: _toDateTime(json['dataCompetencia']),
       dataVencimento: _toDateTime(json['dataVencimento']),
       idCliente: (json['idCliente'] ?? '').toString(),

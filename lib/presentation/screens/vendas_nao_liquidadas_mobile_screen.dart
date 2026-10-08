@@ -1559,6 +1559,8 @@ class _VendasNaoLiquidadasMobileScreenState
                 children: <Widget>[
                   _pill(_formatarData(venda.dataCompetencia)),
                   _pill(_formatarQuantidadeItens(quantidadeItens)),
+                  if (venda.formaPagamentoRealizada.trim().isNotEmpty)
+                    _pill(venda.formaPagamentoRealizada),
                   if (venda.status.trim().isNotEmpty)
                     _pill(
                       venda.status,
@@ -1762,6 +1764,8 @@ class _VendasNaoLiquidadasMobileScreenState
               children: <Widget>[
                 _pill(_formatarData(venda.dataCompetencia)),
                 _pill(_formatarQuantidadeItens(quantidadeItens)),
+                if (venda.formaPagamentoRealizada.trim().isNotEmpty)
+                  _pill(venda.formaPagamentoRealizada),
                 _pill(venda.status),
                 if (venda.dataVencimento != null)
                   _pill(
@@ -2104,10 +2108,10 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   String _descricaoRecebimento(VendaNaoLiquidadaRecebimentoModel item) {
-    final String descricao = item.descricaoTipoRecebimento.trim();
-    if (descricao.isNotEmpty) return descricao;
     final String forma = item.formaPagamentoRealizada.trim();
     if (forma.isNotEmpty) return forma;
+    final String descricao = item.descricaoTipoRecebimento.trim();
+    if (descricao.isNotEmpty) return descricao;
     final String codigo = item.codigoTipoRecebimento.trim();
     if (codigo.isNotEmpty) return codigo;
     return _txt('vendasNaoLiquidadas.recebimento', 'Recebimento');
