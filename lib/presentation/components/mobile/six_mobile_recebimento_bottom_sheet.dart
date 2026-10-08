@@ -173,6 +173,13 @@ class _SixMobileRecebimentoBottomSheetState
   bool _carregandoTipos = true;
   String? _erroValor;
   String? _contaFinanceiraId;
+
+  bool _formaExigeConta(_RecebimentoFormaDraft forma) =>
+      widget.exigirConta &&
+      (widget.pagamento ||
+          forma.opcao.codigoTipo.trim().toLowerCase() != 'tipo1');
+
+  bool get _exigeContaSelecionada => _formas.any(_formaExigeConta);
   SixMobileRecebimentoTipo? _tipo;
   List<SixMobileTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
 
@@ -399,7 +406,8 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   Future<void> _confirmar() async {
-    if (widget.exigirConta && (_contaFinanceiraId?.trim().isEmpty ?? true)) {
+    if (_exigeContaSelecionada &&
+        (_contaFinanceiraId?.trim().isEmpty ?? true)) {
       setState(
         () => _erroValor = context.t('agenda.settlement.accountRequired'),
       );
@@ -438,7 +446,8 @@ class _SixMobileRecebimentoBottomSheetState
       }
       recebimentos.add(
         RecebimentoFormaInput(
-          contaFinanceiraId: widget.exigirConta ? _contaFinanceiraId : null,
+          contaFinanceiraId:
+              _formaExigeConta(forma) ? _contaFinanceiraId : null,
           codigo: forma.opcao.codigoTipo,
           descricao: forma.opcao.descricao,
           valor: valor,
@@ -579,7 +588,7 @@ class _SixMobileRecebimentoBottomSheetState
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
                               const SizedBox(height: 16),
-                              if (widget.exigirConta) ...[
+                              if (_exigeContaSelecionada) ...[
                                 ContaFinanceiraMobileField(
                                   key: const ValueKey('settlement-account'),
                                   espaco: widget.espacoFinanceiro,
