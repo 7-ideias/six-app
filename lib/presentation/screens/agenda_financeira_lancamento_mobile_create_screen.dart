@@ -530,7 +530,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                           : () {
                             setState(() {
                               _tipoSelecionado = tipo;
-                              _alinharCamposComTipo(tipo);
+                              _alinharCamposComTipo();
                             });
                           },
                   borderRadius: BorderRadius.circular(18),
@@ -1094,7 +1094,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   List<String> _statusParaTipo() => <String>['Previsto', 'Pendente'];
 
-  void _alinharCamposComTipo(String tipo) {
+  void _alinharCamposComTipo() {
     final List<String> statusPermitidos = _statusParaTipo();
     if (!statusPermitidos.contains(_statusSelecionado)) {
       _statusSelecionado = 'Pendente';
