@@ -959,7 +959,7 @@ class _AgendaFinanceiraMobileScreenState
             : <String>[];
 
     if (item['serieRecorrenciaId'] != null &&
-        !['PAGO', 'RECEBIDO', 'CANCELADO']
+        !['PAGO', 'RECEBIDO', 'CANCELADO', 'PARCIAL']
             .contains(item['status']?.toString().toUpperCase())) {
       acoes.add('Cancelar');
     }
