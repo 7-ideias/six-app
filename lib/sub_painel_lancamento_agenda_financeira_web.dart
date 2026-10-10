@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
 import 'package:sixpos/presentation/components/web/agenda_centro_custo_web_field.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
@@ -778,6 +779,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
       return;
     }
 
+    if (widget.modoEdicao && _recorrencia.serieId != null) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: false,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: false,
+      );
+      if (confirmado == null || !mounted) return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest();
     setState(() => _isLoading = true);
     late final String idGerado;
@@ -831,6 +845,44 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Future<void> _confirmarExcluirLancamento() async {
     final String? id = _idLancamentoEdicao;
+    if (_recorrencia.serieId != null && id != null && id.trim().isNotEmpty) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: false,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: true,
+        permitirTrocarEscopo: true,
+      );
+      if (confirmado == null || !mounted) return;
+      setState(() => _isLoading = true);
+      try {
+        final response = await _service.cancelarRecorrencia(
+          id,
+          escopo: confirmado.escopo,
+          motivo: confirmado.motivo,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop(<String, dynamic>{
+          'id': response.id.isEmpty ? id : response.id,
+          'deleted': true,
+          'status': 'CANCELADO',
+        });
+      } on AgendaFinanceiraLancamentoApiException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(recorrenciaLabel(
+              context, e.codigoRecorrencia ?? 'saveError',
+            ))),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+      return;
+    }
     if (!widget.modoEdicao || id == null || id.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
