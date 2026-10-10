@@ -609,12 +609,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           currentUserNameProvider?.call() ?? _nomeColaboradorAtual();
       final dataOperacao = nowProvider?.call() ?? DateTime.now();
       final input = OperacaoVendaInput(
-        descricao:
-            receberDepois
-                ? (formasPagamento.isEmpty
-                    ? 'Venda mobile para receber depois ${dataOperacao.toIso8601String()}'
-                    : 'Venda mobile com recebimento parcial ${dataOperacao.toIso8601String()}')
-                : 'Venda mobile ${dataOperacao.toIso8601String()}',
+        // Recebimento parcial, futuro e data não fazem parte do nome da venda.
+        descricao: 'Venda',
         idColaborador: idColaborador,
         nomeColaborador: nomeColaborador,
         itens: _itens.map((item) => item.toInput()).toList(growable: false),
