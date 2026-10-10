@@ -5,6 +5,8 @@ void main() {
   test('exibe competencia em MM/AAAA mesmo para registros antigos', () {
     expect(CompetenciaFinanceira.formatar(DateTime(2026, 10, 26)), '10/2026');
     expect(CompetenciaFinanceira.formatar(DateTime(2027, 1, 31)), '01/2027');
+    expect(CompetenciaFinanceira.formatarValor('2026-10-29T23:15:00'), '10/2026');
+    expect(CompetenciaFinanceira.formatarValor(null), '-');
   });
 
   test('normaliza dia e hora sem alterar o mês ou ano', () {
