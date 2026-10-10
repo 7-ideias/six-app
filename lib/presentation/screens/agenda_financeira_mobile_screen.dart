@@ -2490,9 +2490,13 @@ class _AgendaFinanceiraMobileScreenState
                 .map((dynamic acao) => acao.toString())
                 .toSet()
             : <String>{};
-    acoesInformadas
-      ..add('Editar')
-      ..add('Detalhes');
+    if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
+        .contains(item['status']?.toString())) {
+      acoesInformadas.add('Editar');
+    } else {
+      acoesInformadas.remove('Editar');
+    }
+    acoesInformadas.add('Detalhes');
     const List<String> ordemAcoes = <String>[
       'Editar',
       'Liquidar',
