@@ -25,7 +25,7 @@ void main() {
             mobile: false,
             recorrencia: criarRecorrencia(),
             descricao: 'Aluguel',
-            valorFormatado: 'R\\$ 1300',
+            valorFormatado: 'R\$ 1300',
             vencimentoFormatado: '15/03/2027',
             cancelar: false,
           );
@@ -53,7 +53,7 @@ void main() {
             mobile: true,
             recorrencia: criarRecorrencia(),
             descricao: 'Aluguel',
-            valorFormatado: 'R\\$ 1000',
+            valorFormatado: 'R\$ 1000',
             vencimentoFormatado: '10/03/2027',
             cancelar: true,
             permitirTrocarEscopo: true,
