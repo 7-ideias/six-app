@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
 import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
@@ -637,9 +638,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final double valorTotal = _toDouble(_valorController.text);
     final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
-    final String origem = widget.modoEdicao && _origemPersistida.isNotEmpty
-        ? _origemPersistida
-        : (_tipoSelecionado == 'Receber' ? 'RECEITA_MANUAL' : 'DESPESA_MANUAL');
+    final String origem = widget.modoEdicao
+        ? AgendaFinanceiraOrigem.preservada(_origemPersistida, _tipoSelecionado)
+        : AgendaFinanceiraOrigem.manual(_tipoSelecionado);
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoIdDigitado = _idContatoController.text.trim();
     final String contatoNome = _contatoController.text.trim();
