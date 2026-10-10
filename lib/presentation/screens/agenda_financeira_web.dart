@@ -3325,17 +3325,23 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                         ],
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: () async {
-                        final excluido = await onExcluirLancamento();
-                        if (excluido && context.mounted) {
-                          Navigator.of(context).pop(true);
-                        }
-                      },
-                      icon: const Icon(Icons.delete_forever_outlined),
-                      label: const Text('Excluir lançamento'),
-                      style: SixWebActionStyles.dangerText(context),
-                    ),
+                    if (!['Cancelado', 'Pago', 'Recebido', 'Parcial']
+                        .contains(item['status']?.toString()))
+                      TextButton.icon(
+                        onPressed: () async {
+                          final excluido = await onExcluirLancamento();
+                          if (excluido && context.mounted) {
+                            Navigator.of(context).pop(true);
+                          }
+                        },
+                        icon: Icon(item['serieRecorrenciaId'] != null
+                            ? Icons.event_busy_outlined
+                            : Icons.delete_forever_outlined),
+                        label: Text(item['serieRecorrenciaId'] != null
+                            ? 'Cancelar ocorrência'
+                            : 'Excluir lançamento'),
+                        style: SixWebActionStyles.dangerText(context),
+                      ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       icon: Icon(Icons.close_rounded, color: tokens.mutedText),
