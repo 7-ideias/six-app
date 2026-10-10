@@ -13,6 +13,8 @@ import 'package:sixpos/presentation/components/web/six_web_financial_launch_dele
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 
 import 'dart:async';
 
@@ -1062,6 +1064,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 .toList()
             : <String>[];
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
+    if (item['serieRecorrenciaId'] != null &&
+        !['PAGO', 'RECEBIDO', 'CANCELADO']
+            .contains(item['status']?.toString().toUpperCase())) {
+      acoes.add('Cancelar');
+    }
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
@@ -1157,6 +1164,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       await _editarLancamento(item);
       return;
     }
+    if (comando == 'cancelar') {
+      await _cancelarRecorrencia(item);
+      return;
+    }
     if (comando == 'registrar parcial') {
       await _registrarParcial(item);
       return;
@@ -1168,6 +1179,43 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Ação "$acao" ainda não implementada.')),
     );
+  }
+
+  Future<bool> _cancelarRecorrencia(Map<String, dynamic> item) async {
+    if (_executandoAcao || item['serieRecorrenciaId'] == null) return false;
+    final id = item['id']?.toString() ?? '';
+    if (id.isEmpty) return false;
+    final config = AgendaFinanceiraRecorrencia.fromJson(item);
+    final confirmacao = await confirmarImpactoRecorrencia(
+      context,
+      mobile: false,
+      recorrencia: config,
+      descricao: item['descricao']?.toString() ?? 'Lançamento recorrente',
+      valorFormatado: _formatarMoeda(_toDouble(item['valorOriginal'] ?? item['valor'])),
+      vencimentoFormatado: item['vencimento']?.toString() ?? '',
+      cancelar: true,
+      permitirTrocarEscopo: true,
+    );
+    if (confirmacao == null || !mounted) return false;
+    setState(() => _executandoAcao = true);
+    try {
+      await _service.cancelarRecorrencia(id,
+          escopo: confirmacao.escopo, motivo: confirmacao.motivo);
+      if (!mounted) return false;
+      await _consultar(mostrarFeedback: true);
+      return true;
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError')),
+      ));
+      return false;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível cancelar a ocorrência.')));
+      return false;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
   }
 
   Future<void> _mostrarDetalhesLancamento(Map<String, dynamic> item) async {
@@ -1216,6 +1264,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<bool> _confirmarExcluirLancamentoDetalhe(
     Map<String, dynamic> item,
   ) async {
+    if (item['serieRecorrenciaId'] != null) {
+      return _cancelarRecorrencia(item);
+    }
     final id = item['id']?.toString() ?? '';
     if (id.trim().isEmpty) return false;
 
