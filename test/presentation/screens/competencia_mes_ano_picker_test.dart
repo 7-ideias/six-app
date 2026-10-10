@@ -28,10 +28,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('2026'), findsOneWidget);
         expect(find.byIcon(Icons.calendar_today), findsNothing);
-        await tester.tap(find.byTooltip('Próximo ano'));
+        await tester.tap(find.byTooltip('Next year'));
         await tester.pumpAndSettle();
         expect(find.text('2027'), findsOneWidget);
-        await tester.tap(find.text('Aplicar'));
+        await tester.tap(find.text('Apply'));
         await tester.pumpAndSettle();
         expect(selecionada, DateTime(2027, 10, 1));
       },
