@@ -2257,6 +2257,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       tokens.info,
                       icon: Icons.repeat,
                     ),
+                  if (item['ocorrenciaAjustada'] == true)
+                    _agendaPill('Ajustado', tokens.info, icon: Icons.tune_outlined),
                   if (_toDouble(item['valorConfirmado']) > 0)
                     _agendaPill(
                       'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
