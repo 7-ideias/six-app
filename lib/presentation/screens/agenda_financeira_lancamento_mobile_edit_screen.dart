@@ -8,6 +8,7 @@ import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_centro_custo_mobile_field.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_recorrencia_mobile_fields.dart';
 import 'package:flutter/material.dart';
@@ -415,6 +416,39 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   Future<void> _excluir() async {
+    if (_recorrencia.serieId != null) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: true,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: true,
+        permitirTrocarEscopo: true,
+      );
+      if (confirmado == null || !mounted) return;
+      setState(() => _salvando = true);
+      try {
+        await _service.cancelarRecorrencia(
+          _idLancamento,
+          escopo: confirmado.escopo,
+          motivo: confirmado.motivo,
+        );
+        if (mounted) Navigator.pop(context, <String, dynamic>{
+          'deleted': true,
+          'id': _idLancamento,
+          'status': 'CANCELADO',
+        });
+      } on AgendaFinanceiraLancamentoApiException catch (error) {
+        if (mounted) _mostrarSnack(
+          recorrenciaLabel(context, error.codigoRecorrencia ?? 'saveError'),
+        );
+      } finally {
+        if (mounted) setState(() => _salvando = false);
+      }
+      return;
+    }
     final colors = context.sixMobileColors;
     final confirmar = await showModalBottomSheet<bool>(
       context: context,
@@ -530,6 +564,18 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       return;
     }
 
+    if (_recorrencia.serieId != null) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: true,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: false,
+      );
+      if (confirmado == null || !mounted) return;
+    }
     final LancamentoAgendaFinanceiraRequest request = _buildRequest(valorTotal);
     setState(() => _salvando = true);
     try {
