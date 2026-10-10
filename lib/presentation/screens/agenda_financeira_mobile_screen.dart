@@ -3341,19 +3341,19 @@ class _AgendaFinanceiraMobileScreenState
                     SizedBox(
                       width: double.infinity,
                       child: PopupMenuButton<FormatoImpressaoOperacao>(
-                        tooltip: 'Salvar ou compartilhar comprovante PDF',
+                        tooltip: context.t('agenda.saleItems.sharePdf'),
                         onSelected: (formato) => _compartilharComprovanteVenda(
                           item['idOperacaoComprovante']?.toString() ?? '',
                           formato,
                         ),
-                        itemBuilder: (_) => const [
+                        itemBuilder: (_) => [
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.a4,
-                            child: Text('PDF A4 · salvar / compartilhar'),
+                            child: Text(context.t('agenda.saleItems.pdfA4')),
                           ),
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.cupomTermico,
-                            child: Text('Cupom térmico · salvar / compartilhar'),
+                            child: Text(context.t('agenda.saleItems.pdfCupom')),
                           ),
                         ],
                         child: Container(
@@ -3366,7 +3366,7 @@ class _AgendaFinanceiraMobileScreenState
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                             Icon(Icons.picture_as_pdf_outlined, color: _accentColor),
                             const SizedBox(width: 8),
-                            Text('Compartilhar / salvar PDF',
+                            Text(context.t('agenda.saleItems.sharePdf'),
                               style: TextStyle(color: _accentColor, fontWeight: FontWeight.w700)),
                           ]),
                         ),
