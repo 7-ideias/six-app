@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -600,9 +601,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   LancamentoAgendaFinanceiraRequest _buildRequest(double valorTotal) {
     final bool isReceber = _tipoSelecionado == 'Receber';
     final String tipoOperacao = isReceber ? 'RECEBER' : 'PAGAR';
-    final String origem = _origemCodigoPersistida.trim().isNotEmpty
-        ? _origemCodigoPersistida
-        : (_tipoSelecionado == 'Receber' ? 'RECEITA_MANUAL' : 'DESPESA_MANUAL');
+    final String origem = AgendaFinanceiraOrigem.preservada(
+      _origemCodigoPersistida, _tipoSelecionado,
+    );
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoNome = _contatoController.text.trim();
     final String contatoId = _idContato?.trim() ?? '';
