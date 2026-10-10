@@ -1065,7 +1065,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             : <String>[];
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     if (item['serieRecorrenciaId'] != null &&
-        !['PAGO', 'RECEBIDO', 'CANCELADO']
+        !['PAGO', 'RECEBIDO', 'CANCELADO', 'PARCIAL']
             .contains(item['status']?.toString().toUpperCase())) {
       acoes.add('Cancelar');
     }
