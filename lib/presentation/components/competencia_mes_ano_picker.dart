@@ -29,12 +29,12 @@ Future<DateTime?> selecionarCompetenciaMesAno(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.t('agenda.competence.monthYearTitle', fallback: 'Competência · mês/ano'),
+                  context.t('agenda.competence.monthYearTitle'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  context.t('agenda.competence.selectMonthYear', fallback: 'Selecione somente o mês e o ano.'),
+                  context.t('agenda.competence.selectMonthYear'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 20),
@@ -42,7 +42,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      tooltip: context.t('agenda.competence.previousYear', fallback: 'Ano anterior'),
+                      tooltip: context.t('agenda.competence.previousYear'),
                       onPressed: ano > 1900 ? () => atualizar(() => ano--) : null,
                       icon: const Icon(Icons.chevron_left_rounded),
                     ),
@@ -53,7 +53,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                       ),
                     ),
                     IconButton(
-                      tooltip: context.t('agenda.competence.nextYear', fallback: 'Próximo ano'),
+                      tooltip: context.t('agenda.competence.nextYear'),
                       onPressed: ano < 2200 ? () => atualizar(() => ano++) : null,
                       icon: const Icon(Icons.chevron_right_rounded),
                     ),
@@ -103,7 +103,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: Text(context.t('common.back', fallback: 'Voltar')),
+                        child: Text(context.t('agenda.competence.back')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -112,7 +112,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                         onPressed: () => Navigator.of(dialogContext).pop(
                           DateTime(ano, mes),
                         ),
-                        child: Text(context.t('agenda.competence.apply', fallback: 'Aplicar')),
+                        child: Text(context.t('agenda.competence.apply')),
                       ),
                     ),
                   ],
