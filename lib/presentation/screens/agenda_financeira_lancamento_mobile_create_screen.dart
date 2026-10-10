@@ -289,11 +289,11 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         ),
         SizedBox(height: 12),
         _selectorTile(
-          label: context.t('agenda.form.situation', fallback: 'Status'),
+          label: context.t('agenda.form.situation'),
           value: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
           icon: Icons.flag_outlined,
           onTap: () => _selecionarValor(
-            titulo: context.t('agenda.form.situation', fallback: 'Status'),
+            titulo: context.t('agenda.form.situation'),
             opcoes: _statusParaTipo()
                 .map((s) => AgendaFinanceiraStatusLabels.rotulo(context, s))
                 .toList(),
