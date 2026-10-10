@@ -5,4 +5,11 @@ abstract final class CompetenciaFinanceira {
 
   static String formatar(DateTime data) =>
       '${data.month.toString().padLeft(2, '0')}/${data.year.toString().padLeft(4, '0')}';
+
+  static String formatarValor(Object? valor) {
+    final DateTime? data = valor is DateTime
+        ? valor
+        : DateTime.tryParse(valor?.toString() ?? '');
+    return data == null ? '-' : formatar(data);
+  }
 }
