@@ -812,7 +812,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                           const SizedBox(width: 10),
                           Expanded(
                             child: _selectorTile(
-                              label: context.t('agenda.form.situation', fallback: 'Status'),
+                              label: context.t('agenda.form.situation'),
                               value: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
                               icon: Icons.flag_outlined,
                               onTap:
@@ -820,7 +820,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                                           _valorConfirmado > 0
                                       ? null
                                       : () => _selecionarValor(
-                                        titulo: context.t('agenda.form.situation', fallback: 'Status'),
+                                        titulo: context.t('agenda.form.situation'),
                                         opcoes: _status.map((s) =>
                                             AgendaFinanceiraStatusLabels.rotulo(context, s)).toList(),
                                         selecionado: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
