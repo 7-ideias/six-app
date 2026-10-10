@@ -22,7 +22,7 @@ class AgendaVendaComprovanteService {
   Future<DocumentoPdfResponse> gerar(
     String idOperacao, {
     FormatoImpressaoOperacao formato = FormatoImpressaoOperacao.a4,
-  }) {
+  }) async {
     if (idOperacao.trim().isEmpty) {
       throw StateError('Operação de venda não disponível para comprovante.');
     }
