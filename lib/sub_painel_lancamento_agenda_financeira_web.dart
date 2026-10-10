@@ -1613,8 +1613,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   (_isLoading || _ir.carregando)
                       ? null
                       : _confirmarExcluirLancamento,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: Text(_label('delete')),
+              icon: Icon(_recorrencia.serieId != null
+                  ? Icons.event_busy_outlined : Icons.delete_outline, size: 18),
+              label: Text(_recorrencia.serieId != null
+                  ? 'Cancelar ocorrência' : _label('delete')),
               style: TextButton.styleFrom(foregroundColor: tokens.danger),
             ),
           OutlinedButton(
