@@ -33,7 +33,7 @@ Future<AgendaRecorrenciaConfirmacao?> confirmarImpactoRecorrencia(
         final cores = tema.colorScheme;
         final isSerie = escopo == 'ESTE_E_PROXIMOS';
         final alcance = isSerie
-            ? (temTotal ? '${total - numero + 1} ocorrências' : 'esta e as seguintes')
+            ? (temTotal ? '${total! - numero + 1} ocorrências' : 'esta e as seguintes')
             : 'somente a ${numero}ª ocorrência';
         return ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 490),
