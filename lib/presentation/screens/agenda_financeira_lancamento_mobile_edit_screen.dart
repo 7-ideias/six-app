@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
@@ -95,7 +97,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
 
   DateTime _dataOperacao = DateTime.now();
   DateTime _dataVencimento = DateTime.now();
-  DateTime _dataCompetencia = DateTime.now();
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
 
   DateTime? _dataPrevisaoPagamento;
   bool _registrarPagamento = false;
@@ -707,6 +709,17 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     setState(() => onSelected(result));
   }
 
+  Future<void> _selecionarCompetencia() async {
+    final selecionada = await selecionarCompetenciaMesAno(
+      context,
+      competencia: _dataCompetencia,
+      mobile: true,
+    );
+    if (selecionada == null || !mounted) return;
+    setState(() =>
+        _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada));
+  }
+
   Future<void> _selecionarData({
     required String titulo,
     required DateTime atual,
@@ -889,15 +902,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     children: <Widget>[
                       _selectorTile(
                         label: 'Competência',
-                        value: _formatarDataBr(_dataCompetencia),
+                        value: CompetenciaFinanceira.formatar(_dataCompetencia),
                         icon: Icons.event_note_outlined,
                         onTap:
-                            () => _selecionarData(
-                              titulo: 'Data de competência',
-                              atual: _dataCompetencia,
-                              onSelected:
-                                  (DateTime value) => _dataCompetencia = value,
-                            ),
+                            () => _selecionarCompetencia(),
                       ),
                       const SizedBox(height: 12),
                       _selectorTile(
