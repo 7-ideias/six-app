@@ -10,7 +10,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
   required bool mobile,
 }) async {
   final inicial = CompetenciaFinanceira.normalizar(competencia);
-  int ano = inicial.year.clamp(1900, 2200);
+  int ano = inicial.year < 1900 ? 1900 : (inicial.year > 2200 ? 2200 : inicial.year);
   int mes = inicial.month;
 
   Widget conteudo(BuildContext dialogContext) {
