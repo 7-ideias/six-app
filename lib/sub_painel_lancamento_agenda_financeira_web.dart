@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
@@ -225,7 +227,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   DateTime _dataOperacao = DateTime.now();
   DateTime _dataVencimento = DateTime.now();
-  DateTime _dataCompetencia = DateTime.now();
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
 
   static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _formasPagamentoPadrao = <String>[
@@ -604,7 +606,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             : _formatarDataBr(_dataPrevisaoPagamento!);
     _dataOperacaoController.text = _formatarDataBr(_dataOperacao);
     _dataVencimentoController.text = _formatarDataBr(_dataVencimento);
-    _dataCompetenciaController.text = _formatarDataBr(_dataCompetencia);
+    _dataCompetenciaController.text = CompetenciaFinanceira.formatar(_dataCompetencia);
   }
 
   String _formatarDataBr(DateTime data) =>
@@ -1042,6 +1044,30 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  Widget _buildCompetenciaField() {
+    return TextFormField(
+      controller: _dataCompetenciaController,
+      readOnly: true,
+      decoration: _inputDecoration(
+        _label('competence'),
+        icon: Icons.event_note_outlined,
+        suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+      ),
+      onTap: () async {
+        final selecionada = await selecionarCompetenciaMesAno(
+          context,
+          competencia: _dataCompetencia,
+          mobile: false,
+        );
+        if (!mounted || selecionada == null) return;
+        setState(() {
+          _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada);
+          _sincronizarTextosData();
+        });
+      },
+    );
+  }
+
   Widget _buildDropdownField({
     required String label,
     required String value,
@@ -1317,12 +1343,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         : (value) =>
                             setState(() => _statusSelecionado = value!),
               ),
-              _buildDateField(
-                label: _label('competence'),
-                controller: _dataCompetenciaController,
-                initialDate: _dataCompetencia,
-                onChanged: (date) => _dataCompetencia = date,
-              ),
+              _buildCompetenciaField(),
             ], columns: 3),
             _helper('competenceHint'),
             if (_bloquearTipoStatus)
