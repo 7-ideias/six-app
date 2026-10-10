@@ -64,6 +64,16 @@ void main() {
   );
   final json = request.toJson();
   check(
+    DateTime.parse(json['dataCompetencia'].toString()) == DateTime(2026, 9, 1),
+    'Competência em contrato deve representar mês/ano pelo primeiro dia.',
+  );
+  check(
+    DateTime.parse(request.toAgendaItem()['dataCompetencia'].toString()) ==
+        DateTime(2026, 9, 1),
+    'Competência na prévia local deve coincidir com o backend.',
+  );
+
+  check(
     json['centroCustoId'] == 'centro-1' &&
         json['centroDeCusto'] == 'Administrativo',
     'Preservar vínculo e nome do centro de custos no lançamento',
