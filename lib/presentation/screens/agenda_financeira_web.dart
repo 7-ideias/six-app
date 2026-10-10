@@ -1,3 +1,6 @@
+import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
+import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
+import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
@@ -1253,6 +1256,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             fallback: fallback,
             formatarMoeda: _formatarMoeda,
             formatarData: _formatarDataFlexivel,
+            onBaixarComprovante: (formato) => _baixarComprovanteVenda(
+              detalhe['idOperacaoComprovante']?.toString() ?? '',
+              formato,
+            ),
             onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
             onExcluirLiquidacao:
                 (liquidacao) =>
@@ -1260,6 +1267,27 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
     );
     if (alterado == true && mounted) await _consultar(mostrarFeedback: true);
+  }
+
+  Future<void> _baixarComprovanteVenda(
+    String idOperacao, FormatoImpressaoOperacao formato,
+  ) async {
+    try {
+      final comprovantes = AgendaVendaComprovanteService();
+      final pdf = await comprovantes.gerar(idOperacao, formato: formato);
+      if (!mounted) return;
+      final iniciou = comprovantes.baixarWeb(pdf);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(iniciou
+            ? 'Comprovante PDF pronto para download.'
+            : 'O navegador não iniciou o download. Verifique suas permissões.'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível gerar o comprovante. Tente novamente.')),
+      );
+    }
   }
 
   Future<bool> _confirmarExcluirLancamentoDetalhe(
@@ -3239,6 +3267,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     required this.formatarData,
     required this.onExcluirLancamento,
     required this.onExcluirLiquidacao,
+    required this.onBaixarComprovante,
   });
 
   final Map<String, dynamic> item;
@@ -3247,6 +3276,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   final String Function(double) formatarMoeda;
   final String Function(dynamic) formatarData;
   final Future<bool> Function() onExcluirLancamento;
+  final Future<void> Function(FormatoImpressaoOperacao) onBaixarComprovante;
   final Future<bool> Function(Map<String, dynamic> liquidacao)
   onExcluirLiquidacao;
 
@@ -3326,6 +3356,22 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (detalhe['comprovanteVendaDisponivel'] == true)
+                      PopupMenuButton<FormatoImpressaoOperacao>(
+                        tooltip: 'Baixar comprovante PDF',
+                        icon: Icon(Icons.picture_as_pdf_outlined, color: tokens.info),
+                        onSelected: onBaixarComprovante,
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.a4,
+                            child: Text('Baixar PDF A4'),
+                          ),
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.cupomTermico,
+                            child: Text('Baixar cupom térmico'),
+                          ),
+                        ],
+                      ),
                     if (!['Cancelado', 'Pago', 'Recebido', 'Parcial']
                         .contains(item['status']?.toString()))
                       TextButton.icon(
@@ -3436,6 +3482,15 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 18),
+                            if (detalhe['itensVenda'] is List)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: AgendaItensVendaResumo(
+                                  itens: AgendaItensVendaResumo.lerItens(detalhe),
+                                  formatarMoeda: formatarMoeda,
+                                  mostrarVazio: true,
+                                ),
+                              ),
                             _section(
                               theme,
                               'Datas',
