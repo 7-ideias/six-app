@@ -2299,12 +2299,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 spacing: 8,
                 runSpacing: 8,
                 children: <Widget>[
-                  OutlinedButton.icon(
-                    onPressed:
-                        _executandoAcao ? null : () => _editarLancamento(item),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Editar'),
-                  ),
+                  if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
+                      .contains(item['status']?.toString()))
+                    OutlinedButton.icon(
+                      onPressed:
+                          _executandoAcao ? null : () => _editarLancamento(item),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Editar'),
+                    ),
                   ...acoes
                       .take(4)
                       .map(
