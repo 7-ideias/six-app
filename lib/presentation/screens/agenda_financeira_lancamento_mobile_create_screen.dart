@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
@@ -87,7 +89,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   DateTime _dataOperacao = _inicioHoje();
   DateTime _dataVencimento = _inicioHoje();
-  DateTime _dataCompetencia = _inicioHoje();
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
 
   DateTime? _dataPrevisaoPagamento;
   bool _registrarPagamento = false;
@@ -366,14 +368,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             Expanded(
               child: _selectorTile(
                 label: 'Competência',
-                value: _formatarDataBr(_dataCompetencia),
+                value: CompetenciaFinanceira.formatar(_dataCompetencia),
                 icon: Icons.event_note_outlined,
                 onTap:
-                    () => _selecionarData(
-                      titulo: 'Data de competência',
-                      atual: _dataCompetencia,
-                      onSelected: (DateTime value) => _dataCompetencia = value,
-                    ),
+                    () => _selecionarCompetencia(),
               ),
             ),
             SizedBox(width: 10),
@@ -828,6 +826,17 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     );
     if (result == null || !mounted) return;
     setState(() => onSelected(result));
+  }
+
+  Future<void> _selecionarCompetencia() async {
+    final selecionada = await selecionarCompetenciaMesAno(
+      context,
+      competencia: _dataCompetencia,
+      mobile: true,
+    );
+    if (selecionada == null || !mounted) return;
+    setState(() =>
+        _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada));
   }
 
   Future<void> _selecionarData({
