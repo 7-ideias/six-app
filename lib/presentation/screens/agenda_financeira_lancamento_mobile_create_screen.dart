@@ -75,7 +75,6 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
-  String _origemSelecionada = 'Despesa manual';
   String _codigoTipoRecebimentoSelecionado = '';
   String? _centroCustoId;
   final String _empresa = 'Empresa';
@@ -285,38 +284,16 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                   (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
         ),
         SizedBox(height: 12),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _selectorTile(
-                label: 'Status',
-                value: _statusSelecionado,
-                icon: Icons.flag_outlined,
-                onTap:
-                    () => _selecionarValor(
-                      titulo: 'Selecionar status',
-                      opcoes: _statusParaTipo(),
-                      selecionado: _statusSelecionado,
-                      onSelected: (String value) => _statusSelecionado = value,
-                    ),
-              ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _selectorTile(
-                label: 'Origem',
-                value: _origemSelecionada,
-                icon: Icons.source_outlined,
-                onTap:
-                    () => _selecionarValor(
-                      titulo: 'Selecionar origem',
-                      opcoes: _origensParaTipo(),
-                      selecionado: _origemSelecionada,
-                      onSelected: (String value) => _origemSelecionada = value,
-                    ),
-              ),
-            ),
-          ],
+        _selectorTile(
+          label: 'Status',
+          value: _statusSelecionado,
+          icon: Icons.flag_outlined,
+          onTap: () => _selecionarValor(
+            titulo: 'Selecionar status',
+            opcoes: _statusParaTipo(),
+            selecionado: _statusSelecionado,
+            onSelected: (String value) => _statusSelecionado = value,
+          ),
         ),
       ],
     );
@@ -1043,10 +1020,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   LancamentoAgendaFinanceiraRequest _buildRequest(double valorTotal) {
     final bool isReceber = _tipoSelecionado == 'Receber';
     final String tipoOperacao = isReceber ? 'RECEBER' : 'PAGAR';
-    final String origem = _origemParaBackend(
-      _origemSelecionada,
-      _tipoSelecionado,
-    );
+    final String origem = isReceber ? 'RECEITA_MANUAL' : 'DESPESA_MANUAL';
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoNome = _contatoController.text.trim();
     final String statusBackend = _statusParaBackend(_statusSelecionado);
@@ -1119,26 +1093,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   List<String> _statusParaTipo() => <String>['Previsto', 'Pendente'];
 
-  List<String> _origensParaTipo() {
-    if (_tipoSelecionado == 'Receber') {
-      return <String>['Venda', 'Ordem de serviço', 'Parcela'];
-    }
-    return <String>[
-      'Despesa manual',
-      'Compra',
-      'Parcela',
-      'Movimentação de caixa',
-    ];
-  }
-
   void _alinharCamposComTipo(String tipo) {
     final List<String> statusPermitidos = _statusParaTipo();
     if (!statusPermitidos.contains(_statusSelecionado)) {
       _statusSelecionado = 'Pendente';
-    }
-    final List<String> origensPermitidas = _origensParaTipo();
-    if (!origensPermitidas.contains(_origemSelecionada)) {
-      _origemSelecionada = tipo == 'Receber' ? 'Venda' : 'Despesa manual';
     }
   }
 
@@ -1173,25 +1131,6 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   bool _statusEstaQuitada(String status) {
     return status == 'PAGO' || status == 'RECEBIDO';
-  }
-
-  String _origemParaBackend(String origem, String tipo) {
-    switch (origem) {
-      case 'Venda':
-        return 'VENDA';
-      case 'Ordem de serviço':
-        return 'ORDEM_SERVICO';
-      case 'Despesa manual':
-        return 'DESPESA_MANUAL';
-      case 'Compra':
-        return 'COMPRA';
-      case 'Parcela':
-        return 'PARCELA';
-      case 'Movimentação de caixa':
-        return 'MOVIMENTACAO_CAIXA';
-      default:
-        return tipo == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
-    }
   }
 
   DateTime _normalizarData(DateTime data) =>
