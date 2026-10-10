@@ -23,6 +23,15 @@ class AgendaItensVendaResumo extends StatelessWidget {
         .toList(growable: false);
   }
 
+  static bool ehVenda(Map<String, dynamic> detalhe) {
+    final origem = detalhe['origem'];
+    final codigo = origem is Map
+        ? origem['tipo']?.toString().toUpperCase() ?? ''
+        : origem?.toString().toUpperCase() ?? '';
+    return <String>{'VENDA', 'VENDA_NAO_LIQUIDADA', 'RECEBIMENTO_VENDA'}
+        .contains(codigo);
+  }
+
   static double numero(dynamic value) => value is num
       ? value.toDouble()
       : double.tryParse(value?.toString() ?? '') ?? 0;
