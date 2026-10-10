@@ -76,21 +76,13 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
 
   static const List<String> _tipos = <String>['Pagar', 'Receber'];
   static const List<String> _status = <String>['Previsto', 'Pendente'];
-  static const List<String> _origens = <String>[
-    'Venda',
-    'Ordem de serviço',
-    'Despesa manual',
-    'Compra',
-    'Parcela',
-    'Movimentação de caixa',
-  ];
   String _idLancamento = '';
   String _uuidOperacaoApp = '';
   String? _referenciaTecnicaPersistida;
   String? _centroCustoId;
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
-  String _origemSelecionada = 'Despesa manual';
+  String _origemCodigoPersistida = '';
   String _codigoTipoRecebimentoSelecionado = '';
   String _formaPagamentoRecebida = '';
   String _empresa = 'Empresa';
@@ -163,10 +155,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     final String status = _statusLabel(item['status']?.toString());
     _statusSelecionado = status;
 
-    _origemSelecionada = _origemLabel(
-      item['origem']?.toString(),
-      _tipoSelecionado,
-    );
+    _origemCodigoPersistida = item['origem']?.toString().trim() ?? '';
     _empresa = _texto(item['empresa'], fallback: 'Empresa');
     _formaPagamentoRecebida = item['formaPagamento']?.toString() ?? '';
     _codigoTipoRecebimentoSelecionado = _codigoTipoRecebimentoLabelOuEnum(
@@ -332,9 +321,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     _empresa = _texto(empresa['nome'], fallback: _empresa);
 
     final Map<String, dynamic> origem = _mapa(detalhe['origem']);
-    _origemSelecionada = _origemLabel(
-      _texto(origem['tipo'], fallback: _origemSelecionada),
-      _tipoSelecionado,
+    _origemCodigoPersistida = _texto(
+      origem['tipo'], fallback: _origemCodigoPersistida,
     );
     _aplicarReferenciaParaExibicao(
       _texto(origem['id'], fallback: _referenciaController.text),
@@ -612,10 +600,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   LancamentoAgendaFinanceiraRequest _buildRequest(double valorTotal) {
     final bool isReceber = _tipoSelecionado == 'Receber';
     final String tipoOperacao = isReceber ? 'RECEBER' : 'PAGAR';
-    final String origem = _origemParaBackend(
-      _origemSelecionada,
-      _tipoSelecionado,
-    );
+    final String origem = _origemCodigoPersistida.trim().isNotEmpty
+        ? _origemCodigoPersistida
+        : (_tipoSelecionado == 'Receber' ? 'RECEITA_MANUAL' : 'DESPESA_MANUAL');
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoNome = _contatoController.text.trim();
     final String contatoId = _idContato?.trim() ?? '';
@@ -804,16 +791,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                               label: 'Tipo',
                               value: _tipoSelecionado,
                               icon: Icons.swap_vert_rounded,
-                              onTap:
-                                  () => _selecionarValor(
-                                    titulo: 'Selecionar tipo',
-                                    opcoes: _tipos,
-                                    selecionado: _tipoSelecionado,
-                                    onSelected: (String value) {
-                                      _tipoSelecionado = value;
-                                      _alinharOrigemComTipo(value);
-                                    },
-                                  ),
+                              onTap: null,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -838,20 +816,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      _selectorTile(
-                        label: 'Origem',
-                        value: _origemSelecionada,
-                        icon: Icons.source_outlined,
-                        onTap:
-                            () => _selecionarValor(
-                              titulo: 'Selecionar origem',
-                              opcoes: _origens,
-                              selecionado: _origemSelecionada,
-                              onSelected:
-                                  (String value) => _origemSelecionada = value,
-                            ),
-                      ),
+
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -1421,18 +1386,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     );
   }
 
-  void _alinharOrigemComTipo(String tipo) {
-    if (tipo == 'Receber' &&
-        (_origemSelecionada == 'Despesa manual' ||
-            _origemSelecionada == 'Compra')) {
-      _origemSelecionada = 'Venda';
-    } else if (tipo == 'Pagar' &&
-        (_origemSelecionada == 'Venda' ||
-            _origemSelecionada == 'Ordem de serviço')) {
-      _origemSelecionada = 'Despesa manual';
-    }
-  }
-
   String _formaPagamentoParaBackend() {
     return _codigoTipoRecebimentoSelecionado.trim().toLowerCase();
   }
@@ -1524,49 +1477,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     return normalizado == 'PAGO' ||
         normalizado == 'RECEBIDO' ||
         (valorConfirmado > 0 && valorRestante <= 0);
-  }
-
-  String _origemLabel(String? value, String tipo) {
-    switch ((value ?? '').toUpperCase()) {
-      case 'VENDA':
-        return 'Venda';
-      case 'ORDEM_SERVICO':
-      case 'ORDEM DE SERVIÇO':
-      case 'ORDEM_DE_SERVICO':
-        return 'Ordem de serviço';
-      case 'COMPRA':
-        return 'Compra';
-      case 'PARCELA':
-        return 'Parcela';
-      case 'MOVIMENTACAO_CAIXA':
-      case 'MOVIMENTAÇÃO DE CAIXA':
-        return 'Movimentação de caixa';
-      case 'DESPESA_MANUAL':
-        return 'Despesa manual';
-      default:
-        final String raw = value?.trim() ?? '';
-        if (_origens.contains(raw)) return raw;
-        return tipo == 'Receber' ? 'Venda' : 'Despesa manual';
-    }
-  }
-
-  String _origemParaBackend(String origem, String tipo) {
-    switch (origem) {
-      case 'Venda':
-        return 'VENDA';
-      case 'Ordem de serviço':
-        return 'ORDEM_SERVICO';
-      case 'Despesa manual':
-        return 'DESPESA_MANUAL';
-      case 'Compra':
-        return 'COMPRA';
-      case 'Parcela':
-        return 'PARCELA';
-      case 'Movimentação de caixa':
-        return 'MOVIMENTACAO_CAIXA';
-      default:
-        return tipo == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
-    }
   }
 
   String _normalizarSemAcento(String value) {
