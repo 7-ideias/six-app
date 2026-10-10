@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 
 /// Seletor de período, sem qualquer escolha de dia.
@@ -28,12 +29,12 @@ Future<DateTime?> selecionarCompetenciaMesAno(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Competência · mês/ano',
+                  context.t('agenda.competence.monthYearTitle', fallback: 'Competência · mês/ano'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Selecione somente o mês e o ano.',
+                  context.t('agenda.competence.selectMonthYear', fallback: 'Selecione somente o mês e o ano.'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 20),
@@ -41,7 +42,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      tooltip: 'Ano anterior',
+                      tooltip: context.t('agenda.competence.previousYear', fallback: 'Ano anterior'),
                       onPressed: ano > 1900 ? () => atualizar(() => ano--) : null,
                       icon: const Icon(Icons.chevron_left_rounded),
                     ),
@@ -52,7 +53,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Próximo ano',
+                      tooltip: context.t('agenda.competence.nextYear', fallback: 'Próximo ano'),
                       onPressed: ano < 2200 ? () => atualizar(() => ano++) : null,
                       icon: const Icon(Icons.chevron_right_rounded),
                     ),
@@ -102,7 +103,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('Voltar'),
+                        child: Text(context.t('common.back', fallback: 'Voltar')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -111,7 +112,7 @@ Future<DateTime?> selecionarCompetenciaMesAno(
                         onPressed: () => Navigator.of(dialogContext).pop(
                           DateTime(ano, mes),
                         ),
-                        child: const Text('Aplicar'),
+                        child: Text(context.t('agenda.competence.apply', fallback: 'Aplicar')),
                       ),
                     ),
                   ],
