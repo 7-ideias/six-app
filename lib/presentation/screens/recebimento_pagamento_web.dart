@@ -997,8 +997,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     try {
       final DateTime dataOperacao = DateTime.now();
       final OperacaoVendaInput input = OperacaoVendaInput(
-        descricao:
-            'Venda ${(widget.numeroVenda?.trim().isNotEmpty ?? false) ? widget.numeroVenda!.trim() : 'em andamento'}',
+        // O estado da venda e seu código são informações separadas da descrição.
+        descricao: 'Venda',
         idColaborador: widget.idColaborador,
         nomeColaborador: widget.nomeColaborador,
         itens: _montarItensDaVenda(),
