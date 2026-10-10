@@ -2610,6 +2610,8 @@ class _AgendaFinanceiraMobileScreenState
                         item['status']?.toString() ?? '-',
                         Icons.flag_outlined,
                       ),
+                      if (item['ocorrenciaAjustada'] == true)
+                        _pill('Ajustado', Icons.tune_outlined),
                       if (valorConfirmado > 0)
                         _pill(
                           'Confirmado: ${_formatarMoeda(valorConfirmado)}',
