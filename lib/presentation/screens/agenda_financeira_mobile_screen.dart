@@ -3328,7 +3328,7 @@ class _AgendaFinanceiraMobileScreenState
                     'Valor em aberto',
                     _formatarMoeda(_toDouble(item['valorRestante'])),
                   ),
-                  if (item['itensVenda'] is List) ...[
+                  if (AgendaItensVendaResumo.ehVenda(item)) ...[
                     const SizedBox(height: 16),
                     AgendaItensVendaResumo(
                       itens: AgendaItensVendaResumo.lerItens(item),
