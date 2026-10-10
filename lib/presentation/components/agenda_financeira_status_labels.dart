@@ -17,7 +17,7 @@ abstract final class AgendaFinanceiraStatusLabels {
     };
     return chave == null
         ? status
-        : context.t('agenda.form.$chave', fallback: status);
+        : context.t('agenda.form.$chave');
   }
 
   static String codigoDaEscolha(BuildContext context, String rotulo) {
