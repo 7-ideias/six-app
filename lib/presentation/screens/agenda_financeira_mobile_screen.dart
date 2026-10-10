@@ -1,3 +1,6 @@
+import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
+import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
+import 'package:sixpos/data/models/operacao_models.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -3215,8 +3218,16 @@ class _AgendaFinanceiraMobileScreenState
         if (detalhe.isNotEmpty) {
           item = <String, dynamic>{
             ...item,
+            ...detalhe,
+            'contato': item['contato'],
+            'vencimento': item['vencimento'],
+            'status': item['status'],
+            'formaPagamento': item['formaPagamento'],
+            'valorConfirmado': item['valorConfirmado'],
+            'valorRestante': item['valorRestante'],
+            'valorOriginal': item['valorOriginal'],
+            'liquidacoes': item['liquidacoes'],
             'codigoOperacao': detalhe['codigoOperacao']?.toString(),
-            'dadosEdicao': detalhe['dadosEdicao'],
           };
         }
       } catch (_) {
@@ -3317,6 +3328,51 @@ class _AgendaFinanceiraMobileScreenState
                     'Valor em aberto',
                     _formatarMoeda(_toDouble(item['valorRestante'])),
                   ),
+                  if (item['itensVenda'] is List) ...[
+                    const SizedBox(height: 16),
+                    AgendaItensVendaResumo(
+                      itens: AgendaItensVendaResumo.lerItens(item),
+                      formatarMoeda: _formatarMoeda,
+                      mostrarVazio: true,
+                    ),
+                  ],
+                  if (item['comprovanteVendaDisponivel'] == true) ...[
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PopupMenuButton<FormatoImpressaoOperacao>(
+                        tooltip: 'Salvar ou compartilhar comprovante PDF',
+                        onSelected: (formato) => _compartilharComprovanteVenda(
+                          item['idOperacaoComprovante']?.toString() ?? '',
+                          formato,
+                        ),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.a4,
+                            child: Text('PDF A4 · salvar / compartilhar'),
+                          ),
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.cupomTermico,
+                            child: Text('Cupom térmico · salvar / compartilhar'),
+                          ),
+                        ],
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: _accentColor),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.picture_as_pdf_outlined, color: _accentColor),
+                            const SizedBox(width: 8),
+                            Text('Compartilhar / salvar PDF',
+                              style: TextStyle(color: _accentColor, fontWeight: FontWeight.w700)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
                   if ((item['observacoes']?.toString() ?? '').isNotEmpty)
                     _detalheLinha(
                       'Observações',
@@ -3338,6 +3394,22 @@ class _AgendaFinanceiraMobileScreenState
         );
       },
     );
+  }
+
+  Future<void> _compartilharComprovanteVenda(
+    String idOperacao, FormatoImpressaoOperacao formato,
+  ) async {
+    try {
+      final servico = AgendaVendaComprovanteService();
+      final pdf = await servico.gerar(idOperacao, formato: formato);
+      if (!mounted) return;
+      await servico.compartilharMobile(pdf);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Não foi possível compartilhar o comprovante da venda.'),
+      ));
+    }
   }
 
   Widget _detalheLinha(String label, String value) {
