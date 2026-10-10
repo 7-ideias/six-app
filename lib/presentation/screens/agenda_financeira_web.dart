@@ -3482,7 +3482,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 18),
-                            if (detalhe['itensVenda'] is List)
+                            if (AgendaItensVendaResumo.ehVenda(detalhe))
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 18),
                                 child: AgendaItensVendaResumo(
