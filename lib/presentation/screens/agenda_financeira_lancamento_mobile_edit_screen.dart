@@ -756,9 +756,11 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
               icon: const Icon(Icons.refresh),
             ),
           IconButton(
-            tooltip: recorrenciaLabel(context, 'delete'),
+            tooltip: _recorrencia.serieId != null
+                ? 'Cancelar ocorrência' : recorrenciaLabel(context, 'delete'),
             onPressed: _salvando || _carregandoDetalhe ? null : _excluir,
-            icon: const Icon(Icons.delete_outline),
+            icon: Icon(_recorrencia.serieId != null
+                ? Icons.event_busy_outlined : Icons.delete_outline),
           ),
         ],
         elevation: 0,
