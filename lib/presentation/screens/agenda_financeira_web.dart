@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/competencia_financeira.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -3442,7 +3443,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               <Widget>[
                                 _info(
                                   'Competência',
-                                  formatarData(detalhe['dataCompetencia']),
+                                  CompetenciaFinanceira.formatarValor(detalhe['dataCompetencia']),
                                 ),
                                 _info(
                                   'Vencimento',
