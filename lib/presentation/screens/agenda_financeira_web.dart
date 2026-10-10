@@ -3358,17 +3358,17 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                     ),
                     if (detalhe['comprovanteVendaDisponivel'] == true)
                       PopupMenuButton<FormatoImpressaoOperacao>(
-                        tooltip: 'Baixar comprovante PDF',
+                        tooltip: context.t('agenda.saleItems.downloadPdf'),
                         icon: Icon(Icons.picture_as_pdf_outlined, color: tokens.info),
                         onSelected: onBaixarComprovante,
-                        itemBuilder: (_) => const [
+                        itemBuilder: (_) => [
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.a4,
-                            child: Text('Baixar PDF A4'),
+                            child: Text(context.t('agenda.saleItems.pdfA4')),
                           ),
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.cupomTermico,
-                            child: Text('Baixar cupom térmico'),
+                            child: Text(context.t('agenda.saleItems.pdfCupom')),
                           ),
                         ],
                       ),
