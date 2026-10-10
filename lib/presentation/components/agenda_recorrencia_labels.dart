@@ -5,6 +5,11 @@ String recorrenciaLabel(BuildContext context, String key) =>
     context.t('agenda.recurrence.$key', fallback: _labels[key] ?? key);
 
 const _labels = <String, String>{
+  'RECORRENCIA_LEGADA_REQUER_NORMALIZACAO':
+      'Esta repetição antiga ainda não possui vencimentos individuais. Atualize a agenda ou solicite a regularização da série.',
+  'RECORRENCIA_JA_CANCELADA':
+      'Esta ocorrência já foi cancelada.',
+
   'RECORRENCIA_FUTURAS_COM_PAGAMENTO':
       'Há pagamentos registrados neste lançamento ou nos próximos. Altere somente um vencimento ainda pendente.',
   'RECORRENCIA_OCORRENCIA_CONFIRMADA':
