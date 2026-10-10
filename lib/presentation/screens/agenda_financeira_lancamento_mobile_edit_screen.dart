@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
@@ -811,20 +812,20 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                           const SizedBox(width: 10),
                           Expanded(
                             child: _selectorTile(
-                              label: 'Status',
-                              value: _statusSelecionado,
+                              label: context.t('agenda.form.situation', fallback: 'Status'),
+                              value: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
                               icon: Icons.flag_outlined,
                               onTap:
                                   !_status.contains(_statusSelecionado) ||
                                           _valorConfirmado > 0
                                       ? null
                                       : () => _selecionarValor(
-                                        titulo: 'Selecionar status',
-                                        opcoes: _status,
-                                        selecionado: _statusSelecionado,
-                                        onSelected:
-                                            (String value) =>
-                                                _statusSelecionado = value,
+                                        titulo: context.t('agenda.form.situation', fallback: 'Status'),
+                                        opcoes: _status.map((s) =>
+                                            AgendaFinanceiraStatusLabels.rotulo(context, s)).toList(),
+                                        selecionado: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
+                                        onSelected: (String value) => _statusSelecionado =
+                                            AgendaFinanceiraStatusLabels.codigoDaEscolha(context, value),
                                       ),
                             ),
                           ),
