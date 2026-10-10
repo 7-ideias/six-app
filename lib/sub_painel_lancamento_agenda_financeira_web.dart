@@ -218,7 +218,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
-  String _origemSelecionada = 'Despesa manual';
+  String _origemPersistida = '';
   String _empresaSelecionada = '';
   String _formaPagamentoSelecionada = 'Pix';
 
@@ -227,14 +227,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime _dataCompetencia = DateTime.now();
 
   static const List<String> _status = <String>['Previsto', 'Pendente'];
-  static const List<String> _origens = <String>[
-    'Venda',
-    'Ordem de serviço',
-    'Despesa manual',
-    'Compra',
-    'Parcela',
-    'Movimentação de caixa',
-  ];
   static const List<String> _formasPagamentoPadrao = <String>[
     'Pix',
     'Boleto',
@@ -357,9 +349,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _bloquearTipoStatusPorConfirmacao =
         _statusQuitada || valorConfirmado > 0 || !_status.contains(status);
 
-    final String origem = item['origem']?.toString() ?? '';
-    if (_origens.contains(origem)) _origemSelecionada = origem;
-    _alinharOrigemComTipo(_tipoSelecionado);
+    final origemRaw = item['origem'];
+    _origemPersistida = (origemRaw is Map
+        ? origemRaw['tipo']?.toString()
+        : origemRaw?.toString())?.trim() ?? '';
 
     final String formaPagamento = item['formaPagamento']?.toString() ?? '';
     if (formaPagamento.trim().isNotEmpty) {
@@ -616,27 +609,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
   String _formatarDataBr(DateTime data) =>
       context.read<LocaleSettingsProvider>().formatDate(data);
 
-  bool _origemSugerePagar(String origem) =>
-      origem == 'Despesa manual' || origem == 'Compra';
-
-  bool _origemSugereReceber(String origem) =>
-      origem == 'Venda' || origem == 'Ordem de serviço';
-
-  String _origemPadraoPorTipo(String tipo) =>
-      tipo == 'Receber' ? 'Venda' : 'Despesa manual';
-
-  void _alinharOrigemComTipo(String tipo) {
-    if (tipo == 'Receber' && _origemSugerePagar(_origemSelecionada)) {
-      _origemSelecionada = _origemPadraoPorTipo(tipo);
-    } else if (tipo == 'Pagar' && _origemSugereReceber(_origemSelecionada)) {
-      _origemSelecionada = _origemPadraoPorTipo(tipo);
-    }
-  }
-
   void _aplicarTipoSelecionado(String tipo) {
     if (_bloquearTipoStatus) return;
     _tipoSelecionado = tipo;
-    _alinharOrigemComTipo(tipo);
     if (tipo == 'Receber' && _statusSelecionado == 'Pago') {
       _statusSelecionado = 'Recebido';
     } else if (tipo == 'Pagar' && _statusSelecionado == 'Recebido') {
@@ -653,25 +628,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   String _tipoOperacaoParaBackend() => _tipoSelecionado.toUpperCase();
 
-  String _origemParaBackend() {
-    switch (_origemSelecionada) {
-      case 'Venda':
-        return 'VENDA';
-      case 'Ordem de serviço':
-        return 'ORDEM_SERVICO';
-      case 'Despesa manual':
-        return 'DESPESA_MANUAL';
-      case 'Compra':
-        return 'COMPRA';
-      case 'Parcela':
-        return 'PARCELA';
-      case 'Movimentação de caixa':
-        return 'MOVIMENTACAO_CAIXA';
-      default:
-        return _tipoSelecionado == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
-    }
-  }
-
   String _formaPagamentoParaBackend() {
     return _backendPorDescricaoFormaPagamento[_formaPagamentoSelecionada] ??
         _backendFormaPagamentoPorDescricao(_formaPagamentoSelecionada);
@@ -681,7 +637,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final double valorTotal = _toDouble(_valorController.text);
     final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
-    final String origem = _origemParaBackend();
+    final String origem = widget.modoEdicao && _origemPersistida.isNotEmpty
+        ? _origemPersistida
+        : (_tipoSelecionado == 'Receber' ? 'RECEITA_MANUAL' : 'DESPESA_MANUAL');
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoIdDigitado = _idContatoController.text.trim();
     final String contatoNome = _contatoController.text.trim();
@@ -1306,7 +1264,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 ],
                 selected: {_tipoSelecionado},
                 onSelectionChanged:
-                    _bloquearTipoStatus
+                    (_bloquearTipoStatus || widget.modoEdicao)
                         ? null
                         : (value) => setState(
                           () => _aplicarTipoSelecionado(value.first),
@@ -1543,13 +1501,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
             childrenPadding: const EdgeInsets.only(top: 12, bottom: 20),
             children: [
               _fields([
-                _buildDropdownField(
-                  label: _label('origin'),
-                  value: _origemSelecionada,
-                  items: _origens,
-                  onChanged:
-                      (value) => setState(() => _origemSelecionada = value!),
-                ),
                 if (_service.espacoFinanceiro == 'EMPRESA')
                   _buildDropdownField(
                     label: _label('company'),
