@@ -3403,7 +3403,15 @@ class _AgendaFinanceiraMobileScreenState
       final servico = AgendaVendaComprovanteService();
       final pdf = await servico.gerar(idOperacao, formato: formato);
       if (!mounted) return;
-      await servico.compartilharMobile(pdf);
+      final RenderBox? caixa = context.findRenderObject() is RenderBox
+          ? context.findRenderObject() as RenderBox
+          : null;
+      await servico.compartilharMobile(
+        pdf,
+        posicaoDeOrigem: caixa == null
+            ? null
+            : (caixa.localToGlobal(Offset.zero) & caixa.size),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
