@@ -196,6 +196,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.competence.previousYear': 'Ano anterior',
     'agenda.competence.nextYear': 'Próximo ano',
     'agenda.competence.apply': 'Aplicar',
+    'agenda.competence.back': 'Voltar',
     'agenda.form.competenceHint':
         'Período ao qual a conta pertence, independentemente do pagamento.',
     'agenda.form.dates': 'Vencimento e pagamento',
@@ -2998,6 +2999,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.competence.previousYear': 'Previous year',
     'agenda.competence.nextYear': 'Next year',
     'agenda.competence.apply': 'Apply',
+    'agenda.competence.back': 'Back',
     'agenda.form.competenceHint':
         'Period the entry belongs to, regardless of payment.',
     'agenda.form.dates': 'Due date and payment',
@@ -5587,6 +5589,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.competence.previousYear': 'Año anterior',
     'agenda.competence.nextYear': 'Año siguiente',
     'agenda.competence.apply': 'Aplicar',
+    'agenda.competence.back': 'Volver',
     'agenda.form.competenceHint':
         'Período al que pertenece la cuenta, independientemente del pago.',
     'agenda.form.dates': 'Vencimiento y pago',
