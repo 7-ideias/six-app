@@ -1,3 +1,4 @@
+import 'competencia_financeira.dart';
 import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
@@ -118,7 +119,7 @@ class LancamentoAgendaFinanceiraRequest {
       'clientePediuParaApagar': clientePediuParaApagar,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataVencimento': dataVencimento.toIso8601String(),
-      'dataCompetencia': dataCompetencia.toIso8601String(),
+      'dataCompetencia': CompetenciaFinanceira.normalizar(dataCompetencia).toIso8601String(),
       'dataQuitacao': dataQuitacao?.toIso8601String(),
       'origem': origem,
       'formaPagamento': formaPagamento,
@@ -182,7 +183,7 @@ class LancamentoAgendaFinanceiraRequest {
       'centroDeCusto': centroDeCusto,
       'centroCustoId': centroCustoId,
       'dataOperacao': dataOperacao.toIso8601String(),
-      'dataCompetencia': dataCompetencia.toIso8601String(),
+      'dataCompetencia': CompetenciaFinanceira.normalizar(dataCompetencia).toIso8601String(),
       ...dadosRecorrencia,
       'serieRecorrenciaId': configuracaoRecorrencia?.serieId,
       'historico': [

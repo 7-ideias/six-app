@@ -1,3 +1,7 @@
+import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
+import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
+import 'package:sixpos/data/models/operacao_models.dart';
+import 'package:sixpos/data/models/competencia_financeira.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -13,6 +17,8 @@ import 'package:sixpos/presentation/components/web/six_web_financial_launch_dele
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 
 import 'dart:async';
 
@@ -1062,6 +1068,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 .toList()
             : <String>[];
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
+    if (item['serieRecorrenciaId'] != null &&
+        !['PAGO', 'RECEBIDO', 'CANCELADO', 'PARCIAL']
+            .contains(item['status']?.toString().toUpperCase())) {
+      acoes.add('Cancelar');
+    }
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
@@ -1157,6 +1168,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       await _editarLancamento(item);
       return;
     }
+    if (comando == 'cancelar') {
+      await _cancelarRecorrencia(item);
+      return;
+    }
     if (comando == 'registrar parcial') {
       await _registrarParcial(item);
       return;
@@ -1168,6 +1183,43 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Ação "$acao" ainda não implementada.')),
     );
+  }
+
+  Future<bool> _cancelarRecorrencia(Map<String, dynamic> item) async {
+    if (_executandoAcao || item['serieRecorrenciaId'] == null) return false;
+    final id = item['id']?.toString() ?? '';
+    if (id.isEmpty) return false;
+    final config = AgendaFinanceiraRecorrencia.fromJson(item);
+    final confirmacao = await confirmarImpactoRecorrencia(
+      context,
+      mobile: false,
+      recorrencia: config,
+      descricao: item['descricao']?.toString() ?? 'Lançamento recorrente',
+      valorFormatado: _formatarMoeda(_toDouble(item['valorOriginal'] ?? item['valor'])),
+      vencimentoFormatado: item['vencimento']?.toString() ?? '',
+      cancelar: true,
+      permitirTrocarEscopo: true,
+    );
+    if (confirmacao == null || !mounted) return false;
+    setState(() => _executandoAcao = true);
+    try {
+      await _service.cancelarRecorrencia(id,
+          escopo: confirmacao.escopo, motivo: confirmacao.motivo);
+      if (!mounted) return false;
+      await _consultar(mostrarFeedback: true);
+      return true;
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError')),
+      ));
+      return false;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível cancelar a ocorrência.')));
+      return false;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
   }
 
   Future<void> _mostrarDetalhesLancamento(Map<String, dynamic> item) async {
@@ -1204,6 +1256,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             fallback: fallback,
             formatarMoeda: _formatarMoeda,
             formatarData: _formatarDataFlexivel,
+            onBaixarComprovante: (formato) => _baixarComprovanteVenda(
+              detalhe['idOperacaoComprovante']?.toString() ?? '',
+              formato,
+            ),
             onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
             onExcluirLiquidacao:
                 (liquidacao) =>
@@ -1213,9 +1269,33 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (alterado == true && mounted) await _consultar(mostrarFeedback: true);
   }
 
+  Future<void> _baixarComprovanteVenda(
+    String idOperacao, FormatoImpressaoOperacao formato,
+  ) async {
+    try {
+      final comprovantes = AgendaVendaComprovanteService();
+      final pdf = await comprovantes.gerar(idOperacao, formato: formato);
+      if (!mounted) return;
+      final iniciou = comprovantes.baixarWeb(pdf);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(iniciou
+            ? 'Comprovante PDF pronto para download.'
+            : 'O navegador não iniciou o download. Verifique suas permissões.'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível gerar o comprovante. Tente novamente.')),
+      );
+    }
+  }
+
   Future<bool> _confirmarExcluirLancamentoDetalhe(
     Map<String, dynamic> item,
   ) async {
+    if (item['serieRecorrenciaId'] != null) {
+      return _cancelarRecorrencia(item);
+    }
     final id = item['id']?.toString() ?? '';
     if (id.trim().isEmpty) return false;
 
@@ -2206,6 +2286,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       tokens.info,
                       icon: Icons.repeat,
                     ),
+                  if (item['ocorrenciaAjustada'] == true)
+                    _agendaPill('Ajustado', tokens.info, icon: Icons.tune_outlined),
                   if (_toDouble(item['valorConfirmado']) > 0)
                     _agendaPill(
                       'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
@@ -2246,12 +2328,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 spacing: 8,
                 runSpacing: 8,
                 children: <Widget>[
-                  OutlinedButton.icon(
-                    onPressed:
-                        _executandoAcao ? null : () => _editarLancamento(item),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Editar'),
-                  ),
+                  if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
+                      .contains(item['status']?.toString()))
+                    OutlinedButton.icon(
+                      onPressed:
+                          _executandoAcao ? null : () => _editarLancamento(item),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Editar'),
+                    ),
                   ...acoes
                       .take(4)
                       .map(
@@ -3183,6 +3267,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     required this.formatarData,
     required this.onExcluirLancamento,
     required this.onExcluirLiquidacao,
+    required this.onBaixarComprovante,
   });
 
   final Map<String, dynamic> item;
@@ -3191,6 +3276,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   final String Function(double) formatarMoeda;
   final String Function(dynamic) formatarData;
   final Future<bool> Function() onExcluirLancamento;
+  final Future<void> Function(FormatoImpressaoOperacao) onBaixarComprovante;
   final Future<bool> Function(Map<String, dynamic> liquidacao)
   onExcluirLiquidacao;
 
@@ -3270,17 +3356,39 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                         ],
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: () async {
-                        final excluido = await onExcluirLancamento();
-                        if (excluido && context.mounted) {
-                          Navigator.of(context).pop(true);
-                        }
-                      },
-                      icon: const Icon(Icons.delete_forever_outlined),
-                      label: const Text('Excluir lançamento'),
-                      style: SixWebActionStyles.dangerText(context),
-                    ),
+                    if (detalhe['comprovanteVendaDisponivel'] == true)
+                      PopupMenuButton<FormatoImpressaoOperacao>(
+                        tooltip: context.t('agenda.saleItems.downloadPdf'),
+                        icon: Icon(Icons.picture_as_pdf_outlined, color: tokens.info),
+                        onSelected: onBaixarComprovante,
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.a4,
+                            child: Text(context.t('agenda.saleItems.pdfA4')),
+                          ),
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.cupomTermico,
+                            child: Text(context.t('agenda.saleItems.pdfCupom')),
+                          ),
+                        ],
+                      ),
+                    if (!['Cancelado', 'Pago', 'Recebido', 'Parcial']
+                        .contains(item['status']?.toString()))
+                      TextButton.icon(
+                        onPressed: () async {
+                          final excluido = await onExcluirLancamento();
+                          if (excluido && context.mounted) {
+                            Navigator.of(context).pop(true);
+                          }
+                        },
+                        icon: Icon(item['serieRecorrenciaId'] != null
+                            ? Icons.event_busy_outlined
+                            : Icons.delete_forever_outlined),
+                        label: Text(item['serieRecorrenciaId'] != null
+                            ? 'Cancelar ocorrência'
+                            : 'Excluir lançamento'),
+                        style: SixWebActionStyles.dangerText(context),
+                      ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       icon: Icon(Icons.close_rounded, color: tokens.mutedText),
@@ -3374,6 +3482,15 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 18),
+                            if (AgendaItensVendaResumo.ehVenda(detalhe))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: AgendaItensVendaResumo(
+                                  itens: AgendaItensVendaResumo.lerItens(detalhe),
+                                  formatarMoeda: formatarMoeda,
+                                  mostrarVazio: true,
+                                ),
+                              ),
                             _section(
                               theme,
                               'Datas',
@@ -3381,7 +3498,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               <Widget>[
                                 _info(
                                   'Competência',
-                                  formatarData(detalhe['dataCompetencia']),
+                                  CompetenciaFinanceira.formatarValor(detalhe['dataCompetencia']),
                                 ),
                                 _info(
                                   'Vencimento',

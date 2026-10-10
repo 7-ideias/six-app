@@ -17,6 +17,8 @@ class AgendaFinanceiraRecorrencia {
   DateTime? inicioSerie;
   String? serieId;
   String escopo = 'ESTE';
+  int numeroOcorrencia = 1;
+  int? totalOcorrencias;
 
   bool get permiteConfigurar => serieId == null || escopo == 'ESTE_E_PROXIMOS';
 
@@ -35,6 +37,8 @@ class AgendaFinanceiraRecorrencia {
     final total = int.tryParse(json['quantidadeParcelas']?.toString() ?? '');
     final numero =
         int.tryParse(json['numeroOcorrencia']?.toString() ?? '') ?? 1;
+    config.numeroOcorrencia = numero;
+    config.totalOcorrencias = total;
     if (total != null && total > 0) {
       config.termino = 'QUANTIDADE';
       config.quantidade = (total - numero + 1).clamp(1, 10000);

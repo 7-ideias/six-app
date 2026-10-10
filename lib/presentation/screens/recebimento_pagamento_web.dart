@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/venda_descricao_padrao.dart';
 import 'dart:convert';
 import 'package:sixpos/data/models/recebimento_forma_input.dart';
 import 'package:sixpos/presentation/components/web/destinos_recebimento_web.dart';
@@ -997,8 +998,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     try {
       final DateTime dataOperacao = DateTime.now();
       final OperacaoVendaInput input = OperacaoVendaInput(
-        descricao:
-            'Venda ${(widget.numeroVenda?.trim().isNotEmpty ?? false) ? widget.numeroVenda!.trim() : 'em andamento'}',
+        // O estado da venda e seu código são informações separadas da descrição.
+        descricao: VendaDescricaoPadrao.valor,
         idColaborador: widget.idColaborador,
         nomeColaborador: widget.nomeColaborador,
         itens: _montarItensDaVenda(),

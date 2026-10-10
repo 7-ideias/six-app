@@ -1,3 +1,6 @@
+import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
+import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
+import 'package:sixpos/data/models/operacao_models.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -11,6 +14,8 @@ import 'configuracoes_espaco_mobile.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 
 import 'dart:async';
 
@@ -956,6 +961,11 @@ class _AgendaFinanceiraMobileScreenState
                 .toList()
             : <String>[];
 
+    if (item['serieRecorrenciaId'] != null &&
+        !['PAGO', 'RECEBIDO', 'CANCELADO', 'PARCIAL']
+            .contains(item['status']?.toString().toUpperCase())) {
+      acoes.add('Cancelar');
+    }
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
@@ -1109,6 +1119,10 @@ class _AgendaFinanceiraMobileScreenState
       await _editarLancamento(item);
       return;
     }
+    if (comando == 'cancelar') {
+      await _cancelarRecorrencia(item);
+      return;
+    }
     if (comando == 'registrar parcial') {
       await _registrarParcial(item);
       return;
@@ -1123,6 +1137,43 @@ class _AgendaFinanceiraMobileScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Ação "$acao" ainda não implementada.')),
     );
+  }
+
+  Future<bool> _cancelarRecorrencia(Map<String, dynamic> item) async {
+    if (_executandoAcao || item['serieRecorrenciaId'] == null) return false;
+    final id = item['id']?.toString() ?? '';
+    if (id.isEmpty) return false;
+    final config = AgendaFinanceiraRecorrencia.fromJson(item);
+    final confirmacao = await confirmarImpactoRecorrencia(
+      context,
+      mobile: true,
+      recorrencia: config,
+      descricao: item['descricao']?.toString() ?? 'Lançamento recorrente',
+      valorFormatado: _formatarMoeda(_toDouble(item['valorOriginal'] ?? item['valor'])),
+      vencimentoFormatado: item['vencimento']?.toString() ?? '',
+      cancelar: true,
+      permitirTrocarEscopo: true,
+    );
+    if (confirmacao == null || !mounted) return false;
+    setState(() => _executandoAcao = true);
+    try {
+      await _service.cancelarRecorrencia(id,
+          escopo: confirmacao.escopo, motivo: confirmacao.motivo);
+      if (!mounted) return false;
+      await _consultar(mostrarFeedback: true);
+      return true;
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError')),
+      ));
+      return false;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível cancelar a ocorrência.')));
+      return false;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) =>
@@ -2442,13 +2493,18 @@ class _AgendaFinanceiraMobileScreenState
                 .map((dynamic acao) => acao.toString())
                 .toSet()
             : <String>{};
-    acoesInformadas
-      ..add('Editar')
-      ..add('Detalhes');
+    if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
+        .contains(item['status']?.toString())) {
+      acoesInformadas.add('Editar');
+    } else {
+      acoesInformadas.remove('Editar');
+    }
+    acoesInformadas.add('Detalhes');
     const List<String> ordemAcoes = <String>[
       'Editar',
       'Liquidar',
       'Registrar parcial',
+      'Cancelar',
       'Detalhes',
     ];
     final List<String> acoes = ordemAcoes
@@ -2561,6 +2617,8 @@ class _AgendaFinanceiraMobileScreenState
                         item['status']?.toString() ?? '-',
                         Icons.flag_outlined,
                       ),
+                      if (item['ocorrenciaAjustada'] == true)
+                        _pill('Ajustado', Icons.tune_outlined),
                       if (valorConfirmado > 0)
                         _pill(
                           'Confirmado: ${_formatarMoeda(valorConfirmado)}',
@@ -2676,6 +2734,8 @@ class _AgendaFinanceiraMobileScreenState
         return Icons.check_circle_outline_rounded;
       case 'Registrar parcial':
         return Icons.pie_chart_outline_rounded;
+      case 'Cancelar':
+        return Icons.event_busy_outlined;
       default:
         return Icons.info_outline_rounded;
     }
@@ -3158,8 +3218,16 @@ class _AgendaFinanceiraMobileScreenState
         if (detalhe.isNotEmpty) {
           item = <String, dynamic>{
             ...item,
+            ...detalhe,
+            'contato': item['contato'],
+            'vencimento': item['vencimento'],
+            'status': item['status'],
+            'formaPagamento': item['formaPagamento'],
+            'valorConfirmado': item['valorConfirmado'],
+            'valorRestante': item['valorRestante'],
+            'valorOriginal': item['valorOriginal'],
+            'liquidacoes': item['liquidacoes'],
             'codigoOperacao': detalhe['codigoOperacao']?.toString(),
-            'dadosEdicao': detalhe['dadosEdicao'],
           };
         }
       } catch (_) {
@@ -3260,6 +3328,51 @@ class _AgendaFinanceiraMobileScreenState
                     'Valor em aberto',
                     _formatarMoeda(_toDouble(item['valorRestante'])),
                   ),
+                  if (AgendaItensVendaResumo.ehVenda(item)) ...[
+                    const SizedBox(height: 16),
+                    AgendaItensVendaResumo(
+                      itens: AgendaItensVendaResumo.lerItens(item),
+                      formatarMoeda: _formatarMoeda,
+                      mostrarVazio: true,
+                    ),
+                  ],
+                  if (item['comprovanteVendaDisponivel'] == true) ...[
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PopupMenuButton<FormatoImpressaoOperacao>(
+                        tooltip: context.t('agenda.saleItems.sharePdf'),
+                        onSelected: (formato) => _compartilharComprovanteVenda(
+                          item['idOperacaoComprovante']?.toString() ?? '',
+                          formato,
+                        ),
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.a4,
+                            child: Text(context.t('agenda.saleItems.pdfA4')),
+                          ),
+                          PopupMenuItem(
+                            value: FormatoImpressaoOperacao.cupomTermico,
+                            child: Text(context.t('agenda.saleItems.pdfCupom')),
+                          ),
+                        ],
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: _accentColor),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.picture_as_pdf_outlined, color: _accentColor),
+                            const SizedBox(width: 8),
+                            Text(context.t('agenda.saleItems.sharePdf'),
+                              style: TextStyle(color: _accentColor, fontWeight: FontWeight.w700)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
                   if ((item['observacoes']?.toString() ?? '').isNotEmpty)
                     _detalheLinha(
                       'Observações',
@@ -3281,6 +3394,30 @@ class _AgendaFinanceiraMobileScreenState
         );
       },
     );
+  }
+
+  Future<void> _compartilharComprovanteVenda(
+    String idOperacao, FormatoImpressaoOperacao formato,
+  ) async {
+    try {
+      final servico = AgendaVendaComprovanteService();
+      final pdf = await servico.gerar(idOperacao, formato: formato);
+      if (!mounted) return;
+      final RenderBox? caixa = context.findRenderObject() is RenderBox
+          ? context.findRenderObject() as RenderBox
+          : null;
+      await servico.compartilharMobile(
+        pdf,
+        posicaoDeOrigem: caixa == null
+            ? null
+            : (caixa.localToGlobal(Offset.zero) & caixa.size),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Não foi possível compartilhar o comprovante da venda.'),
+      ));
+    }
   }
 
   Widget _detalheLinha(String label, String value) {

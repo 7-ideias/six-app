@@ -1,3 +1,7 @@
+import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
+import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
+import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_imposto_renda_mobile_fields.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -75,7 +79,6 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
-  String _origemSelecionada = 'Despesa manual';
   String _codigoTipoRecebimentoSelecionado = '';
   String? _centroCustoId;
   final String _empresa = 'Empresa';
@@ -87,7 +90,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   DateTime _dataOperacao = _inicioHoje();
   DateTime _dataVencimento = _inicioHoje();
-  DateTime _dataCompetencia = _inicioHoje();
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
 
   DateTime? _dataPrevisaoPagamento;
   bool _registrarPagamento = false;
@@ -285,38 +288,19 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                   (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
         ),
         SizedBox(height: 12),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _selectorTile(
-                label: 'Status',
-                value: _statusSelecionado,
-                icon: Icons.flag_outlined,
-                onTap:
-                    () => _selecionarValor(
-                      titulo: 'Selecionar status',
-                      opcoes: _statusParaTipo(),
-                      selecionado: _statusSelecionado,
-                      onSelected: (String value) => _statusSelecionado = value,
-                    ),
-              ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _selectorTile(
-                label: 'Origem',
-                value: _origemSelecionada,
-                icon: Icons.source_outlined,
-                onTap:
-                    () => _selecionarValor(
-                      titulo: 'Selecionar origem',
-                      opcoes: _origensParaTipo(),
-                      selecionado: _origemSelecionada,
-                      onSelected: (String value) => _origemSelecionada = value,
-                    ),
-              ),
-            ),
-          ],
+        _selectorTile(
+          label: context.t('agenda.form.situation'),
+          value: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
+          icon: Icons.flag_outlined,
+          onTap: () => _selecionarValor(
+            titulo: context.t('agenda.form.situation'),
+            opcoes: _statusParaTipo()
+                .map((s) => AgendaFinanceiraStatusLabels.rotulo(context, s))
+                .toList(),
+            selecionado: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
+            onSelected: (String value) => _statusSelecionado =
+                AgendaFinanceiraStatusLabels.codigoDaEscolha(context, value),
+          ),
         ),
       ],
     );
@@ -388,14 +372,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             Expanded(
               child: _selectorTile(
                 label: 'Competência',
-                value: _formatarDataBr(_dataCompetencia),
+                value: CompetenciaFinanceira.formatar(_dataCompetencia),
                 icon: Icons.event_note_outlined,
                 onTap:
-                    () => _selecionarData(
-                      titulo: 'Data de competência',
-                      atual: _dataCompetencia,
-                      onSelected: (DateTime value) => _dataCompetencia = value,
-                    ),
+                    () => _selecionarCompetencia(),
               ),
             ),
             SizedBox(width: 10),
@@ -552,7 +532,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                           : () {
                             setState(() {
                               _tipoSelecionado = tipo;
-                              _alinharCamposComTipo(tipo);
+                              _alinharCamposComTipo();
                             });
                           },
                   borderRadius: BorderRadius.circular(18),
@@ -852,6 +832,17 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     setState(() => onSelected(result));
   }
 
+  Future<void> _selecionarCompetencia() async {
+    final selecionada = await selecionarCompetenciaMesAno(
+      context,
+      competencia: _dataCompetencia,
+      mobile: true,
+    );
+    if (selecionada == null || !mounted) return;
+    setState(() =>
+        _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada));
+  }
+
   Future<void> _selecionarData({
     required String titulo,
     required DateTime atual,
@@ -1043,10 +1034,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   LancamentoAgendaFinanceiraRequest _buildRequest(double valorTotal) {
     final bool isReceber = _tipoSelecionado == 'Receber';
     final String tipoOperacao = isReceber ? 'RECEBER' : 'PAGAR';
-    final String origem = _origemParaBackend(
-      _origemSelecionada,
-      _tipoSelecionado,
-    );
+    final String origem = AgendaFinanceiraOrigem.manual(tipoOperacao);
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoNome = _contatoController.text.trim();
     final String statusBackend = _statusParaBackend(_statusSelecionado);
@@ -1119,26 +1107,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   List<String> _statusParaTipo() => <String>['Previsto', 'Pendente'];
 
-  List<String> _origensParaTipo() {
-    if (_tipoSelecionado == 'Receber') {
-      return <String>['Venda', 'Ordem de serviço', 'Parcela'];
-    }
-    return <String>[
-      'Despesa manual',
-      'Compra',
-      'Parcela',
-      'Movimentação de caixa',
-    ];
-  }
-
-  void _alinharCamposComTipo(String tipo) {
+  void _alinharCamposComTipo() {
     final List<String> statusPermitidos = _statusParaTipo();
     if (!statusPermitidos.contains(_statusSelecionado)) {
       _statusSelecionado = 'Pendente';
-    }
-    final List<String> origensPermitidas = _origensParaTipo();
-    if (!origensPermitidas.contains(_origemSelecionada)) {
-      _origemSelecionada = tipo == 'Receber' ? 'Venda' : 'Despesa manual';
     }
   }
 
@@ -1173,25 +1145,6 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   bool _statusEstaQuitada(String status) {
     return status == 'PAGO' || status == 'RECEBIDO';
-  }
-
-  String _origemParaBackend(String origem, String tipo) {
-    switch (origem) {
-      case 'Venda':
-        return 'VENDA';
-      case 'Ordem de serviço':
-        return 'ORDEM_SERVICO';
-      case 'Despesa manual':
-        return 'DESPESA_MANUAL';
-      case 'Compra':
-        return 'COMPRA';
-      case 'Parcela':
-        return 'PARCELA';
-      case 'Movimentação de caixa':
-        return 'MOVIMENTACAO_CAIXA';
-      default:
-        return tipo == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
-    }
   }
 
   DateTime _normalizarData(DateTime data) =>

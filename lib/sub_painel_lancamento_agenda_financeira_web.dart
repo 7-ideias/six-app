@@ -1,3 +1,6 @@
+import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
+import 'package:sixpos/data/models/agenda_financeira_origem.dart';
 import 'package:sixpos/data/models/agenda_imposto_renda.dart';
 import 'package:sixpos/presentation/components/web/agenda_imposto_renda_web_fields.dart';
 import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
@@ -5,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
 import 'package:sixpos/presentation/components/web/agenda_centro_custo_web_field.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
@@ -217,23 +221,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
-  String _origemSelecionada = 'Despesa manual';
+  String _origemPersistida = '';
   String _empresaSelecionada = '';
   String _formaPagamentoSelecionada = 'Pix';
 
   DateTime _dataOperacao = DateTime.now();
   DateTime _dataVencimento = DateTime.now();
-  DateTime _dataCompetencia = DateTime.now();
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
 
   static const List<String> _status = <String>['Previsto', 'Pendente'];
-  static const List<String> _origens = <String>[
-    'Venda',
-    'Ordem de serviço',
-    'Despesa manual',
-    'Compra',
-    'Parcela',
-    'Movimentação de caixa',
-  ];
   static const List<String> _formasPagamentoPadrao = <String>[
     'Pix',
     'Boleto',
@@ -356,9 +352,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _bloquearTipoStatusPorConfirmacao =
         _statusQuitada || valorConfirmado > 0 || !_status.contains(status);
 
-    final String origem = item['origem']?.toString() ?? '';
-    if (_origens.contains(origem)) _origemSelecionada = origem;
-    _alinharOrigemComTipo(_tipoSelecionado);
+    final origemRaw = item['origem'];
+    _origemPersistida = (origemRaw is Map
+        ? origemRaw['tipo']?.toString()
+        : origemRaw?.toString())?.trim() ?? '';
 
     final String formaPagamento = item['formaPagamento']?.toString() ?? '';
     if (formaPagamento.trim().isNotEmpty) {
@@ -609,33 +606,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
             : _formatarDataBr(_dataPrevisaoPagamento!);
     _dataOperacaoController.text = _formatarDataBr(_dataOperacao);
     _dataVencimentoController.text = _formatarDataBr(_dataVencimento);
-    _dataCompetenciaController.text = _formatarDataBr(_dataCompetencia);
+    _dataCompetenciaController.text = CompetenciaFinanceira.formatar(_dataCompetencia);
   }
 
   String _formatarDataBr(DateTime data) =>
       context.read<LocaleSettingsProvider>().formatDate(data);
 
-  bool _origemSugerePagar(String origem) =>
-      origem == 'Despesa manual' || origem == 'Compra';
-
-  bool _origemSugereReceber(String origem) =>
-      origem == 'Venda' || origem == 'Ordem de serviço';
-
-  String _origemPadraoPorTipo(String tipo) =>
-      tipo == 'Receber' ? 'Venda' : 'Despesa manual';
-
-  void _alinharOrigemComTipo(String tipo) {
-    if (tipo == 'Receber' && _origemSugerePagar(_origemSelecionada)) {
-      _origemSelecionada = _origemPadraoPorTipo(tipo);
-    } else if (tipo == 'Pagar' && _origemSugereReceber(_origemSelecionada)) {
-      _origemSelecionada = _origemPadraoPorTipo(tipo);
-    }
-  }
-
   void _aplicarTipoSelecionado(String tipo) {
     if (_bloquearTipoStatus) return;
     _tipoSelecionado = tipo;
-    _alinharOrigemComTipo(tipo);
     if (tipo == 'Receber' && _statusSelecionado == 'Pago') {
       _statusSelecionado = 'Recebido';
     } else if (tipo == 'Pagar' && _statusSelecionado == 'Recebido') {
@@ -652,25 +631,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   String _tipoOperacaoParaBackend() => _tipoSelecionado.toUpperCase();
 
-  String _origemParaBackend() {
-    switch (_origemSelecionada) {
-      case 'Venda':
-        return 'VENDA';
-      case 'Ordem de serviço':
-        return 'ORDEM_SERVICO';
-      case 'Despesa manual':
-        return 'DESPESA_MANUAL';
-      case 'Compra':
-        return 'COMPRA';
-      case 'Parcela':
-        return 'PARCELA';
-      case 'Movimentação de caixa':
-        return 'MOVIMENTACAO_CAIXA';
-      default:
-        return _tipoSelecionado == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
-    }
-  }
-
   String _formaPagamentoParaBackend() {
     return _backendPorDescricaoFormaPagamento[_formaPagamentoSelecionada] ??
         _backendFormaPagamentoPorDescricao(_formaPagamentoSelecionada);
@@ -680,7 +640,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final double valorTotal = _toDouble(_valorController.text);
     final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
-    final String origem = _origemParaBackend();
+    final String origem = widget.modoEdicao
+        ? AgendaFinanceiraOrigem.preservada(_origemPersistida, _tipoSelecionado)
+        : AgendaFinanceiraOrigem.manual(_tipoSelecionado);
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoIdDigitado = _idContatoController.text.trim();
     final String contatoNome = _contatoController.text.trim();
@@ -778,6 +740,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
       return;
     }
 
+    if (widget.modoEdicao && _recorrencia.serieId != null) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: false,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: false,
+      );
+      if (confirmado == null || !mounted) return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest();
     setState(() => _isLoading = true);
     late final String idGerado;
@@ -831,6 +806,44 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Future<void> _confirmarExcluirLancamento() async {
     final String? id = _idLancamentoEdicao;
+    if (_recorrencia.serieId != null && id != null && id.trim().isNotEmpty) {
+      final confirmado = await confirmarImpactoRecorrencia(
+        context,
+        mobile: false,
+        recorrencia: _recorrencia,
+        descricao: _descricaoController.text,
+        valorFormatado: _valorController.text,
+        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        cancelar: true,
+        permitirTrocarEscopo: true,
+      );
+      if (confirmado == null || !mounted) return;
+      setState(() => _isLoading = true);
+      try {
+        final response = await _service.cancelarRecorrencia(
+          id,
+          escopo: confirmado.escopo,
+          motivo: confirmado.motivo,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop(<String, dynamic>{
+          'id': response.id.isEmpty ? id : response.id,
+          'deleted': true,
+          'status': 'CANCELADO',
+        });
+      } on AgendaFinanceiraLancamentoApiException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(recorrenciaLabel(
+              context, e.codigoRecorrencia ?? 'saveError',
+            ))),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+      return;
+    }
     if (!widget.modoEdicao || id == null || id.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1028,6 +1041,30 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 _sincronizarTextosData();
                 setState(() {});
               },
+    );
+  }
+
+  Widget _buildCompetenciaField() {
+    return TextFormField(
+      controller: _dataCompetenciaController,
+      readOnly: true,
+      decoration: _inputDecoration(
+        _label('competence'),
+        icon: Icons.event_note_outlined,
+        suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+      ),
+      onTap: () async {
+        final selecionada = await selecionarCompetenciaMesAno(
+          context,
+          competencia: _dataCompetencia,
+          mobile: false,
+        );
+        if (!mounted || selecionada == null) return;
+        setState(() {
+          _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada);
+          _sincronizarTextosData();
+        });
+      },
     );
   }
 
@@ -1254,7 +1291,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 ],
                 selected: {_tipoSelecionado},
                 onSelectionChanged:
-                    _bloquearTipoStatus
+                    (_bloquearTipoStatus || widget.modoEdicao)
                         ? null
                         : (value) => setState(
                           () => _aplicarTipoSelecionado(value.first),
@@ -1306,12 +1343,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         : (value) =>
                             setState(() => _statusSelecionado = value!),
               ),
-              _buildDateField(
-                label: _label('competence'),
-                controller: _dataCompetenciaController,
-                initialDate: _dataCompetencia,
-                onChanged: (date) => _dataCompetencia = date,
-              ),
+              _buildCompetenciaField(),
             ], columns: 3),
             _helper('competenceHint'),
             if (_bloquearTipoStatus)
@@ -1491,13 +1523,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
             childrenPadding: const EdgeInsets.only(top: 12, bottom: 20),
             children: [
               _fields([
-                _buildDropdownField(
-                  label: _label('origin'),
-                  value: _origemSelecionada,
-                  items: _origens,
-                  onChanged:
-                      (value) => setState(() => _origemSelecionada = value!),
-                ),
                 if (_service.espacoFinanceiro == 'EMPRESA')
                   _buildDropdownField(
                     label: _label('company'),
@@ -1561,8 +1586,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   (_isLoading || _ir.carregando)
                       ? null
                       : _confirmarExcluirLancamento,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: Text(_label('delete')),
+              icon: Icon(_recorrencia.serieId != null
+                  ? Icons.event_busy_outlined : Icons.delete_outline, size: 18),
+              label: Text(_recorrencia.serieId != null
+                  ? 'Cancelar ocorrência' : _label('delete')),
               style: TextButton.styleFrom(foregroundColor: tokens.danger),
             ),
           OutlinedButton(

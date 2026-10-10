@@ -324,6 +324,39 @@ class AgendaFinanceiraLancamentoService {
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
   }
 
+  /// Cancela a ocorrência sem apagar o histórico nem recriar vencimentos futuros.
+  Future<LancamentoAgendaFinanceiraResponse> cancelarRecorrencia(
+    String idLancamento, {
+    String escopo = 'ESTE',
+    String motivo = '',
+  }) async {
+    final uri = Uri.parse(
+      '${_endpointLancamento(idLancamento)}/cancelar',
+    ).replace(queryParameters: {'escopo': escopo});
+    final response = await _httpClient.patch(
+      uri,
+      headers: await _buildHeaders(),
+      body: jsonEncode({'motivo': motivo, 'observacoes': ''}),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+    if (response.body.trim().isEmpty) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'CANCELADO',
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Resposta de cancelamento inválida.');
+    }
+    return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
+  }
+
   Future<LancamentoAgendaFinanceiraResponse> excluirLancamento(
     String idLancamento, {
     String escopo = 'ESTE',
