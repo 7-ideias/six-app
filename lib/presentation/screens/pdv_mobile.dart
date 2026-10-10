@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/venda_descricao_padrao.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -610,7 +611,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       final dataOperacao = nowProvider?.call() ?? DateTime.now();
       final input = OperacaoVendaInput(
         // Recebimento parcial, futuro e data não fazem parte do nome da venda.
-        descricao: 'Venda',
+        descricao: VendaDescricaoPadrao.valor,
         idColaborador: idColaborador,
         nomeColaborador: nomeColaborador,
         itens: _itens.map((item) => item.toInput()).toList(growable: false),
