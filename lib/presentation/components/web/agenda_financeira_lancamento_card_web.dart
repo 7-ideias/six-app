@@ -5,6 +5,12 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 /// Card compacto exclusivo da Agenda Financeira Web.
 /// Acoes sao derivadas das permissoes retornadas no lancamento, nao do visual.
 class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
+  static const double _ctaWidth = 152;
+  static const double _ctaHeight = 48;
+  static final OutlinedBorder _ctaShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+  );
+
   const AgendaFinanceiraLancamentoCardWeb({
     super.key,
     required this.item,
@@ -224,24 +230,45 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
             label: const Text('Editar'),
           ),
         if (podeLiquidar)
-          FilledButton.icon(
-            key: const Key('agenda-card-liquidar'),
-            onPressed: bloqueado ? null : onLiquidar,
-            icon: const Icon(Icons.check_rounded, size: 18),
-            label: Text(parcial
-                ? (entrada ? 'Receber restante' : 'Pagar restante')
-                : (entrada ? 'Receber' : 'Pagar')),
-            style: FilledButton.styleFrom(
-              backgroundColor: naturezaCor,
-              foregroundColor: theme.colorScheme.surface,
+          SizedBox(
+            width: _ctaWidth,
+            height: _ctaHeight,
+            child: FilledButton.icon(
+              key: const Key('agenda-card-liquidar'),
+              onPressed: bloqueado ? null : onLiquidar,
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: Text(
+                parcial
+                    ? (entrada ? 'Receber restante' : 'Pagar restante')
+                    : (entrada ? 'Receber' : 'Pagar'),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: FilledButton.styleFrom(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                shape: _ctaShape,
+                backgroundColor: naturezaCor,
+                foregroundColor: theme.colorScheme.surface,
+              ),
             ),
           ),
         if (podeComprovante)
-          OutlinedButton.icon(
-            key: const Key('agenda-card-comprovante'),
-            onPressed: bloqueado ? null : onComprovante,
-            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-            label: const Text('Comprovante'),
+          SizedBox(
+            width: _ctaWidth,
+            height: _ctaHeight,
+            child: OutlinedButton.icon(
+              key: const Key('agenda-card-comprovante'),
+              onPressed: bloqueado ? null : onComprovante,
+              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+              label: const Text('Comprovante', maxLines: 1),
+              style: OutlinedButton.styleFrom(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                shape: _ctaShape,
+              ),
+            ),
           ),
         PopupMenuButton<String>(
           key: const Key('agenda-card-menu'),
