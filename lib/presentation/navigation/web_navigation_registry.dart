@@ -21,6 +21,7 @@ abstract final class WebNavigationIds {
   static const String catalogCategories = 'catalog.categories';
   static const String people = 'people';
   static const String peopleCustomers = 'people.customers';
+  static const String peopleSuppliers = 'people.suppliers';
   static const String peopleCollaborators = 'people.collaborators';
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
@@ -170,6 +171,16 @@ abstract final class WebNavigationRegistry {
             ],
           ),
           destination: WebNavigationDestination.peopleCustomers,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.peopleSuppliers,
+          labelKey: 'web.navigation.people.suppliers',
+          labelFallback: 'Fornecedores',
+          icon: Icons.local_shipping_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[WebNavigationPermission.podeEditarCliente],
+          ),
+          destination: WebNavigationDestination.peopleSuppliers,
         ),
         WebNavigationItem(
           id: WebNavigationIds.peopleCollaborators,

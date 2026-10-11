@@ -31,6 +31,7 @@ import 'formas_recebimento_configuracao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalogo_virtual_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/fornecedores_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
@@ -806,15 +807,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Fornecedores',
             ),
             icon: Icons.local_shipping_outlined,
-            accentColor: _lockedAccent,
-            valueText: _maturityLabel(
-              context,
-              ManagementSettingsMaturity.comingSoon,
-            ),
-            semanticValue: context.t(
-              'gestao.people.suppliersUnavailableSemantic',
-              fallback: 'Recurso em breve',
-            ),
+            accentColor: _peopleAccent,
+            valueText: 'Disponível',
+            semanticValue: 'Cadastro e consulta de fornecedores disponíveis',
           ),
         ];
       case _ManagementSectionType.finance:
@@ -1200,9 +1195,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Parceiros e compras do comércio',
             ),
             icon: Icons.local_shipping_outlined,
-            accentColor: _lockedAccent,
-            emphasis: ManagementActionEmphasis.operational,
-            maturity: ManagementSettingsMaturity.comingSoon,
+            accentColor: _peopleAccent,
+            emphasis: ManagementActionEmphasis.secondary,
+            onTap: () => _navigateTo(context, const FornecedoresMobileScreen()),
           ),
         ],
       ),

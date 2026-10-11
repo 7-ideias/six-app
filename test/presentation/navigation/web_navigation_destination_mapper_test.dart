@@ -79,6 +79,10 @@ void main() {
         WebNavigationDestination.peopleCustomers,
       );
       expect(
+        webNavigationDestinationForModuloCentralPdv(ModuloCentralPDV.fornecedoresList),
+        WebNavigationDestination.peopleSuppliers,
+      );
+      expect(
         webNavigationDestinationForModuloCentralPdv(
           ModuloCentralPDV.colaboradoresList,
         ),

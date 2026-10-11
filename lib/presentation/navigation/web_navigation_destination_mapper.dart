@@ -31,6 +31,8 @@ WebNavigationDestination? webNavigationDestinationForModuloCentralPdv(
       return WebNavigationDestination.catalogCategories;
     case ModuloCentralPDV.clientesList:
       return WebNavigationDestination.peopleCustomers;
+    case ModuloCentralPDV.fornecedoresList:
+      return WebNavigationDestination.peopleSuppliers;
     case ModuloCentralPDV.colaboradoresList:
       return WebNavigationDestination.peopleCollaborators;
     case ModuloCentralPDV.desempenho:

@@ -24,6 +24,7 @@ void main() {
         WebNavigationDestination.catalogStock: ModuloCentralPDV.estoque,
         WebNavigationDestination.catalogCategories: ModuloCentralPDV.categorias,
         WebNavigationDestination.peopleCustomers: ModuloCentralPDV.clientesList,
+        WebNavigationDestination.peopleSuppliers: ModuloCentralPDV.fornecedoresList,
         WebNavigationDestination.peopleCollaborators:
             ModuloCentralPDV.colaboradoresList,
         WebNavigationDestination.peoplePerformance: ModuloCentralPDV.desempenho,

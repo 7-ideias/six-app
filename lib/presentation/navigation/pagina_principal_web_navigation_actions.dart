@@ -105,6 +105,14 @@ class PaginaPrincipalWebNavigationActions
       ModuloCentralPDV.clientesList,
     );
   }
+  @override
+  WebNavigationResolutionResult openPeopleSuppliers() {
+    return _abrirModulo(
+      WebNavigationDestination.peopleSuppliers,
+      ModuloCentralPDV.fornecedoresList,
+    );
+  }
+
 
   @override
   WebNavigationResolutionResult openPeopleCollaborators() {

@@ -18,6 +18,7 @@ import 'package:sixpos/presentation/screens/catalogo_reservas_web.dart';
 import 'package:sixpos/presentation/screens/catalogo_publico_personalizacao_web.dart';
 import 'package:sixpos/presentation/screens/chat_suporte_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/fornecedores_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
@@ -895,6 +896,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'financeiro';
       case ModuloCentralPDV.clientesList:
         return 'clientes';
+      case ModuloCentralPDV.fornecedoresList:
+        return 'fornecedores';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores';
       case ModuloCentralPDV.desempenho:
@@ -931,6 +934,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'recebimento_web';
       case ModuloCentralPDV.clientesList:
         return 'clientes_lista_web';
+      case ModuloCentralPDV.fornecedoresList:
+        return 'fornecedores_lista_web';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores_lista_web';
       case ModuloCentralPDV.desempenho:
@@ -3020,6 +3025,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             nomeColaborador: 'Nome do colaborador',
             operacaoService: _operacaoService,
             procedureCoordinator: _procedureCoordinator,
+          ),
+        );
+
+      case ModuloCentralPDV.fornecedoresList:
+        return Expanded(
+          child: FornecedoresWebPage(
+            embedded: true,
+            onBack: voltarParaInicio,
           ),
         );
 

@@ -88,6 +88,7 @@ enum WebNavigationDestination {
   catalogLabels,
   catalogCategories,
   peopleCustomers,
+  peopleSuppliers,
   peopleCollaborators,
   peopleSixoUsers,
   peoplePerformance,

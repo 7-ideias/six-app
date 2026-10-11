@@ -4,6 +4,7 @@ enum ModuloCentralPDV {
   vendas,
   recebimento,
   clientesList,
+  fornecedoresList,
   colaboradoresList,
   orcamento,
   operacoesCaixa,

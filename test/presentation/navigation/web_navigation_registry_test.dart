@@ -50,6 +50,7 @@ void main() {
       final WebNavigationItem people = _requiredItem(WebNavigationIds.people);
       expect(_childIds(people), <String>[
         WebNavigationIds.peopleCustomers,
+        WebNavigationIds.peopleSuppliers,
         WebNavigationIds.peopleCollaborators,
         WebNavigationIds.peopleSixoUsers,
         WebNavigationIds.peoplePerformance,
@@ -86,7 +87,7 @@ void main() {
         expect(labels, isNot(contains('Relatórios')));
         expect(labels, isNot(contains('Fiado')));
         expect(labels, isNot(contains('Crediário')));
-        expect(labels, isNot(contains('Fornecedores')));
+        expect(labels, contains('Fornecedores'));
         expect(labels, isNot(contains('Nova venda')));
         expect(labels, isNot(contains('Novo atendimento')));
         expect(labels, isNot(contains('Novo orçamento')));
@@ -116,6 +117,7 @@ void main() {
           'catalog.stock',
           'people',
           'people.customers',
+          'people.suppliers',
           'people.collaborators',
           'people.sixo_users',
           'people.performance',

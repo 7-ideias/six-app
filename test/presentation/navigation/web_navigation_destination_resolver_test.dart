@@ -19,6 +19,7 @@ void main() {
             WebNavigationDestination.catalogStock: 'catalogStock',
             WebNavigationDestination.catalogCategories: 'catalogCategories',
             WebNavigationDestination.peopleCustomers: 'peopleCustomers',
+            WebNavigationDestination.peopleSuppliers: 'peopleSuppliers',
             WebNavigationDestination.peopleCollaborators: 'peopleCollaborators',
             WebNavigationDestination.peoplePerformance: 'peoplePerformance',
             WebNavigationDestination.cash: 'cash',
@@ -191,6 +192,14 @@ class _FakeWebNavigationActions implements WebNavigationDestinationActions {
     return _handled(
       'peopleCustomers',
       WebNavigationDestination.peopleCustomers,
+    );
+  }
+
+  @override
+  WebNavigationResolutionResult openPeopleSuppliers() {
+    return _handled(
+      'peopleSuppliers',
+      WebNavigationDestination.peopleSuppliers,
     );
   }
 
