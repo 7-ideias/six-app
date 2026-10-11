@@ -83,6 +83,31 @@ void main() {
 
   });
 
+  testWidgets('CTA Receber e Comprovante possuem mesma largura, altura e alinhamento',
+      (tester) async {
+    await montar(tester, item: lancamento());
+    final ctaReceber = find.byKey(const Key('agenda-card-liquidar'));
+    final tamanhoReceber = tester.getSize(ctaReceber);
+    final posicaoReceber = tester.getTopLeft(ctaReceber);
+    expect(tamanhoReceber, const Size(152, 48));
+
+    await montar(
+      tester,
+      item: lancamento(
+        status: 'Recebido',
+        original: 100,
+        confirmado: 100,
+        restante: 0,
+        acoes: ['Detalhes'],
+      ),
+    );
+    final ctaComprovante = find.byKey(const Key('agenda-card-comprovante'));
+    expect(tester.getSize(ctaComprovante), tamanhoReceber);
+    final posicaoComprovante = tester.getTopLeft(ctaComprovante);
+    expect(posicaoComprovante.dx, closeTo(posicaoReceber.dx, 0.1));
+    expect(posicaoComprovante.dy, closeTo(posicaoReceber.dy, 0.1));
+  });
+
   testWidgets('Despesa exibe Pagar e seta de saida', (tester) async {
     final eventos = <String>[];
     await montar(tester,
