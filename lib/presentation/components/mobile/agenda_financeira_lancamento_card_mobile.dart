@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/agenda_financeira_calendario_resumo.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
@@ -73,7 +74,9 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
         TextSpan(text: ' • vence $vencimento'),
     ];
     final valor = AgendaFinanceiraCalendarioResumo.valorPrincipal(item);
-    final valorRotulo = AgendaFinanceiraCalendarioResumo.rotuloValor(item);
+    final valorRotulo = AgendaFinanceiraCalendarioResumo.aberto(item) > 0
+        ? context.t('agenda.calendar.outstanding')
+        : context.t(entrada ? 'agenda.calendar.received' : 'agenda.calendar.paid');
 
     return Semantics(
       button: true,
