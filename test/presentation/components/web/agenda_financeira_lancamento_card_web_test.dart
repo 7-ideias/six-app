@@ -36,7 +36,7 @@ void main() {
     double width = 1350,
     void Function(String acao)? onAcao,
   }) async {
-    await tester.view.setPhysicalSize(Size(width, 800));
+    tester.view.physicalSize = Size(width, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -45,7 +45,7 @@ void main() {
         body: SingleChildScrollView(
           child: AgendaFinanceiraLancamentoCardWeb(
             item: item,
-            formatarMoeda: (n) => 'R\\$ ${n.toStringAsFixed(2)}',
+            formatarMoeda: (n) => 'R\$ ${n.toStringAsFixed(2)}',
             onDetalhes: () => onAcao?.call('detalhes'),
             onEditar: () => onAcao?.call('editar'),
             onLiquidar: () => onAcao?.call('liquidar'),
@@ -63,7 +63,7 @@ void main() {
     await montar(tester, item: lancamento(), onAcao: eventos.add);
     expect(find.text('Venda'), findsOneWidget);
     expect(find.text('Vencido'), findsOneWidget);
-    expect(find.text('Original: R\\$ 150.00'), findsOneWidget);
+    expect(find.text('Original: R\$ 150.00'), findsOneWidget);
     expect(find.byKey(const Key('agenda-card-editar')), findsOneWidget);
     expect(find.byKey(const Key('agenda-card-liquidar')), findsOneWidget);
     expect(find.text('Receber'), findsOneWidget);
@@ -75,7 +75,7 @@ void main() {
     expect(eventos, ['liquidar', 'editar']);
 
     final liquidarY = tester.getTopLeft(find.byKey(const Key('agenda-card-liquidar'))).dy;
-    final originalY = tester.getTopLeft(find.text('Original: R\\$ 150.00')).dy;
+    final originalY = tester.getTopLeft(find.text('Original: R\$ 150.00')).dy;
     expect((liquidarY - originalY).abs(), lessThan(48));
   });
 
@@ -100,7 +100,7 @@ void main() {
       onAcao: eventos.add,
     );
     expect(find.text('Receber restante'), findsOneWidget);
-    expect(find.text('R\\$ 200.00'), findsOneWidget);
+    expect(find.text('R\$ 200.00'), findsOneWidget);
     expect(find.byKey(const Key('agenda-card-editar')), findsNothing);
     await tester.tap(find.byKey(const Key('agenda-card-menu')));
     await tester.pumpAndSettle();
