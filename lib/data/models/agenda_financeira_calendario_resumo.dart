@@ -29,9 +29,16 @@ class AgendaFinanceiraCalendarioResumo {
 
   static double confirmado(Map<String, dynamic> item) {
     final informado = numero(item['valorConfirmado']);
-    return informado > 0
-        ? informado
-        : (finalizado(item) ? numero(item['valorOriginal'] ?? item['valor']) : 0.0);
+    if (informado > 0) return informado;
+    final original = numero(item['valorOriginal'] ?? item['valor']);
+    if (finalizado(item)) return original;
+    // Consultas por período podem omitir parciais de meses anteriores.
+    // Com total e saldo explícitos, o valor já liquidado é sua diferença.
+    if (item['valorOriginal'] != null && item['valorRestante'] != null) {
+      final restante = numero(item['valorRestante']);
+      if (original > restante) return original - restante;
+    }
+    return 0.0;
   }
 
   static double aberto(Map<String, dynamic> item) {
