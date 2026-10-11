@@ -153,13 +153,45 @@ void main() {
       item: lancamento(status: 'Parcial', original: 300, confirmado: 100, restante: 200),
       onAcao: eventos.add,
     );
-    expect(find.text('Receber restante'), findsOneWidget);
+    expect(find.text('Receber'), findsOneWidget);
+    expect(find.text('Receber restante'), findsNothing);
+    expect(tester.getSize(find.byKey(const Key('agenda-card-liquidar'))),
+        const Size(152, 48));
     expect(find.text('R\$ 200.00'), findsOneWidget);
     expect(find.byKey(const Key('agenda-card-editar')), findsNothing);
     await tester.tap(find.byKey(const Key('agenda-card-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Registrar parcial'));
     expect(eventos, ['parcial']);
+  });
+
+  testWidgets('CTA parcial alinha com CTA de recebimento pendente', (tester) async {
+    await montar(tester, item: lancamento(
+      status: 'Vencido', original: 300, confirmado: 0, restante: 300,
+    ));
+    final pendente = find.byKey(const Key('agenda-card-liquidar'));
+    final tamanhoPendente = tester.getSize(pendente);
+    final posicaoPendente = tester.getTopLeft(pendente);
+
+    await montar(tester, item: lancamento(
+      status: 'Parcial', original: 300, confirmado: 100, restante: 200,
+    ));
+    final parcial = find.byKey(const Key('agenda-card-liquidar'));
+    expect(find.text('Receber'), findsOneWidget);
+    expect(tester.getSize(parcial), tamanhoPendente);
+    expect(tester.getTopLeft(parcial).dx, closeTo(posicaoPendente.dx, 0.1));
+    expect(tester.getTopLeft(parcial).dy, closeTo(posicaoPendente.dy, 0.1));
+  });
+
+  testWidgets('Despesa parcial utiliza CTA Pagar sem texto truncado', (tester) async {
+    await montar(tester, item: lancamento(
+      tipo: 'pagar', status: 'Parcial', original: 300,
+      confirmado: 100, restante: 200,
+    ));
+    expect(find.text('Pagar'), findsOneWidget);
+    expect(find.text('Pagar restante'), findsNothing);
+    expect(tester.getSize(find.byKey(const Key('agenda-card-liquidar'))),
+        const Size(152, 48));
   });
 
   testWidgets('Venda recebida exibe somente comprovante e detalhes', (tester) async {
