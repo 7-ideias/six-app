@@ -3087,6 +3087,17 @@ class _AgendaFinanceiraMobileScreenState
       children:
           _itensConfirmados.map((item) {
             final tipoEntrada = item['tipo'] == 'receber';
+            final corNatureza = _corNaturezaFinanceira(tipoEntrada);
+            final contato = AgendaFinanceiraResumoVisual.contatoInformado(
+              item['contato'],
+            );
+            final formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(item);
+            final data = item['data']?.toString() ?? '';
+            final metadados = <String>[
+              if (contato != null) contato,
+              if (data.isNotEmpty && data != '-') data,
+              if (formaRealizada != null) formaRealizada,
+            ];
             return Container(
               margin: EdgeInsets.only(bottom: 12),
               padding: EdgeInsets.all(16),
@@ -3101,14 +3112,14 @@ class _AgendaFinanceiraMobileScreenState
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: _softBlueColor,
+                      color: corNatureza.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       tipoEntrada
                           ? Icons.south_west_rounded
                           : Icons.north_east_rounded,
-                      color: _accentColor,
+                      color: corNatureza,
                       size: 20,
                     ),
                   ),
@@ -3126,16 +3137,18 @@ class _AgendaFinanceiraMobileScreenState
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${item['contato']} • ${item['data']} • ${item['formaPagamento']}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _mutedTextColor,
-                            fontSize: 12,
+                        if (metadados.isNotEmpty) ...[
+                          SizedBox(height: 4),
+                          Text(
+                            metadados.join(' • '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -3143,7 +3156,7 @@ class _AgendaFinanceiraMobileScreenState
                   Text(
                     _formatarMoeda(_toDouble(item['valorConfirmado'])),
                     style: TextStyle(
-                      color: _titleTextColor,
+                      color: corNatureza,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -3334,8 +3347,9 @@ class _AgendaFinanceiraMobileScreenState
                       onChanged: () {},
                     ),
                   if (AgendaFinanceiraResumoVisual.contatoInformado(
-                        item['contato']) case final contato?)
-                    _detalheLinha('Contato', contato),
+                        item['contato']) != null)
+                    _detalheLinha('Contato',
+                        AgendaFinanceiraResumoVisual.contatoInformado(item['contato'])!),
                   _detalheLinha(
                     'Vencimento',
                     item['vencimento']?.toString() ?? '-',
@@ -3353,9 +3367,9 @@ class _AgendaFinanceiraMobileScreenState
                       'Centro de custos',
                       item['centroDeCusto'].toString(),
                     ),
-                  if (AgendaFinanceiraResumoVisual.formaRealizada(item)
-                      case final forma?)
-                    _detalheLinha('Forma realizada', forma),
+                  if (AgendaFinanceiraResumoVisual.formaRealizada(item) != null)
+                    _detalheLinha('Forma realizada',
+                        AgendaFinanceiraResumoVisual.formaRealizada(item)!),
                   for (final liquidacao in _mapearLiquidacoes(
                     item['liquidacoes'],
                   ))
