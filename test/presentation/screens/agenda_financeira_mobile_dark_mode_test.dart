@@ -145,6 +145,21 @@ void main() {
     expect(find.text('Recebido'), findsWidgets);
     expect(find.text('A pagar'), findsWidgets);
     expect(find.textContaining('Diferença'), findsNothing);
+    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
+    expect(find.byTooltip('Expandir lançamentos'), findsNWidgets(2));
+
+    await tester.tap(
+      find.byKey(const Key('agenda-calendario-toggle-08/08/2026')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNWidgets(4));
+    expect(find.byTooltip('Recolher lançamentos'), findsOneWidget);
+    expect(find.byTooltip('Expandir lançamentos'), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.byKey(const Key('agenda-calendario-toggle-09/08/2026')));
+    await tester.tap(
+      find.byKey(const Key('agenda-calendario-toggle-09/08/2026')));
+    await tester.pumpAndSettle();
     expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNWidgets(5));
     expect(find.textContaining('Não informado'), findsNothing);
 
@@ -168,6 +183,50 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('calendario recolhe um dia sem afetar os outros ou o resumo',
+      (tester) async {
+    await _pumpAgenda(
+      tester,
+      brightness: Brightness.light,
+      service: _FakeAgendaService(agendaPayload: {
+        'gruposAgenda': [
+          {'titulo': 'Previstos', 'itens': [
+            _agendaItem('v1', 'RECEBER', 'Venda dia um', 'PENDENTE', 150),
+            {
+              ..._agendaItem('v2', 'RECEBER', 'Venda dia dois', 'PENDENTE', 55),
+              'dataVencimento': '2026-08-09',
+            },
+          ]},
+        ],
+      }),
+    );
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Calendário'));
+    await tester.pumpAndSettle();
+
+    final diaUm = find.byKey(const Key('agenda-calendario-toggle-08/08/2026'));
+    final diaDois = find.byKey(const Key('agenda-calendario-toggle-09/08/2026'));
+    expect(find.text('A receber'), findsNWidgets(2));
+    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
+    expect(tester.getSize(diaUm).height, greaterThanOrEqualTo(40));
+
+    await tester.tap(diaUm);
+    await tester.pumpAndSettle();
+    expect(find.text('Venda dia um'), findsOneWidget);
+    expect(find.text('Venda dia dois'), findsNothing);
+
+    await tester.tap(diaUm);
+    await tester.pumpAndSettle();
+    expect(find.text('Venda dia um'), findsNothing);
+    expect(find.text('A receber'), findsNWidgets(2));
+
+    await tester.ensureVisible(diaDois);
+    await tester.tap(diaDois);
+    await tester.pumpAndSettle();
+    expect(find.text('Venda dia dois'), findsOneWidget);
+    expect(find.text('Venda dia um'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('agenda renders financial states with dark themed surfaces', (
     WidgetTester tester,
   ) async {
@@ -187,7 +246,6 @@ void main() {
     expect(find.textContaining('Pago'), findsWidgets);
     expect(find.byIcon(Icons.south_west_rounded), findsWidgets);
     expect(find.byIcon(Icons.north_east_rounded), findsWidgets);
-    expect(find.byIcon(Icons.flag_outlined), findsWidgets);
     expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
     expect(
       _hasDecoratedAncestorColor(
