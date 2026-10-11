@@ -2,6 +2,7 @@ import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
+import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 
@@ -218,6 +219,33 @@ class _AgendaFinanceiraMobileScreenState
   Color get _borderColor => _colors.border;
   Color get _strongBorderColor => _colors.strongBorder;
   Color get _softBlueColor => _colors.softAccentSurface;
+
+  /// Entradas em verde e saidas em vermelho, acompanhando o resumo Web.
+  Color _corNaturezaFinanceira(bool entrada) => entrada
+      ? (Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF34D399)
+          : const Color(0xFF047857))
+      : _colors.error;
+
+  Color _corStatusFinanceiro(String status) {
+    switch (status.trim().toLowerCase()) {
+      case 'recebido':
+      case 'pago':
+        return _corNaturezaFinanceira(true);
+      case 'vencido':
+        return _colors.error;
+      case 'parcial':
+      case 'vence hoje':
+        return Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFFBBF24)
+            : const Color(0xFFB45309);
+      case 'previsto':
+      case 'pendente':
+        return _accentColor;
+      default:
+        return _mutedTextColor;
+    }
+  }
 
   late final AgendaFinanceiraLancamentoService _service =
       widget.lancamentoService ?? AgendaFinanceiraLancamentoService();
@@ -1642,7 +1670,7 @@ class _AgendaFinanceiraMobileScreenState
                   child: SixPulsingBadge(
                     child: Icon(
                       Icons.chevron_right_rounded,
-                      color: _accentColor,
+                      color: _mutedTextColor,
                       size: 22,
                     ),
                   ),
@@ -2381,8 +2409,24 @@ class _AgendaFinanceiraMobileScreenState
             ? valorAberto
             : _toDouble(item['valorOriginal'] ?? item['valor']);
     final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
-    final String subtitulo =
-        '${item['recorrente'] == true ? '${recorrenciaLabel(context, 'badge')} • ' : ''}${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
+    final String? contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
+    final String status = item['status']?.toString() ?? '';
+    final String vencimento = item['vencimento']?.toString() ?? '';
+    final Color corNatureza = _corNaturezaFinanceira(tipoEntrada);
+    final List<InlineSpan> subtitulo = <InlineSpan>[
+      if (item['recorrente'] == true)
+        TextSpan(text: "${recorrenciaLabel(context, 'badge')} • "),
+      if (contato != null) TextSpan(text: '$contato • '),
+      TextSpan(
+        text: status,
+        style: TextStyle(
+          color: _corStatusFinanceiro(status),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      if (vencimento.isNotEmpty && vencimento != '-')
+        TextSpan(text: ' • vence $vencimento'),
+    ];
 
     return Semantics(
       button: true,
@@ -2413,10 +2457,7 @@ class _AgendaFinanceiraMobileScreenState
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color:
-                        tipoEntrada
-                            ? _softBlueColor
-                            : _colors.error.withValues(alpha: 0.12),
+                    color: corNatureza.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -2424,7 +2465,7 @@ class _AgendaFinanceiraMobileScreenState
                         ? Icons.south_west_rounded
                         : Icons.north_east_rounded,
                     size: 20,
-                    color: tipoEntrada ? _accentColor : _colors.error,
+                    color: corNatureza,
                   ),
                 ),
                 SizedBox(width: 11),
@@ -2444,8 +2485,8 @@ class _AgendaFinanceiraMobileScreenState
                         ),
                       ),
                       SizedBox(height: 3),
-                      Text(
-                        subtitulo,
+                      Text.rich(
+                        TextSpan(children: subtitulo),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -2465,7 +2506,7 @@ class _AgendaFinanceiraMobileScreenState
                     Text(
                       _formatarMoeda(valorExibido),
                       style: TextStyle(
-                        color: _titleTextColor,
+                        color: corNatureza,
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                       ),
