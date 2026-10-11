@@ -2,6 +2,9 @@ import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
+import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
+import 'package:sixpos/data/models/agenda_financeira_calendario_resumo.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 
@@ -16,6 +19,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/data/models/agenda_financeira_detalhe_valores.dart';
 
 import 'dart:async';
 
@@ -219,6 +223,12 @@ class _AgendaFinanceiraMobileScreenState
   Color get _strongBorderColor => _colors.strongBorder;
   Color get _softBlueColor => _colors.softAccentSurface;
 
+  Color _corNaturezaFinanceira(bool entrada) =>
+      AgendaFinanceiraLancamentoCardMobile.corNatureza(context, entrada);
+
+  Color _corStatusFinanceiro(String status) =>
+      AgendaFinanceiraLancamentoCardMobile.corStatus(context, status);
+
   late final AgendaFinanceiraLancamentoService _service =
       widget.lancamentoService ?? AgendaFinanceiraLancamentoService();
   late final AgendaFinanceiraAcoesFinanceiras _acoesService =
@@ -285,6 +295,7 @@ class _AgendaFinanceiraMobileScreenState
   List<CentroCustoModel> _centrosCusto = <CentroCustoModel>[];
 
   int _abaSelecionada = 0;
+  final Set<String> _diasCalendarioExpandidos = <String>{};
   String _periodoSelecionado = 'Próximos 7 dias';
   late DateTime _dataInicioPersonalizada;
   late DateTime _dataFimPersonalizada;
@@ -1047,6 +1058,9 @@ class _AgendaFinanceiraMobileScreenState
       for (final item in itens) {
         final confirmado = confirmadosPorId[item['id']?.toString()];
         if (confirmado == null) continue;
+        if (confirmado['valorOriginal'] != null) {
+          item['valorOriginal'] = confirmado['valorOriginal'];
+        }
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] =
@@ -1642,7 +1656,7 @@ class _AgendaFinanceiraMobileScreenState
                   child: SixPulsingBadge(
                     child: Icon(
                       Icons.chevron_right_rounded,
-                      color: _accentColor,
+                      color: _mutedTextColor,
                       size: 22,
                     ),
                   ),
@@ -2371,118 +2385,16 @@ class _AgendaFinanceiraMobileScreenState
     return Column(children: _itensAgenda.map(_buildLancamentoCard).toList());
   }
 
-  Widget _buildLancamentoCard(Map<String, dynamic> item) {
-    final bool tipoEntrada = item['tipo'] == 'receber';
-    final double valorAberto = _toDouble(
-      item['valorRestante'] ?? item['valor'],
-    );
-    final double valorExibido =
-        valorAberto > 0
-            ? valorAberto
-            : _toDouble(item['valorOriginal'] ?? item['valor']);
-    final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
-    final String subtitulo =
-        '${item['recorrente'] == true ? '${recorrenciaLabel(context, 'badge')} • ' : ''}${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
-
-    return Semantics(
-      button: true,
-      label: 'Abrir lançamento $titulo',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _executandoAcao ? null : () => _abrirAcoesLancamento(item),
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            margin: EdgeInsets.only(bottom: 8),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _borderColor),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: _colors.navigationShadow.withValues(alpha: 0.58),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color:
-                        tipoEntrada
-                            ? _softBlueColor
-                            : _colors.error.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    tipoEntrada
-                        ? Icons.south_west_rounded
-                        : Icons.north_east_rounded,
-                    size: 20,
-                    color: tipoEntrada ? _accentColor : _colors.error,
-                  ),
-                ),
-                SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        titulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        subtitulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _mutedTextColor,
-                          fontSize: 11.5,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      _formatarMoeda(valorExibido),
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: _accentColor,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  Widget _buildLancamentoCard(Map<String, dynamic> item, {
+    bool calendario = false,
+  }) {
+    return AgendaFinanceiraLancamentoCardMobile(
+      item: item,
+      formatarMoeda: _formatarMoeda,
+      rotuloRecorrente: recorrenciaLabel(context, 'badge'),
+      mostrarVencimento: !calendario,
+      mostrarRotuloValor: calendario,
+      onTap: _executandoAcao ? null : () => _abrirAcoesLancamento(item),
     );
   }
 
@@ -2515,6 +2427,8 @@ class _AgendaFinanceiraMobileScreenState
       item['valorRestante'] ?? item['valor'],
     );
     final double valorConfirmado = _toDouble(item['valorConfirmado']);
+    final String? contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
+    final String? formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(item);
 
     return showModalBottomSheet<void>(
       context: context,
@@ -2557,17 +2471,15 @@ class _AgendaFinanceiraMobileScreenState
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color:
-                              tipoEntrada
-                                  ? _softBlueColor
-                                  : _colors.error.withValues(alpha: 0.12),
+                          color: _corNaturezaFinanceira(tipoEntrada)
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Icon(
                           tipoEntrada
                               ? Icons.south_west_rounded
                               : Icons.north_east_rounded,
-                          color: tipoEntrada ? _accentColor : _colors.error,
+                          color: _corNaturezaFinanceira(tipoEntrada),
                         ),
                       ),
                       SizedBox(width: 12),
@@ -2583,14 +2495,16 @@ class _AgendaFinanceiraMobileScreenState
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            SizedBox(height: 3),
-                            Text(
-                              item['contato']?.toString() ?? 'Não informado',
-                              style: TextStyle(
-                                color: _mutedTextColor,
-                                fontSize: 13,
+                            if (contato != null) ...[
+                              SizedBox(height: 3),
+                              Text(
+                                contato,
+                                style: TextStyle(
+                                  color: _mutedTextColor,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -2612,10 +2526,12 @@ class _AgendaFinanceiraMobileScreenState
                         tipoEntrada
                             ? Icons.south_west_rounded
                             : Icons.north_east_rounded,
+                        cor: _corNaturezaFinanceira(tipoEntrada),
                       ),
                       _pill(
                         item['status']?.toString() ?? '-',
                         Icons.flag_outlined,
+                        cor: _corStatusFinanceiro(item['status']?.toString() ?? ''),
                       ),
                       if (item['ocorrenciaAjustada'] == true)
                         _pill('Ajustado', Icons.tune_outlined),
@@ -2623,11 +2539,14 @@ class _AgendaFinanceiraMobileScreenState
                         _pill(
                           'Confirmado: ${_formatarMoeda(valorConfirmado)}',
                           Icons.verified_outlined,
+                          cor: _corNaturezaFinanceira(true),
                         ),
                       if (valorAberto > 0)
                         _pill(
                           'Aberto: ${_formatarMoeda(valorAberto)}',
                           Icons.pending_actions_outlined,
+                          cor: item['status']?.toString().toLowerCase() == 'vencido'
+                              ? _colors.error : _mutedTextColor,
                         ),
                     ],
                   ),
@@ -2652,10 +2571,8 @@ class _AgendaFinanceiraMobileScreenState
                           'Vencimento',
                           item['vencimento']?.toString() ?? '-',
                         ),
-                        _detalheLinha(
-                          'Pagamento',
-                          item['formaPagamento']?.toString() ?? '-',
-                        ),
+                        if (formaRealizada != null)
+                          _detalheLinha('Forma realizada', formaRealizada),
                         _detalheLinha(
                           'Valor original',
                           _formatarMoeda(_toDouble(item['valorOriginal'])),
@@ -2741,7 +2658,16 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
+  void _alternarDiaCalendario(String data) {
+    setState(() {
+      if (!_diasCalendarioExpandidos.add(data)) {
+        _diasCalendarioExpandidos.remove(data);
+      }
+    });
+  }
+
   Widget _buildCalendario() {
+    // Mesmos filtros e lançamentos da Agenda, agrupados pelo vencimento.
     final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
     itens.sort((a, b) {
       final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
@@ -2760,103 +2686,165 @@ class _AgendaFinanceiraMobileScreenState
       final data = item['vencimento']?.toString() ?? '-';
       itensPorData.putIfAbsent(data, () => <Map<String, dynamic>>[]).add(item);
     }
+
     return Column(
-      children:
-          itensPorData.entries.map((entry) {
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          color: _accentColor,
-                          size: 18,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: itensPorData.entries.map((entry) {
+        final data = _parseDataBr(entry.key);
+        final titulo = data == null
+            ? entry.key
+            : MaterialLocalizations.of(context).formatMediumDate(data);
+        final resumo = AgendaFinanceiraCalendarioResumo.calcular(entry.value);
+        final verde = _corNaturezaFinanceira(true);
+        final vermelho = _corNaturezaFinanceira(false);
+        final expandido = _diasCalendarioExpandidos.contains(entry.key);
+        final acao = expandido
+            ? context.t('agenda.calendar.collapse')
+            : context.t('agenda.calendar.expand');
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 9),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Material(
+                color: _softSurfaceColor,
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: () => _alternarDiaCalendario(entry.key),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: _borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined,
+                                color: _accentColor, size: 17),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                titulo,
+                                key: Key('agenda-calendario-dia-${entry.key}'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: _titleTextColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${entry.value.length} ${context.t(entry.value.length == 1 ? 'agenda.calendar.launchSingular' : 'agenda.calendar.launchPlural')}',
+                              style: TextStyle(
+                                color: _mutedTextColor, fontSize: 10,
+                              ),
+                            ),
+                            IconButton(
+                              key: Key('agenda-calendario-toggle-${entry.key}'),
+                              tooltip: acao,
+                              onPressed: () => _alternarDiaCalendario(entry.key),
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(
+                                minWidth: 40, minHeight: 40,
+                              ),
+                              icon: Icon(
+                                expandido
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: _titleTextColor, size: 22,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          entry.key,
-                          style: TextStyle(
-                            color: _titleTextColor,
-                            fontWeight: FontWeight.w900,
+                        if (resumo.recebido > 0 || resumo.pago > 0 ||
+                            resumo.aReceber > 0 || resumo.aPagar > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1, bottom: 2),
+                            child: Wrap(
+                              spacing: 13,
+                              runSpacing: 5,
+                              children: [
+                                if (resumo.recebido > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.received'),
+                                    resumo.recebido, verde),
+                                if (resumo.pago > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.paid'),
+                                    resumo.pago, vermelho),
+                                if (resumo.aReceber > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.toReceive'),
+                                    resumo.aReceber, verde),
+                                if (resumo.aPagar > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.toPay'),
+                                    resumo.aPagar, vermelho),
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
-                  ...entry.value.map((item) => _buildCalendarioItem(item)),
-                ],
+                ),
               ),
-            );
-          }).toList(),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                alignment: Alignment.topCenter,
+                child: expandido
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          children: [
+                            ...entry.value.map((item) =>
+                                _buildLancamentoCard(item, calendario: true)),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity, height: 0),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildCalendarioItem(Map<String, dynamic> item) {
-    final tipoEntrada = item['tipo'] == 'receber';
-    final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
-    final valorConfirmado = _toDouble(item['valorConfirmado']);
-    final diferenca = valorPrevisto - valorConfirmado;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 14),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded,
-              color: _accentColor,
-              size: 20,
-            ),
+  Widget _resumoCalendarioDia(String titulo, double valor, Color cor) {
+    // Um resumo linear ocupa menos espaço que os cartões individuais.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: cor, shape: BoxShape.circle,
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item['descricao']?.toString() ?? '-',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Previsto ${_formatarMoeda(valorPrevisto)} • Diferença ${_formatarMoeda(diferenca)}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                ),
-              ],
-            ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '$titulo ',
+          style: TextStyle(
+            color: _mutedTextColor, fontSize: 11,
           ),
-          SizedBox(width: 10),
-          Text(
-            _formatarMoeda(valorConfirmado),
-            style: TextStyle(
-              color: _titleTextColor,
-              fontWeight: FontWeight.w900,
-            ),
+        ),
+        Text(
+          _formatarMoeda(valor),
+          style: TextStyle(
+            color: cor, fontSize: 11, fontWeight: FontWeight.w800,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -3041,6 +3029,17 @@ class _AgendaFinanceiraMobileScreenState
       children:
           _itensConfirmados.map((item) {
             final tipoEntrada = item['tipo'] == 'receber';
+            final corNatureza = _corNaturezaFinanceira(tipoEntrada);
+            final contato = AgendaFinanceiraResumoVisual.contatoInformado(
+              item['contato'],
+            );
+            final formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(item);
+            final data = item['data']?.toString() ?? '';
+            final metadados = <String>[
+              if (contato != null) contato,
+              if (data.isNotEmpty && data != '-') data,
+              if (formaRealizada != null) formaRealizada,
+            ];
             return Container(
               margin: EdgeInsets.only(bottom: 12),
               padding: EdgeInsets.all(16),
@@ -3055,14 +3054,14 @@ class _AgendaFinanceiraMobileScreenState
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: _softBlueColor,
+                      color: corNatureza.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       tipoEntrada
                           ? Icons.south_west_rounded
                           : Icons.north_east_rounded,
-                      color: _accentColor,
+                      color: corNatureza,
                       size: 20,
                     ),
                   ),
@@ -3080,16 +3079,18 @@ class _AgendaFinanceiraMobileScreenState
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${item['contato']} • ${item['data']} • ${item['formaPagamento']}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _mutedTextColor,
-                            fontSize: 12,
+                        if (metadados.isNotEmpty) ...[
+                          SizedBox(height: 4),
+                          Text(
+                            metadados.join(' • '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -3097,7 +3098,7 @@ class _AgendaFinanceiraMobileScreenState
                   Text(
                     _formatarMoeda(_toDouble(item['valorConfirmado'])),
                     style: TextStyle(
-                      color: _titleTextColor,
+                      color: corNatureza,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -3108,22 +3109,24 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
-  Widget _pill(String label, IconData icon) {
+  Widget _pill(String label, IconData icon, {Color? cor}) {
+    final Color destaque = cor ?? _accentColor;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _softBlueColor,
+        color: destaque.withValues(alpha: 0.10),
+        border: Border.all(color: destaque.withValues(alpha: 0.22)),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, color: _accentColor, size: 15),
+          Icon(icon, color: destaque, size: 15),
           SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
-              color: _titleTextColor,
+              color: destaque,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -3216,19 +3219,7 @@ class _AgendaFinanceiraMobileScreenState
         final Map<String, dynamic> detalhe = await _service
             .buscarDetalheLancamento(id);
         if (detalhe.isNotEmpty) {
-          item = <String, dynamic>{
-            ...item,
-            ...detalhe,
-            'contato': item['contato'],
-            'vencimento': item['vencimento'],
-            'status': item['status'],
-            'formaPagamento': item['formaPagamento'],
-            'valorConfirmado': item['valorConfirmado'],
-            'valorRestante': item['valorRestante'],
-            'valorOriginal': item['valorOriginal'],
-            'liquidacoes': item['liquidacoes'],
-            'codigoOperacao': detalhe['codigoOperacao']?.toString(),
-          };
+          item = AgendaFinanceiraDetalheValores.combinar(item, detalhe);
         }
       } catch (_) {
         // Os dados resumidos continuam disponíveis como fallback de exibição.
@@ -3285,7 +3276,10 @@ class _AgendaFinanceiraMobileScreenState
                       enabled: false,
                       onChanged: () {},
                     ),
-                  _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
+                  if (AgendaFinanceiraResumoVisual.contatoInformado(
+                        item['contato']) != null)
+                    _detalheLinha('Contato',
+                        AgendaFinanceiraResumoVisual.contatoInformado(item['contato'])!),
                   _detalheLinha(
                     'Vencimento',
                     item['vencimento']?.toString() ?? '-',
@@ -3303,10 +3297,9 @@ class _AgendaFinanceiraMobileScreenState
                       'Centro de custos',
                       item['centroDeCusto'].toString(),
                     ),
-                  _detalheLinha(
-                    'Forma de recebimento',
-                    item['formaPagamento']?.toString() ?? '-',
-                  ),
+                  if (AgendaFinanceiraResumoVisual.formaRealizada(item) != null)
+                    _detalheLinha('Forma realizada',
+                        AgendaFinanceiraResumoVisual.formaRealizada(item)!),
                   for (final liquidacao in _mapearLiquidacoes(
                     item['liquidacoes'],
                   ))
