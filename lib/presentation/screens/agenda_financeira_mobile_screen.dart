@@ -3,6 +3,8 @@ import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
+import 'package:sixpos/data/models/agenda_financeira_calendario_resumo.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 import '../components/mobile/payment_name_editor_mobile.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 
@@ -2403,131 +2405,16 @@ class _AgendaFinanceiraMobileScreenState
     return Column(children: _itensAgenda.map(_buildLancamentoCard).toList());
   }
 
-  Widget _buildLancamentoCard(Map<String, dynamic> item) {
-    final bool tipoEntrada = item['tipo'] == 'receber';
-    final double valorAberto = _toDouble(
-      item['valorRestante'] ?? item['valor'],
-    );
-    final double valorExibido =
-        valorAberto > 0
-            ? valorAberto
-            : _toDouble(item['valorOriginal'] ?? item['valor']);
-    final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
-    final String? contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
-    final String status = item['status']?.toString() ?? '';
-    final String vencimento = item['vencimento']?.toString() ?? '';
-    final Color corNatureza = _corNaturezaFinanceira(tipoEntrada);
-    final List<InlineSpan> subtitulo = <InlineSpan>[
-      if (item['recorrente'] == true)
-        TextSpan(text: "${recorrenciaLabel(context, 'badge')} • "),
-      if (contato != null) TextSpan(text: '$contato • '),
-      TextSpan(
-        text: status,
-        style: TextStyle(
-          color: _corStatusFinanceiro(status),
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      if (vencimento.isNotEmpty && vencimento != '-')
-        TextSpan(text: ' • vence $vencimento'),
-    ];
-
-    return Semantics(
-      button: true,
-      label: 'Abrir lançamento $titulo',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _executandoAcao ? null : () => _abrirAcoesLancamento(item),
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            margin: EdgeInsets.only(bottom: 8),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _borderColor),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: _colors.navigationShadow.withValues(alpha: 0.58),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: corNatureza.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    tipoEntrada
-                        ? Icons.south_west_rounded
-                        : Icons.north_east_rounded,
-                    size: 20,
-                    color: corNatureza,
-                  ),
-                ),
-                SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        titulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text.rich(
-                        TextSpan(children: subtitulo),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _mutedTextColor,
-                          fontSize: 11.5,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      _formatarMoeda(valorExibido),
-                      style: TextStyle(
-                        color: corNatureza,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: _accentColor,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  Widget _buildLancamentoCard(Map<String, dynamic> item, {
+    bool calendario = false,
+  }) {
+    return AgendaFinanceiraLancamentoCardMobile(
+      item: item,
+      formatarMoeda: _formatarMoeda,
+      rotuloRecorrente: recorrenciaLabel(context, 'badge'),
+      mostrarVencimento: !calendario,
+      mostrarRotuloValor: calendario,
+      onTap: _executandoAcao ? null : () => _abrirAcoesLancamento(item),
     );
   }
 
@@ -2792,6 +2679,8 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _buildCalendario() {
+    // O calendário agrupa lançamentos pela data de vencimento, respeitando
+    // os mesmos filtros, permissões e valores utilizados pela aba Agenda.
     final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
     itens.sort((a, b) {
       final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
@@ -2810,99 +2699,106 @@ class _AgendaFinanceiraMobileScreenState
       final data = item['vencimento']?.toString() ?? '-';
       itensPorData.putIfAbsent(data, () => <Map<String, dynamic>>[]).add(item);
     }
+
     return Column(
-      children:
-          itensPorData.entries.map((entry) {
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          color: _accentColor,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          entry.key,
-                          style: TextStyle(
-                            color: _titleTextColor,
-                            fontWeight: FontWeight.w900,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: itensPorData.entries.map((entry) {
+        final data = _parseDataBr(entry.key);
+        final titulo = data == null
+            ? entry.key
+            : MaterialLocalizations.of(context).formatFullDate(data);
+        final resumo = AgendaFinanceiraCalendarioResumo.calcular(entry.value);
+        final verde = _corNaturezaFinanceira(true);
+        final vermelho = _corNaturezaFinanceira(false);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+                decoration: BoxDecoration(
+                  color: _softSurfaceColor,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: _borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_month_outlined,
+                            color: _accentColor, size: 20),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            titulo,
+                            key: Key('agenda-calendario-dia-${entry.key}'),
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
+                        ),
+                        Text(
+                          '${entry.value.length} ${entry.value.length == 1 ? 'lançamento' : 'lançamentos'}',
+                          style: TextStyle(color: _mutedTextColor, fontSize: 11),
                         ),
                       ],
                     ),
-                  ),
-                  ...entry.value.map((item) => _buildCalendarioItem(item)),
-                ],
+                    const SizedBox(height: 11),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (resumo.recebido > 0)
+                          _resumoCalendarioDia(
+                            'Recebido', resumo.recebido, verde),
+                        if (resumo.pago > 0)
+                          _resumoCalendarioDia('Pago', resumo.pago, vermelho),
+                        if (resumo.aReceber > 0)
+                          _resumoCalendarioDia(
+                            'A receber', resumo.aReceber, verde),
+                        if (resumo.aPagar > 0)
+                          _resumoCalendarioDia(
+                            'A pagar', resumo.aPagar, vermelho),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            );
-          }).toList(),
+              const SizedBox(height: 10),
+              ...entry.value.map(
+                (item) => _buildLancamentoCard(item, calendario: true),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildCalendarioItem(Map<String, dynamic> item) {
-    final tipoEntrada = item['tipo'] == 'receber';
-    final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
-    final valorConfirmado = _toDouble(item['valorConfirmado']);
-    final diferenca = valorPrevisto - valorConfirmado;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 14),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded,
-              color: _accentColor,
-              size: 20,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item['descricao']?.toString() ?? '-',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Previsto ${_formatarMoeda(valorPrevisto)} • Diferença ${_formatarMoeda(diferenca)}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 10),
+  Widget _resumoCalendarioDia(String titulo, double valor, Color cor) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 135),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.08),
+        border: Border.all(color: cor.withValues(alpha: 0.20)),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(titulo, style: TextStyle(
+            color: _mutedTextColor, fontSize: 11, fontWeight: FontWeight.w600,
+          )),
+          const SizedBox(height: 3),
           Text(
-            _formatarMoeda(valorConfirmado),
+            _formatarMoeda(valor),
             style: TextStyle(
-              color: _titleTextColor,
-              fontWeight: FontWeight.w900,
+              color: cor, fontSize: 14, fontWeight: FontWeight.w900,
             ),
           ),
         ],
