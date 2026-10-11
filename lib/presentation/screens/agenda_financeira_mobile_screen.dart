@@ -2721,7 +2721,7 @@ class _AgendaFinanceiraMobileScreenState
                           ),
                         ),
                         Text(
-                          '${entry.value.length} ${entry.value.length == 1 ? 'lançamento' : 'lançamentos'}',
+                          '${entry.value.length} ${context.t(entry.value.length == 1 ? 'agenda.calendar.launchSingular' : 'agenda.calendar.launchPlural')}',
                           style: TextStyle(color: _mutedTextColor, fontSize: 11),
                         ),
                       ],
@@ -2733,15 +2733,15 @@ class _AgendaFinanceiraMobileScreenState
                       children: [
                         if (resumo.recebido > 0)
                           _resumoCalendarioDia(
-                            'Recebido', resumo.recebido, verde),
+                            context.t('agenda.calendar.received'), resumo.recebido, verde),
                         if (resumo.pago > 0)
-                          _resumoCalendarioDia('Pago', resumo.pago, vermelho),
+                          _resumoCalendarioDia(context.t('agenda.calendar.paid'), resumo.pago, vermelho),
                         if (resumo.aReceber > 0)
                           _resumoCalendarioDia(
-                            'A receber', resumo.aReceber, verde),
+                            context.t('agenda.calendar.toReceive'), resumo.aReceber, verde),
                         if (resumo.aPagar > 0)
                           _resumoCalendarioDia(
-                            'A pagar', resumo.aPagar, vermelho),
+                            context.t('agenda.calendar.toPay'), resumo.aPagar, vermelho),
                       ],
                     ),
                   ],
