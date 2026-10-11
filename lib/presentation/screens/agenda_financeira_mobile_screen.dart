@@ -17,6 +17,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/data/models/agenda_financeira_detalhe_valores.dart';
 
 import 'dart:async';
 
@@ -1075,6 +1076,9 @@ class _AgendaFinanceiraMobileScreenState
       for (final item in itens) {
         final confirmado = confirmadosPorId[item['id']?.toString()];
         if (confirmado == null) continue;
+        if (confirmado['valorOriginal'] != null) {
+          item['valorOriginal'] = confirmado['valorOriginal'];
+        }
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] =
@@ -3277,19 +3281,7 @@ class _AgendaFinanceiraMobileScreenState
         final Map<String, dynamic> detalhe = await _service
             .buscarDetalheLancamento(id);
         if (detalhe.isNotEmpty) {
-          item = <String, dynamic>{
-            ...item,
-            ...detalhe,
-            'contato': item['contato'],
-            'vencimento': item['vencimento'],
-            'status': item['status'],
-            'formaPagamento': item['formaPagamento'],
-            'valorConfirmado': item['valorConfirmado'],
-            'valorRestante': item['valorRestante'],
-            'valorOriginal': item['valorOriginal'],
-            'liquidacoes': item['liquidacoes'],
-            'codigoOperacao': detalhe['codigoOperacao']?.toString(),
-          };
+          item = AgendaFinanceiraDetalheValores.combinar(item, detalhe);
         }
       } catch (_) {
         // Os dados resumidos continuam disponíveis como fallback de exibição.
