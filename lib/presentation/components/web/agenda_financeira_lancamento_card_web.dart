@@ -162,15 +162,24 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
           ),
       ],
     );
+    // Status sempre ocupa a mesma coluna: Parcial, Recebido e Vencido
+    // não podem deslocar valores e CTAs conforme o tamanho do texto.
     final indicador = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      key: const Key('agenda-card-status'),
+      width: 120,
+      height: 34,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           corStatus.withValues(alpha: .11), tokens.cardBackground),
         border: Border.all(color: corStatus.withValues(alpha: .23)),
         borderRadius: BorderRadius.circular(11),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
         Icon(iconeStatus, size: 16, color: corStatus),
         const SizedBox(width: 5),
         Text(
