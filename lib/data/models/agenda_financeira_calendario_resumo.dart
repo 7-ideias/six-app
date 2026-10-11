@@ -31,11 +31,11 @@ class AgendaFinanceiraCalendarioResumo {
     final informado = numero(item['valorConfirmado']);
     return informado > 0
         ? informado
-        : (finalizado(item) ? numero(item['valorOriginal'] ?? item['valor']) : 0);
+        : (finalizado(item) ? numero(item['valorOriginal'] ?? item['valor']) : 0.0);
   }
 
   static double aberto(Map<String, dynamic> item) {
-    if (finalizado(item)) return 0;
+    if (finalizado(item)) return 0.0;
     final restante = item['valorRestante'];
     if (restante != null) return numero(restante).clamp(0.0, double.infinity).toDouble();
     final original = numero(item['valorOriginal'] ?? item['valor']);
