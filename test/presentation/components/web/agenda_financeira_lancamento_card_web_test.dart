@@ -77,6 +77,10 @@ void main() {
     final liquidarY = tester.getTopLeft(find.byKey(const Key('agenda-card-liquidar'))).dy;
     final originalY = tester.getTopLeft(find.text('Original: R\$ 150.00')).dy;
     expect((liquidarY - originalY).abs(), lessThan(48));
+    final valorX = tester.getTopLeft(find.text('Original: R\$ 150.00')).dx;
+    final editarX = tester.getTopLeft(find.byKey(const Key('agenda-card-editar'))).dx;
+    expect(editarX, greaterThan(valorX));
+
   });
 
   testWidgets('Despesa exibe Pagar e seta de saida', (tester) async {
