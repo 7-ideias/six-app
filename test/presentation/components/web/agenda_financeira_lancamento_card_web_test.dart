@@ -116,11 +116,21 @@ void main() {
     expect(find.textContaining('Vencimento: 07/10/2026'), findsOneWidget);
   });
 
-  testWidgets('Com recebimento parcial mostra forma realizada no resumo', (tester) async {
-    await montar(tester, item: lancamento(
-      status: 'Parcial', original: 150, confirmado: 50, restante: 100,
-    ));
-    expect(find.textContaining('Bufunfa'), findsOneWidget);
+  testWidgets('Web nunca exibe forma de pagamento nos cards, mesmo recebidos', (tester) async {
+    for (final situacao in <({String status, double confirmado, double restante})>[
+      (status: 'Vencido', confirmado: 0, restante: 150),
+      (status: 'Parcial', confirmado: 50, restante: 100),
+      (status: 'Recebido', confirmado: 150, restante: 0),
+    ]) {
+      await montar(tester, item: lancamento(
+        status: situacao.status,
+        original: 150,
+        confirmado: situacao.confirmado,
+        restante: situacao.restante,
+      ));
+      expect(find.textContaining('Bufunfa', findRichText: true), findsNothing);
+      expect(find.textContaining('Vencimento: 07/10/2026'), findsOneWidget);
+    }
   });
 
   testWidgets('Despesa exibe Pagar e seta de saida', (tester) async {
