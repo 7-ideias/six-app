@@ -1146,6 +1146,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       for (final item in itens) {
         final confirmado = confirmadosPorId[item['id']?.toString()];
         if (confirmado == null) continue;
+        if (confirmado['valorOriginal'] != null) {
+          item['valorOriginal'] = confirmado['valorOriginal'];
+        }
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] =
