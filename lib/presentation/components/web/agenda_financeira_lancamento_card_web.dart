@@ -78,7 +78,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       'recebido' || 'pago' => tokens.success,
       'vencido' => tokens.danger,
       'parcial' || 'vence hoje' => tokens.warning,
-      'previsto' => tokens.info,
+      'previsto' || 'pendente' => tokens.info,
       _ => tokens.statusNeutral,
     };
     final iconeStatus = switch (status.toLowerCase()) {
@@ -256,13 +256,12 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
               const PopupMenuItem(value: 'cancelar', child: Text('Cancelar ocorrência')),
           ],
           onSelected: (acao) {
-            switch (acao) {
-              case 'parcial':
-                onRegistrarParcial();
-              case 'cancelar':
-                onCancelar();
-              default:
-                onDetalhes();
+            if (acao == 'parcial') {
+              onRegistrarParcial();
+            } else if (acao == 'cancelar') {
+              onCancelar();
+            } else {
+              onDetalhes();
             }
           },
         ),
@@ -298,6 +297,26 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
                 const SizedBox(width: 12),
                 botoes,
               ]);
+            }
+            if (constraints.maxWidth < 690) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    iconBox,
+                    const SizedBox(width: 12),
+                    Expanded(child: identificacao),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    indicador,
+                    const Spacer(),
+                    valores,
+                  ]),
+                  const SizedBox(height: 10),
+                  Align(alignment: Alignment.centerRight, child: botoes),
+                ],
+              );
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
