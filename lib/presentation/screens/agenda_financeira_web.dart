@@ -2,6 +2,7 @@ import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
+import 'package:sixpos/presentation/components/web/agenda_financeira_lancamento_card_web.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -2116,38 +2117,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
-  Widget _agendaPill(String label, Color accent, {IconData? icon}) {
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          accent.withValues(alpha: 0.10),
-          tokens.cardBackground,
-        ),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.30)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (icon != null) ...<Widget>[
-            Icon(icon, size: 15, color: accent),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            label,
-            style: TextStyle(
-              color: accent,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _resumoCard(ThemeData theme, Map<String, dynamic> card) {
     final tokens = WebThemeTokens.of(context);
     final valor = _toDouble(card['valor']);
@@ -2240,120 +2209,47 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _cardLancamento(ThemeData theme, Map<String, dynamic> item) {
-    final tipoEntrada = item['tipo'] == 'receber';
-    final tokens = WebThemeTokens.of(context);
-    final Color tipoAccent = _agendaTipoAccent(item['tipo']?.toString());
-    final Color statusAccent = _agendaStatusAccent(item['status']?.toString());
-    final acoes = List<String>.from(
-      (item['acoes'] as List?)?.map((e) => e.toString()) ?? const <String>[],
+    return AgendaFinanceiraLancamentoCardWeb(
+      item: item,
+      formatarMoeda: _formatarMoeda,
+      bloqueado: _executandoAcao,
+      onDetalhes: () => _mostrarDetalhesLancamento(item),
+      onEditar: () => _editarLancamento(item),
+      onLiquidar: () => _confirmarTotal(item, 'Liquidar'),
+      onRegistrarParcial: () => _registrarParcial(item),
+      onCancelar: () => _cancelarRecorrencia(item),
+      onComprovante: () => _baixarComprovanteDaLista(item),
     );
-    if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: _executandoAcao ? null : () => _mostrarDetalhesLancamento(item),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[
-                  _agendaPill(
-                    tipoEntrada ? 'Receber' : 'Pagar',
-                    tipoAccent,
-                    icon:
-                        tipoEntrada
-                            ? Icons.south_west_rounded
-                            : Icons.north_east_rounded,
-                  ),
-                  _agendaPill(
-                    item['status']?.toString() ?? '-',
-                    statusAccent,
-                    icon: Icons.flag_outlined,
-                  ),
-                  _agendaPill(
-                    item['formaPagamento']?.toString() ?? '-',
-                    tokens.info,
-                    icon: Icons.payments_outlined,
-                  ),
-                  if (item['recorrente'] == true)
-                    _agendaPill(
-                      recorrenciaLabel(context, 'badge'),
-                      tokens.info,
-                      icon: Icons.repeat,
-                    ),
-                  if (item['ocorrenciaAjustada'] == true)
-                    _agendaPill('Ajustado', tokens.info, icon: Icons.tune_outlined),
-                  if (_toDouble(item['valorConfirmado']) > 0)
-                    _agendaPill(
-                      'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
-                      tokens.success,
-                      icon: Icons.verified_outlined,
-                    ),
-                  if (_toDouble(item['valorRestante']) > 0)
-                    _agendaPill(
-                      'Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
-                      statusAccent,
-                      icon: Icons.account_balance_wallet_outlined,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item['descricao']?.toString() ?? '',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${item['contato']} • Vence em ${item['vencimento']}',
-                style: TextStyle(color: tokens.secondaryText),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}',
-                style: TextStyle(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[
-                  if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
-                      .contains(item['status']?.toString()))
-                    OutlinedButton.icon(
-                      onPressed:
-                          _executandoAcao ? null : () => _editarLancamento(item),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Editar'),
-                    ),
-                  ...acoes
-                      .take(4)
-                      .map(
-                        (acao) => OutlinedButton(
-                          onPressed:
-                              _executandoAcao
-                                  ? null
-                                  : () => _executarAcao(acao, item),
-                          child: Text(acao),
-                        ),
-                      ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  }
+
+  Future<void> _baixarComprovanteDaLista(Map<String, dynamic> item) async {
+    if (_executandoAcao) return;
+    final id = item['id']?.toString().trim() ?? '';
+    if (id.isEmpty) return;
+    setState(() => _executandoAcao = true);
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(id);
+      if (!mounted) return;
+      if (detalhe['comprovanteVendaDisponivel'] != true ||
+          (detalhe['idOperacaoComprovante']?.toString().trim() ?? '').isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Comprovante indisponível para esta venda.'),
+        ));
+        return;
+      }
+      await _baixarComprovanteVenda(
+        detalhe['idOperacaoComprovante'].toString(),
+        FormatoImpressaoOperacao.a4,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Não foi possível consultar o comprovante da venda.'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
   }
 
   Widget _buildValoresConfirmados(ThemeData theme) {
