@@ -165,6 +165,26 @@ void main() {
     expect(eventos, ['parcial']);
   });
 
+  testWidgets('indicadores Parcial e Recebido mantem mesmo tamanho e coluna', (tester) async {
+    await montar(tester, item: lancamento(
+      status: 'Parcial', original: 150, confirmado: 95, restante: 55,
+    ));
+    final parcial = find.byKey(const Key('agenda-card-status'));
+    final tamanhoParcial = tester.getSize(parcial);
+    final posicaoParcial = tester.getTopLeft(parcial);
+    expect(tamanhoParcial, const Size(120, 34));
+
+    await montar(tester, item: lancamento(
+      status: 'Recebido', original: 150, confirmado: 150, restante: 0,
+      acoes: ['Detalhes'],
+    ));
+    final recebido = find.byKey(const Key('agenda-card-status'));
+    expect(tester.getSize(recebido), tamanhoParcial);
+    final posicaoRecebido = tester.getTopLeft(recebido);
+    expect(posicaoRecebido.dx, closeTo(posicaoParcial.dx, 0.1));
+    expect(posicaoRecebido.dy, closeTo(posicaoParcial.dy, 0.1));
+  });
+
   testWidgets('CTA parcial alinha com CTA de recebimento pendente', (tester) async {
     await montar(tester, item: lancamento(
       status: 'Vencido', original: 300, confirmado: 0, restante: 300,
