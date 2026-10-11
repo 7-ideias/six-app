@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
@@ -96,22 +97,20 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       _ => Icons.schedule_outlined,
     };
 
-    final contato = _texto(item['contato']);
+    final contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
     final codigo = _texto(item['codigoOperacao']);
     final vencimento = _texto(item['vencimento']);
-    final forma = _texto(item['formaPagamento']);
+    final forma = AgendaFinanceiraResumoVisual.formaRealizada(item);
     final competencia = CompetenciaFinanceira.formatarValor(item['dataCompetencia']);
     final metadados = <String>[
       if (vencimento.isNotEmpty && vencimento != '-')
         'Vencimento: $vencimento',
       if (competencia != '-') 'Competência: $competencia',
-      if (forma.isNotEmpty && forma != '-') forma,
+      if (forma != null) forma,
     ];
     final informacoes = <String>[
       if (codigo.isNotEmpty && codigo != 'null') '#$codigo',
-      if (contato.isNotEmpty && contato.toLowerCase() != 'não informado' &&
-          contato.toLowerCase() != 'nao informado' && contato != '-')
-        contato,
+      if (contato != null) contato,
     ];
 
     final iconBox = Container(
