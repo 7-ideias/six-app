@@ -37,9 +37,9 @@ class AgendaFinanceiraCalendarioResumo {
   static double aberto(Map<String, dynamic> item) {
     if (finalizado(item)) return 0;
     final restante = item['valorRestante'];
-    if (restante != null) return numero(restante).clamp(0.0, double.infinity);
+    if (restante != null) return numero(restante).clamp(0.0, double.infinity).toDouble();
     final original = numero(item['valorOriginal'] ?? item['valor']);
-    return (original - confirmado(item)).clamp(0.0, double.infinity);
+    return (original - confirmado(item)).clamp(0.0, double.infinity).toDouble();
   }
 
   static double valorPrincipal(Map<String, dynamic> item) {
