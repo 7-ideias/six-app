@@ -108,6 +108,21 @@ void main() {
     expect(posicaoComprovante.dy, closeTo(posicaoReceber.dy, 0.1));
   });
 
+  testWidgets('Sem recebimento nao mostra forma de pagamento prevista', (tester) async {
+    await montar(tester, item: lancamento(
+      original: 150, confirmado: 0, restante: 150,
+    ));
+    expect(find.text('Bufunfa'), findsNothing);
+    expect(find.textContaining('Vencimento: 07/10/2026'), findsOneWidget);
+  });
+
+  testWidgets('Com recebimento parcial mostra forma realizada no resumo', (tester) async {
+    await montar(tester, item: lancamento(
+      status: 'Parcial', original: 150, confirmado: 50, restante: 100,
+    ));
+    expect(find.textContaining('Bufunfa'), findsOneWidget);
+  });
+
   testWidgets('Despesa exibe Pagar e seta de saida', (tester) async {
     final eventos = <String>[];
     await montar(tester,
