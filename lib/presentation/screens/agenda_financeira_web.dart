@@ -1118,6 +1118,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'data': _formatarDataIsoParaBr(
         (item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString(),
       ),
+      'vencimento': _formatarDataIsoParaBr(
+        item['dataVencimento']?.toString(),
+      ),
       'status': _statusLabel(item['status']?.toString()),
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
       'formaPagamento': agendaFormaPagamentoExibicao(item),
@@ -2263,40 +2266,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       );
     }
     return Column(
-      children:
-          itens.map((item) {
-            final tokens = WebThemeTokens.of(context);
-            final accent = _agendaTipoAccent(item['tipo']?.toString());
-            return Card(
-              child: ListTile(
-                onTap: () => _mostrarDetalhesLancamento(item),
-                leading: Icon(
-                  item['tipo'] == 'receber'
-                      ? Icons.south_west_rounded
-                      : Icons.north_east_rounded,
-                  color: accent,
-                ),
-                title: Text(
-                  item['descricao']?.toString() ?? '',
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                subtitle: Text(
-                  '${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
-                  style: TextStyle(color: tokens.secondaryText),
-                ),
-                trailing: Text(
-                  _formatarMoeda(_toDouble(item['valorConfirmado'])),
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: itens.map((item) => _cardLancamento(theme, item)).toList(),
     );
   }
 
