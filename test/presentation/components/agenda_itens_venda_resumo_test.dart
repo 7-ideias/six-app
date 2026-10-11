@@ -23,47 +23,51 @@ void main() {
   ];
 
   test('snapshot de venda com origem operacional e nao conta avulsa', () {
-    expect(AgendaItensVendaResumo.ehVenda({
-      'origem': {'tipo': 'VENDA'},
-    }), true);
-    expect(AgendaItensVendaResumo.ehVenda({
-      'origem': 'DESPESA_MANUAL',
-    }), false);
-    expect(AgendaItensVendaResumo.lerItens({
-      'itensVenda': itens,
-    }).length, 2);
+    expect(
+      AgendaItensVendaResumo.ehVenda({
+        'origem': {'tipo': 'VENDA'},
+      }),
+      true,
+    );
+    expect(AgendaItensVendaResumo.ehVenda({'origem': 'DESPESA_MANUAL'}), false);
+    expect(AgendaItensVendaResumo.lerItens({'itensVenda': itens}).length, 2);
   });
 
-  testWidgets('exibe produto, servico, quantidade, unitario e total',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: SingleChildScrollView(
-          child: AgendaItensVendaResumo(
-            itens: itens,
-            formatarMoeda: (n) => 'R\\$ ${n.toStringAsFixed(2)}',
+  testWidgets('exibe produto, servico, quantidade, unitario e total', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: AgendaItensVendaResumo(
+              itens: itens,
+              formatarMoeda: (n) => 'R\$ ${n.toStringAsFixed(2)}',
+            ),
           ),
         ),
       ),
-    ));
+    );
     expect(find.text('Bateria'), findsOneWidget);
     expect(find.text('Troca de bateria'), findsOneWidget);
     expect(find.textContaining('Qtd. 2'), findsOneWidget);
-    expect(find.text('R\\$ 51.00'), findsOneWidget);
-    expect(find.text('R\\$ 40.00'), findsWidgets);
+    expect(find.text('R\$ 51.00'), findsOneWidget);
+    expect(find.text('R\$ 40.00'), findsWidgets);
     expect(find.text('Técnico'), findsOneWidget);
   });
 
   testWidgets('venda antiga sem itens nao inventa produtos', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: AgendaItensVendaResumo(
-          itens: const [],
-          mostrarVazio: true,
-          formatarMoeda: (n) => '$n',
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AgendaItensVendaResumo(
+            itens: const [],
+            mostrarVazio: true,
+            formatarMoeda: (n) => '$n',
+          ),
         ),
       ),
-    ));
+    );
     expect(find.textContaining('não estão disponíveis'), findsOneWidget);
   });
 }
