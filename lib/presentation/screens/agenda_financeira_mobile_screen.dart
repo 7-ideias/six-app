@@ -223,32 +223,11 @@ class _AgendaFinanceiraMobileScreenState
   Color get _strongBorderColor => _colors.strongBorder;
   Color get _softBlueColor => _colors.softAccentSurface;
 
-  /// Entradas em verde e saidas em vermelho, acompanhando o resumo Web.
-  Color _corNaturezaFinanceira(bool entrada) => entrada
-      ? (Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF34D399)
-          : const Color(0xFF047857))
-      : _colors.error;
+  Color _corNaturezaFinanceira(bool entrada) =>
+      AgendaFinanceiraLancamentoCardMobile.corNatureza(context, entrada);
 
-  Color _corStatusFinanceiro(String status) {
-    switch (status.trim().toLowerCase()) {
-      case 'recebido':
-      case 'pago':
-        return _corNaturezaFinanceira(true);
-      case 'vencido':
-        return _colors.error;
-      case 'parcial':
-      case 'vence hoje':
-        return Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFFBBF24)
-            : const Color(0xFFB45309);
-      case 'previsto':
-      case 'pendente':
-        return _accentColor;
-      default:
-        return _mutedTextColor;
-    }
-  }
+  Color _corStatusFinanceiro(String status) =>
+      AgendaFinanceiraLancamentoCardMobile.corStatus(context, status);
 
   late final AgendaFinanceiraLancamentoService _service =
       widget.lancamentoService ?? AgendaFinanceiraLancamentoService();
