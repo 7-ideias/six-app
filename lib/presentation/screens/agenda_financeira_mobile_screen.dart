@@ -295,6 +295,7 @@ class _AgendaFinanceiraMobileScreenState
   List<CentroCustoModel> _centrosCusto = <CentroCustoModel>[];
 
   int _abaSelecionada = 0;
+  final Set<String> _diasCalendarioExpandidos = <String>{};
   String _periodoSelecionado = 'Próximos 7 dias';
   late DateTime _dataInicioPersonalizada;
   late DateTime _dataFimPersonalizada;
@@ -2657,9 +2658,16 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
+  void _alternarDiaCalendario(String data) {
+    setState(() {
+      if (!_diasCalendarioExpandidos.add(data)) {
+        _diasCalendarioExpandidos.remove(data);
+      }
+    });
+  }
+
   Widget _buildCalendario() {
-    // O calendário agrupa lançamentos pela data de vencimento, respeitando
-    // os mesmos filtros, permissões e valores utilizados pela aba Agenda.
+    // Mesmos filtros e lançamentos da Agenda, agrupados pelo vencimento.
     final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
     itens.sort((a, b) {
       final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
@@ -2685,71 +2693,124 @@ class _AgendaFinanceiraMobileScreenState
         final data = _parseDataBr(entry.key);
         final titulo = data == null
             ? entry.key
-            : MaterialLocalizations.of(context).formatFullDate(data);
+            : MaterialLocalizations.of(context).formatMediumDate(data);
         final resumo = AgendaFinanceiraCalendarioResumo.calcular(entry.value);
         final verde = _corNaturezaFinanceira(true);
         final vermelho = _corNaturezaFinanceira(false);
+        final expandido = _diasCalendarioExpandidos.contains(entry.key);
+        final acao = expandido
+            ? context.t('agenda.calendar.collapse')
+            : context.t('agenda.calendar.expand');
+
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 9),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
-                decoration: BoxDecoration(
-                  color: _softSurfaceColor,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Material(
+                color: _softSurfaceColor,
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: () => _alternarDiaCalendario(entry.key),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: _borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.calendar_month_outlined,
-                            color: _accentColor, size: 20),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Text(
-                            titulo,
-                            key: Key('agenda-calendario-dia-${entry.key}'),
-                            style: TextStyle(
-                              color: _titleTextColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined,
+                                color: _accentColor, size: 17),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                titulo,
+                                key: Key('agenda-calendario-dia-${entry.key}'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: _titleTextColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${entry.value.length} ${context.t(entry.value.length == 1 ? 'agenda.calendar.launchSingular' : 'agenda.calendar.launchPlural')}',
+                              style: TextStyle(
+                                color: _mutedTextColor, fontSize: 10,
+                              ),
+                            ),
+                            IconButton(
+                              key: Key('agenda-calendario-toggle-${entry.key}'),
+                              tooltip: acao,
+                              onPressed: () => _alternarDiaCalendario(entry.key),
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(
+                                minWidth: 40, minHeight: 40,
+                              ),
+                              icon: Icon(
+                                expandido
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: _titleTextColor, size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (resumo.recebido > 0 || resumo.pago > 0 ||
+                            resumo.aReceber > 0 || resumo.aPagar > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1, bottom: 2),
+                            child: Wrap(
+                              spacing: 13,
+                              runSpacing: 5,
+                              children: [
+                                if (resumo.recebido > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.received'),
+                                    resumo.recebido, verde),
+                                if (resumo.pago > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.paid'),
+                                    resumo.pago, vermelho),
+                                if (resumo.aReceber > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.toReceive'),
+                                    resumo.aReceber, verde),
+                                if (resumo.aPagar > 0)
+                                  _resumoCalendarioDia(
+                                    context.t('agenda.calendar.toPay'),
+                                    resumo.aPagar, vermelho),
+                              ],
                             ),
                           ),
-                        ),
-                        Text(
-                          '${entry.value.length} ${context.t(entry.value.length == 1 ? 'agenda.calendar.launchSingular' : 'agenda.calendar.launchPlural')}',
-                          style: TextStyle(color: _mutedTextColor, fontSize: 11),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 11),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (resumo.recebido > 0)
-                          _resumoCalendarioDia(
-                            context.t('agenda.calendar.received'), resumo.recebido, verde),
-                        if (resumo.pago > 0)
-                          _resumoCalendarioDia(context.t('agenda.calendar.paid'), resumo.pago, vermelho),
-                        if (resumo.aReceber > 0)
-                          _resumoCalendarioDia(
-                            context.t('agenda.calendar.toReceive'), resumo.aReceber, verde),
-                        if (resumo.aPagar > 0)
-                          _resumoCalendarioDia(
-                            context.t('agenda.calendar.toPay'), resumo.aPagar, vermelho),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              ...entry.value.map(
-                (item) => _buildLancamentoCard(item, calendario: true),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                alignment: Alignment.topCenter,
+                child: expandido
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          children: [
+                            ...entry.value.map((item) =>
+                                _buildLancamentoCard(item, calendario: true)),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity, height: 0),
               ),
             ],
           ),
@@ -2759,29 +2820,31 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _resumoCalendarioDia(String titulo, double valor, Color cor) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 135),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cor.withValues(alpha: 0.08),
-        border: Border.all(color: cor.withValues(alpha: 0.20)),
-        borderRadius: BorderRadius.circular(13),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: TextStyle(
-            color: _mutedTextColor, fontSize: 11, fontWeight: FontWeight.w600,
-          )),
-          const SizedBox(height: 3),
-          Text(
-            _formatarMoeda(valor),
-            style: TextStyle(
-              color: cor, fontSize: 14, fontWeight: FontWeight.w900,
-            ),
+    // Um resumo linear ocupa menos espaço que os cartões individuais.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: cor, shape: BoxShape.circle,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '$titulo ',
+          style: TextStyle(
+            color: _mutedTextColor, fontSize: 11,
+          ),
+        ),
+        Text(
+          _formatarMoeda(valor),
+          style: TextStyle(
+            color: cor, fontSize: 11, fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 
