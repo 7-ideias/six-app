@@ -234,13 +234,12 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
               key: const Key('agenda-card-liquidar'),
               onPressed: bloqueado ? null : onLiquidar,
               icon: const Icon(Icons.check_rounded, size: 18),
+              // O status Parcial e o saldo em destaque ja informam o
+              // restante. Mantemos o CTA curto para alinhar com os demais.
               label: Text(
-                parcial
-                    ? (entrada ? 'Receber restante' : 'Pagar restante')
-                    : (entrada ? 'Receber' : 'Pagar'),
+                entrada ? 'Receber' : 'Pagar',
                 maxLines: 1,
                 softWrap: false,
-                overflow: TextOverflow.ellipsis,
               ),
               style: FilledButton.styleFrom(
                 alignment: Alignment.center,
