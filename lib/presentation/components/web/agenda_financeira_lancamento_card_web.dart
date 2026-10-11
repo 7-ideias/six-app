@@ -100,13 +100,11 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     final contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
     final codigo = _texto(item['codigoOperacao']);
     final vencimento = _texto(item['vencimento']);
-    final forma = AgendaFinanceiraResumoVisual.formaRealizada(item);
     final competencia = CompetenciaFinanceira.formatarValor(item['dataCompetencia']);
     final metadados = <String>[
       if (vencimento.isNotEmpty && vencimento != '-')
         'Vencimento: $vencimento',
       if (competencia != '-') 'Competência: $competencia',
-      if (forma != null) forma,
     ];
     final informacoes = <String>[
       if (codigo.isNotEmpty && codigo != 'null') '#$codigo',
