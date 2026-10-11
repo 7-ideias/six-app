@@ -1162,33 +1162,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
-  Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
-    final comando = acao.trim().toLowerCase();
-    if (comando == 'detalhes' || comando == 'detalhar') {
-      await _mostrarDetalhesLancamento(item);
-      return;
-    }
-    if (comando == 'editar') {
-      await _editarLancamento(item);
-      return;
-    }
-    if (comando == 'cancelar') {
-      await _cancelarRecorrencia(item);
-      return;
-    }
-    if (comando == 'registrar parcial') {
-      await _registrarParcial(item);
-      return;
-    }
-    if (comando == 'liquidar' || comando == 'receber' || comando == 'pagar') {
-      await _confirmarTotal(item, 'Liquidar');
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ação "$acao" ainda não implementada.')),
-    );
-  }
-
   Future<bool> _cancelarRecorrencia(Map<String, dynamic> item) async {
     if (_executandoAcao || item['serieRecorrenciaId'] == null) return false;
     final id = item['id']?.toString() ?? '';
@@ -2087,38 +2060,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   ButtonStyle _primaryCtaStyle(ThemeData theme) =>
       SixWebActionStyles.primary(context);
-
-  Color _agendaTipoAccent(String? tipo) {
-    final tokens = WebThemeTokens.of(context);
-    return tipo == 'pagar'
-        ? tokens.financialNegative
-        : tokens.financialPositive;
-  }
-
-  Color _agendaStatusAccent(String? status) {
-    final tokens = WebThemeTokens.of(context);
-    switch ((status ?? '').trim().toUpperCase()) {
-      case 'VENCIDO':
-        return tokens.danger;
-      case 'VENCE HOJE':
-      case 'VENCE_HOJE':
-      case 'PARCIAL':
-        return tokens.warning;
-      case 'PAGO':
-      case 'RECEBIDO':
-      case 'QUITADO':
-        return tokens.success;
-      case 'CANCELADO':
-      case 'CANCELADA':
-        return tokens.statusNeutral;
-      case 'PREVISTO':
-        return tokens.info;
-      case 'PENDENTE':
-      case 'ABERTO':
-      default:
-        return tokens.statusNeutral;
-    }
-  }
 
   Widget _resumoCard(ThemeData theme, Map<String, dynamic> card) {
     final tokens = WebThemeTokens.of(context);
