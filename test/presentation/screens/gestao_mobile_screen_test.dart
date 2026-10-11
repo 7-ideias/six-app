@@ -83,7 +83,7 @@ void main() {
     expect(lastCardRect.bottom, lessThanOrEqualTo(navigationRect.top));
   });
 
-  testWidgets('aciona item disponível e mantém item bloqueado sem navegação', (
+  testWidgets('aciona catalogo e abre cadastro de fornecedores', (
     WidgetTester tester,
   ) async {
     final List<String> navigations = <String>[];
@@ -101,9 +101,8 @@ void main() {
     await tester.tap(find.text('Fornecedores').last);
     await tester.pump(const Duration(milliseconds: 120));
 
-    expect(navigations.length, 1);
-    expect(find.byIcon(Icons.lock_outline_rounded), findsWidgets);
-    expect(find.text('Em breve'), findsWidgets);
+    expect(navigations, contains('FornecedoresMobileScreen'));
+    expect(navigations.length, 2);
   });
 
   testWidgets('abre o catálogo virtual na experiência mobile própria', (
