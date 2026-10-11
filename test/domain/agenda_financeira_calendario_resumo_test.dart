@@ -33,6 +33,22 @@ void main() {
     expect(AgendaFinanceiraCalendarioResumo.valorPrincipal(item), 55);
   });
 
+  test('infere parciais acumulados pelo total e saldo quando periodo omite liquidacoes', () {
+    final item = {
+      'tipo': 'receber',
+      'status': 'Parcial',
+      'valorOriginal': 150.0,
+      'valorRestante': 55.0,
+      'valorConfirmado': 0.0,
+      'valor': 55.0,
+    };
+    expect(AgendaFinanceiraCalendarioResumo.confirmado(item), 95);
+    expect(AgendaFinanceiraCalendarioResumo.aberto(item), 55);
+    final resumo = AgendaFinanceiraCalendarioResumo.calcular([item]);
+    expect(resumo.recebido, 95);
+    expect(resumo.aReceber, 55);
+  });
+
   test('soma valores de entrada e saida separadamente por dia', () {
     final resumo = AgendaFinanceiraCalendarioResumo.calcular([
       operacao('receber', 'Vencido', 150, 0, 150),
