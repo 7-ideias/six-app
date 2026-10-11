@@ -61,6 +61,45 @@ void main() {
     expect(find.byTooltip('Editar nome'), findsNothing);
   });
 
+  testWidgets('mobile omite contato nao informado e destaca entrada e status', (
+    WidgetTester tester,
+  ) async {
+    final vendaSemContato = <String, dynamic>{
+      ..._agendaItem('sem-contato', 'RECEBER', 'Venda', 'VENCIDO', 150),
+      'nomeContato': 'Não informado',
+      'formaPagamento': 'BUFUNFA',
+      'valorConfirmado': 0,
+      'valorRestante': 150,
+    };
+    await _pumpAgenda(
+      tester,
+      brightness: Brightness.light,
+      service: _FakeAgendaService(agendaPayload: <String, dynamic>{
+        'gruposAgenda': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'titulo': 'A receber',
+            'itens': <Map<String, dynamic>>[vendaSemContato],
+          },
+        ],
+      }),
+    );
+    expect(find.text('Venda'), findsOneWidget);
+    expect(find.textContaining('Não informado'), findsNothing);
+    expect(find.textContaining('BUFUNFA'), findsNothing);
+    final card = find.ancestor(of: find.text('Venda'), matching: find.byType(InkWell)).first;
+    final seta = find.descendant(
+      of: card, matching: find.byIcon(Icons.south_west_rounded),
+    );
+    expect(tester.widget<Icon>(seta).color, const Color(0xFF047857));
+
+    await tester.tap(find.text('Venda'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('Ações'), findsOneWidget);
+    expect(find.text('Não informado'), findsNothing);
+    expect(find.text('BUFUNFA'), findsNothing);
+  });
+
   testWidgets('agenda renders financial states with dark themed surfaces', (
     WidgetTester tester,
   ) async {
