@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
+import 'package:sixpos/data/models/empresa_model.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 
 /// Cadastro unico para Web e Mobile, reutilizando o mesmo contrato de API.
@@ -15,6 +17,9 @@ class FornecedoresWebPage extends StatefulWidget {
 
 class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
   late final FornecedorUsuarioApiClient _api;
+  late final EmpresaProvider _empresaProvider;
+  EmpresaModel? _empresaAnterior;
+  int _versaoConsulta = 0;
   final _busca = TextEditingController();
   List<FornecedorUsuario> _fornecedores = <FornecedorUsuario>[];
   String _filtro = 'Todos';
@@ -25,6 +30,9 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpFornecedorUsuarioApiClient();
+    _empresaProvider = EmpresaProvider();
+    _empresaAnterior = _empresaProvider.empresa;
+    _empresaProvider.addListener(_empresaMudou);
     _busca.addListener(_atualizarBusca);
     _recarregar();
   }
@@ -33,20 +41,35 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
     if (mounted) setState(() {});
   }
 
+  void _empresaMudou() {
+    final atual = _empresaProvider.empresa;
+    if (identical(atual, _empresaAnterior)) return;
+    _empresaAnterior = atual;
+    _recarregar(limpar: true);
+  }
+
   @override
   void dispose() {
+    _empresaProvider.removeListener(_empresaMudou);
     _busca.removeListener(_atualizarBusca);
     _busca.dispose();
     super.dispose();
   }
 
-  Future<void> _recarregar() async {
-    setState(() { _carregando = true; _erro = null; });
+  Future<void> _recarregar({bool limpar = false}) async {
+    final versao = ++_versaoConsulta;
+    setState(() {
+      _carregando = true;
+      _erro = null;
+      if (limpar) _fornecedores = <FornecedorUsuario>[];
+    });
     try {
       final itens = await _api.listar();
-      if (mounted) setState(() { _fornecedores = itens; _carregando = false; });
+      if (!mounted || versao != _versaoConsulta) return;
+      setState(() { _fornecedores = itens; _carregando = false; });
     } catch (error) {
-      if (mounted) setState(() { _erro = error.toString(); _carregando = false; });
+      if (!mounted || versao != _versaoConsulta) return;
+      setState(() { _erro = error.toString(); _carregando = false; });
     }
   }
 
@@ -123,6 +146,12 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
                 ],
               ),
               Wrap(spacing: 8, children: [
+                if (widget.onBack != null)
+                  IconButton(
+                    tooltip: 'Voltar',
+                    onPressed: widget.onBack,
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
                 IconButton(
                   tooltip: 'Atualizar',
                   onPressed: _carregando ? null : _recarregar,
