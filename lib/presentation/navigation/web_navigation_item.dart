@@ -105,6 +105,7 @@ enum WebNavigationPermission {
   podeFazerDevolucao,
   podeLancarAssistenciaTecnica,
   podeEditarCliente,
+  podeConsultarFornecedores,
   podeCadastrarProduto,
   podeEditarProduto,
   podeVerEstoqueDeProduto,

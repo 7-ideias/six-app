@@ -73,4 +73,43 @@ void main() {
           .having((error) => error.statusCode, 'statusCode', 409)),
     );
   });
+
+  test('carrega permissoes da empresa sem herdar permissoes de clientes', () async {
+    final api = HttpFornecedorUsuarioApiClient(
+      httpClient: MockClient((request) async {
+        expect(request.url.path, '/private/api/fornecedores/acesso');
+        expect(request.headers['idUnicoDaEmpresa'], 'empresa-A');
+        return http.Response(jsonEncode({
+          'consultar': true, 'cadastrar': false, 'editar': false, 'inativar': false,
+        }), 200);
+      }),
+      accessTokenProvider: () async => 'token',
+      empresaIdProvider: () async => 'empresa-A',
+    );
+    final acesso = await api.consultarAcesso();
+    expect(acesso.consultar, isTrue);
+    expect(acesso.cadastrar, isFalse);
+    expect(acesso.inativar, isFalse);
+  });
+
+  test('atualiza autorizacoes mantendo contrato restrito por empresa', () async {
+    final api = HttpFornecedorUsuarioApiClient(
+      httpClient: MockClient((request) async {
+        expect(request.url.path,
+          '/private/api/fornecedores/permissoes-colaboradores/vinculo-1');
+        expect(request.method, 'PUT');
+        expect(request.headers['idUnicoDaEmpresa'], 'empresa-A');
+        expect(jsonDecode(request.body), ['FORNECEDORES_CONSULTAR']);
+        return http.Response(jsonEncode({
+          'vinculoId': 'vinculo-1', 'email': 'e@teste.com',
+          'permissoes': ['FORNECEDORES_CONSULTAR']
+        }), 200);
+      }),
+      accessTokenProvider: () async => 'token',
+      empresaIdProvider: () async => 'empresa-A',
+    );
+    final colaborador = await api.atualizarPermissoesColaborador(
+      'vinculo-1', ['FORNECEDORES_CONSULTAR']);
+    expect(colaborador.permissoes, contains('FORNECEDORES_CONSULTAR'));
+  });
 }

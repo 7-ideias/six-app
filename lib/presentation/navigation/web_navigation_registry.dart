@@ -178,7 +178,7 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Fornecedores',
           icon: Icons.local_shipping_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[WebNavigationPermission.podeEditarCliente],
+            <WebNavigationPermission>[WebNavigationPermission.podeConsultarFornecedores],
           ),
           destination: WebNavigationDestination.peopleSuppliers,
         ),

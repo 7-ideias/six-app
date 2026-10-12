@@ -97,6 +97,7 @@ void main() {
       tester,
       navigations: navigations,
       area: GestaoMobileArea.pessoas,
+      colaboradorProvider: _SupplierAccessProvider(),
     );
     await tester.tap(find.text('Fornecedores').last);
     await tester.pump(const Duration(milliseconds: 120));
@@ -427,6 +428,11 @@ Future<void> _pumpGestao(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
+}
+
+class _SupplierAccessProvider extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get podeConsultarFornecedores => true;
 }
 
 class _NoCatalogPermissionProvider extends ColaboradorAutorizacoesProvider {

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/models/empresa_model.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:provider/provider.dart';
+import 'fornecedores_permissoes_page.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 
 /// Cadastro unico para Web e Mobile, reutilizando o mesmo contrato de API.
@@ -22,6 +25,7 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
   int _versaoConsulta = 0;
   final _busca = TextEditingController();
   List<FornecedorUsuario> _fornecedores = <FornecedorUsuario>[];
+  FornecedorAcesso _acesso = FornecedorAcesso.negado;
   String _filtro = 'Todos';
   bool _carregando = true;
   String? _erro;
@@ -61,12 +65,30 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
     setState(() {
       _carregando = true;
       _erro = null;
-      if (limpar) _fornecedores = <FornecedorUsuario>[];
+      if (limpar) {
+        _fornecedores = <FornecedorUsuario>[];
+        _acesso = FornecedorAcesso.negado;
+      }
     });
     try {
+      final acesso = await _api.consultarAcesso();
+      if (!mounted || versao != _versaoConsulta) return;
+      if (!acesso.consultar) {
+        setState(() {
+          _acesso = acesso;
+          _fornecedores = <FornecedorUsuario>[];
+          _carregando = false;
+          _erro = 'Sem permissão para consultar fornecedores neste comércio.';
+        });
+        return;
+      }
       final itens = await _api.listar();
       if (!mounted || versao != _versaoConsulta) return;
-      setState(() { _fornecedores = itens; _carregando = false; });
+      setState(() {
+        _acesso = acesso;
+        _fornecedores = itens;
+        _carregando = false;
+      });
     } catch (error) {
       if (!mounted || versao != _versaoConsulta) return;
       setState(() { _erro = error.toString(); _carregando = false; });
@@ -85,10 +107,15 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
   }
 
   Future<void> _editar([FornecedorUsuario? atual]) async {
+    if (atual == null && !_acesso.cadastrar) return;
     final mobile = MediaQuery.sizeOf(context).width < 700;
     Future<FornecedorUsuario> salvar(FornecedorUsuarioDraft draft) =>
         atual == null ? _api.cadastrar(draft) : _api.atualizar(atual.id, draft);
-    final form = _FornecedorEditor(atual: atual, onSave: salvar);
+    final form = _FornecedorEditor(
+      atual: atual, onSave: salvar,
+      podeEditar: atual == null || _acesso.editar,
+      podeAlterarAtivo: atual == null || (_acesso.editar && _acesso.inativar),
+    );
     final FornecedorUsuario? salvo;
     if (mobile) {
       salvo = await showModalBottomSheet<FornecedorUsuario>(
@@ -120,6 +147,28 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
     }
   }
 
+  Future<void> _gerenciarPermissoes() async {
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    final editor = FornecedoresPermissoesPage(api: _api);
+    if (mobile) {
+      await showModalBottomSheet<void>(
+        context: context, isScrollControlled: true, useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => FractionallySizedBox(heightFactor: .90, child: editor),
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700, maxHeight: 650),
+            child: editor,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
@@ -146,6 +195,12 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
                 ],
               ),
               Wrap(spacing: 8, children: [
+                if (Provider.of<ColaboradorAutorizacoesProvider?>(context)?.ehAdministrador == true)
+                  OutlinedButton.icon(
+                    onPressed: _carregando ? null : _gerenciarPermissoes,
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    label: const Text('Permissões'),
+                  ),
                 if (widget.onBack != null)
                   IconButton(
                     tooltip: 'Voltar',
@@ -157,6 +212,7 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
                   onPressed: _carregando ? null : _recarregar,
                   icon: const Icon(Icons.refresh_rounded),
                 ),
+                if (_acesso.cadastrar)
                 FilledButton.icon(
                   key: const Key('fornecedor-novo'),
                   onPressed: _carregando ? null : () => _editar(),
@@ -254,7 +310,7 @@ class _FornecedoresWebPageState extends State<FornecedoresWebPage> {
       margin: const EdgeInsets.only(bottom: 9),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _editar(f),
+        onTap: _acesso.consultar ? () => _editar(f) : null,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(children: [
@@ -302,9 +358,11 @@ class _ResumoFornecedor extends StatelessWidget {
 }
 
 class _FornecedorEditor extends StatefulWidget {
-  const _FornecedorEditor({this.atual, required this.onSave});
+  const _FornecedorEditor({this.atual, required this.onSave,
+    required this.podeEditar, required this.podeAlterarAtivo});
   final FornecedorUsuario? atual;
   final Future<FornecedorUsuario> Function(FornecedorUsuarioDraft draft) onSave;
+  final bool podeEditar, podeAlterarAtivo;
   @override
   State<_FornecedorEditor> createState() => _FornecedorEditorState();
 }
@@ -349,6 +407,7 @@ class _FornecedorEditorState extends State<_FornecedorEditor> {
       TextInputType? teclado, int maxLines = 1}) => TextFormField(
     key: Key('fornecedor-campo-$chave'),
     controller: _campos[chave],
+    enabled: widget.podeEditar,
     keyboardType: teclado,
     maxLines: maxLines,
     decoration: InputDecoration(labelText: rotulo, border: const OutlineInputBorder()),
@@ -361,7 +420,7 @@ class _FornecedorEditorState extends State<_FornecedorEditor> {
   );
 
   Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate() || _salvando) return;
+    if (!widget.podeEditar || !_formKey.currentState!.validate() || _salvando) return;
     setState(() => _salvando = true);
     try {
       final salvo = await widget.onSave(FornecedorUsuarioDraft(
@@ -409,8 +468,9 @@ class _FornecedorEditorState extends State<_FornecedorEditor> {
                   ButtonSegment(value: 'PF', label: Text('Pessoa física')),
                 ],
                 selected: {_tipoPessoa},
-                onSelectionChanged: (selecionado) =>
-                    setState(() => _tipoPessoa = selecionado.first),
+                onSelectionChanged: widget.podeEditar
+                    ? (selecionado) => setState(() => _tipoPessoa = selecionado.first)
+                    : null,
               ),
               const SizedBox(height: 12),
               _campo('nome', 'Nome / razão social *', obrigatorio: true),
@@ -449,7 +509,9 @@ class _FornecedorEditorState extends State<_FornecedorEditor> {
               SwitchListTile.adaptive(
                 title: const Text('Fornecedor ativo'),
                 subtitle: const Text('Desative sem perder o histórico do cadastro.'),
-                value: _ativo, onChanged: (v) => setState(() => _ativo = v),
+                value: _ativo,
+                onChanged: widget.podeAlterarAtivo
+                    ? (v) => setState(() => _ativo = v) : null,
               ),
             ]),
           ),
@@ -459,6 +521,7 @@ class _FornecedorEditorState extends State<_FornecedorEditor> {
           TextButton(onPressed: _salvando ? null : () => Navigator.of(context).pop(),
               child: const Text('Cancelar')),
           const Spacer(),
+          if (widget.podeEditar)
           FilledButton.icon(
             key: const Key('fornecedor-salvar'),
             onPressed: _salvando ? null : _salvar,

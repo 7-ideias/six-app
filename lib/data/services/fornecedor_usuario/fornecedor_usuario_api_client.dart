@@ -6,11 +6,50 @@ import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 
+class FornecedorAcesso {
+  const FornecedorAcesso({
+    required this.consultar,
+    required this.cadastrar,
+    required this.editar,
+    required this.inativar,
+  });
+  final bool consultar, cadastrar, editar, inativar;
+  static const negado = FornecedorAcesso(
+    consultar: false, cadastrar: false, editar: false, inativar: false,
+  );
+  factory FornecedorAcesso.fromJson(Map<String, dynamic> json) => FornecedorAcesso(
+    consultar: json['consultar'] == true,
+    cadastrar: json['cadastrar'] == true,
+    editar: json['editar'] == true,
+    inativar: json['inativar'] == true,
+  );
+}
+
+class FornecedorColaboradorPermissoes {
+  const FornecedorColaboradorPermissoes({
+    required this.vinculoId, required this.email, required this.permissoes,
+  });
+  final String vinculoId, email;
+  final List<String> permissoes;
+  factory FornecedorColaboradorPermissoes.fromJson(Map<String, dynamic> json) =>
+      FornecedorColaboradorPermissoes(
+        vinculoId: json['vinculoId']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        permissoes: (json['permissoes'] as List<dynamic>? ?? [])
+            .map((e) => e.toString()).toList(growable: false),
+      );
+}
+
 abstract class FornecedorUsuarioApiClient {
   Future<List<FornecedorUsuario>> listar();
   Future<FornecedorUsuario> buscar(String id);
   Future<FornecedorUsuario> cadastrar(FornecedorUsuarioDraft fornecedor);
   Future<FornecedorUsuario> atualizar(String id, FornecedorUsuarioDraft fornecedor);
+  // Interface retrocompativel com clients injetados em testes: falha fechada.
+  Future<FornecedorAcesso> consultarAcesso() async => FornecedorAcesso.negado;
+  Future<List<FornecedorColaboradorPermissoes>> listarPermissoesColaboradores() async => [];
+  Future<FornecedorColaboradorPermissoes> atualizarPermissoesColaborador(
+      String vinculoId, List<String> permissoes) => throw UnimplementedError();
 }
 
 class HttpFornecedorUsuarioApiClient implements FornecedorUsuarioApiClient {
@@ -43,15 +82,45 @@ class HttpFornecedorUsuarioApiClient implements FornecedorUsuarioApiClient {
       Uri.parse('${AppConfig.baseUrl}/private/api/fornecedores$path');
 
   @override
+  Future<FornecedorAcesso> consultarAcesso() async {
+    final response = await _httpClient.get(_uri('/acesso'), headers: await _headers());
+    _validar(response);
+    final data = jsonDecode(response.body);
+    if (data is! Map<String, dynamic>) throw const FormatException('Permissões inválidas.');
+    return FornecedorAcesso.fromJson(data);
+  }
+
+  @override
+  Future<List<FornecedorColaboradorPermissoes>> listarPermissoesColaboradores() async {
+    final response = await _httpClient.get(
+      _uri('/permissoes-colaboradores'), headers: await _headers());
+    _validar(response);
+    final data = jsonDecode(response.body);
+    if (data is! List) throw const FormatException('Lista de colaboradores inválida.');
+    return data.whereType<Map<String, dynamic>>()
+        .map(FornecedorColaboradorPermissoes.fromJson).toList(growable: false);
+  }
+
+  @override
+  Future<FornecedorColaboradorPermissoes> atualizarPermissoesColaborador(
+      String vinculoId, List<String> permissoes) async {
+    final response = await _httpClient.put(
+      _uri('/permissoes-colaboradores/${Uri.encodeComponent(vinculoId)}'),
+      headers: await _headers(), body: jsonEncode(permissoes));
+    _validar(response);
+    final data = jsonDecode(response.body);
+    if (data is! Map<String, dynamic>) throw const FormatException('Resposta inválida.');
+    return FornecedorColaboradorPermissoes.fromJson(data);
+  }
+
+  @override
   Future<List<FornecedorUsuario>> listar() async {
     final response = await _httpClient.get(_uri(), headers: await _headers());
     _validar(response);
     final data = jsonDecode(response.body);
-    if (data is! List) throw FormatException('Resposta de fornecedores inválida.');
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(FornecedorUsuario.fromJson)
-        .toList(growable: false);
+    if (data is! List) throw const FormatException('Resposta de fornecedores inválida.');
+    return data.whereType<Map<String, dynamic>>()
+        .map(FornecedorUsuario.fromJson).toList(growable: false);
   }
 
   @override
@@ -72,7 +141,7 @@ class HttpFornecedorUsuarioApiClient implements FornecedorUsuarioApiClient {
   FornecedorUsuario _lerFornecedor(http.Response response) {
     _validar(response);
     final data = jsonDecode(response.body);
-    if (data is! Map<String, dynamic>) throw FormatException('Fornecedor inválido.');
+    if (data is! Map<String, dynamic>) throw const FormatException('Fornecedor inválido.');
     return FornecedorUsuario.fromJson(data);
   }
 
@@ -87,14 +156,13 @@ class FornecedorUsuarioApiException implements Exception {
   const FornecedorUsuarioApiException(this.statusCode, this.body);
   final int statusCode;
   final String body;
-
   @override
   String toString() => switch (statusCode) {
     400 => 'Verifique os campos obrigatórios do fornecedor.',
     401 => 'Sua sessão expirou. Entre novamente.',
-    403 => 'Você não tem acesso a este comércio.',
-    404 => 'Fornecedor não encontrado neste comércio.',
-    409 => 'Já existe um fornecedor com este documento neste comércio.',
+    403 => 'Você não tem permissão para esta operação no comércio.',
+    404 => 'Fornecedor não encontrado na sua conta.',
+    409 => 'Já existe um fornecedor com este documento nesta conta.',
     _ => 'Não foi possível concluir a operação (HTTP $statusCode).',
   };
 }

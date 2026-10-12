@@ -4,7 +4,7 @@ import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/presentation/screens/fornecedores_web_page.dart';
 
-class _ApiFalsa implements FornecedorUsuarioApiClient {
+class _ApiFalsa extends FornecedorUsuarioApiClient {
   @override
   Future<List<FornecedorUsuario>> listar() async => [
     FornecedorUsuario.fromJson({

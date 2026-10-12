@@ -1185,6 +1185,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               onTap:
                   () => _navigateTo(context, const UsuariosSixoMobileScreen()),
             ),
+          if (autorizacoes.podeConsultarFornecedores)
           _ManagementItem(
             title: context.t(
               'gestao.people.suppliers',
