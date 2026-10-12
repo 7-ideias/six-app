@@ -49,6 +49,7 @@ Regras de dados:
 - `documentoNormalizado` remove pontuacao e preserva caracteres alfanumericos Unicode, em caixa alta; documento ausente permanece null.
 - A unicidade é `(contaAdministradoraId, documentoNormalizado)` somente quando ambos forem strings.
 - Duplicidades legadas são reportadas, não apagadas; seu cadastro permanece visível na conta correta enquanto a migração for concluída.
+- Documentos muito antigos sem `idUnicoDaEmpresa` ou sem vinculo inequivoco com a conta nao podem ser atribuídos automaticamente: exigem revisao administrativa manual a partir do backup.
 - Códigos de conflito: HTTP 409; acesso sem vinculo ou sem permissão: HTTP 403; recurso fora do escopo: HTTP 404.
 
 ## Testes e operação
