@@ -100,7 +100,13 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
   Future<void> carregarAutorizacoesDoUsuarioLogado({bool force = false}) async {
     final String? idUnicoDoUsuario = await _authService.getUserId();
-    final String? empresaAtual = await _authService.getEmpresaId();
+    String? empresaAtual;
+    try {
+      empresaAtual = await _authService.getEmpresaId();
+    } catch (_) {
+      // Sem contexto de comercio, acesso a fornecedores falha fechado.
+      empresaAtual = null;
+    }
     final String tipoPerfilUsuario = await _authService.getUserProfileType();
     final bool perfilSuperUsuario = await _authService.hasRealmRole(
       'SUPER_USER',
