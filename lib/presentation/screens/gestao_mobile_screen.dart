@@ -808,8 +808,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.local_shipping_outlined,
             accentColor: _peopleAccent,
-            valueText: 'Disponível',
-            semanticValue: 'Cadastro e consulta de fornecedores disponíveis',
+            valueText: context.watch<ColaboradorAutorizacoesProvider>().podeConsultarFornecedores
+                ? 'Disponível' : 'Sem acesso',
+            semanticValue: context.watch<ColaboradorAutorizacoesProvider>().podeConsultarFornecedores
+                ? 'Cadastro e consulta de fornecedores disponíveis'
+                : 'Acesso a fornecedores não autorizado neste comércio',
           ),
         ];
       case _ManagementSectionType.finance:
