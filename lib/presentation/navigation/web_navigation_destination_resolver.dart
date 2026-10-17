@@ -12,6 +12,7 @@ abstract interface class WebNavigationDestinationActions {
   WebNavigationResolutionResult openCatalogStock();
   WebNavigationResolutionResult openCatalogCategories();
   WebNavigationResolutionResult openPeopleCustomers();
+  WebNavigationResolutionResult openPeopleSuppliers();
   WebNavigationResolutionResult openPeopleCollaborators();
   WebNavigationResolutionResult openPeoplePerformance();
   WebNavigationResolutionResult openCash();
@@ -110,6 +111,8 @@ class WebNavigationDestinationResolver {
         return actions.openCatalogCategories();
       case WebNavigationDestination.peopleCustomers:
         return actions.openPeopleCustomers();
+      case WebNavigationDestination.peopleSuppliers:
+        return actions.openPeopleSuppliers();
       case WebNavigationDestination.peopleCollaborators:
         return actions.openPeopleCollaborators();
       case WebNavigationDestination.peopleSixoUsers:

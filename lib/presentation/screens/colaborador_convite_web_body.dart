@@ -68,6 +68,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _fazVenda = true;
   bool _lancaServico = true;
   bool _editaCliente = true;
+  bool _fornecedoresConsultar = false;
+  bool _fornecedoresCadastrar = false;
+  bool _fornecedoresEditar = false;
+  bool _fornecedoresInativar = false;
   bool _podeReceberNoCaixa = false;
   bool _podeVerQuantoVendeu = false;
   bool _geraRelatorio = false;
@@ -136,6 +140,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     if (_fazVenda) 'VENDAS_CRIAR',
     if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
     if (_editaCliente) 'CLIENTES_EDITAR',
+    if (_fornecedoresConsultar) 'FORNECEDORES_CONSULTAR',
+    if (_fornecedoresCadastrar) 'FORNECEDORES_CADASTRAR',
+    if (_fornecedoresEditar) 'FORNECEDORES_EDITAR',
+    if (_fornecedoresInativar) 'FORNECEDORES_INATIVAR',
     if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
     if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
     if (_geraRelatorio) 'RELATORIOS_GERAR',
@@ -1208,6 +1216,34 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         icon: Icons.people_alt_outlined,
         value: _editaCliente,
         onChanged: (bool value) => setState(() => _editaCliente = value),
+      ),
+      _switchCard(
+        title: _t('suppliers.permission.read', 'Consultar fornecedores'),
+        subtitle: _t('suppliers.permission.readDescription', 'Consultar fornecedores da conta.'),
+        icon: Icons.local_shipping_outlined,
+        value: _fornecedoresConsultar,
+        onChanged: (bool v) => setState(() => _fornecedoresConsultar = v),
+      ),
+      _switchCard(
+        title: _t('suppliers.permission.create', 'Cadastrar fornecedores'),
+        subtitle: _t('suppliers.permission.createDescription', 'Criar novos fornecedores.'),
+        icon: Icons.add_business_outlined,
+        value: _fornecedoresCadastrar,
+        onChanged: (bool v) => setState(() => _fornecedoresCadastrar = v),
+      ),
+      _switchCard(
+        title: _t('suppliers.permission.edit', 'Editar fornecedores'),
+        subtitle: _t('suppliers.permission.editDescription', 'Alterar cadastros existentes.'),
+        icon: Icons.edit_outlined,
+        value: _fornecedoresEditar,
+        onChanged: (bool v) => setState(() => _fornecedoresEditar = v),
+      ),
+      _switchCard(
+        title: _t('suppliers.permission.disable', 'Ativar / inativar fornecedores'),
+        subtitle: _t('suppliers.permission.disableDescription', 'Alterar status dos fornecedores.'),
+        icon: Icons.block_outlined,
+        value: _fornecedoresInativar,
+        onChanged: (bool v) => setState(() => _fornecedoresInativar = v),
       ),
       _switchCard(
         title: _t('colaboradores.finance', 'Financeiro'),

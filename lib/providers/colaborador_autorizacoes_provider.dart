@@ -6,19 +6,23 @@ import '../data/models/colaborador_autorizacoes_model.dart';
 import '../data/models/colaborador_usuario_model.dart';
 import '../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../domain/services/etiqueta/etiqueta_service.dart';
+import '../data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 
 class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   ColaboradorAutorizacoesProvider({
     AuthService? authService,
     ColaboradorUsuarioApiClient? apiClient,
     EtiquetaService? etiquetaService,
+    FornecedorUsuarioApiClient? fornecedorApiClient,
   }) : _authService = authService ?? AuthService(),
        _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient(),
-       _etiquetaService = etiquetaService ?? EtiquetaService();
+       _etiquetaService = etiquetaService ?? EtiquetaService(),
+       _fornecedorApiClient = fornecedorApiClient ?? HttpFornecedorUsuarioApiClient();
 
   final AuthService _authService;
   final ColaboradorUsuarioApiClient _apiClient;
   final EtiquetaService _etiquetaService;
+  final FornecedorUsuarioApiClient _fornecedorApiClient;
 
   ColaboradorAutorizacoesModel? _autorizacoes;
   bool _loading = false;
@@ -31,6 +35,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool _autorizacoesCarregadasComSucesso = false;
   bool _podeAcessarEtiquetas = false;
   bool _podeFazerDevolucao = false;
+  FornecedorAcesso _fornecedorAcesso = FornecedorAcesso.negado;
+  String? _empresaIdCarregada;
 
   ColaboradorAutorizacoesModel get autorizacoes =>
       _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
@@ -61,6 +67,10 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get autorizacoesCarregadasComSucesso =>
       _autorizacoesCarregadasComSucesso;
   bool get podeAcessarEtiquetas => _ehAdministrador || _podeAcessarEtiquetas;
+  bool get podeConsultarFornecedores => _ehAdministrador || _fornecedorAcesso.consultar;
+  bool get podeCadastrarFornecedores => _ehAdministrador || _fornecedorAcesso.cadastrar;
+  bool get podeEditarFornecedores => _ehAdministrador || _fornecedorAcesso.editar;
+  bool get podeInativarFornecedores => _ehAdministrador || _fornecedorAcesso.inativar;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
@@ -90,6 +100,13 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
   Future<void> carregarAutorizacoesDoUsuarioLogado({bool force = false}) async {
     final String? idUnicoDoUsuario = await _authService.getUserId();
+    String? empresaAtual;
+    try {
+      empresaAtual = await _authService.getEmpresaId();
+    } catch (_) {
+      // Sem contexto de comercio, acesso a fornecedores falha fechado.
+      empresaAtual = null;
+    }
     final String tipoPerfilUsuario = await _authService.getUserProfileType();
     final bool perfilSuperUsuario = await _authService.hasRealmRole(
       'SUPER_USER',
@@ -108,12 +125,15 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
       _podeFazerDevolucao = perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
+      _fornecedorAcesso = FornecedorAcesso.negado;
+      _empresaIdCarregada = empresaAtual;
       notifyListeners();
       return;
     }
 
     if (!force &&
         _idUnicoDoUsuarioCarregado == idUnicoDoUsuario &&
+        _empresaIdCarregada == empresaAtual &&
         _autorizacoes != null) {
       return;
     }
@@ -147,6 +167,18 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
               ? ColaboradorAutorizacoesModel.permitirTudo()
               : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
+      _empresaIdCarregada = empresaAtual;
+      if (_ehAdministrador) {
+        _fornecedorAcesso = const FornecedorAcesso(
+          consultar: true, cadastrar: true, editar: true, inativar: true);
+      } else {
+        try {
+          _fornecedorAcesso = await _fornecedorApiClient.consultarAcesso()
+              .timeout(const Duration(seconds: 4));
+        } catch (_) {
+          _fornecedorAcesso = FornecedorAcesso.negado;
+        }
+      }
       _podeFazerDevolucao = _ehAdministrador || carregadas.podeFazerDevolucao;
 
       if (!kIsWeb) {
@@ -166,6 +198,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
       _podeFazerDevolucao = _ehAdministrador;
+      _fornecedorAcesso = FornecedorAcesso.negado;
     } finally {
       _loading = false;
       notifyListeners();
@@ -184,6 +217,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _autorizacoesCarregadasComSucesso = false;
     _podeAcessarEtiquetas = false;
     _podeFazerDevolucao = false;
+    _fornecedorAcesso = FornecedorAcesso.negado;
+    _empresaIdCarregada = null;
     notifyListeners();
   }
 

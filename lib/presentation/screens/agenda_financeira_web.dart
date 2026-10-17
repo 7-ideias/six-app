@@ -3,6 +3,7 @@ import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/components/web/agenda_financeira_lancamento_card_web.dart';
+import 'package:sixpos/core/utils/agenda_financeira_ordenacao_calendario.dart';
 import '../../core/utils/agenda_forma_pagamento_exibicao.dart';
 import '../components/web/payment_name_editor_web.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -273,6 +274,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
 
   int _abaSelecionada = 0;
+  bool _calendarioDataDecrescente = true;
   String _periodoSelecionado = 'Próximos 7 dias';
   late DateTime _dataInicioPersonalizada;
   late DateTime _dataFimPersonalizada;
@@ -2216,71 +2218,63 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildCalendario(ThemeData theme) {
-    final itens = List<Map<String, dynamic>>.from(_itensAgenda)..sort(
-      (a, b) => (a['vencimento']?.toString() ?? '').compareTo(
-        b['vencimento']?.toString() ?? '',
-      ),
+    final itens = AgendaFinanceiraOrdenacaoCalendario.ordenarPorVencimento(
+      _itensAgenda,
+      decrescente: _calendarioDataDecrescente,
     );
-    if (itens.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('Nenhum lançamento encontrado no calendário.'),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'Lançamentos: ${itens.length}',
+                  style: theme.textTheme.labelLarge,
+                ),
+              ),
+              Tooltip(
+                message: 'Alternar ordenação por data de vencimento',
+                child: TextButton.icon(
+                  key: const Key('agenda-calendario-ordenar-data'),
+                  onPressed: () => setState(
+                    () => _calendarioDataDecrescente = !_calendarioDataDecrescente,
+                  ),
+                  icon: const Icon(Icons.swap_vert_rounded, size: 20),
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        _calendarioDataDecrescente
+                            ? 'Data: mais recentes'
+                            : 'Data: mais antigas',
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        _calendarioDataDecrescente
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        size: 17,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      );
-    }
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const <DataColumn>[
-            DataColumn(label: Text('Data')),
-            DataColumn(label: Text('Tipo')),
-            DataColumn(label: Text('Tipo de pagamento')),
-            DataColumn(label: Text('Descrição')),
-            DataColumn(label: Text('Valor'), numeric: true),
-            DataColumn(label: Text('Ações')),
-          ],
-          rows:
-              itens
-                  .map(
-                    (item) => DataRow(
-                      cells: <DataCell>[
-                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
-                        DataCell(
-                          Text(item['tipo'] == 'receber' ? 'Receber' : 'Pagar'),
-                        ),
-                        DataCell(
-                          Text(item['formaPagamento']?.toString() ?? '-'),
-                        ),
-                        DataCell(
-                          SizedBox(
-                            width: 340,
-                            child: Text(
-                              item['descricao']?.toString() ?? '-',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            _formatarMoeda(
-                              _toDouble(item['valorRestante'] ?? item['valor']),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          TextButton(
-                            onPressed: () => _mostrarDetalhesLancamento(item),
-                            child: const Text('Detalhes'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(),
-        ),
-      ),
+        if (itens.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Nenhum lançamento encontrado no calendário.'),
+            ),
+          )
+        else
+          ...itens.map((item) => _cardLancamento(theme, item)),
+      ],
     );
   }
 

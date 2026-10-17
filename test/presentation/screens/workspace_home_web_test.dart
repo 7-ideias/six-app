@@ -882,6 +882,11 @@ class _RecordingActions implements WebNavigationDestinationActions {
   }
 
   @override
+  WebNavigationResolutionResult openPeopleSuppliers() {
+    return _record(WebNavigationDestination.peopleSuppliers);
+  }
+
+  @override
   WebNavigationResolutionResult openPeopleCollaborators() {
     return _record(WebNavigationDestination.peopleCollaborators);
   }
