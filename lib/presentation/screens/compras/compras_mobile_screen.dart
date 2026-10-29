@@ -195,6 +195,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   double number(String value) => double.tryParse(value.replaceAll(',', '.')) ?? 0;
 
   Map<String, dynamic> _payload() => {
+    'versao': widget.inicial?['versao'],
     'fornecedorId': fornecedorId,
     'tipoDocumento': 'NF-e',
     'numeroDocumento': documento.text.trim(),

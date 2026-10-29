@@ -111,6 +111,7 @@ class _CompraDemo {
     required this.criadaEm,
     required this.atualizadaEm,
     this.numero,
+    this.versao,
     this.status = _CompraDemoStatus.rascunho,
     this.fornecedorId,
     this.fornecedorNome = '',
@@ -150,6 +151,7 @@ class _CompraDemo {
 
   final String id;
   int? numero;
+  int? versao;
   _CompraDemoStatus status;
   String? fornecedorId;
   String fornecedorNome;

@@ -15,6 +15,7 @@ _CompraDemo _compraDaApi(Map<String, dynamic> j) {
   return _CompraDemo(
     id: t('id'),
     numero: (j['numero'] as num?)?.toInt(),
+    versao: (j['versao'] as num?)?.toInt(),
     status: status,
     criadaEm: d('criadaEm'),
     atualizadaEm: d('atualizadaEm'),
@@ -61,6 +62,7 @@ _CompraDemo _compraDaApi(Map<String, dynamic> j) {
 }
 
 Map<String,dynamic> _compraParaApi(_CompraDemo c) => {
+  'versao': c.versao,
   'fornecedorId': c.fornecedorId,
   'tipoDocumento': c.tipoDocumento,
   'numeroDocumento': c.numeroDocumento,
