@@ -23,7 +23,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       delegate: SliverChildListDelegate(<Widget>[
                         _buildEditorHeader(compra, compacto),
                         const SizedBox(height: 14),
-                        const _CompraDemoBanner(),
+                        const Text('Compra persistente. Estoque e financeiro serão integrados nas próximas fases.'),
                         const SizedBox(height: 16),
                         _buildEtapas(compra, compacto),
                         const SizedBox(height: 16),
@@ -960,6 +960,27 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 subtitle: context.comprasT('compras.financial.subtitle'),
               ),
               const SizedBox(height: 18),
+              if (compra.moeda != compra.moedaContabil) ...[
+                Text('Cotação ${compra.moeda} → ${compra.moedaContabil} (obrigatória)',
+                    style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                TextFormField(
+                  key: ValueKey('cotacao-${compra.id}-${compra.moeda}'),
+                  initialValue: compra.cotacaoInformada ? compra.cotacao.toString() : '',
+                  enabled: editavel,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    helperText: 'Valor na moeda contábil para 1 unidade da moeda original.',
+                  ),
+                  onChanged: (valor) {
+                    final taxa = _parseNumero(valor);
+                    compra.cotacao = taxa;
+                    compra.cotacaoInformada = taxa > 0;
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -1299,7 +1320,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
             trailing:
                 editavel
                     ? FilledButton.icon(
-                      onPressed: () => _adicionarAnexoSimulado(compra),
+                      onPressed: null,
                       icon: const Icon(Icons.upload_file_outlined, size: 18),
                       label: Text(context.comprasT('compras.attachments.add')),
                     )
@@ -1319,7 +1340,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    context.comprasT('compras.attachments.demoNotice'),
+                    'Anexos reais serão adicionados em uma próxima etapa; esta versão não simula uploads.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: tokens.secondaryText,
                       height: 1.4,
@@ -1340,7 +1361,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               action:
                   editavel
                       ? OutlinedButton.icon(
-                        onPressed: () => _adicionarAnexoSimulado(compra),
+                        onPressed: null,
                         icon: const Icon(Icons.add_rounded),
                         label: Text(
                           context.comprasT('compras.attachments.add'),
@@ -1776,13 +1797,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               ),
               if (editavel)
                 TextButton.icon(
-                  onPressed: () {
-                    _store.salvar(compra);
-                    _rebuild(() {});
-                    _mostrarMensagem(
-                      context.comprasT('compras.message.draftSaved'),
-                    );
-                  },
+                  onPressed: _executando ? null : () => _salvarRascunho(compra),
                   icon: const Icon(Icons.save_outlined, size: 18),
                   label: Text(context.comprasT('compras.action.saveDraft')),
                 ),
@@ -1810,7 +1825,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 )
               else if (editavel)
                 FilledButton.icon(
-                  onPressed: () => _confirmarCompra(compra),
+                  onPressed: _executando ? null : () => _confirmarCompra(compra),
                   icon: const Icon(Icons.check_circle_outline, size: 19),
                   label: Text(context.comprasT('compras.action.confirm')),
                 ),
@@ -1846,6 +1861,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (compra.gerarContaPagar && compra.quantidadeParcelas <= 0) {
       pendencias.add(context.comprasT('compras.validation.installments'));
     }
+    if (compra.moeda != compra.moedaContabil && !compra.cotacaoInformada) {
+      pendencias.add('Informe uma cotação explícita para a moeda estrangeira.');
+    }
     return pendencias;
   }
 
@@ -1872,37 +1890,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               children: <Widget>[
                 Text(context.comprasT('compras.confirm.description')),
                 const SizedBox(height: 14),
-                _CompraImpactTile(
-                  icon: Icons.inventory_2_outlined,
-                  title: context.comprasT('compras.impacts.stock.title'),
-                  description: context
-                      .comprasT('compras.impacts.stock.description')
-                      .replaceAll('{count}', compra.itensComEstoque.toString()),
-                  enabled: compra.itensComEstoque > 0,
-                ),
-                const SizedBox(height: 8),
-                _CompraImpactTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: context.comprasT('compras.impacts.financial.title'),
-                  description:
-                      compra.gerarContaPagar
-                          ? context
-                              .comprasT('compras.impacts.financial.description')
-                              .replaceAll(
-                                '{count}',
-                                compra.quantidadeParcelas.toString(),
-                              )
-                          : context.comprasT(
-                            'compras.impacts.financial.disabled',
-                          ),
-                  enabled: compra.gerarContaPagar,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  context.comprasT('compras.confirm.demoNotice'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: WebThemeTokens.of(context).secondaryText,
-                  ),
+                const Text(
+                  'A confirmação registra a compra e seus valores. '
+                  'Nesta fase não há entrada de estoque nem geração de contas a pagar. '
+                  'Essas movimentações serão ativadas nas etapas seguintes.',
                 ),
               ],
             ),
@@ -1924,13 +1915,20 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (confirmado != true || !mounted) {
       return;
     }
-    final int numero = _store.confirmar(compra);
-    _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
-    _mostrarMensagem(
-      context
-          .comprasT('compras.message.confirmed')
-          .replaceAll('#{number}', '#${numero.toString().padLeft(6, '0')}'),
-    );
+    final salva = await _salvarRascunho(compra);
+    if (salva == null || !mounted) return;
+    setState(() => _executando = true);
+    try {
+      final dados = await _comprasApi.confirmar(salva.id);
+      if (!mounted) return;
+      _marcarSalva(salva, dados);
+      _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
+      _mostrarMensagem('Compra confirmada. Estoque e financeiro aguardam integração.');
+    } catch (e) {
+      if (mounted) _mostrarMensagem(e.toString(), erro: true);
+    } finally {
+      if (mounted) setState(() => _executando = false);
+    }
   }
 
   Widget _buildResponsiveFieldRow({
@@ -2284,7 +2282,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      context.comprasT('compras.supplier.quickAdd.demoNotice'),
+                      'Este fornecedor será salvo para os comércios autorizados da conta.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: WebThemeTokens.of(context).secondaryText,
                       ),
@@ -2299,17 +2297,32 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 child: Text(context.comprasT('common.cancel')),
               ),
               FilledButton(
-                onPressed: () {
-                  if (formKey.currentState?.validate() != true) {
-                    return;
+                onPressed: () async {
+                  if (formKey.currentState?.validate() != true) return;
+                  try {
+                    final salvo = await _fornecedoresApi.cadastrar(
+                      FornecedorUsuarioDraft(
+                        ativo: true, tipoPessoa: 'PJ', nome: nome.text.trim(),
+                        documento: documento.text.trim(), email: email.text.trim(),
+                        telefone: telefone.text.trim(), cep: '', logradouro: '',
+                        numero: '', complemento: '', bairro: '', cidade: '',
+                        uf: '', pais: '', contatoResponsavel: '',
+                        condicoesPagamento: '', observacoes: '',
+                      ),
+                    );
+                    final fornecedor = _FornecedorDemo(
+                      id: salvo.id, nome: salvo.nome, documento: salvo.documento,
+                      email: salvo.email, telefone: salvo.telefone,
+                    );
+                    _store.fornecedores.add(fornecedor);
+                    if (dialogContext.mounted) Navigator.of(dialogContext).pop(fornecedor);
+                  } catch (e) {
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(content: Text('Falha ao cadastrar fornecedor: $e')),
+                      );
+                    }
                   }
-                  final _FornecedorDemo fornecedor = _store.criarFornecedor(
-                    nome: nome.text.trim(),
-                    documento: documento.text.trim(),
-                    email: email.text.trim(),
-                    telefone: telefone.text.trim(),
-                  );
-                  Navigator.of(dialogContext).pop(fornecedor);
                 },
                 child: Text(context.comprasT('common.save')),
               ),
@@ -2476,19 +2489,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text(context.comprasT('common.cancel')),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final _ProdutoCompraDemo? criado =
-                          await _cadastrarProdutoRapido(
-                            dialogContext,
-                            compra.moeda,
-                          );
-                      if (criado != null && dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop(criado);
-                      }
-                    },
-                    icon: const Icon(Icons.add_box_outlined),
-                    label: Text(context.comprasT('compras.product.quickAdd')),
+                  const Tooltip(
+                    message: 'Cadastre novos produtos no Catálogo antes de incluí-los na compra.',
+                    child: Icon(Icons.info_outline_rounded),
                   ),
                 ],
               );
@@ -3063,11 +3066,27 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       if (motivoConfirmado == null || !mounted) {
         return;
       }
-      _rebuild(() {
-        _store.cancelar(compra, motivoConfirmado);
-        _etapaAtual = _CompraDemoStep.resumo;
-      });
-      _mostrarMensagem(context.comprasT('compras.message.cancelled'));
+      if (compra.id.startsWith('compra-')) {
+        _rebuild(() {
+          _store.compras.removeWhere((c) => c.id == compra.id);
+          _compraSelecionada = null;
+        });
+        _mostrarMensagem('Rascunho local descartado.');
+        return;
+      }
+      if (_executando) return;
+      setState(() => _executando = true);
+      try {
+        final dados = await _comprasApi.cancelar(compra.id, motivoConfirmado);
+        if (!mounted) return;
+        _marcarSalva(compra, dados);
+        _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
+        _mostrarMensagem('Compra cancelada com histórico preservado.');
+      } catch (e) {
+        if (mounted) _mostrarMensagem(e.toString(), erro: true);
+      } finally {
+        if (mounted) setState(() => _executando = false);
+      }
     } finally {
       motivo.dispose();
     }

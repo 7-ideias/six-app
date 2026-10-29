@@ -35,6 +35,7 @@ import 'package:sixpos/presentation/screens/fornecedores_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/compras/compras_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/perfil_negocio_mobile_screen.dart';
@@ -1097,6 +1098,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               accentColor: _attentionAccent,
               emphasis: ManagementActionEmphasis.operational,
               onTap: () => _navigateTo(context, EstoqueMobileScreen()),
+            ),
+          if (autorizacoes.ehAdministrador)
+            _ManagementItem(
+              title: context.t('compras.title', fallback: 'Compras'),
+              subtitle: context.t('compras.subtitle',
+                  fallback: 'Pedidos, fornecedores e compras persistentes'),
+              icon: Icons.shopping_cart_outlined,
+              accentColor: colors.accent,
+              emphasis: ManagementActionEmphasis.secondary,
+              onTap: () => _navigateTo(context, const ComprasMobileScreen()),
             ),
           if (podeAcessarCatalogo)
             _ManagementItem(

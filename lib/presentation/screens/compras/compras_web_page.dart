@@ -11,6 +11,13 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web/six_web_select_field.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/data/models/empresa_model.dart';
+import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
+import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
+import 'package:sixpos/data/services/compras/compra_api_client.dart';
+import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/data/models/produto_model.dart';
 
 part 'compras_demo_models.dart';
 part 'compras_demo_store.dart';
@@ -19,12 +26,9 @@ part 'compras_web_i18n_en.dart';
 part 'compras_web_i18n_es.dart';
 part 'compras_web_editor.dart';
 part 'compras_web_widgets.dart';
+part 'compras_web_persistencia.dart';
 
-/// Protótipo funcional do módulo de Compras para Flutter Web.
-///
-/// As compras permanecem somente em memória, sem integração com estoque ou
-/// financeiro. O cabeçalho visual consome o catálogo de imagens do backend.
-/// O objetivo é validar a jornada antes da implementação definitiva das compras.
+/// Compras persistentes por comercio. A fase 2 nao registra estoque ou financeiro.
 class ComprasWebPage extends StatefulWidget {
   const ComprasWebPage({super.key, this.onBack});
 
@@ -36,6 +40,15 @@ class ComprasWebPage extends StatefulWidget {
 
 class _ComprasWebPageState extends State<ComprasWebPage> {
   final _ComprasDemoStore _store = _ComprasDemoStore.instance;
+  final CompraApiClient _comprasApi = CompraApiClient();
+  final HttpFornecedorUsuarioApiClient _fornecedoresApi = HttpFornecedorUsuarioApiClient();
+  final ProdutoService _produtosApi = ProdutoService();
+  late final EmpresaProvider _empresaProvider;
+  EmpresaModel? _empresaAnterior;
+  int _geracao = 0;
+  bool _carregando = true;
+  bool _executando = false;
+  String? _erroCarga;
   final TextEditingController _buscaController = TextEditingController();
 
   _CompraDemo? _compraSelecionada;
@@ -52,7 +65,104 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _empresaProvider = EmpresaProvider();
+    _empresaAnterior = _empresaProvider.empresa;
+    _empresaProvider.addListener(_empresaMudou);
+    _store.reset();
+    _carregar();
+  }
+
+  void _empresaMudou() {
+    final atual = _empresaProvider.empresa;
+    if (identical(atual, _empresaAnterior)) return;
+    _empresaAnterior = atual;
+    _carregar();
+  }
+
+  Future<void> _carregar() async {
+    final geracao = ++_geracao;
+    setState(() {
+      _carregando = true;
+      _erroCarga = null;
+      _compraSelecionada = null;
+      _store.reset();
+    });
+    try {
+      final compras = await _comprasApi.listar();
+      final fornecedores = await _fornecedoresApi.listar();
+      List<ProdutoModel> produtos = [];
+      try {
+        produtos = await _produtosApi.buscarProdutosAtivosParaEstoque();
+      } catch (_) {
+        produtos = [];
+      }
+      if (!mounted || geracao != _geracao) return;
+      setState(() {
+        _store.compras.addAll(compras.map(_compraDaApi));
+        _store.fornecedores.addAll(fornecedores.where((f) => f.ativo).map(
+          (f) => _FornecedorDemo(
+            id: f.id, nome: f.nome, documento: f.documento,
+            email: f.email, telefone: f.telefone,
+          ),
+        ));
+        _store.produtos.addAll(produtos
+            .where((p) => p.ativo && p.id != null && p.id!.isNotEmpty)
+            .map((p) {
+          double custo = 0;
+          for (final m in p.objEntradaSaidaProduto ?? []) {
+            if (m.valorCusto > 0) custo = m.valorCusto;
+          }
+          final double saldo = (p.objEntradaSaidaProduto ?? [])
+              .fold<double>(0, (total, movimento) => total + movimento.quantidade);
+          return _ProdutoCompraDemo(
+            id: p.id!, nome: p.nomeProduto, codigo: p.codigoDeBarras,
+            unidade: p.regrasOperacionais?.unidadeMedida ?? 'UN',
+            ultimoCusto: custo, estoqueAtual: saldo,
+          );
+        }));
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted || geracao != _geracao) return;
+      setState(() {
+        _carregando = false;
+        _erroCarga = e.toString();
+      });
+    }
+  }
+
+  void _marcarSalva(_CompraDemo anterior, Map<String, dynamic> dados) {
+    final salva = _compraDaApi(dados);
+    _store.compras.removeWhere((c) => c.id == anterior.id || c.id == salva.id);
+    _store.compras.insert(0, salva);
+    _rebuild(() => _compraSelecionada = salva);
+  }
+
+  Future<_CompraDemo?> _salvarRascunho(_CompraDemo compra) async {
+    if (_executando || !compra.editavel) return null;
+    setState(() => _executando = true);
+    try {
+      final dados = compra.id.startsWith('compra-')
+          ? await _comprasApi.criar(_compraParaApi(compra))
+          : await _comprasApi.atualizar(compra.id, _compraParaApi(compra));
+      if (!mounted) return null;
+      _marcarSalva(compra, dados);
+      _mostrarMensagem('Rascunho salvo neste comércio.');
+      return _compraDaApi(dados);
+    } catch (e) {
+      if (mounted) _mostrarMensagem(e.toString(), erro: true);
+      return null;
+    } finally {
+      if (mounted) setState(() => _executando = false);
+    }
+  }
+
+  @override
   void dispose() {
+    _geracao++;
+    _empresaProvider.removeListener(_empresaMudou);
     _buscaController.dispose();
     super.dispose();
   }
@@ -174,7 +284,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     return _store.compras
         .where(
           (_CompraDemo compra) =>
-              compra.status != _CompraDemoStatus.cancelada &&
+              compra.status == _CompraDemoStatus.confirmada &&
               compra.gerarContaPagar &&
               !compra.jaPago,
         )
@@ -202,7 +312,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
   void _novaCompra() {
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
-    final _CompraDemo compra = _store.criarRascunho(moeda: moeda);
+    final _CompraDemo compra = _store.criarRascunho(moeda: moeda)
+      ..moedaContabil = moeda;
     setState(() {
       _compraSelecionada = compra;
       _etapaAtual = _CompraDemoStep.dados;
@@ -233,39 +344,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     _mostrarMensagem(context.comprasT('compras.message.duplicated'));
   }
 
-  Future<void> _redefinirDemonstracao() async {
-    final bool? confirmado = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(context.comprasT('compras.reset.title')),
-          content: Text(context.comprasT('compras.reset.description')),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(context.comprasT('common.cancel')),
-            ),
-            FilledButton.tonal(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(context.comprasT('compras.reset.action')),
-            ),
-          ],
-        );
-      },
-    );
-    if (confirmado != true || !mounted) {
-      return;
-    }
-    setState(() {
-      _store.reset();
-      _compraSelecionada = null;
-      _buscaController.clear();
-      _filtroStatus = _CompraFiltroStatus.todos;
-      _periodo = _CompraPeriodo.todos;
-      _ordenacao = _CompraOrdenacao.maisRecentes;
-    });
-    _mostrarMensagem(context.comprasT('compras.message.reset'));
-  }
+  Future<void> _redefinirDemonstracao() async => _carregar();
 
   void _mostrarMensagem(String mensagem, {bool erro = false}) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
@@ -303,10 +382,17 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
           duration: WebThemeTokens.transitionDuration,
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
-          child:
-              _compraSelecionada == null
-                  ? _buildListaCompras()
-                  : _buildEditorCompra(_compraSelecionada!),
+          child: _carregando
+              ? const Center(child: CircularProgressIndicator())
+              : _erroCarga != null
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_erroCarga!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: _carregar, child: const Text('Tentar novamente')),
+                  ]))
+                : _compraSelecionada == null
+                    ? _buildListaCompras()
+                    : _buildEditorCompra(_compraSelecionada!),
         ),
       ),
     );
@@ -332,8 +418,6 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate(<Widget>[
                           _buildCabecalhoLista(compacto),
-                          SixWebPageShell.sectionGap,
-                          const _CompraDemoBanner(),
                           SixWebPageShell.sectionGap,
                           _buildIndicadores(compacto),
                           SixWebPageShell.sectionGap,
@@ -409,7 +493,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                     TextButton.icon(
                       onPressed: _redefinirDemonstracao,
                       icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                      label: Text(context.comprasT('compras.reset.action')),
+                      label: const Text('Atualizar compras'),
                     ),
                   ],
                 ),
@@ -430,7 +514,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       onBack: widget.onBack,
       actions: <Widget>[
         FilledButton.icon(
-          onPressed: _novaCompra,
+          onPressed: _executando ? null : _novaCompra,
           icon: const Icon(Icons.add_rounded),
           label: Text(context.comprasT('compras.new')),
         ),
