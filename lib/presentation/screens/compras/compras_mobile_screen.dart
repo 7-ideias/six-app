@@ -363,7 +363,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
           DropdownButtonFormField<String>(
             value: moeda,
             decoration: const InputDecoration(labelText: 'Moeda da compra'),
-            items: [moedaContabil, 'BRL', 'USD', 'EUR']
+            items: [moeda, moedaContabil, 'BRL', 'USD', 'EUR']
                 .toSet().map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: readOnly ? null : (v) => setState(() {
               moeda = v ?? moeda;
