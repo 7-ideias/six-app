@@ -121,6 +121,9 @@ class _CompraDemo {
     DateTime? dataEmissao,
     DateTime? dataEntrada,
     this.moeda = 'BRL',
+    this.moedaContabil = 'BRL',
+    this.cotacao = 1,
+    this.cotacaoInformada = false,
     this.observacoes = '',
     List<_CompraDemoItem>? itens,
     this.frete = 0,
@@ -157,6 +160,9 @@ class _CompraDemo {
   DateTime dataEmissao;
   DateTime dataEntrada;
   String moeda;
+  String moedaContabil;
+  double cotacao;
+  bool cotacaoInformada;
   String observacoes;
   final List<_CompraDemoItem> itens;
   double frete;
@@ -215,6 +221,9 @@ class _CompraDemo {
       dataEmissao: agora,
       dataEntrada: agora,
       moeda: moeda,
+      moedaContabil: moedaContabil,
+      cotacao: cotacao,
+      cotacaoInformada: false,
       observacoes: observacoes,
       itens: itens.map((item) => item.copy()).toList(growable: true),
       frete: frete,
