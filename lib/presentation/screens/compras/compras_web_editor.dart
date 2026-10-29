@@ -119,6 +119,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
           icon: const Icon(Icons.copy_outlined, size: 18),
           label: Text(context.comprasT('compras.action.duplicate')),
         ),
+        if (compra.status == _CompraDemoStatus.confirmada)
+          FilledButton.icon(
+            onPressed: () => _receberCompra(compra),
+            icon: const Icon(Icons.inventory_2_outlined, size: 18),
+            label: const Text('Receber mercadorias'),
+          ),
+        if (compra.status == _CompraDemoStatus.confirmada &&
+            <String>['ERRO', 'PENDENTE'].contains(compra.integracaoFinanceiraStatus))
+          OutlinedButton.icon(
+            onPressed: () => _reconciliarFinanceiro(compra),
+            icon: const Icon(Icons.sync_rounded, size: 18),
+            label: const Text('Sincronizar financeiro'),
+          ),
         if (compra.status != _CompraDemoStatus.cancelada)
           OutlinedButton.icon(
             onPressed: () => _solicitarCancelamento(compra),
@@ -1891,9 +1904,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 Text(context.comprasT('compras.confirm.description')),
                 const SizedBox(height: 14),
                 const Text(
-                  'A confirmação registra a compra e seus valores. '
-                  'Nesta fase não há entrada de estoque nem geração de contas a pagar. '
-                  'Essas movimentações serão ativadas nas etapas seguintes.',
+                  'A confirmação registra a compra e cria as contas a pagar '
+                  'na Agenda Financeira. O estoque só será atualizado após '
+                  'o recebimento efetivo dos produtos.',
                 ),
               ],
             ),
@@ -1923,7 +1936,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       if (!mounted) return;
       _marcarSalva(salva, dados);
       _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
-      _mostrarMensagem('Compra confirmada. Estoque e financeiro aguardam integração.');
+      _mostrarMensagem(dados['integracaoFinanceiraStatus'] == 'CONCLUIDA'
+          ? 'Compra confirmada e contas a pagar geradas na Agenda Financeira.'
+          : 'Compra confirmada. Sincronização financeira pendente.');
     } catch (e) {
       if (mounted) _mostrarMensagem(e.toString(), erro: true);
     } finally {

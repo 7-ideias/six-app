@@ -16,6 +16,7 @@ import 'package:sixpos/data/models/empresa_model.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/data/services/compras/compra_api_client.dart';
+import 'package:sixpos/presentation/screens/compras/compras_recebimento_page.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 
@@ -91,7 +92,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     });
     try {
       final compras = await _comprasApi.listar();
-      final fornecedores = await _fornecedoresApi.listar();
+      List<FornecedorUsuario> fornecedores = [];
+      try {
+        fornecedores = await _fornecedoresApi.listar();
+      } catch (_) {
+        // Consultar compras nao exige acesso ao cadastro global de fornecedores.
+        fornecedores = [];
+      }
       List<ProdutoModel> produtos = [];
       try {
         produtos = await _produtosApi.buscarProdutosAtivosParaEstoque();
@@ -130,6 +137,44 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         _carregando = false;
         _erroCarga = e.toString();
       });
+    }
+  }
+
+  Future<void> _receberCompra(_CompraDemo compra) async {
+    try {
+      final atual = await _comprasApi.buscar(compra.id);
+      if (!mounted) return;
+      final bool? ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 790),
+            child: ComprasRecebimentoPage(api: _comprasApi, compra: atual),
+          ),
+        ),
+      );
+      if (ok == true && mounted) await _carregar();
+    } catch (e) {
+      if (mounted) _mostrarMensagem('Não foi possível receber: $e', erro: true);
+    }
+  }
+
+  Future<void> _reconciliarFinanceiro(_CompraDemo compra) async {
+    if (_executando) return;
+    setState(() => _executando = true);
+    try {
+      final data = await _comprasApi.reconciliarFinanceiro(compra.id);
+      if (!mounted) return;
+      _marcarSalva(compra, data);
+      if (data['integracaoFinanceiraStatus'] == 'CONCLUIDA') {
+        _mostrarMensagem('Parcelas sincronizadas com a Agenda Financeira.');
+      } else {
+        _mostrarMensagem('Sincronização financeira pendente. Nova tentativa será feita automaticamente.', erro: true);
+      }
+    } catch (e) {
+      if (mounted) _mostrarMensagem('Erro financeiro: $e', erro: true);
+    } finally {
+      if (mounted) setState(() => _executando = false);
     }
   }
 
@@ -302,13 +347,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
           .length;
 
   int get _itensComEntrada => _store.compras
-      .where(
-        (_CompraDemo compra) => compra.status == _CompraDemoStatus.confirmada,
-      )
-      .fold<int>(
-        0,
-        (int sum, _CompraDemo compra) => sum + compra.itensComEstoque,
-      );
+      .expand((c) => c.recebimentos)
+      .where((r) => r['status'] == 'CONCLUIDO')
+      .expand((r) => (r['itens'] as List? ?? const []))
+      .whereType<Map<String, dynamic>>()
+      .length;
+
 
   void _novaCompra() {
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
@@ -730,6 +774,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
               ),
             ),
             _CompraStatusBadge(status: compra.status),
+            if (compra.status == _CompraDemoStatus.confirmada) ...[
+              Text('Estoque: ${compra.statusRecebimento ?? 'PENDENTE'}',
+                  style: theme.textTheme.labelSmall),
+              Text('Financeiro: ${compra.integracaoFinanceiraStatus ?? 'LEGADO'}',
+                  style: theme.textTheme.labelSmall),
+            ],
           ],
         ),
         const SizedBox(height: 8),

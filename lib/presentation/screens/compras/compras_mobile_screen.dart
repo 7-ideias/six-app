@@ -4,6 +4,7 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/data/services/compras/compra_api_client.dart';
+import 'package:sixpos/presentation/screens/compras/compras_recebimento_page.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -70,7 +71,7 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
                     children: [
                       Text('Compras deste comércio', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 6),
-                      const Text('Sem movimentação de estoque ou financeiro nesta etapa.'),
+                      const Text('Contas a pagar na confirmação; entrada de estoque no recebimento.'),
                       const SizedBox(height: 14),
                       if (_compras.isEmpty)
                         const Padding(padding: EdgeInsets.all(36),
@@ -85,6 +86,11 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
                                 ? compra['fornecedorNome'].toString() : 'Rascunho sem fornecedor'),
                             subtitle: Text([
                               'Status: ${compra['status'] ?? '-'}',
+                              if (compra['status'] == 'CONFIRMADA')
+                                'Estoque: ${compra['statusRecebimento'] ?? 'PENDENTE'}',
+                              if (compra['status'] == 'CONFIRMADA' &&
+                                  compra['integracaoFinanceiraStatus'] != null)
+                                'Financeiro: ${compra['integracaoFinanceiraStatus']}',
                               if (compra['numeroDocumento'] != null)
                                 'Documento: ${compra['numeroDocumento']}',
                             ].join(' · ')),
@@ -246,6 +252,45 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
     }
   }
 
+  Future<void> _receber() async {
+    if (widget.inicial == null) return;
+    try {
+      final atual = await widget.api.buscar(widget.inicial!['id'].toString());
+      if (!mounted) return;
+      final bool? ok = await showModalBottomSheet<bool>(
+        context: context, isScrollControlled: true, useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => FractionallySizedBox(heightFactor: .94,
+          child: ComprasRecebimentoPage(api: widget.api, compra: atual)),
+      );
+      if (ok == true && mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Falha ao abrir recebimento: $e')));
+    }
+  }
+
+  Future<void> _reconciliarFinanceiro() async {
+    if (widget.inicial == null || busy) return;
+    setState(() => busy = true);
+    try {
+      final atualizado = await widget.api.reconciliarFinanceiro(
+          widget.inicial!['id'].toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(atualizado['integracaoFinanceiraStatus'] == 'CONCLUIDA'
+            ? 'Parcelas criadas na Agenda Financeira.'
+            : 'Sincronização financeira pendente; reprocessamento automático ativo.'),
+      ));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao sincronizar financeiro: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> _cancelar() async {
     if (widget.inicial == null) return;
     final reason = TextEditingController();
@@ -349,7 +394,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
       body: loading ? const Center(child: CircularProgressIndicator()) :
         error != null ? Center(child: Text(error!)) :
         Form(key: form, child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('A confirmação nesta fase ainda não movimenta estoque ou financeiro.'),
+          const Text('Ao confirmar: contas a pagar na Agenda. Estoque somente ao registrar a entrega.'),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: fornecedorId,
@@ -416,6 +461,32 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
             const SizedBox(height: 10),
             FilledButton(onPressed: busy ? null : () => _salvar(confirmar: true),
               child: Text(busy ? 'Salvando...' : 'Confirmar compra')),
+          ],
+          if (widget.inicial != null && widget.inicial!['status'] == 'CONFIRMADA') ...[
+            const SizedBox(height: 16),
+            Card(child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Financeiro: ${widget.inicial!['integracaoFinanceiraStatus'] ?? 'Compra legada'}'),
+                const SizedBox(height: 5),
+                Text('Estoque: ${widget.inicial!['statusRecebimento'] ?? 'PENDENTE'}'),
+              ]),
+            )),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: busy ? null : _receber,
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: const Text('Receber mercadorias'),
+            ),
+            if (<String>['PENDENTE', 'ERRO']
+                .contains(widget.inicial!['integracaoFinanceiraStatus'])) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: busy ? null : _reconciliarFinanceiro,
+                icon: const Icon(Icons.sync_rounded),
+                label: const Text('Reprocessar financeiro'),
+              ),
+            ],
           ],
           if (widget.inicial != null && widget.inicial!['status'] != 'CANCELADA') ...[
             const SizedBox(height: 12),

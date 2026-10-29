@@ -4,8 +4,7 @@ import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/http_client_factory.dart';
 
-/// Contrato da fase 2: compras persistidas, SEM entrada em estoque ou
-/// lancamentos a pagar. Os efeitos serao integrados nas fases seguintes.
+/// Compras: confirmacao gera titulos a pagar; recebimentos parciais movimentam estoque.
 class CompraApiClient {
   CompraApiClient({
     http.Client? httpClient,
@@ -64,6 +63,25 @@ class CompraApiClient {
       _object(await _http.put(_uri('/${Uri.encodeComponent(id)}'),
           headers: await _headers(), body: jsonEncode(compra)));
 
+  Future<Map<String,dynamic>> buscar(String id) async =>
+      _object(await _http.get(_uri('/${Uri.encodeComponent(id)}'),
+          headers: await _headers()));
+
+  Future<Map<String,dynamic>> receber(
+      String id, String chaveIdempotencia, List<Map<String,dynamic>> itens,
+      {String observacoes = ''}) async =>
+      _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/recebimentos'),
+          headers: await _headers(),
+          body: jsonEncode({
+            'chaveIdempotencia': chaveIdempotencia,
+            'itens': itens,
+            'observacoes': observacoes,
+          })));
+
+  Future<Map<String,dynamic>> reconciliarFinanceiro(String id) async =>
+      _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/reconciliar-financeiro'),
+          headers: await _headers()));
+
   Future<Map<String,dynamic>> confirmar(String id) async =>
       _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/confirmar'),
           headers: await _headers()));
@@ -83,7 +101,7 @@ class CompraApiException implements Exception {
     401 => 'Sessão encerrada. Entre novamente.',
     403 => 'Permissão insuficiente para esta operação.',
     404 => 'Compra não encontrada neste comércio.',
-    409 => 'Compra alterada em outra sessão. Atualize a lista.',
+    409 => 'Conflito na compra: atualize os dados ou regularize pagamentos/recebimentos.',
     422 => 'Verifique os itens e os campos obrigatórios.',
     _ => 'Não foi possível concluir a operação (HTTP $statusCode).',
   };
