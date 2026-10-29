@@ -1874,6 +1874,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (compra.gerarContaPagar && compra.quantidadeParcelas <= 0) {
       pendencias.add(context.comprasT('compras.validation.installments'));
     }
+    if (compra.gerarContaPagar && compra.jaPago) {
+      pendencias.add('Para compras já pagas, desmarque "Já pago" e registre '
+          'a baixa financeira na Agenda após confirmar a compra.');
+    }
     if (compra.moeda != compra.moedaContabil && !compra.cotacaoInformada) {
       pendencias.add('Informe uma cotação explícita para a moeda estrangeira.');
     }
