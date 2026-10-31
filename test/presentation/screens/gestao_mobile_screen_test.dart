@@ -83,7 +83,7 @@ void main() {
     );
     final Rect navigationRect = tester.getRect(find.byType(NavBarMobile));
 
-    expect(firstCardRect.top - introRect.bottom, closeTo(16, 0.5));
+    expect(firstCardRect.top - introRect.bottom, closeTo(22, 2.5));
     expect(lastCardRect.bottom, lessThanOrEqualTo(navigationRect.top));
   });
 

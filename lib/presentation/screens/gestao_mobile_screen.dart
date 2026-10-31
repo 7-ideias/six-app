@@ -388,6 +388,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               'gestao.hub.title',
               fallback: 'O que você quer gerenciar?',
             ),
+            key: const ValueKey<String>('gestao-hub-intro'),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: colors.mutedText,
             ),
