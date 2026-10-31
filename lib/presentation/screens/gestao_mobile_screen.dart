@@ -61,12 +61,14 @@ class GestaoMobileScreen extends StatefulWidget {
     this.onNavigate,
     this.area,
     @visibleForTesting this.showBottomNavigationBar = true,
+    @visibleForTesting this.assetsContextController,
   });
 
   final ManagementOverviewProvider? overviewProvider;
   final ManagementMobileNavigate? onNavigate;
   final GestaoMobileArea? area;
   final bool showBottomNavigationBar;
+  final GestaoMobileAssetsContextController? assetsContextController;
 
   @override
   State<GestaoMobileScreen> createState() => _GestaoMobileScreenState();
@@ -117,7 +119,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     _notificacaoService.addListener(_onNotificacoesChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _businessVisuals =
-        GestaoMobileAssetsContextController()
+        (widget.assetsContextController ?? GestaoMobileAssetsContextController())
           ..addListener(_onBusinessVisualsChanged)
           ..initialize();
     unawaited(_restaurarOrdemCardsGestaoMobile());

@@ -8,6 +8,10 @@ import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 
@@ -396,6 +400,13 @@ Future<void> _pumpGestao(
           value: colaboradorProvider ?? ColaboradorAutorizacoesProvider(),
         ),
         ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
+        ChangeNotifierProvider<LocaleSettingsProvider>(
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: HttpRegionalizacaoApiClient(),
+            ),
+          ),
+        ),
       ],
       child: MaterialApp(
         home: MediaQuery(
@@ -407,6 +418,7 @@ Future<void> _pumpGestao(
               .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
+            assetsContextController: _NoopGestaoAssetsController(),
             area: area,
             showBottomNavigationBar: showBottomNavigationBar,
             onNavigate:
@@ -428,6 +440,13 @@ Future<void> _pumpGestao(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
+}
+
+class _NoopGestaoAssetsController extends GestaoMobileAssetsContextController {
+  @override
+  void initialize() {
+    // Testes de widgets nao acessam servicos de assets autenticados.
+  }
 }
 
 class _SupplierAccessProvider extends ColaboradorAutorizacoesProvider {
