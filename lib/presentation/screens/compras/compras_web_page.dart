@@ -31,7 +31,7 @@ part 'compras_web_editor.dart';
 part 'compras_web_widgets.dart';
 part 'compras_web_persistencia.dart';
 
-/// Compras persistentes por comercio. A fase 2 nao registra estoque ou financeiro.
+/// Compras por comércio com contas a pagar na confirmação e estoque no recebimento.
 class ComprasWebPage extends StatefulWidget {
   const ComprasWebPage({super.key, this.onBack});
 

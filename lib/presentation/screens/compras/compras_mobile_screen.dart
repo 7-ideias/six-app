@@ -10,7 +10,7 @@ import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:provider/provider.dart';
 
-/// Tela mobile de compras persistentes. A fase 2 nao cria titulos nem entradas de estoque.
+/// Compras persistentes: títulos a pagar na confirmação; estoque no recebimento.
 class ComprasMobileScreen extends StatefulWidget {
   const ComprasMobileScreen({super.key});
   @override
@@ -294,6 +294,26 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
     }
   }
 
+  Future<void> _confirmarRascunhoExistente() async {
+    if (widget.inicial == null || !widget.acesso.confirmar || busy) return;
+    setState(() => busy = true);
+    try {
+      final confirmado = await widget.api.confirmar(widget.inicial!['id'].toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(confirmado['integracaoFinanceiraStatus'] == 'CONCLUIDA'
+            ? 'Compra confirmada e contas a pagar geradas.'
+            : 'Compra confirmada. Integração financeira pendente.'),
+      ));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível confirmar: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> _reconciliarFinanceiro() async {
     if (widget.inicial == null || busy || !widget.acesso.confirmar) return;
     setState(() => busy = true);
@@ -468,7 +488,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
           _field(acrescimos, 'Outros acréscimos', keyboard: TextInputType.number),
           SwitchListTile.adaptive(
             title: const Text('Previsão de contas a pagar'),
-            subtitle: const Text('Somente previsão nesta etapa; os títulos serão integrados na Fase 3.'),
+            subtitle: const Text('Ao confirmar, gera títulos na Agenda. Registre os pagamentos na Agenda Financeira.'),
             value: gerarContaPagar, onChanged: readOnly ? null :
               (v) => setState(() => gerarContaPagar = v),
           ),
@@ -486,6 +506,14 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
             if (widget.acesso.confirmar)
             FilledButton(onPressed: busy ? null : () => _salvar(confirmar: true),
               child: Text(busy ? 'Salvando...' : 'Confirmar compra')),
+          ],
+          if (readOnly && widget.inicial != null &&
+              widget.inicial!['status'] == 'RASCUNHO' && widget.acesso.confirmar) ...[
+            FilledButton.icon(
+              onPressed: busy ? null : _confirmarRascunhoExistente,
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Confirmar rascunho'),
+            ),
           ],
           if (widget.inicial != null && widget.inicial!['status'] == 'CONFIRMADA') ...[
             const SizedBox(height: 16),
