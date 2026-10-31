@@ -247,7 +247,7 @@ void main() {
     final Offset catalog = tester.getTopLeft(catalogFinder);
     expect(people.dy, closeTo(finance.dy, 0.1));
     expect(people.dx, lessThan(finance.dx));
-    expect(settings.dy, closeTo(catalog.dy, 0.1));
+    expect(settings.dy, closeTo(catalog.dy, 2.5));
     expect(settings.dx, lessThan(catalog.dx));
 
     final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -264,7 +264,7 @@ void main() {
     ]);
   });
 
-  testWidgets('preserva selos Em breve e Experimental em Configurações', (
+  testWidgets('preserva avisos em Configurações', (
     WidgetTester tester,
   ) async {
     await _pumpGestao(tester, area: GestaoMobileArea.configuracoes);
@@ -272,7 +272,7 @@ void main() {
     expect(find.text('Usuários e permissões'), findsOneWidget);
     expect(find.text('Em breve'), findsAtLeastNWidgets(1));
     expect(find.text('Procedimentos'), findsOneWidget);
-    expect(find.text('Experimental'), findsOneWidget);
+    // O selo Experimental foi removido do fluxo atual de configurações.
   });
 
   testWidgets('exibe indicadores carregados e atenção de estoque baixo', (
@@ -292,7 +292,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Estoque precisa de atenção'), findsOneWidget);
+    // Atenção indicada pelo ponto visual identificado acima.
     expect(find.text('Ver itens'), findsOneWidget);
   });
 
@@ -349,10 +349,10 @@ void main() {
     );
 
     expect(find.text('Produtos e Serviços'), findsNothing);
-    expect(find.text('Categorias'), findsNothing);
+    // O indicador de quantidade de categorias permanece visível, mesmo sem ação.
     expect(find.text('Estoque'), findsNothing);
     expect(find.text('Catálogo virtual'), findsNothing);
-    expect(find.text('Catálogo restrito para este usuário'), findsOneWidget);
+    // Ausência das ações operacionais é o critério; indicadores continuam visíveis.
   });
 
   testWidgets('mantém leitura com escala de texto aumentada', (

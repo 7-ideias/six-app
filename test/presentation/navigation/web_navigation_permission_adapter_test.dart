@@ -50,7 +50,7 @@ void main() {
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.operationsPos],
+          <String>[WebNavigationIds.operationsPos, WebNavigationIds.operationsSales],
         );
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
@@ -239,7 +239,7 @@ void main() {
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.cash],
+          <String>[WebNavigationIds.operationsSales, WebNavigationIds.cash],
         );
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.financial)),
