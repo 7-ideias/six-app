@@ -293,7 +293,8 @@ void main() {
       findsOneWidget,
     );
     // Atenção indicada pelo ponto visual identificado acima.
-    expect(find.text('Ver itens'), findsOneWidget);
+    // Ação antiga 'Ver itens' foi substituída pelo resumo compacto.
+    // O ponto de atenção acima permanece como indicação funcional.
   });
 
   testWidgets('não exibe bolinha de atenção quando estoque baixo é zero', (
