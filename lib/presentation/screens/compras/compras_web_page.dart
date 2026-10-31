@@ -17,6 +17,8 @@ import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/data/services/compras/compra_api_client.dart';
 import 'package:sixpos/presentation/screens/compras/compras_recebimento_page.dart';
+import 'package:sixpos/presentation/screens/compras/compras_permissoes_page.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 
@@ -42,6 +44,7 @@ class ComprasWebPage extends StatefulWidget {
 class _ComprasWebPageState extends State<ComprasWebPage> {
   final _ComprasDemoStore _store = _ComprasDemoStore.instance;
   final CompraApiClient _comprasApi = CompraApiClient();
+  CompraAcesso _acesso = CompraAcesso.negado;
   final HttpFornecedorUsuarioApiClient _fornecedoresApi = HttpFornecedorUsuarioApiClient();
   final ProdutoService _produtosApi = ProdutoService();
   late final EmpresaProvider _empresaProvider;
@@ -89,8 +92,18 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       _erroCarga = null;
       _compraSelecionada = null;
       _store.reset();
+      _acesso = CompraAcesso.negado;
     });
     try {
+      final acesso = await _comprasApi.consultarAcesso();
+      if (!mounted || geracao != _geracao) return;
+      if (!acesso.consultar) {
+        setState(() {
+          _carregando = false;
+          _erroCarga = 'Sem permissão para consultar compras neste comércio.';
+        });
+        return;
+      }
       final compras = await _comprasApi.listar();
       List<FornecedorUsuario> fornecedores = [];
       try {
@@ -107,6 +120,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       }
       if (!mounted || geracao != _geracao) return;
       setState(() {
+        _acesso = acesso;
         _store.compras.addAll(compras.map(_compraDaApi));
         _store.fornecedores.addAll(fornecedores.where((f) => f.ativo).map(
           (f) => _FornecedorDemo(
@@ -141,6 +155,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   Future<void> _receberCompra(_CompraDemo compra) async {
+    if (!_acesso.receber) return;
     try {
       final atual = await _comprasApi.buscar(compra.id);
       if (!mounted) return;
@@ -160,7 +175,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   Future<void> _reconciliarFinanceiro(_CompraDemo compra) async {
-    if (_executando) return;
+    if (_executando || !_acesso.confirmar) return;
     setState(() => _executando = true);
     try {
       final data = await _comprasApi.reconciliarFinanceiro(compra.id);
@@ -186,7 +201,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   Future<_CompraDemo?> _salvarRascunho(_CompraDemo compra) async {
-    if (_executando || !compra.editavel) return null;
+    if (_executando || !compra.editavel ||
+        (compra.id.startsWith('compra-') ? !_acesso.criar : !_acesso.editar)) return null;
     setState(() => _executando = true);
     try {
       final dados = compra.id.startsWith('compra-')
@@ -355,6 +371,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
 
   void _novaCompra() {
+    if (!_acesso.criar) return;
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
     final _CompraDemo compra = _store.criarRascunho(moeda: moeda)
       ..moedaContabil = moeda;
@@ -380,6 +397,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   void _duplicarCompra(_CompraDemo compra) {
+    if (!_acesso.criar) return;
     final _CompraDemo copia = _store.duplicar(compra);
     setState(() {
       _compraSelecionada = copia;
@@ -549,6 +567,28 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     );
   }
 
+  Future<void> _editarPermissoesCompras() async {
+    final page = ComprasPermissoesPage(api: _comprasApi);
+    final bool compacto = MediaQuery.sizeOf(context).width < 700;
+    if (compacto) {
+      await showModalBottomSheet<void>(
+        context: context, useSafeArea: true, isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => FractionallySizedBox(heightFactor: .90, child: page),
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 690, maxHeight: 700),
+            child: page,
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildCabecalhoLista(bool compacto) {
     return SixManagedWebHero(
       page: WebHeaderAssetPage.compras,
@@ -557,6 +597,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       subtitle: context.comprasT('compras.subtitle'),
       onBack: widget.onBack,
       actions: <Widget>[
+        if (context.watch<ColaboradorAutorizacoesProvider?>()?.ehAdministrador == true)
+          OutlinedButton.icon(
+            onPressed: _editarPermissoesCompras,
+            icon: const Icon(Icons.admin_panel_settings_outlined),
+            label: const Text('Permissões'),
+          ),
+        if (_acesso.criar)
         FilledButton.icon(
           onPressed: _executando ? null : _novaCompra,
           icon: const Icon(Icons.add_rounded),

@@ -140,6 +140,18 @@ void main() {
       );
     });
 
+    test('compras aparece somente com permissao propria', () {
+      final comCompras = _visibleItemsFor(
+        _FakeAutorizacoesProvider(podeConsultarCompras: true),
+      );
+      expect(_childIds(_requiredItem(comCompras, WebNavigationIds.operations)),
+          <String>[WebNavigationIds.operationsPurchases]);
+      final semCompras = _visibleItemsFor(
+        _FakeAutorizacoesProvider(podeEditarCliente: true),
+      );
+      expect(_findItem(semCompras, WebNavigationIds.operationsPurchases), isNull);
+    });
+
     test('fornecedores independem de permissao de clientes', () {
       final comFornecedor = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeConsultarFornecedores: true),
@@ -305,6 +317,7 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
     this.podeLancarAssistenciaTecnica = false,
     this.podeEditarCliente = false,
     this.podeConsultarFornecedores = false,
+    this.podeConsultarCompras = false,
     this.podeCadastrarProduto = false,
     this.podeEditarProduto = false,
     this.podeVerEstoqueDeProduto = false,
@@ -329,6 +342,9 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
 
   @override
   final bool podeConsultarFornecedores;
+
+  @override
+  final bool podeConsultarCompras;
 
   @override
   final bool podeCadastrarProduto;

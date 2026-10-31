@@ -4,6 +4,41 @@ import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/http_client_factory.dart';
 
+class CompraAcesso {
+  const CompraAcesso({
+    required this.consultar, required this.criar, required this.editar,
+    required this.confirmar, required this.cancelar, required this.receber,
+  });
+  final bool consultar, criar, editar, confirmar, cancelar, receber;
+  static const negado = CompraAcesso(
+    consultar: false, criar: false, editar: false,
+    confirmar: false, cancelar: false, receber: false,
+  );
+  factory CompraAcesso.fromJson(Map<String,dynamic> json) => CompraAcesso(
+    consultar: json['consultar'] == true,
+    criar: json['criar'] == true,
+    editar: json['editar'] == true,
+    confirmar: json['confirmar'] == true,
+    cancelar: json['cancelar'] == true,
+    receber: json['receber'] == true,
+  );
+}
+
+class CompraColaboradorPermissoes {
+  const CompraColaboradorPermissoes({
+    required this.vinculoId, required this.email, required this.permissoes,
+  });
+  final String vinculoId, email;
+  final List<String> permissoes;
+  factory CompraColaboradorPermissoes.fromJson(Map<String,dynamic> json) =>
+      CompraColaboradorPermissoes(
+        vinculoId: json['vinculoId']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        permissoes: (json['permissoes'] as List<dynamic>? ?? [])
+            .map((e) => e.toString()).toList(growable: false),
+      );
+}
+
 /// Compras: confirmacao gera titulos a pagar; recebimentos parciais movimentam estoque.
 class CompraApiClient {
   CompraApiClient({
@@ -43,6 +78,31 @@ class CompraApiClient {
       throw const FormatException('Resposta da API de compras inválida.');
     }
     return decoded;
+  }
+
+  Future<CompraAcesso> consultarAcesso() async {
+    final data = _object(await _http.get(_uri('/acesso'), headers: await _headers()));
+    return CompraAcesso.fromJson(data);
+  }
+
+  Future<List<CompraColaboradorPermissoes>> listarPermissoesColaboradores() async {
+    final response = await _http.get(_uri('/permissoes-colaboradores'),
+        headers: await _headers());
+    if (response.statusCode != 200) {
+      throw CompraApiException(response.statusCode, response.body);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) throw const FormatException('Permissões inválidas.');
+    return decoded.whereType<Map<String,dynamic>>()
+        .map(CompraColaboradorPermissoes.fromJson).toList(growable: false);
+  }
+
+  Future<CompraColaboradorPermissoes> atualizarPermissoesColaborador(
+      String vinculoId, List<String> permissoes) async {
+    final data = _object(await _http.put(
+      _uri('/permissoes-colaboradores/${Uri.encodeComponent(vinculoId)}'),
+      headers: await _headers(), body: jsonEncode(permissoes)));
+    return CompraColaboradorPermissoes.fromJson(data);
   }
 
   Future<List<Map<String,dynamic>>> listar() async {

@@ -5,6 +5,8 @@ import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/data/services/compras/compra_api_client.dart';
 import 'package:sixpos/presentation/screens/compras/compras_recebimento_page.dart';
+import 'package:sixpos/presentation/screens/compras/compras_permissoes_page.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +20,7 @@ class ComprasMobileScreen extends StatefulWidget {
 class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
   final CompraApiClient _api = CompraApiClient();
   List<Map<String, dynamic>> _compras = [];
+  CompraAcesso _acesso = CompraAcesso.negado;
   String? _erro;
   bool _loading = true;
 
@@ -31,18 +34,32 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
     if (!mounted) return;
     setState(() { _loading = true; _erro = null; });
     try {
+      final acesso = await _api.consultarAcesso();
+      if (!acesso.consultar) {
+        throw const CompraApiException(403, 'Sem permissão para consultar compras.');
+      }
       final rows = await _api.listar();
-      if (mounted) setState(() { _compras = rows; _loading = false; });
+      if (mounted) setState(() { _compras = rows; _acesso = acesso; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _loading = false; _erro = e.toString(); });
     }
   }
 
   Future<void> _abrir([Map<String, dynamic>? compra]) async {
+    if (compra == null && !_acesso.criar) return;
     final saved = await Navigator.push<bool>(context, MaterialPageRoute(
-      builder: (_) => _CompraMobileEditor(api: _api, inicial: compra),
+      builder: (_) => _CompraMobileEditor(api: _api, inicial: compra, acesso: _acesso),
     ));
     if (saved == true && mounted) await _reload();
+  }
+
+  Future<void> _editarPermissoes() async {
+    await showModalBottomSheet<void>(
+      context: context, useSafeArea: true, isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: .92, child: ComprasPermissoesPage(api: _api)),
+    );
   }
 
   @override
@@ -54,6 +71,10 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
         actions: [
           IconButton(onPressed: _loading ? null : _reload,
             tooltip: 'Atualizar compras', icon: const Icon(Icons.refresh_rounded)),
+          if (context.watch<ColaboradorAutorizacoesProvider?>()?.ehAdministrador == true)
+            IconButton(onPressed: _editarPermissoes, tooltip: 'Permissões de compras',
+              icon: const Icon(Icons.admin_panel_settings_outlined)),
+          if (_acesso.criar)
           IconButton(onPressed: () => _abrir(), tooltip: 'Nova compra',
             icon: const Icon(Icons.add_rounded)),
         ],
@@ -106,7 +127,7 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
                     ],
                   ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: !_acesso.criar ? null : FloatingActionButton.extended(
         onPressed: () => _abrir(), icon: const Icon(Icons.add_rounded),
         label: const Text('Nova compra'),
       ),
@@ -115,8 +136,9 @@ class _ComprasMobileScreenState extends State<ComprasMobileScreen> {
 }
 
 class _CompraMobileEditor extends StatefulWidget {
-  const _CompraMobileEditor({required this.api, this.inicial});
+  const _CompraMobileEditor({required this.api, required this.acesso, this.inicial});
   final CompraApiClient api;
+  final CompraAcesso acesso;
   final Map<String, dynamic>? inicial;
   @override
   State<_CompraMobileEditor> createState() => _CompraMobileEditorState();
@@ -139,7 +161,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   String? error;
 
   bool get readOnly => widget.inicial != null &&
-      widget.inicial!['status'] != 'RASCUNHO';
+      (widget.inicial!['status'] != 'RASCUNHO' || !widget.acesso.editar);
 
   @override
   void initState() {
@@ -228,7 +250,9 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   };
 
   Future<void> _salvar({bool confirmar = false}) async {
-    if (!form.currentState!.validate() || busy) return;
+    if (!form.currentState!.validate() || busy ||
+        (confirmar && !widget.acesso.confirmar) ||
+        (widget.inicial == null ? !widget.acesso.criar : !widget.acesso.editar)) return;
     if (confirmar && (fornecedorId == null || itens.isEmpty ||
         documento.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -253,7 +277,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   }
 
   Future<void> _receber() async {
-    if (widget.inicial == null) return;
+    if (widget.inicial == null || !widget.acesso.receber) return;
     try {
       final atual = await widget.api.buscar(widget.inicial!['id'].toString());
       if (!mounted) return;
@@ -271,7 +295,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   }
 
   Future<void> _reconciliarFinanceiro() async {
-    if (widget.inicial == null || busy) return;
+    if (widget.inicial == null || busy || !widget.acesso.confirmar) return;
     setState(() => busy = true);
     try {
       final atualizado = await widget.api.reconciliarFinanceiro(
@@ -292,7 +316,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
   }
 
   Future<void> _cancelar() async {
-    if (widget.inicial == null) return;
+    if (widget.inicial == null || !widget.acesso.cancelar) return;
     final reason = TextEditingController();
     try {
       final motivo = await showDialog<String>(context: context, builder: (ctx) =>
@@ -459,6 +483,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
           if (!readOnly) ...[
             OutlinedButton(onPressed: busy ? null : _salvar, child: const Text('Salvar rascunho')),
             const SizedBox(height: 10),
+            if (widget.acesso.confirmar)
             FilledButton(onPressed: busy ? null : () => _salvar(confirmar: true),
               child: Text(busy ? 'Salvando...' : 'Confirmar compra')),
           ],
@@ -473,12 +498,13 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
               ]),
             )),
             const SizedBox(height: 8),
+            if (widget.acesso.receber)
             FilledButton.icon(
               onPressed: busy ? null : _receber,
               icon: const Icon(Icons.inventory_2_outlined),
               label: const Text('Receber mercadorias'),
             ),
-            if (<String>['PENDENTE', 'ERRO']
+            if (widget.acesso.confirmar && <String>['PENDENTE', 'ERRO']
                 .contains(widget.inicial!['integracaoFinanceiraStatus'])) ...[
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -488,7 +514,7 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
               ),
             ],
           ],
-          if (widget.inicial != null && widget.inicial!['status'] != 'CANCELADA') ...[
+          if (widget.acesso.cancelar && widget.inicial != null && widget.inicial!['status'] != 'CANCELADA') ...[
             const SizedBox(height: 12),
             TextButton(onPressed: busy ? null : _cancelar,
               child: const Text('Cancelar compra')),

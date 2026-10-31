@@ -1099,7 +1099,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               emphasis: ManagementActionEmphasis.operational,
               onTap: () => _navigateTo(context, EstoqueMobileScreen()),
             ),
-          if (autorizacoes.ehAdministrador)
+          if (autorizacoes.podeConsultarCompras)
             _ManagementItem(
               title: context.t('compras.title', fallback: 'Compras'),
               subtitle: context.t('compras.subtitle',

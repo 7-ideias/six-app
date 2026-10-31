@@ -23,7 +23,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       delegate: SliverChildListDelegate(<Widget>[
                         _buildEditorHeader(compra, compacto),
                         const SizedBox(height: 14),
-                        const Text('Compra persistente. Estoque e financeiro serão integrados nas próximas fases.'),
+                        const Text('Ao confirmar, geramos as contas a pagar; o estoque só muda no recebimento.'),
                         const SizedBox(height: 16),
                         _buildEtapas(compra, compacto),
                         const SizedBox(height: 16),
@@ -114,25 +114,26 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       runSpacing: 8,
       alignment: WrapAlignment.end,
       children: <Widget>[
+        if (_acesso.criar)
         OutlinedButton.icon(
           onPressed: () => _duplicarCompra(compra),
           icon: const Icon(Icons.copy_outlined, size: 18),
           label: Text(context.comprasT('compras.action.duplicate')),
         ),
-        if (compra.status == _CompraDemoStatus.confirmada)
+        if (compra.status == _CompraDemoStatus.confirmada && _acesso.receber)
           FilledButton.icon(
             onPressed: () => _receberCompra(compra),
             icon: const Icon(Icons.inventory_2_outlined, size: 18),
             label: const Text('Receber mercadorias'),
           ),
-        if (compra.status == _CompraDemoStatus.confirmada &&
+        if (compra.status == _CompraDemoStatus.confirmada && _acesso.confirmar &&
             <String>['ERRO', 'PENDENTE'].contains(compra.integracaoFinanceiraStatus))
           OutlinedButton.icon(
             onPressed: () => _reconciliarFinanceiro(compra),
             icon: const Icon(Icons.sync_rounded, size: 18),
             label: const Text('Sincronizar financeiro'),
           ),
-        if (compra.status != _CompraDemoStatus.cancelada)
+        if (compra.status != _CompraDemoStatus.cancelada && _acesso.cancelar)
           OutlinedButton.icon(
             onPressed: () => _solicitarCancelamento(compra),
             icon: Icon(Icons.cancel_outlined, size: 18, color: tokens.danger),
@@ -1808,7 +1809,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 icon: const Icon(Icons.list_alt_outlined, size: 18),
                 label: Text(context.comprasT('compras.action.backToList')),
               ),
-              if (editavel)
+              if (editavel && (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar))
                 TextButton.icon(
                   onPressed: _executando ? null : () => _salvarRascunho(compra),
                   icon: const Icon(Icons.save_outlined, size: 18),
@@ -1836,7 +1837,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(context.comprasT('common.continue')),
                 )
-              else if (editavel)
+              else if (editavel && _acesso.confirmar &&
+                  (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar))
                 FilledButton.icon(
                   onPressed: _executando ? null : () => _confirmarCompra(compra),
                   icon: const Icon(Icons.check_circle_outline, size: 19),
@@ -1885,6 +1887,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }
 
   Future<void> _confirmarCompra(_CompraDemo compra) async {
+    if (!_acesso.confirmar) return;
     final List<String> pendencias = _validarCompra(compra);
     if (pendencias.isNotEmpty) {
       _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
@@ -3023,7 +3026,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }
 
   Future<void> _solicitarCancelamento(_CompraDemo compra) async {
-    if (compra.status == _CompraDemoStatus.cancelada) {
+    if (!_acesso.cancelar || compra.status == _CompraDemoStatus.cancelada) {
       return;
     }
     final TextEditingController motivo = TextEditingController();
