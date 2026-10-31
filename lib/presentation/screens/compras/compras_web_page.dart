@@ -105,13 +105,9 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         return;
       }
       final compras = await _comprasApi.listar();
-      List<FornecedorUsuario> fornecedores = [];
-      try {
-        fornecedores = await _fornecedoresApi.listar();
-      } catch (_) {
-        // Consultar compras nao exige acesso ao cadastro global de fornecedores.
-        fornecedores = [];
-      }
+      // Usa autorizacao de Compras; nao requer acesso ao cadastro geral de fornecedores.
+      final fornecedores = (await _comprasApi.listarFornecedores())
+          .map(FornecedorUsuario.fromJson).toList(growable: false);
       List<ProdutoModel> produtos = [];
       try {
         produtos = await _produtosApi.buscarProdutosAtivosParaEstoque();

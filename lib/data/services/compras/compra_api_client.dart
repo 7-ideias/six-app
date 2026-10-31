@@ -105,6 +105,16 @@ class CompraApiClient {
     return CompraColaboradorPermissoes.fromJson(data);
   }
 
+  Future<List<Map<String,dynamic>>> listarFornecedores() async {
+    final response = await _http.get(_uri('/fornecedores'), headers: await _headers());
+    if (response.statusCode != 200) {
+      throw CompraApiException(response.statusCode, response.body);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) throw const FormatException('Fornecedores inválidos.');
+    return decoded.whereType<Map<String,dynamic>>().toList(growable: false);
+  }
+
   Future<List<Map<String,dynamic>>> listar() async {
     final response = await _http.get(_uri(), headers: await _headers());
     if (response.statusCode != 200) {

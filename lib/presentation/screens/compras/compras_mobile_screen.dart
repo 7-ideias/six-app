@@ -188,7 +188,8 @@ class _CompraMobileEditorState extends State<_CompraMobileEditor> {
 
   Future<void> _loadReferences() async {
     try {
-      final vendors = await fornecedoresApi.listar();
+      final vendors = (await widget.api.listarFornecedores())
+          .map(FornecedorUsuario.fromJson).toList(growable: false);
       List<ProdutoModel> catalog = [];
       try {
         catalog = await produtosApi.buscarProdutosAtivosParaEstoque();

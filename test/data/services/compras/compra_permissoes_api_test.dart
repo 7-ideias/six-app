@@ -47,6 +47,22 @@ void main() {
     expect(atualizado.permissoes.length, 2);
   });
 
+  test('operador de compras seleciona fornecedores sem permissao de editar cadastro', () async {
+    final api = CompraApiClient(
+      httpClient: MockClient((request) async {
+        expect(request.url.path, '/private/api/compras/fornecedores');
+        expect(request.headers['idUnicoDaEmpresa'], 'empresa-A');
+        return http.Response(jsonEncode([
+          {'id':'f1','nome':'Distribuidora','ativo':true}
+        ]), 200);
+      }),
+      accessTokenProvider: () async => 'jwt',
+      empresaIdProvider: () async => 'empresa-A',
+    );
+    final lista = await api.listarFornecedores();
+    expect(lista.single['id'], 'f1');
+  });
+
   test('nega alteracao quando API retorna forbidden', () async {
     final api = CompraApiClient(
       httpClient: MockClient((request) async => http.Response('Sem acesso', 403)),

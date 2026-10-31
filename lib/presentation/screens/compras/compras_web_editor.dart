@@ -2188,6 +2188,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text(context.comprasT('common.cancel')),
                   ),
+                  if (context.watch<ColaboradorAutorizacoesProvider?>()
+                          ?.podeCadastrarFornecedores == true)
                   OutlinedButton.icon(
                     onPressed: () async {
                       final _FornecedorDemo? criado =
