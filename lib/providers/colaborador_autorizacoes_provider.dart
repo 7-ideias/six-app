@@ -7,6 +7,7 @@ import '../data/models/colaborador_usuario_model.dart';
 import '../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../domain/services/etiqueta/etiqueta_service.dart';
 import '../data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
+import '../data/services/compras/compra_api_client.dart';
 
 class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   ColaboradorAutorizacoesProvider({
@@ -14,15 +15,18 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     ColaboradorUsuarioApiClient? apiClient,
     EtiquetaService? etiquetaService,
     FornecedorUsuarioApiClient? fornecedorApiClient,
+    CompraApiClient? compraApiClient,
   }) : _authService = authService ?? AuthService(),
        _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient(),
        _etiquetaService = etiquetaService ?? EtiquetaService(),
-       _fornecedorApiClient = fornecedorApiClient ?? HttpFornecedorUsuarioApiClient();
+       _fornecedorApiClient = fornecedorApiClient ?? HttpFornecedorUsuarioApiClient(),
+       _compraApiClient = compraApiClient ?? CompraApiClient();
 
   final AuthService _authService;
   final ColaboradorUsuarioApiClient _apiClient;
   final EtiquetaService _etiquetaService;
   final FornecedorUsuarioApiClient _fornecedorApiClient;
+  final CompraApiClient _compraApiClient;
 
   ColaboradorAutorizacoesModel? _autorizacoes;
   bool _loading = false;
@@ -36,6 +40,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool _podeAcessarEtiquetas = false;
   bool _podeFazerDevolucao = false;
   FornecedorAcesso _fornecedorAcesso = FornecedorAcesso.negado;
+  CompraAcesso _compraAcesso = CompraAcesso.negado;
   String? _empresaIdCarregada;
 
   ColaboradorAutorizacoesModel get autorizacoes =>
@@ -71,6 +76,12 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeCadastrarFornecedores => _ehAdministrador || _fornecedorAcesso.cadastrar;
   bool get podeEditarFornecedores => _ehAdministrador || _fornecedorAcesso.editar;
   bool get podeInativarFornecedores => _ehAdministrador || _fornecedorAcesso.inativar;
+  bool get podeConsultarCompras => _ehAdministrador || _compraAcesso.consultar;
+  bool get podeCriarCompras => _ehAdministrador || _compraAcesso.criar;
+  bool get podeEditarCompras => _ehAdministrador || _compraAcesso.editar;
+  bool get podeConfirmarCompras => _ehAdministrador || _compraAcesso.confirmar;
+  bool get podeCancelarCompras => _ehAdministrador || _compraAcesso.cancelar;
+  bool get podeReceberCompras => _ehAdministrador || _compraAcesso.receber;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
@@ -126,6 +137,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _podeFazerDevolucao = perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
       _fornecedorAcesso = FornecedorAcesso.negado;
+      _compraAcesso = CompraAcesso.negado;
       _empresaIdCarregada = empresaAtual;
       notifyListeners();
       return;
@@ -171,12 +183,21 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       if (_ehAdministrador) {
         _fornecedorAcesso = const FornecedorAcesso(
           consultar: true, cadastrar: true, editar: true, inativar: true);
+        _compraAcesso = const CompraAcesso(
+          consultar: true, criar: true, editar: true,
+          confirmar: true, cancelar: true, receber: true);
       } else {
         try {
           _fornecedorAcesso = await _fornecedorApiClient.consultarAcesso()
               .timeout(const Duration(seconds: 4));
         } catch (_) {
           _fornecedorAcesso = FornecedorAcesso.negado;
+        }
+        try {
+          _compraAcesso = await _compraApiClient.consultarAcesso()
+              .timeout(const Duration(seconds: 4));
+        } catch (_) {
+          _compraAcesso = CompraAcesso.negado;
         }
       }
       _podeFazerDevolucao = _ehAdministrador || carregadas.podeFazerDevolucao;
@@ -199,6 +220,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
       _podeFazerDevolucao = _ehAdministrador;
       _fornecedorAcesso = FornecedorAcesso.negado;
+      _compraAcesso = CompraAcesso.negado;
     } finally {
       _loading = false;
       notifyListeners();
@@ -218,6 +240,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _podeAcessarEtiquetas = false;
     _podeFazerDevolucao = false;
     _fornecedorAcesso = FornecedorAcesso.negado;
+    _compraAcesso = CompraAcesso.negado;
     _empresaIdCarregada = null;
     notifyListeners();
   }

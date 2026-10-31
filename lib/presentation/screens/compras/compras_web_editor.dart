@@ -23,7 +23,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       delegate: SliverChildListDelegate(<Widget>[
                         _buildEditorHeader(compra, compacto),
                         const SizedBox(height: 14),
-                        const Text('Compra persistente. Estoque e financeiro serão integrados nas próximas fases.'),
+                        const Text('Ao confirmar, geramos as contas a pagar; o estoque só muda no recebimento.'),
                         const SizedBox(height: 16),
                         _buildEtapas(compra, compacto),
                         const SizedBox(height: 16),
@@ -114,12 +114,26 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       runSpacing: 8,
       alignment: WrapAlignment.end,
       children: <Widget>[
+        if (_acesso.criar)
         OutlinedButton.icon(
           onPressed: () => _duplicarCompra(compra),
           icon: const Icon(Icons.copy_outlined, size: 18),
           label: Text(context.comprasT('compras.action.duplicate')),
         ),
-        if (compra.status != _CompraDemoStatus.cancelada)
+        if (compra.status == _CompraDemoStatus.confirmada && _acesso.receber)
+          FilledButton.icon(
+            onPressed: () => _receberCompra(compra),
+            icon: const Icon(Icons.inventory_2_outlined, size: 18),
+            label: const Text('Receber mercadorias'),
+          ),
+        if (compra.status == _CompraDemoStatus.confirmada && _acesso.confirmar &&
+            <String>['ERRO', 'PENDENTE'].contains(compra.integracaoFinanceiraStatus))
+          OutlinedButton.icon(
+            onPressed: () => _reconciliarFinanceiro(compra),
+            icon: const Icon(Icons.sync_rounded, size: 18),
+            label: const Text('Sincronizar financeiro'),
+          ),
+        if (compra.status != _CompraDemoStatus.cancelada && _acesso.cancelar)
           OutlinedButton.icon(
             onPressed: () => _solicitarCancelamento(compra),
             icon: Icon(Icons.cancel_outlined, size: 18, color: tokens.danger),
@@ -229,7 +243,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
 
   Widget _buildEtapaDados(_CompraDemo compra, bool compacto) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
     return _CompraSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -461,7 +476,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   Widget _buildEtapaItens(_CompraDemo compra, bool compacto) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
     return Column(
       children: <Widget>[
         _CompraSurfaceCard(
@@ -691,7 +707,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -946,7 +963,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   Widget _buildEtapaFinanceiro(_CompraDemo compra, bool compacto) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
     final List<_ParcelaDemo> parcelas = _store.parcelasDa(compra);
     return Column(
       children: <Widget>[
@@ -1003,9 +1021,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         ),
                       ),
                       subtitle: Text(
-                        context.comprasT(
-                          'compras.financial.generatePayable.help',
-                        ),
+                        'Ao confirmar, cria contas a pagar na Agenda Financeira do comércio.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: tokens.secondaryText,
                         ),
@@ -1035,21 +1051,21 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           ),
                         ),
                         subtitle: Text(
-                          context.comprasT(
-                            'compras.financial.alreadyPaid.help',
-                          ),
+                          'Registre pagamentos pela Agenda Financeira após confirmar a compra.',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: tokens.secondaryText,
                           ),
                         ),
                         value: compra.jaPago,
                         onChanged:
-                            editavel
+                            editavel && compra.jaPago
                                 ? (bool value) {
-                                  _rebuild(() {
-                                    compra.jaPago = value;
-                                    _store.salvar(compra);
-                                  });
+                                  if (!value) {
+                                    _rebuild(() {
+                                      compra.jaPago = false;
+                                      _store.salvar(compra);
+                                    });
+                                  }
                                 }
                                 : null,
                       ),
@@ -1308,7 +1324,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   Widget _buildEtapaAnexos(_CompraDemo compra, bool compacto) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
     return _CompraSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1599,12 +1616,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           title: context.comprasT(
                             'compras.impacts.stock.title',
                           ),
-                          description: context
-                              .comprasT('compras.impacts.stock.description')
-                              .replaceAll(
-                                '{count}',
-                                compra.itensComEstoque.toString(),
-                              ),
+                          description: '${compra.itensComEstoque} produto(s) poderão entrar no estoque somente após o recebimento.',
                           enabled: compra.itensComEstoque > 0,
                         ),
                       ),
@@ -1617,16 +1629,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           ),
                           description:
                               compra.gerarContaPagar
-                                  ? context
-                                      .comprasT(
-                                        'compras.impacts.financial.description',
-                                      )
-                                      .replaceAll(
-                                        '{count}',
-                                        parcelas.isEmpty
-                                            ? '1'
-                                            : parcelas.length.toString(),
-                                      )
+                                  ? '${parcelas.isEmpty ? 1 : parcelas.length} parcela(s) serão geradas na Agenda Financeira ao confirmar.'
                                   : context.comprasT(
                                     'compras.impacts.financial.disabled',
                                   ),
@@ -1768,7 +1771,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     final int currentIndex = steps.indexOf(_etapaAtual);
     final bool first = currentIndex == 0;
     final bool last = currentIndex == steps.length - 1;
-    final bool editavel = compra.editavel;
+    final bool editavel = compra.editavel &&
+        (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar);
 
     return Container(
       width: double.infinity,
@@ -1795,7 +1799,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 icon: const Icon(Icons.list_alt_outlined, size: 18),
                 label: Text(context.comprasT('compras.action.backToList')),
               ),
-              if (editavel)
+              if (editavel && (compra.id.startsWith('compra-') ? _acesso.criar : _acesso.editar))
                 TextButton.icon(
                   onPressed: _executando ? null : () => _salvarRascunho(compra),
                   icon: const Icon(Icons.save_outlined, size: 18),
@@ -1823,7 +1827,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(context.comprasT('common.continue')),
                 )
-              else if (editavel)
+              else if (compra.editavel && _acesso.confirmar &&
+                  (compra.id.startsWith('compra-') ? _acesso.criar : true))
                 FilledButton.icon(
                   onPressed: _executando ? null : () => _confirmarCompra(compra),
                   icon: const Icon(Icons.check_circle_outline, size: 19),
@@ -1861,6 +1866,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (compra.gerarContaPagar && compra.quantidadeParcelas <= 0) {
       pendencias.add(context.comprasT('compras.validation.installments'));
     }
+    if (compra.gerarContaPagar && compra.jaPago) {
+      pendencias.add('Para compras já pagas, desmarque "Já pago" e registre '
+          'a baixa financeira na Agenda após confirmar a compra.');
+    }
     if (compra.moeda != compra.moedaContabil && !compra.cotacaoInformada) {
       pendencias.add('Informe uma cotação explícita para a moeda estrangeira.');
     }
@@ -1868,6 +1877,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }
 
   Future<void> _confirmarCompra(_CompraDemo compra) async {
+    if (!_acesso.confirmar) return;
     final List<String> pendencias = _validarCompra(compra);
     if (pendencias.isNotEmpty) {
       _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
@@ -1891,9 +1901,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 Text(context.comprasT('compras.confirm.description')),
                 const SizedBox(height: 14),
                 const Text(
-                  'A confirmação registra a compra e seus valores. '
-                  'Nesta fase não há entrada de estoque nem geração de contas a pagar. '
-                  'Essas movimentações serão ativadas nas etapas seguintes.',
+                  'A confirmação registra a compra e cria as contas a pagar '
+                  'na Agenda Financeira. O estoque só será atualizado após '
+                  'o recebimento efetivo dos produtos.',
                 ),
               ],
             ),
@@ -1915,7 +1925,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (confirmado != true || !mounted) {
       return;
     }
-    final salva = await _salvarRascunho(compra);
+    final _CompraDemo? salva = compra.id.startsWith('compra-') || _acesso.editar
+        ? await _salvarRascunho(compra)
+        : compra;
     if (salva == null || !mounted) return;
     setState(() => _executando = true);
     try {
@@ -1923,7 +1935,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       if (!mounted) return;
       _marcarSalva(salva, dados);
       _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
-      _mostrarMensagem('Compra confirmada. Estoque e financeiro aguardam integração.');
+      _mostrarMensagem(dados['integracaoFinanceiraStatus'] == 'CONCLUIDA'
+          ? 'Compra confirmada e contas a pagar geradas na Agenda Financeira.'
+          : 'Compra confirmada. Sincronização financeira pendente.');
     } catch (e) {
       if (mounted) _mostrarMensagem(e.toString(), erro: true);
     } finally {
@@ -2174,6 +2188,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text(context.comprasT('common.cancel')),
                   ),
+                  if (context.watch<ColaboradorAutorizacoesProvider?>()
+                          ?.podeCadastrarFornecedores == true)
                   OutlinedButton.icon(
                     onPressed: () async {
                       final _FornecedorDemo? criado =
@@ -3004,7 +3020,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }
 
   Future<void> _solicitarCancelamento(_CompraDemo compra) async {
-    if (compra.status == _CompraDemoStatus.cancelada) {
+    if (!_acesso.cancelar || compra.status == _CompraDemoStatus.cancelada) {
       return;
     }
     final TextEditingController motivo = TextEditingController();
@@ -3035,7 +3051,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    context.comprasT('compras.cancel.demoNotice'),
+                    'Compras pagas ou com mercadoria recebida exigem regularização e compensação auditável antes do cancelamento.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: WebThemeTokens.of(context).secondaryText,
                     ),

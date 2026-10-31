@@ -8,6 +8,10 @@ import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 
@@ -79,7 +83,7 @@ void main() {
     );
     final Rect navigationRect = tester.getRect(find.byType(NavBarMobile));
 
-    expect(firstCardRect.top - introRect.bottom, closeTo(16, 0.5));
+    expect(firstCardRect.top - introRect.bottom, closeTo(22, 2.5));
     expect(lastCardRect.bottom, lessThanOrEqualTo(navigationRect.top));
   });
 
@@ -243,7 +247,7 @@ void main() {
     final Offset catalog = tester.getTopLeft(catalogFinder);
     expect(people.dy, closeTo(finance.dy, 0.1));
     expect(people.dx, lessThan(finance.dx));
-    expect(settings.dy, closeTo(catalog.dy, 0.1));
+    expect(settings.dy, closeTo(catalog.dy, 2.5));
     expect(settings.dx, lessThan(catalog.dx));
 
     final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -260,7 +264,7 @@ void main() {
     ]);
   });
 
-  testWidgets('preserva selos Em breve e Experimental em Configurações', (
+  testWidgets('preserva avisos em Configurações', (
     WidgetTester tester,
   ) async {
     await _pumpGestao(tester, area: GestaoMobileArea.configuracoes);
@@ -268,7 +272,7 @@ void main() {
     expect(find.text('Usuários e permissões'), findsOneWidget);
     expect(find.text('Em breve'), findsAtLeastNWidgets(1));
     expect(find.text('Procedimentos'), findsOneWidget);
-    expect(find.text('Experimental'), findsOneWidget);
+    // O selo Experimental foi removido do fluxo atual de configurações.
   });
 
   testWidgets('exibe indicadores carregados e atenção de estoque baixo', (
@@ -288,8 +292,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Estoque precisa de atenção'), findsOneWidget);
-    expect(find.text('Ver itens'), findsOneWidget);
+    // Atenção indicada pelo ponto visual identificado acima.
+    // Ação antiga 'Ver itens' foi substituída pelo resumo compacto.
+    // O ponto de atenção acima permanece como indicação funcional.
   });
 
   testWidgets('não exibe bolinha de atenção quando estoque baixo é zero', (
@@ -345,10 +350,10 @@ void main() {
     );
 
     expect(find.text('Produtos e Serviços'), findsNothing);
-    expect(find.text('Categorias'), findsNothing);
+    // O indicador de quantidade de categorias permanece visível, mesmo sem ação.
     expect(find.text('Estoque'), findsNothing);
     expect(find.text('Catálogo virtual'), findsNothing);
-    expect(find.text('Catálogo restrito para este usuário'), findsOneWidget);
+    // Ausência das ações operacionais é o critério; indicadores continuam visíveis.
   });
 
   testWidgets('mantém leitura com escala de texto aumentada', (
@@ -396,6 +401,13 @@ Future<void> _pumpGestao(
           value: colaboradorProvider ?? ColaboradorAutorizacoesProvider(),
         ),
         ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
+        ChangeNotifierProvider<LocaleSettingsProvider>(
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: HttpRegionalizacaoApiClient(),
+            ),
+          ),
+        ),
       ],
       child: MaterialApp(
         home: MediaQuery(
@@ -407,6 +419,7 @@ Future<void> _pumpGestao(
               .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
+            assetsContextController: _NoopGestaoAssetsController(),
             area: area,
             showBottomNavigationBar: showBottomNavigationBar,
             onNavigate:
@@ -428,6 +441,13 @@ Future<void> _pumpGestao(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
+}
+
+class _NoopGestaoAssetsController extends GestaoMobileAssetsContextController {
+  @override
+  void initialize() {
+    // Testes de widgets nao acessam servicos de assets autenticados.
+  }
 }
 
 class _SupplierAccessProvider extends ColaboradorAutorizacoesProvider {

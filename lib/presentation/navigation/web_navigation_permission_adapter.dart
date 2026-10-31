@@ -30,6 +30,8 @@ abstract final class WebNavigationPermissionAdapter {
       if (provider.podeEditarCliente) WebNavigationPermission.podeEditarCliente,
       if (provider.podeConsultarFornecedores)
         WebNavigationPermission.podeConsultarFornecedores,
+      if (provider.podeConsultarCompras)
+        WebNavigationPermission.podeConsultarCompras,
       if (provider.podeCadastrarProduto)
         WebNavigationPermission.podeCadastrarProduto,
       if (provider.podeEditarProduto) WebNavigationPermission.podeEditarProduto,

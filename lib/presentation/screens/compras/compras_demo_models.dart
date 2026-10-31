@@ -142,12 +142,16 @@ class _CompraDemo {
     this.confirmadaEm,
     this.canceladaEm,
     this.motivoCancelamento,
+    this.integracaoFinanceiraStatus,
+    this.statusRecebimento,
+    List<Map<String, dynamic>>? recebimentos,
   })  : dataEmissao = dataEmissao ?? DateTime.now(),
         dataEntrada = dataEntrada ?? DateTime.now(),
         primeiroVencimento =
             primeiroVencimento ?? DateTime.now().add(const Duration(days: 30)),
         itens = itens ?? <_CompraDemoItem>[],
-        anexos = anexos ?? <_CompraDemoAnexo>[];
+        anexos = anexos ?? <_CompraDemoAnexo>[],
+        recebimentos = recebimentos ?? <Map<String, dynamic>>[];
 
   final String id;
   int? numero;
@@ -184,6 +188,9 @@ class _CompraDemo {
   DateTime? confirmadaEm;
   DateTime? canceladaEm;
   String? motivoCancelamento;
+  String? integracaoFinanceiraStatus;
+  String? statusRecebimento;
+  final List<Map<String, dynamic>> recebimentos;
 
   bool get editavel => status == _CompraDemoStatus.rascunho;
 
