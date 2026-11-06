@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/components/ultimo_login_pill.dart';
 import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
@@ -385,13 +386,9 @@ class _WebSixoUserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String name =
-        user.nomeExibicao.trim().isEmpty
-            ? context.t(
-              'usuariosSixo.userFallback',
-              fallback: 'Usuário do Sixo',
-            )
-            : user.nomeExibicao.trim();
+    final String name = user.nomeExibicao.trim().isEmpty
+        ? context.t('usuariosSixo.userFallback', fallback: 'Usuário do Sixo')
+        : user.nomeExibicao.trim();
     return Semantics(
       container: true,
       button: true,
@@ -449,25 +446,30 @@ class _WebSixoUserCard extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 8,
                     children: <Widget>[
+                      UltimoLoginPill(
+                        ultimoLoginEm: user.ultimoLoginEm,
+                        hojeColor: tokens.success,
+                        recenteColor: tokens.info,
+                        antigoColor: tokens.warning,
+                        semRegistroColor: tokens.mutedText,
+                      ),
                       _WebMetadataChip(
                         icon: Icons.mail_outline_rounded,
-                        value:
-                            user.email.trim().isEmpty
-                                ? context.t(
-                                  'usuariosSixo.noEmail',
-                                  fallback: 'E-mail não informado',
-                                )
-                                : user.email.trim(),
+                        value: user.email.trim().isEmpty
+                            ? context.t(
+                                'usuariosSixo.noEmail',
+                                fallback: 'E-mail não informado',
+                              )
+                            : user.email.trim(),
                       ),
                       _WebMetadataChip(
                         icon: Icons.phone_outlined,
-                        value:
-                            user.celular.trim().isEmpty
-                                ? context.t(
-                                  'usuariosSixo.noPhone',
-                                  fallback: 'Celular não informado',
-                                )
-                                : user.celular.trim(),
+                        value: user.celular.trim().isEmpty
+                            ? context.t(
+                                'usuariosSixo.noPhone',
+                                fallback: 'Celular não informado',
+                              )
+                            : user.celular.trim(),
                       ),
                     ],
                   ),

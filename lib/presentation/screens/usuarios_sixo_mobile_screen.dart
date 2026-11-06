@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/components/ultimo_login_pill.dart';
 import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -439,85 +440,99 @@ class _MobileSixoUserCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            CircleAvatar(
-              radius: 23,
-              backgroundColor: colors.softAccentSurface,
-              foregroundColor: colors.accent,
-              child: Text(
-                _initials(name),
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 23,
+                  backgroundColor: colors.softAccentSurface,
+                  foregroundColor: colors.accent,
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: colors.titleText,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.titleText,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.softAccentSurface,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              roleLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.accent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.softAccentSurface,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          roleLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: colors.accent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                      const SizedBox(height: 10),
+                      UltimoLoginPill(
+                        ultimoLoginEm: user.ultimoLoginEm,
+                        hojeColor:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? SixMobilePalette.successDark
+                            : SixMobilePalette.successLight,
+                        recenteColor: colors.accent,
+                        antigoColor:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? SixMobilePalette.warningDark
+                            : SixMobilePalette.warningLight,
+                        semRegistroColor: colors.mutedText,
+                      ),
+                      const SizedBox(height: 10),
+                      _MobileUserMetadata(
+                        icon: Icons.mail_outline_rounded,
+                        value: user.email.trim().isEmpty
+                            ? context.t(
+                                'usuariosSixo.noEmail',
+                                fallback: 'E-mail não informado',
+                              )
+                            : user.email.trim(),
+                      ),
+                      const SizedBox(height: 7),
+                      _MobileUserMetadata(
+                        icon: Icons.phone_outlined,
+                        value: user.celular.trim().isEmpty
+                            ? context.t(
+                                'usuariosSixo.noPhone',
+                                fallback: 'Celular não informado',
+                              )
+                            : user.celular.trim(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  _MobileUserMetadata(
-                    icon: Icons.mail_outline_rounded,
-                    value: user.email.trim().isEmpty
-                        ? context.t(
-                            'usuariosSixo.noEmail',
-                            fallback: 'E-mail não informado',
-                          )
-                        : user.email.trim(),
-                  ),
-                  const SizedBox(height: 7),
-                  _MobileUserMetadata(
-                    icon: Icons.phone_outlined,
-                    value: user.celular.trim().isEmpty
-                        ? context.t(
-                            'usuariosSixo.noPhone',
-                            fallback: 'Celular não informado',
-                          )
-                        : user.celular.trim(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded, color: colors.mutedText),
-          ],
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, color: colors.mutedText),
+              ],
             ),
           ),
         ),

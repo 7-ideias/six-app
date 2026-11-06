@@ -71,6 +71,14 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'usuariosSixo.lastLogin.label': 'Última entrada',
+    'usuariosSixo.lastLogin.noRecord': 'Sem registro',
+    'usuariosSixo.lastLogin.noRecordHint':
+        'Ainda não há registro de login para este usuário.',
+    'usuariosSixo.lastLogin.today': 'Hoje',
+    'usuariosSixo.lastLogin.yesterday': 'Ontem',
+    'usuariosSixo.lastLogin.hint':
+        'Login concluído com sucesso. A renovação automática da sessão não conta como nova entrada.',
     'purchases.permission.read': 'Consultar compras',
     'purchases.permission.readDescription': 'Consultar compras deste comércio.',
     'purchases.permission.create': 'Criar compras',
@@ -2914,6 +2922,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'usuariosSixo.lastLogin.label': 'Last sign-in',
+    'usuariosSixo.lastLogin.noRecord': 'No record',
+    'usuariosSixo.lastLogin.noRecordHint':
+        'No sign-in has been recorded for this user yet.',
+    'usuariosSixo.lastLogin.today': 'Today',
+    'usuariosSixo.lastLogin.yesterday': 'Yesterday',
+    'usuariosSixo.lastLogin.hint':
+        'Successful sign-in. Automatic session renewal does not count as a new sign-in.',
     'purchases.permission.read': 'View purchases',
     'purchases.permission.readDescription': 'View purchases for this business.',
     'purchases.permission.create': 'Create purchases',
@@ -5540,6 +5556,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'usuariosSixo.lastLogin.label': 'Último acceso',
+    'usuariosSixo.lastLogin.noRecord': 'Sin registro',
+    'usuariosSixo.lastLogin.noRecordHint':
+        'Todavía no hay registros de inicio de sesión para este usuario.',
+    'usuariosSixo.lastLogin.today': 'Hoy',
+    'usuariosSixo.lastLogin.yesterday': 'Ayer',
+    'usuariosSixo.lastLogin.hint':
+        'Inicio de sesión completado. La renovación automática de la sesión no cuenta como un nuevo acceso.',
     'purchases.permission.read': 'Consultar compras',
     'purchases.permission.readDescription': 'Consultar compras de este comercio.',
     'purchases.permission.create': 'Crear compras',
