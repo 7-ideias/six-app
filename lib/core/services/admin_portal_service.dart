@@ -244,6 +244,7 @@ class AdminUsuarioEmpresaAtiva {
     required this.status,
     required this.dataCadastro,
     required this.fezOnboardingInicial,
+    this.ultimoLoginEm,
   });
 
   final String idUnicoDoUsuario;
@@ -256,6 +257,7 @@ class AdminUsuarioEmpresaAtiva {
   final String status;
   final DateTime? dataCadastro;
   final bool fezOnboardingInicial;
+  final DateTime? ultimoLoginEm;
 
   String get nomeExibicao {
     if (nome.trim().isNotEmpty) return nome.trim();
@@ -276,6 +278,7 @@ class AdminUsuarioEmpresaAtiva {
       papel: json['papel']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       dataCadastro: _parseDate(json['dataCadastro']),
+      ultimoLoginEm: _parseDate(json['ultimoLoginEm']),
       fezOnboardingInicial: json['fezOnboardingInicial'] == true,
     );
   }

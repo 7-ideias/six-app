@@ -99,6 +99,10 @@ abstract final class SixMobilePalette {
       _isDark ? heroLabelTextDark : heroLabelTextLight;
 
   // Estados e detalhes
+  static const Color successLight = Color(0xFF047857);
+  static const Color successDark = Color(0xFF34D399);
+  static const Color warningLight = Color(0xFF92400E);
+  static const Color warningDark = Color(0xFFFBBF24);
   static const Color notificationBadge = Color(0xFFDC2626);
   static const Color activeBorderLight = Color(0xFFCBD5E1);
   static const Color activeBorderDark = Color(0xFF46505C);
