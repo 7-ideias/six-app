@@ -72,6 +72,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _fornecedoresCadastrar = false;
   bool _fornecedoresEditar = false;
   bool _fornecedoresInativar = false;
+  bool _comprasConsultar = false;
+  bool _comprasCriar = false;
+  bool _comprasEditar = false;
+  bool _comprasConfirmar = false;
+  bool _comprasCancelar = false;
+  bool _comprasReceber = false;
   bool _podeReceberNoCaixa = false;
   bool _podeVerQuantoVendeu = false;
   bool _geraRelatorio = false;
@@ -144,6 +150,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     if (_fornecedoresCadastrar) 'FORNECEDORES_CADASTRAR',
     if (_fornecedoresEditar) 'FORNECEDORES_EDITAR',
     if (_fornecedoresInativar) 'FORNECEDORES_INATIVAR',
+    if (_comprasConsultar) 'COMPRAS_CONSULTAR',
+    if (_comprasCriar) 'COMPRAS_CRIAR',
+    if (_comprasEditar) 'COMPRAS_EDITAR',
+    if (_comprasConfirmar) 'COMPRAS_CONFIRMAR',
+    if (_comprasCancelar) 'COMPRAS_CANCELAR',
+    if (_comprasReceber) 'COMPRAS_RECEBER',
     if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
     if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
     if (_geraRelatorio) 'RELATORIOS_GERAR',
@@ -1244,6 +1256,48 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         icon: Icons.block_outlined,
         value: _fornecedoresInativar,
         onChanged: (bool v) => setState(() => _fornecedoresInativar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.read', 'Consultar compras'),
+        subtitle: _t('purchases.permission.readDescription', 'Permite consultar pedidos do comércio.'),
+        icon: Icons.shopping_cart_outlined,
+        value: _comprasConsultar,
+        onChanged: (bool v) => setState(() => _comprasConsultar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.create', 'Criar compras'),
+        subtitle: _t('purchases.permission.createDescription', 'Permite criar novos rascunhos.'),
+        icon: Icons.add_shopping_cart_outlined,
+        value: _comprasCriar,
+        onChanged: (bool v) => setState(() => _comprasCriar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.edit', 'Editar compras'),
+        subtitle: _t('purchases.permission.editDescription', 'Permite alterar rascunhos.'),
+        icon: Icons.edit_note_outlined,
+        value: _comprasEditar,
+        onChanged: (bool v) => setState(() => _comprasEditar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.confirm', 'Confirmar compras'),
+        subtitle: _t('purchases.permission.confirmDescription', 'Confirma compras e gera contas a pagar.'),
+        icon: Icons.check_circle_outline_rounded,
+        value: _comprasConfirmar,
+        onChanged: (bool v) => setState(() => _comprasConfirmar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.cancel', 'Cancelar compras'),
+        subtitle: _t('purchases.permission.cancelDescription', 'Permite cancelar compras conforme regras financeiras.'),
+        icon: Icons.cancel_outlined,
+        value: _comprasCancelar,
+        onChanged: (bool v) => setState(() => _comprasCancelar = v),
+      ),
+      _switchCard(
+        title: _t('purchases.permission.receive', 'Receber mercadorias'),
+        subtitle: _t('purchases.permission.receiveDescription', 'Registra entradas reais de produtos da compra.'),
+        icon: Icons.inventory_2_outlined,
+        value: _comprasReceber,
+        onChanged: (bool v) => setState(() => _comprasReceber = v),
       ),
       _switchCard(
         title: _t('colaboradores.finance', 'Financeiro'),

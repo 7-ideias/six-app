@@ -1,0 +1,43 @@
+name: Compras PR - Flutter tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/data/services/compras/**'
+      - 'lib/presentation/screens/compras/**'
+      - 'lib/presentation/screens/colaborador_convite_web_body.dart'
+      - 'lib/presentation/screens/colaborador_cadastro_mobile_screen.dart'
+      - 'lib/presentation/screens/gestao_mobile_screen.dart'
+      - 'lib/presentation/navigation/**'
+      - 'lib/providers/colaborador_autorizacoes_provider.dart'
+      - 'test/data/services/compras/**'
+      - 'test/presentation/navigation/**'
+      - 'test/presentation/screens/gestao_mobile_screen_test.dart'
+      - '.github/workflows/compras-pr-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compras-flutter-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Tests - purchases and authorization
+        run: |
+          flutter test --reporter expanded \
+            test/data/services/compras/compra_api_client_test.dart \
+            test/data/services/compras/compra_integracao_api_test.dart \
+            test/data/services/compras/compra_permissoes_api_test.dart \
+            test/presentation/navigation/web_navigation_permission_adapter_test.dart \
+            test/presentation/navigation/web_navigation_registry_test.dart \
+            test/presentation/screens/gestao_mobile_screen_test.dart

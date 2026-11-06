@@ -101,8 +101,8 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.operations.purchases',
           labelFallback: 'Compras',
           icon: Icons.shopping_cart_outlined,
-          visibility: WebNavigationVisibilityRule.unresolved(
-            'Permissao de Compras ainda nao disponivel no backend.',
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[WebNavigationPermission.podeConsultarCompras],
           ),
           destination: WebNavigationDestination.operationsPurchases,
         ),

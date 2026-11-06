@@ -16,6 +16,9 @@ import 'package:sixpos/data/models/empresa_model.dart';
 import 'package:sixpos/data/models/fornecedor_usuario_model.dart';
 import 'package:sixpos/data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
 import 'package:sixpos/data/services/compras/compra_api_client.dart';
+import 'package:sixpos/presentation/screens/compras/compras_recebimento_page.dart';
+import 'package:sixpos/presentation/screens/compras/compras_permissoes_page.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 
@@ -28,7 +31,7 @@ part 'compras_web_editor.dart';
 part 'compras_web_widgets.dart';
 part 'compras_web_persistencia.dart';
 
-/// Compras persistentes por comercio. A fase 2 nao registra estoque ou financeiro.
+/// Compras por comércio com contas a pagar na confirmação e estoque no recebimento.
 class ComprasWebPage extends StatefulWidget {
   const ComprasWebPage({super.key, this.onBack});
 
@@ -41,6 +44,7 @@ class ComprasWebPage extends StatefulWidget {
 class _ComprasWebPageState extends State<ComprasWebPage> {
   final _ComprasDemoStore _store = _ComprasDemoStore.instance;
   final CompraApiClient _comprasApi = CompraApiClient();
+  CompraAcesso _acesso = CompraAcesso.negado;
   final HttpFornecedorUsuarioApiClient _fornecedoresApi = HttpFornecedorUsuarioApiClient();
   final ProdutoService _produtosApi = ProdutoService();
   late final EmpresaProvider _empresaProvider;
@@ -88,10 +92,22 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       _erroCarga = null;
       _compraSelecionada = null;
       _store.reset();
+      _acesso = CompraAcesso.negado;
     });
     try {
+      final acesso = await _comprasApi.consultarAcesso();
+      if (!mounted || geracao != _geracao) return;
+      if (!acesso.consultar) {
+        setState(() {
+          _carregando = false;
+          _erroCarga = 'Sem permissão para consultar compras neste comércio.';
+        });
+        return;
+      }
       final compras = await _comprasApi.listar();
-      final fornecedores = await _fornecedoresApi.listar();
+      // Usa autorizacao de Compras; nao requer acesso ao cadastro geral de fornecedores.
+      final fornecedores = (await _comprasApi.listarFornecedores())
+          .map(FornecedorUsuario.fromJson).toList(growable: false);
       List<ProdutoModel> produtos = [];
       try {
         produtos = await _produtosApi.buscarProdutosAtivosParaEstoque();
@@ -100,6 +116,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       }
       if (!mounted || geracao != _geracao) return;
       setState(() {
+        _acesso = acesso;
         _store.compras.addAll(compras.map(_compraDaApi));
         _store.fornecedores.addAll(fornecedores.where((f) => f.ativo).map(
           (f) => _FornecedorDemo(
@@ -133,6 +150,45 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     }
   }
 
+  Future<void> _receberCompra(_CompraDemo compra) async {
+    if (!_acesso.receber) return;
+    try {
+      final atual = await _comprasApi.buscar(compra.id);
+      if (!mounted) return;
+      final bool? ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 790),
+            child: ComprasRecebimentoPage(api: _comprasApi, compra: atual),
+          ),
+        ),
+      );
+      if (ok == true && mounted) await _carregar();
+    } catch (e) {
+      if (mounted) _mostrarMensagem('Não foi possível receber: $e', erro: true);
+    }
+  }
+
+  Future<void> _reconciliarFinanceiro(_CompraDemo compra) async {
+    if (_executando || !_acesso.confirmar) return;
+    setState(() => _executando = true);
+    try {
+      final data = await _comprasApi.reconciliarFinanceiro(compra.id);
+      if (!mounted) return;
+      _marcarSalva(compra, data);
+      if (data['integracaoFinanceiraStatus'] == 'CONCLUIDA') {
+        _mostrarMensagem('Parcelas sincronizadas com a Agenda Financeira.');
+      } else {
+        _mostrarMensagem('Sincronização financeira pendente. Nova tentativa será feita automaticamente.', erro: true);
+      }
+    } catch (e) {
+      if (mounted) _mostrarMensagem('Erro financeiro: $e', erro: true);
+    } finally {
+      if (mounted) setState(() => _executando = false);
+    }
+  }
+
   void _marcarSalva(_CompraDemo anterior, Map<String, dynamic> dados) {
     final salva = _compraDaApi(dados);
     _store.compras.removeWhere((c) => c.id == anterior.id || c.id == salva.id);
@@ -141,7 +197,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   Future<_CompraDemo?> _salvarRascunho(_CompraDemo compra) async {
-    if (_executando || !compra.editavel) return null;
+    if (_executando || !compra.editavel ||
+        (compra.id.startsWith('compra-') ? !_acesso.criar : !_acesso.editar)) return null;
     setState(() => _executando = true);
     try {
       final dados = compra.id.startsWith('compra-')
@@ -302,15 +359,15 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
           .length;
 
   int get _itensComEntrada => _store.compras
-      .where(
-        (_CompraDemo compra) => compra.status == _CompraDemoStatus.confirmada,
-      )
-      .fold<int>(
-        0,
-        (int sum, _CompraDemo compra) => sum + compra.itensComEstoque,
-      );
+      .expand((c) => c.recebimentos)
+      .where((r) => r['status'] == 'CONCLUIDO')
+      .expand((r) => (r['itens'] as List? ?? const []))
+      .whereType<Map<String, dynamic>>()
+      .length;
+
 
   void _novaCompra() {
+    if (!_acesso.criar) return;
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
     final _CompraDemo compra = _store.criarRascunho(moeda: moeda)
       ..moedaContabil = moeda;
@@ -336,6 +393,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   void _duplicarCompra(_CompraDemo compra) {
+    if (!_acesso.criar) return;
     final _CompraDemo copia = _store.duplicar(compra);
     setState(() {
       _compraSelecionada = copia;
@@ -505,6 +563,28 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     );
   }
 
+  Future<void> _editarPermissoesCompras() async {
+    final page = ComprasPermissoesPage(api: _comprasApi);
+    final bool compacto = MediaQuery.sizeOf(context).width < 700;
+    if (compacto) {
+      await showModalBottomSheet<void>(
+        context: context, useSafeArea: true, isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => FractionallySizedBox(heightFactor: .90, child: page),
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 690, maxHeight: 700),
+            child: page,
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildCabecalhoLista(bool compacto) {
     return SixManagedWebHero(
       page: WebHeaderAssetPage.compras,
@@ -513,6 +593,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       subtitle: context.comprasT('compras.subtitle'),
       onBack: widget.onBack,
       actions: <Widget>[
+        if (context.watch<ColaboradorAutorizacoesProvider?>()?.ehAdministrador == true)
+          OutlinedButton.icon(
+            onPressed: _editarPermissoesCompras,
+            icon: const Icon(Icons.admin_panel_settings_outlined),
+            label: const Text('Permissões'),
+          ),
+        if (_acesso.criar)
         FilledButton.icon(
           onPressed: _executando ? null : _novaCompra,
           icon: const Icon(Icons.add_rounded),
@@ -730,6 +817,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
               ),
             ),
             _CompraStatusBadge(status: compra.status),
+            if (compra.status == _CompraDemoStatus.confirmada) ...[
+              Text('Estoque: ${compra.statusRecebimento ?? 'PENDENTE'}',
+                  style: theme.textTheme.labelSmall),
+              Text('Financeiro: ${compra.integracaoFinanceiraStatus ?? 'LEGADO'}',
+                  style: theme.textTheme.labelSmall),
+            ],
           ],
         ),
         const SizedBox(height: 8),

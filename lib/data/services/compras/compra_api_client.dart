@@ -4,8 +4,42 @@ import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/http_client_factory.dart';
 
-/// Contrato da fase 2: compras persistidas, SEM entrada em estoque ou
-/// lancamentos a pagar. Os efeitos serao integrados nas fases seguintes.
+class CompraAcesso {
+  const CompraAcesso({
+    required this.consultar, required this.criar, required this.editar,
+    required this.confirmar, required this.cancelar, required this.receber,
+  });
+  final bool consultar, criar, editar, confirmar, cancelar, receber;
+  static const negado = CompraAcesso(
+    consultar: false, criar: false, editar: false,
+    confirmar: false, cancelar: false, receber: false,
+  );
+  factory CompraAcesso.fromJson(Map<String,dynamic> json) => CompraAcesso(
+    consultar: json['consultar'] == true,
+    criar: json['criar'] == true,
+    editar: json['editar'] == true,
+    confirmar: json['confirmar'] == true,
+    cancelar: json['cancelar'] == true,
+    receber: json['receber'] == true,
+  );
+}
+
+class CompraColaboradorPermissoes {
+  const CompraColaboradorPermissoes({
+    required this.vinculoId, required this.email, required this.permissoes,
+  });
+  final String vinculoId, email;
+  final List<String> permissoes;
+  factory CompraColaboradorPermissoes.fromJson(Map<String,dynamic> json) =>
+      CompraColaboradorPermissoes(
+        vinculoId: json['vinculoId']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        permissoes: (json['permissoes'] as List<dynamic>? ?? [])
+            .map((e) => e.toString()).toList(growable: false),
+      );
+}
+
+/// Compras: confirmacao gera titulos a pagar; recebimentos parciais movimentam estoque.
 class CompraApiClient {
   CompraApiClient({
     http.Client? httpClient,
@@ -46,6 +80,41 @@ class CompraApiClient {
     return decoded;
   }
 
+  Future<CompraAcesso> consultarAcesso() async {
+    final data = _object(await _http.get(_uri('/acesso'), headers: await _headers()));
+    return CompraAcesso.fromJson(data);
+  }
+
+  Future<List<CompraColaboradorPermissoes>> listarPermissoesColaboradores() async {
+    final response = await _http.get(_uri('/permissoes-colaboradores'),
+        headers: await _headers());
+    if (response.statusCode != 200) {
+      throw CompraApiException(response.statusCode, response.body);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) throw const FormatException('Permissões inválidas.');
+    return decoded.whereType<Map<String,dynamic>>()
+        .map(CompraColaboradorPermissoes.fromJson).toList(growable: false);
+  }
+
+  Future<CompraColaboradorPermissoes> atualizarPermissoesColaborador(
+      String vinculoId, List<String> permissoes) async {
+    final data = _object(await _http.put(
+      _uri('/permissoes-colaboradores/${Uri.encodeComponent(vinculoId)}'),
+      headers: await _headers(), body: jsonEncode(permissoes)));
+    return CompraColaboradorPermissoes.fromJson(data);
+  }
+
+  Future<List<Map<String,dynamic>>> listarFornecedores() async {
+    final response = await _http.get(_uri('/fornecedores'), headers: await _headers());
+    if (response.statusCode != 200) {
+      throw CompraApiException(response.statusCode, response.body);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) throw const FormatException('Fornecedores inválidos.');
+    return decoded.whereType<Map<String,dynamic>>().toList(growable: false);
+  }
+
   Future<List<Map<String,dynamic>>> listar() async {
     final response = await _http.get(_uri(), headers: await _headers());
     if (response.statusCode != 200) {
@@ -63,6 +132,25 @@ class CompraApiClient {
   Future<Map<String,dynamic>> atualizar(String id, Map<String,dynamic> compra) async =>
       _object(await _http.put(_uri('/${Uri.encodeComponent(id)}'),
           headers: await _headers(), body: jsonEncode(compra)));
+
+  Future<Map<String,dynamic>> buscar(String id) async =>
+      _object(await _http.get(_uri('/${Uri.encodeComponent(id)}'),
+          headers: await _headers()));
+
+  Future<Map<String,dynamic>> receber(
+      String id, String chaveIdempotencia, List<Map<String,dynamic>> itens,
+      {String observacoes = ''}) async =>
+      _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/recebimentos'),
+          headers: await _headers(),
+          body: jsonEncode({
+            'chaveIdempotencia': chaveIdempotencia,
+            'itens': itens,
+            'observacoes': observacoes,
+          })));
+
+  Future<Map<String,dynamic>> reconciliarFinanceiro(String id) async =>
+      _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/reconciliar-financeiro'),
+          headers: await _headers()));
 
   Future<Map<String,dynamic>> confirmar(String id) async =>
       _object(await _http.post(_uri('/${Uri.encodeComponent(id)}/confirmar'),
@@ -83,7 +171,7 @@ class CompraApiException implements Exception {
     401 => 'Sessão encerrada. Entre novamente.',
     403 => 'Permissão insuficiente para esta operação.',
     404 => 'Compra não encontrada neste comércio.',
-    409 => 'Compra alterada em outra sessão. Atualize a lista.',
+    409 => 'Conflito na compra: atualize os dados ou regularize pagamentos/recebimentos.',
     422 => 'Verifique os itens e os campos obrigatórios.',
     _ => 'Não foi possível concluir a operação (HTTP $statusCode).',
   };

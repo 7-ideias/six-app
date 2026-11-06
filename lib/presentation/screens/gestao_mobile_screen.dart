@@ -61,12 +61,14 @@ class GestaoMobileScreen extends StatefulWidget {
     this.onNavigate,
     this.area,
     @visibleForTesting this.showBottomNavigationBar = true,
+    @visibleForTesting this.assetsContextController,
   });
 
   final ManagementOverviewProvider? overviewProvider;
   final ManagementMobileNavigate? onNavigate;
   final GestaoMobileArea? area;
   final bool showBottomNavigationBar;
+  final GestaoMobileAssetsContextController? assetsContextController;
 
   @override
   State<GestaoMobileScreen> createState() => _GestaoMobileScreenState();
@@ -117,7 +119,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     _notificacaoService.addListener(_onNotificacoesChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _businessVisuals =
-        GestaoMobileAssetsContextController()
+        (widget.assetsContextController ?? GestaoMobileAssetsContextController())
           ..addListener(_onBusinessVisualsChanged)
           ..initialize();
     unawaited(_restaurarOrdemCardsGestaoMobile());
@@ -386,6 +388,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               'gestao.hub.title',
               fallback: 'O que você quer gerenciar?',
             ),
+            key: const ValueKey<String>('gestao-hub-intro'),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: colors.mutedText,
             ),
@@ -1099,7 +1102,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               emphasis: ManagementActionEmphasis.operational,
               onTap: () => _navigateTo(context, EstoqueMobileScreen()),
             ),
-          if (autorizacoes.ehAdministrador)
+          if (autorizacoes.podeConsultarCompras)
             _ManagementItem(
               title: context.t('compras.title', fallback: 'Compras'),
               subtitle: context.t('compras.subtitle',

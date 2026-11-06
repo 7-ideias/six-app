@@ -22,6 +22,10 @@ _CompraDemo _compraDaApi(Map<String, dynamic> j) {
     confirmadaEm: DateTime.tryParse(t('confirmadaEm')),
     canceladaEm: DateTime.tryParse(t('canceladaEm')),
     motivoCancelamento: t('motivoCancelamento'),
+    integracaoFinanceiraStatus: j['integracaoFinanceiraStatus']?.toString(),
+    statusRecebimento: j['statusRecebimento']?.toString(),
+    recebimentos: (j['recebimentos'] as List? ?? [])
+        .whereType<Map<String,dynamic>>().toList(growable: false),
     fornecedorId: t('fornecedorId'),
     fornecedorNome: t('fornecedorNome'),
     fornecedorDocumento: t('fornecedorDocumento'),
