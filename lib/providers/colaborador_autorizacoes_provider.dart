@@ -31,6 +31,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   ColaboradorAutorizacoesModel? _autorizacoes;
   bool _loading = false;
   String? _erro;
+  Object? _ultimaFalha;
   String? _idUnicoDoUsuarioCarregado;
   String _tipoPerfilUsuario = 'DESCONHECIDO';
   TipoUsuarioEnum? _tipoUsuario;
@@ -43,11 +44,15 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   CompraAcesso _compraAcesso = CompraAcesso.negado;
   String? _empresaIdCarregada;
 
+  // Falha fechada: dados antigos ou nao carregados nao concedem acesso.
   ColaboradorAutorizacoesModel get autorizacoes =>
-      _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
+      _autorizacoesCarregadasComSucesso && _autorizacoes != null
+          ? _autorizacoes!
+          : ColaboradorAutorizacoesModel.negarTudo();
 
   bool get loading => _loading;
   String? get erro => _erro;
+  Object? get ultimaFalha => _ultimaFalha;
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
   String get tipoPerfilUsuario => _tipoPerfilUsuario;
   TipoUsuarioEnum? get tipoUsuario => _tipoUsuario;
@@ -130,9 +135,12 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     );
 
     if (idUnicoDoUsuario == null || idUnicoDoUsuario.trim().isEmpty) {
-      _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
+      _autorizacoes = perfilAdmin
+          ? ColaboradorAutorizacoesModel.permitirTudo()
+          : ColaboradorAutorizacoesModel.negarTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
+      _ultimaFalha = null;
       _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
       _podeFazerDevolucao = perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
@@ -152,6 +160,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
     _loading = true;
     _erro = null;
+    _ultimaFalha = null;
+    _autorizacoesCarregadasComSucesso = false;
+    _autorizacoes = null;
     notifyListeners();
 
     try {
@@ -216,7 +227,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoesCarregadasComSucesso = true;
     } catch (e) {
       _erro = e.toString();
-      _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
+      _ultimaFalha = e;
+      _autorizacoesCarregadasComSucesso = false;
+      _autorizacoes = null;
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
       _podeFazerDevolucao = _ehAdministrador;
       _fornecedorAcesso = FornecedorAcesso.negado;
@@ -231,6 +244,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _autorizacoes = null;
     _loading = false;
     _erro = null;
+    _ultimaFalha = null;
     _idUnicoDoUsuarioCarregado = null;
     _tipoPerfilUsuario = 'DESCONHECIDO';
     _tipoUsuario = null;

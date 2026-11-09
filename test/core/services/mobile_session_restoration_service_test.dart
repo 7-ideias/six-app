@@ -122,6 +122,28 @@ void main() {
       },
     );
 
+    test('reconecta depois de falha de rede sem apagar os tokens', () async {
+      final _FakeMobileSessionAuthGateway gateway =
+          _FakeMobileSessionAuthGateway(
+            refreshToken: 'refresh-token',
+            refreshError: const AuthRefreshException(
+              type: AuthRefreshFailureType.temporaryFailure,
+            ),
+          );
+      final MobileSessionRestorationService service =
+          MobileSessionRestorationService(gateway: gateway);
+
+      final MobileSessionRestorationResult offline = await service.restore();
+      expect(offline.status, MobileSessionRestorationStatus.temporaryFailure);
+      expect(gateway.clearCalls, 0);
+
+      gateway.refreshError = null; // Rede voltou.
+      final MobileSessionRestorationResult online = await service.restore();
+      expect(online.status, MobileSessionRestorationStatus.restored);
+      expect(gateway.refreshCalls, 2);
+      expect(gateway.clearCalls, 0);
+    });
+
     test('compartilha uma restauração concorrente', () async {
       final _FakeMobileSessionAuthGateway gateway =
           _FakeMobileSessionAuthGateway(
@@ -166,7 +188,7 @@ class _FakeMobileSessionAuthGateway implements MobileSessionAuthGateway {
   final String? _storedRefreshToken;
   final String? _storedAccessToken;
   final Object? getRefreshTokenError;
-  final Object? refreshError;
+  Object? refreshError;
   final Completer<void>? refreshCompleter;
   int refreshCalls = 0;
   int clearCalls = 0;

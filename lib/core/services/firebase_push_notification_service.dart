@@ -301,7 +301,7 @@ class FirebasePushNotificationService {
           'plataforma': _plataformaAtual(),
           'appVersion': '1.0.0',
         }),
-      );
+      ).timeout(const Duration(seconds: 12));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         debugPrint(
