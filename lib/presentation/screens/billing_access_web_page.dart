@@ -189,7 +189,7 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                       OutlinedButton.icon(
                         onPressed: controller.busy ? null : controller.load,
                         icon: const Icon(Icons.refresh),
-                        child: Text(billingText(context, 'refresh')),
+                        label: Text(billingText(context, 'refresh')),
                       ),
                       if (!widget.admin)
                         TextButton(
