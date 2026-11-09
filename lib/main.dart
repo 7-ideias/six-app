@@ -266,10 +266,10 @@ class MyApp extends StatelessWidget {
         fallbackRoute: '/checkout/flutter',
       );
     }
-    if (routeUri.path == '/checkout/flutter') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => WebCheckoutPage(initialUri: routeUri),
+    if (routeUri.path == '/checkout/flutter' || routeUri.path == '/app/assinatura') {
+      return _authenticatedWebRoute(
+        settings: const RouteSettings(name: '/app/assinatura'),
+        page: WebCheckoutPage(initialUri: routeUri),
       );
     }
 
@@ -541,3 +541,4 @@ Future<void> _exitBilling() async {
     (_) => false,
   );
 }
+
