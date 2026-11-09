@@ -54,7 +54,9 @@ void main() {
         service.prepare(
           loadCompany: () async {},
           loadPermissions: () async => throw StateError('permissions offline'),
-          loadOnboarding: () async => onboardingCalled = true,
+          loadOnboarding: () async {
+            onboardingCalled = true;
+          },
         ),
         throwsA(
           isA<MobileSessionBootstrapFailure>().having(

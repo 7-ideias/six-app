@@ -31,6 +31,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   ColaboradorAutorizacoesModel? _autorizacoes;
   bool _loading = false;
   String? _erro;
+  Object? _ultimaFalha;
   String? _idUnicoDoUsuarioCarregado;
   String _tipoPerfilUsuario = 'DESCONHECIDO';
   TipoUsuarioEnum? _tipoUsuario;
@@ -51,6 +52,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
   bool get loading => _loading;
   String? get erro => _erro;
+  Object? get ultimaFalha => _ultimaFalha;
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
   String get tipoPerfilUsuario => _tipoPerfilUsuario;
   TipoUsuarioEnum? get tipoUsuario => _tipoUsuario;
@@ -138,6 +140,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
           : ColaboradorAutorizacoesModel.negarTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
+      _ultimaFalha = null;
       _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
       _podeFazerDevolucao = perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
@@ -157,6 +160,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
     _loading = true;
     _erro = null;
+    _ultimaFalha = null;
     _autorizacoesCarregadasComSucesso = false;
     _autorizacoes = null;
     notifyListeners();
@@ -223,6 +227,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoesCarregadasComSucesso = true;
     } catch (e) {
       _erro = e.toString();
+      _ultimaFalha = e;
       _autorizacoesCarregadasComSucesso = false;
       _autorizacoes = null;
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
@@ -239,6 +244,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _autorizacoes = null;
     _loading = false;
     _erro = null;
+    _ultimaFalha = null;
     _idUnicoDoUsuarioCarregado = null;
     _tipoPerfilUsuario = 'DESCONHECIDO';
     _tipoUsuario = null;

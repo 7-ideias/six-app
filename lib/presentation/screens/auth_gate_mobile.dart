@@ -8,7 +8,6 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/biometric_auth_service.dart';
 import '../../core/services/empresa_service.dart';
-import '../../core/services/firebase_push_notification_service.dart';
 import '../../core/services/mobile_session_restoration_service.dart';
 import '../../core/services/mobile_session_bootstrap_service.dart';
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
@@ -157,9 +156,8 @@ class _AuthGateMobileState extends State<AuthGateMobile>
               .read<ColaboradorAutorizacoesProvider>();
           await permissions.carregarAutorizacoesDoUsuarioLogado(force: true);
           if (!permissions.autorizacoesCarregadasComSucesso) {
-            throw StateError(
-              'Permissoes indisponiveis: ${permissions.erro ?? "sem detalhes"}',
-            );
+            throw permissions.ultimaFalha ??
+                StateError('Nao foi possivel validar permissoes');
           }
         },
         loadOnboarding: () async {
@@ -319,7 +317,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
         regionalizacao: regionalizacao,
-      );
+      ).timeout(const Duration(seconds: 8));
     } catch (error) {
       debugPrint(
         '[AuthGateMobile] Erro ao aplicar idioma/regionalizacao: $error',
@@ -583,9 +581,9 @@ class _AuthGateMobileState extends State<AuthGateMobile>
             const SizedBox(height: 10),
             Text(
               _localized(
-                pt: 'Tentaremos reconectar automaticamente. Voce tambem pode tentar agora.',
+                pt: 'Tentaremos reconectar automaticamente. Você também pode tentar agora.',
                 en: 'We will reconnect automatically. You can also try now.',
-                es: 'Intentaremos reconectar automaticamente. Tambien puedes intentarlo ahora.',
+                es: 'Intentaremos reconectar automáticamente. También puedes intentarlo ahora.',
               ),
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -633,7 +631,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
                 _localized(
                   pt: 'Entrar novamente',
                   en: 'Sign in again',
-                  es: 'Iniciar sesion de nuevo',
+                  es: 'Iniciar sesión de nuevo',
                 ),
               ),
             ),
