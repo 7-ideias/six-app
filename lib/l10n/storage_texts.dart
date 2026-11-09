@@ -5,6 +5,137 @@ import '../providers/locale_settings_provider.dart';
 import 'six_i18n.dart';
 
 const _storageTexts = <String, List<String>>{
+  "plansTitle": [
+    "Planos e franquias",
+    "Plans and allowances",
+    "Planes y cuotas",
+  ],
+  "plansSubtitle": [
+    "Configure o armazenamento e o plano de cada comércio.",
+    "Configure storage and the plan for each business.",
+    "Configura el almacenamiento y el plan de cada comercio.",
+  ],
+  "plan": ["Plano", "Plan", "Plan"],
+  "noPlan": ["Sem plano vinculado", "No assigned plan", "Sin plan asignado"],
+  "quotaNotConfigured": [
+    "Franquia não configurada",
+    "Allowance not configured",
+    "Cuota sin configurar",
+  ],
+  "quotaWithin": [
+    "Dentro da franquia",
+    "Within allowance",
+    "Dentro de la cuota",
+  ],
+  "quotaNear": [
+    "Você está próximo da franquia.",
+    "You are approaching your allowance.",
+    "Estás cerca de tu cuota.",
+  ],
+  "quotaReached": [
+    "Franquia atingida. Você pode continuar usando o app.",
+    "Allowance reached. You can keep using the app.",
+    "Cuota alcanzada. Puedes seguir usando la app.",
+  ],
+  "quotaExceeded": [
+    "Franquia ultrapassada. Você pode continuar usando o app.",
+    "Allowance exceeded. You can keep using the app.",
+    "Cuota superada. Puedes seguir usando la app.",
+  ],
+  "of": ["de", "of", "de"],
+  "managePlans": [
+    "Gerenciar planos e franquias",
+    "Manage plans and allowances",
+    "Gestionar planes y cuotas",
+  ],
+  "configure": [
+    "Configurar franquias",
+    "Configure allowances",
+    "Configurar cuotas",
+  ],
+  "save": ["Salvar alterações", "Save changes", "Guardar cambios"],
+  "cancel": ["Cancelar", "Cancel", "Cancelar"],
+  "saving": ["Salvando…", "Saving…", "Guardando…"],
+  "limitsHint": [
+    "Informe valores em MB, sem separador de milhar. Campo vazio significa não configurado. 1 MB = 1.000.000 bytes.",
+    "Enter values in MB without thousands separators. An empty field means not configured. 1 MB = 1,000,000 bytes.",
+    "Introduce valores en MB sin separadores de miles. Un campo vacío significa sin configurar. 1 MB = 1.000.000 bytes.",
+  ],
+  "databaseQuota": [
+    "Franquia de dados (MB)",
+    "Data allowance (MB)",
+    "Cuota de datos (MB)",
+  ],
+  "filesQuota": [
+    "Franquia de fotos e arquivos (MB)",
+    "Photos and files allowance (MB)",
+    "Cuota de fotos y archivos (MB)",
+  ],
+  "uploadLimit": [
+    "Tamanho máximo por arquivo (MB)",
+    "Maximum size per file (MB)",
+    "Tamaño máximo por archivo (MB)",
+  ],
+  "uploadConfigured": [
+    "Tamanho por arquivo configurado",
+    "Configured size per file",
+    "Tamaño por archivo configurado",
+  ],
+  "limitsScope": [
+    "Esta alteração se aplica a todos os comércios vinculados ao plano.",
+    "This change applies to every business assigned to this plan.",
+    "Este cambio se aplica a todos los comercios vinculados al plan.",
+  ],
+  "informational": [
+    "Nesta etapa, as franquias são informativas. Cadastros, vendas e uploads continuam disponíveis, respeitando as restrições técnicas já existentes.",
+    "At this stage, allowances are informational. Records, sales and uploads remain available, subject to existing technical restrictions.",
+    "En esta etapa, las cuotas son informativas. Los registros, ventas y archivos siguen disponibles, sujetos a las restricciones técnicas existentes.",
+  ],
+  "assignPlan": [
+    "Vincular plano ao comércio",
+    "Assign a plan to this business",
+    "Vincular un plan al comercio",
+  ],
+  "applyPlan": [
+    "Salvar vínculo do plano",
+    "Save plan assignment",
+    "Guardar vínculo del plan",
+  ],
+  "assignmentHint": [
+    "Vínculo administrativo para armazenamento. Não ativa cobrança ou assinatura.",
+    "Administrative storage assignment. It does not activate billing or a subscription.",
+    "Vínculo administrativo de almacenamiento. No activa cobros ni suscripción.",
+  ],
+  "emptyPlans": [
+    "Nenhum plano cadastrado. Crie os planos no painel de gestão web.",
+    "No plans registered. Create plans in the web management panel.",
+    "No hay planes registrados. Crea los planes en el panel de gestión web.",
+  ],
+  "saved": ["Alterações salvas.", "Changes saved.", "Cambios guardados."],
+  "invalidLimits": [
+    "Informe valores positivos de até 1 bilhão de MB, com no máximo 6 casas decimais. O tamanho por arquivo não pode superar a franquia de arquivos.",
+    "Enter positive values up to 1 billion MB, with at most 6 decimal places. The size per file cannot exceed the files allowance.",
+    "Introduce valores positivos de hasta mil millones de MB y un máximo de 6 decimales. El tamaño por archivo no puede superar la cuota de archivos.",
+  ],
+  "planConflict": [
+    "O plano ou a configuração mudou. Feche a edição e atualize a lista antes de salvar novamente.",
+    "The plan or configuration changed. Close the editor and refresh the list before saving again.",
+    "El plan o la configuración cambió. Cierra la edición y actualiza la lista antes de volver a guardar.",
+  ],
+  "planNotFound": [
+    "Plano ou comércio não encontrado. Atualize a lista.",
+    "Plan or business not found. Refresh the list.",
+    "No se encontró el plan o comercio. Actualiza la lista.",
+  ],
+  "published": ["Publicado", "Published", "Publicado"],
+  "draft": ["Rascunho", "Draft", "Borrador"],
+  "archived": ["Arquivado", "Archived", "Archivado"],
+  "searchPlans": ["Buscar plano", "Search plans", "Buscar plan"],
+  "partialQuota": [
+    "O consumo exibido é parcial e pode aumentar após a medição completa.",
+    "Displayed usage is partial and may increase after a complete measurement.",
+    "El consumo mostrado es parcial y puede aumentar tras una medición completa.",
+  ],
   "title": ["Armazenamento", "Storage", "Almacenamiento"],
   "subtitle": [
     "Acompanhe os dados e arquivos deste comércio.",
