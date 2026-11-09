@@ -1,0 +1,41 @@
+name: Validate mobile session recovery
+
+on:
+  push:
+    branches:
+      - fix/20261109-mobile-session-recovery
+  workflow_dispatch:
+
+jobs:
+  flutter-session-recovery:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze changed source and tests
+        run: |
+          flutter analyze --no-pub \
+            lib/presentation/screens/auth_gate_mobile.dart \
+            lib/core/services/mobile_session_bootstrap_service.dart \
+            lib/core/services/empresa_service.dart \
+            lib/core/services/firebase_push_notification_service.dart \
+            lib/providers/colaborador_autorizacoes_provider.dart \
+            lib/data/models/colaborador_autorizacoes_model.dart \
+            test/core/services/mobile_session_restoration_service_test.dart \
+            test/core/services/mobile_session_bootstrap_service_test.dart \
+            test/data/models/colaborador_autorizacoes_default_test.dart
+      - name: Run recovery and security tests
+        run: |
+          flutter test --no-pub \
+            test/core/services/mobile_session_restoration_service_test.dart \
+            test/core/services/mobile_session_bootstrap_service_test.dart \
+            test/data/models/colaborador_autorizacoes_default_test.dart

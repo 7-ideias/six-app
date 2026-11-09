@@ -12,9 +12,15 @@ void main() {
           MobileSessionBootstrapService();
 
       await service.prepare(
-        loadCompany: () async => steps.add('company'),
-        loadPermissions: () async => steps.add('permissions'),
-        loadOnboarding: () async => steps.add('onboarding'),
+        loadCompany: () async {
+          steps.add('company');
+        },
+        loadPermissions: () async {
+          steps.add('permissions');
+        },
+        loadOnboarding: () async {
+          steps.add('onboarding');
+        },
       );
 
       expect(steps, <String>['company', 'permissions', 'onboarding']);
@@ -31,8 +37,12 @@ void main() {
             steps.add('company');
             throw StateError('offline');
           },
-          loadPermissions: () async => steps.add('permissions'),
-          loadOnboarding: () async => steps.add('onboarding'),
+          loadPermissions: () async {
+            steps.add('permissions');
+          },
+          loadOnboarding: () async {
+            steps.add('onboarding');
+          },
         ),
         throwsA(
           isA<MobileSessionBootstrapFailure>().having(

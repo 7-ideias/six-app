@@ -47,6 +47,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
   int _consecutiveFailures = 0;
   bool _biometricUnlocked = false;
   bool _retrying = false;
+  bool _inForeground = true;
 
   _AuthGateMobileStatus _status = _AuthGateMobileStatus.validating;
   MobileBiometricAvailability _biometricAvailability =
@@ -64,15 +65,17 @@ class _AuthGateMobileState extends State<AuthGateMobile>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        _status == _AuthGateMobileStatus.temporaryError &&
-        !_restoring) {
-      // iOS/Android: tentar imediatamente ao retornar ao primeiro plano.
-      _retryTimer?.cancel();
-      unawaited(_restoreSession());
+    if (state == AppLifecycleState.resumed) {
+      _inForeground = true;
+      if (_status == _AuthGateMobileStatus.temporaryError && !_restoring) {
+        // iOS/Android: tentar imediatamente ao retornar ao primeiro plano.
+        _retryTimer?.cancel();
+        unawaited(_restoreSession());
+      }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       // Nao consumir bateria nem renovar token com a tela em background.
+      _inForeground = false;
       _retryTimer?.cancel();
     }
   }
@@ -86,7 +89,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
 
   void _scheduleAutomaticRetry() {
     _retryTimer?.cancel();
-    if (!mounted) return;
+    if (!mounted || !_inForeground) return;
     final Duration delay = _recoveryPolicy.delayForFailure(
       _consecutiveFailures,
     );
