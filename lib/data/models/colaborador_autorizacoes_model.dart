@@ -45,6 +45,10 @@ class ColaboradorAutorizacoesModel {
     );
   }
 
+  factory ColaboradorAutorizacoesModel.negarTudo() {
+    return ColaboradorAutorizacoesModel.fromJson(const <String, dynamic>{});
+  }
+
   factory ColaboradorAutorizacoesModel.permitirTudo() {
     return const ColaboradorAutorizacoesModel(
       podeFazerDevolucao: true,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -37,14 +38,22 @@ class EmpresaService {
           'idUnicoDaEmpresa': empresaId,
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 12));
 
       if (response.statusCode == 200) {
         final EmpresaModel empresa = _decodeEmpresa(response.body);
         EmpresaProvider().setEmpresa(empresa);
 
         if (!kIsWeb) {
-          await FirebasePushNotificationService().syncTokenForLoggedUser();
+          // Push e best-effort: indisponibilidade do Firebase/APNs nao
+          // impede o carregamento da empresa nem a autenticacao.
+          unawaited(
+            FirebasePushNotificationService()
+                .syncTokenForLoggedUser()
+                .catchError((Object error, StackTrace stackTrace) {
+                  debugPrint('[EmpresaService] Push adiado: $error');
+                }),
+          );
         }
 
         return empresa;

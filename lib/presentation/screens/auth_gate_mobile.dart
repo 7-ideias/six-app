@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -8,6 +10,7 @@ import '../../core/services/biometric_auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
 import '../../core/services/mobile_session_restoration_service.dart';
+import '../../core/services/mobile_session_bootstrap_service.dart';
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -29,12 +32,22 @@ class AuthGateMobile extends StatefulWidget {
 
 enum _AuthGateMobileStatus { validating, biometricLocked, temporaryError }
 
-class _AuthGateMobileState extends State<AuthGateMobile> {
+class _AuthGateMobileState extends State<AuthGateMobile>
+    with WidgetsBindingObserver {
   final MobileSessionRestorationService _sessionRestorationService =
       MobileSessionRestorationService();
   final AuthService _authService = AuthService();
   final BiometricAuthService _biometricAuthService = BiometricAuthService();
   final UsuarioService _usuarioService = UsuarioService();
+  final MobileSessionBootstrapService _bootstrapService =
+      const MobileSessionBootstrapService();
+  final MobileSessionRecoveryPolicy _recoveryPolicy =
+      const MobileSessionRecoveryPolicy();
+
+  Timer? _retryTimer;
+  int _consecutiveFailures = 0;
+  bool _biometricUnlocked = false;
+  bool _retrying = false;
 
   _AuthGateMobileStatus _status = _AuthGateMobileStatus.validating;
   MobileBiometricAvailability _biometricAvailability =
@@ -44,25 +57,75 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _restoreSession();
+      if (mounted) unawaited(_restoreSession());
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _status == _AuthGateMobileStatus.temporaryError &&
+        !_restoring) {
+      // iOS/Android: tentar imediatamente ao retornar ao primeiro plano.
+      _retryTimer?.cancel();
+      unawaited(_restoreSession());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // Nao consumir bateria nem renovar token com a tela em background.
+      _retryTimer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _retryTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _scheduleAutomaticRetry() {
+    _retryTimer?.cancel();
+    if (!mounted) return;
+    final Duration delay = _recoveryPolicy.delayForFailure(
+      _consecutiveFailures,
+    );
+    _retryTimer = Timer(delay, () {
+      if (mounted &&
+          !_restoring &&
+          _status == _AuthGateMobileStatus.temporaryError) {
+        unawaited(_restoreSession());
+      }
+    });
+  }
+
+  void _showTemporaryFailure(Object error, {required String phase}) {
+    debugPrint('[AuthGateMobile] Falha temporaria em $phase: $error');
+    if (!mounted) return;
+    _consecutiveFailures++;
+    setState(() => _status = _AuthGateMobileStatus.temporaryError);
+    _scheduleAutomaticRetry();
+  }
+
   Future<void> _restoreSession() async {
-    if (_restoring) {
-      return;
-    }
+    if (!mounted || _restoring) return;
     _restoring = true;
-    if (mounted) {
-      setState(() => _status = _AuthGateMobileStatus.validating);
-    }
+    _retryTimer?.cancel();
+
+    final bool retryFromError =
+        _status == _AuthGateMobileStatus.temporaryError;
+    setState(() {
+      // Mantem a tela estavel durante novas tentativas automaticas.
+      _retrying = retryFromError;
+      if (!retryFromError) {
+        _status = _AuthGateMobileStatus.validating;
+      }
+    });
 
     try {
       final bool unlocked = await _unlockBiometricSessionIfNeeded();
-      if (!unlocked) {
-        return;
-      }
+      if (!unlocked || !mounted) return;
 
       final MobileSessionRestorationResult restoration =
           await _sessionRestorationService.restore();
@@ -70,52 +133,83 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
       switch (restoration.status) {
         case MobileSessionRestorationStatus.noStoredSession:
         case MobileSessionRestorationStatus.invalidSession:
-          if (!mounted) return;
-          _goToLogin();
+          if (mounted) _goToLogin();
           return;
         case MobileSessionRestorationStatus.temporaryFailure:
-          debugPrint(
-            '[AuthGateMobile] Falha temporária ao restaurar sessão: '
-            '${restoration.error}',
+          _showTemporaryFailure(
+            restoration.error ?? StateError('Restauracao indisponivel'),
+            phase: 'restauracao da sessao',
           );
-          if (mounted) {
-            setState(() => _status = _AuthGateMobileStatus.temporaryError);
-          }
           return;
         case MobileSessionRestorationStatus.restored:
           break;
       }
 
-      await EmpresaService().buscarDadosDaEmpresa();
-      if (mounted) {
-        await context
-            .read<ColaboradorAutorizacoesProvider>()
-            .carregarAutorizacoesDoUsuarioLogado(force: true);
-        await _applyAuthenticatedLocale();
-        await context.read<OnboardingInicialProvider>().carregar(force: true);
-      }
-      await FirebasePushNotificationService().syncTokenForLoggedUser();
+      // Somente as consultas essenciais impedem a entrada. Falhas de
+      // notificacoes e regionalizacao nao invalidam a sessao autenticada.
+      await _bootstrapService.prepare(
+        loadCompany: () async {
+          await EmpresaService().buscarDadosDaEmpresa();
+        },
+        loadPermissions: () async {
+          if (!mounted) return;
+          final ColaboradorAutorizacoesProvider permissions = context
+              .read<ColaboradorAutorizacoesProvider>();
+          await permissions.carregarAutorizacoesDoUsuarioLogado(force: true);
+          if (!permissions.autorizacoesCarregadasComSucesso) {
+            throw StateError(
+              'Permissoes indisponiveis: ${permissions.erro ?? "sem detalhes"}',
+            );
+          }
+        },
+        loadOnboarding: () async {
+          if (!mounted) return;
+          await context.read<OnboardingInicialProvider>().carregar(force: true);
+        },
+      );
 
       if (!mounted) return;
+      await _applyAuthenticatedLocale();
+      if (!mounted) return;
+
+      _consecutiveFailures = 0;
       if (context.read<OnboardingInicialProvider>().precisaFazerOnboarding) {
         _goToOnboarding();
       } else {
         _goToHome();
       }
-    } catch (error) {
-      debugPrint('[AuthGateMobile] Falha temporária inesperada: $error');
-      if (mounted) {
-        setState(() => _status = _AuthGateMobileStatus.temporaryError);
+    } catch (error, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      if (_recoveryPolicy.isInvalidSession(error)) {
+        // Somente uma invalidacao confirmada no refresh derruba a sessao.
+        try {
+          await _authService.clearLocalSession();
+          if (mounted) _goToLogin();
+        } catch (cleanupError) {
+          _showTemporaryFailure(
+            cleanupError,
+            phase: 'limpeza de sessao invalida',
+          );
+        }
+      } else {
+        _showTemporaryFailure(error, phase: 'preparacao da conta');
       }
     } finally {
       _restoring = false;
+      if (mounted && _retrying) {
+        setState(() => _retrying = false);
+      }
     }
   }
 
   Future<bool> _unlockBiometricSessionIfNeeded() async {
+    // Repetir uma consulta de rede nao deve exigir outro Face ID.
+    if (_biometricUnlocked) return true;
+
     final String refreshToken =
         (await _authService.getRefreshToken())?.trim() ?? '';
     if (refreshToken.isEmpty || !await _biometricAuthService.isEnabled()) {
+      _biometricUnlocked = true;
       return true;
     }
 
@@ -129,6 +223,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
     if (ownerId.isEmpty ||
         (currentUserId.isNotEmpty && ownerId != currentUserId)) {
       await _biometricAuthService.disable();
+      _biometricUnlocked = true;
       return true;
     }
 
@@ -150,6 +245,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
       return false;
     }
 
+    _biometricUnlocked = true;
     return true;
   }
 
@@ -208,13 +304,16 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   Future<void> _applyAuthenticatedLocale() async {
     try {
       final String? idiomaDePreferencia = await _usuarioService
-          .buscarDadosDoUsuario_atualizaProviders();
+          .buscarDadosDoUsuario_atualizaProviders()
+          .timeout(const Duration(seconds: 8));
       if (!mounted) return;
 
       final regionalizacaoService = RegionalizacaoService(
         apiClient: HttpRegionalizacaoApiClient(),
       );
-      final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
+      final regionalizacao = await regionalizacaoService
+          .buscarRegionalizacao()
+          .timeout(const Duration(seconds: 8));
       if (!mounted) return;
 
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
@@ -260,6 +359,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   }
 
   void _goToLogin() {
+    _retryTimer?.cancel();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(builder: (_) => const AuthEntryMobile()),
     );
@@ -480,15 +580,41 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
               textAlign: TextAlign.center,
               style: TextStyle(color: SixMobilePalette.mutedText, height: 1.4),
             ),
+            const SizedBox(height: 10),
+            Text(
+              _localized(
+                pt: 'Tentaremos reconectar automaticamente. Voce tambem pode tentar agora.',
+                en: 'We will reconnect automatically. You can also try now.',
+                es: 'Intentaremos reconectar automaticamente. Tambien puedes intentarlo ahora.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: SixMobilePalette.mutedText,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: FilledButton.icon(
-                onPressed: _restoreSession,
-                icon: const Icon(Icons.refresh_rounded, size: 19),
+                onPressed: _restoring ? null : _restoreSession,
+                icon: _retrying
+                    ? const SizedBox(
+                        height: 19,
+                        width: 19,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 19),
                 label: Text(
-                  context.t('common.tryAgain', fallback: 'Tentar novamente'),
+                  _retrying
+                      ? _localized(
+                          pt: 'Reconectando...',
+                          en: 'Reconnecting...',
+                          es: 'Reconectando...',
+                        )
+                      : context.t('common.tryAgain', fallback: 'Tentar novamente'),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: SixMobilePalette.accent,
@@ -496,6 +622,18 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _restoring ? null : _goToLogin,
+              icon: const Icon(Icons.login_rounded, size: 18),
+              label: Text(
+                _localized(
+                  pt: 'Entrar novamente',
+                  en: 'Sign in again',
+                  es: 'Iniciar sesion de nuevo',
                 ),
               ),
             ),

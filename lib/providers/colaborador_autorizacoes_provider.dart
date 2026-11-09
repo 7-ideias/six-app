@@ -43,8 +43,11 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   CompraAcesso _compraAcesso = CompraAcesso.negado;
   String? _empresaIdCarregada;
 
+  // Falha fechada: dados antigos ou nao carregados nao concedem acesso.
   ColaboradorAutorizacoesModel get autorizacoes =>
-      _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
+      _autorizacoesCarregadasComSucesso && _autorizacoes != null
+          ? _autorizacoes!
+          : ColaboradorAutorizacoesModel.negarTudo();
 
   bool get loading => _loading;
   String? get erro => _erro;
@@ -130,7 +133,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     );
 
     if (idUnicoDoUsuario == null || idUnicoDoUsuario.trim().isEmpty) {
-      _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
+      _autorizacoes = perfilAdmin
+          ? ColaboradorAutorizacoesModel.permitirTudo()
+          : ColaboradorAutorizacoesModel.negarTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
       _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
@@ -152,6 +157,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
     _loading = true;
     _erro = null;
+    _autorizacoesCarregadasComSucesso = false;
+    _autorizacoes = null;
     notifyListeners();
 
     try {
@@ -216,7 +223,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoesCarregadasComSucesso = true;
     } catch (e) {
       _erro = e.toString();
-      _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
+      _autorizacoesCarregadasComSucesso = false;
+      _autorizacoes = null;
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
       _podeFazerDevolucao = _ehAdministrador;
       _fornecedorAcesso = FornecedorAcesso.negado;
