@@ -1,3 +1,5 @@
+import '../../l10n/storage_texts.dart';
+import 'storage_usage_web_page.dart';
 import 'dart:convert';
 import 'dart:ui';
 
@@ -62,6 +64,7 @@ class ConfiguracoesSixWebPage extends StatefulWidget {
 }
 
 enum SecaoConfiguracaoSix {
+  armazenamento,
   geral,
   regionalizacao,
   aparencia,
@@ -1404,6 +1407,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _tituloSecao(SecaoConfiguracaoSix secao) {
     switch (secao) {
+      case SecaoConfiguracaoSix.armazenamento:
+        return storageText(context, 'title');
       case SecaoConfiguracaoSix.formasRecebimento:
         return context.t('paymentSettings.title');
       case SecaoConfiguracaoSix.geral:
@@ -1429,6 +1434,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _descricaoSecao(SecaoConfiguracaoSix secao) {
     switch (secao) {
+      case SecaoConfiguracaoSix.armazenamento:
+        return storageText(context, 'subtitle');
       case SecaoConfiguracaoSix.formasRecebimento:
         return context.t('paymentSettings.hint');
       case SecaoConfiguracaoSix.geral:
@@ -2058,6 +2065,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final tokens = WebThemeTokens.of(context);
 
     final itens = [
+      (
+        secao: SecaoConfiguracaoSix.armazenamento,
+        titulo: storageText(context, 'title'),
+        icone: Icons.cloud_outlined,
+      ),
       (
         secao: SecaoConfiguracaoSix.formasRecebimento,
         titulo: context.t('paymentSettings.title'),
@@ -2933,6 +2945,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildConteudoSecao() {
     switch (_secaoAtual) {
+      case SecaoConfiguracaoSix.armazenamento:
+        return const SizedBox(height: 560, child: StorageUsageWebPage());
       case SecaoConfiguracaoSix.formasRecebimento:
         return SizedBox(
           height: (MediaQuery.sizeOf(context).height * 0.8).clamp(
@@ -6619,3 +6633,4 @@ class _ConfiguracaoChoiceOption {
   final String description;
   final IconData icon;
 }
+

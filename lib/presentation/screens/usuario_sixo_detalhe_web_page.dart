@@ -1,3 +1,6 @@
+import '../../l10n/storage_texts.dart';
+import '../../data/models/storage_company.dart';
+import 'storage_usage_web_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../providers/agenda_email_reenvio_controller.dart';
@@ -327,6 +330,16 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
                   );
                 },
               ),
+              const SizedBox(height: 16),
+              Wrap(spacing: 12, runSpacing: 12, children: [
+                for (final (index, company) in StorageCompany.fromUser(detail).indexed)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.cloud_outlined),
+                    label: Text('${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}'),
+                    onPressed: () => showStorageUsageWeb(context, companyId: company.id,
+                      companyLabel: company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name),
+                  ),
+              ]),
               const SizedBox(height: 16),
               _WebCollectionSection(
                 icon: Icons.storefront_outlined,
@@ -725,3 +738,4 @@ String _formatDetailValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
+

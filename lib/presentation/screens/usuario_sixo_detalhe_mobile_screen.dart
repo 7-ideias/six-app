@@ -1,3 +1,6 @@
+import '../../l10n/storage_texts.dart';
+import '../../data/models/storage_company.dart';
+import 'storage_usage_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../providers/agenda_email_reenvio_controller.dart';
@@ -402,6 +405,16 @@ class _UsuarioSixoDetalheMobileScreenState
           values: _mobileFlatten(detail.preferenciasGlobais),
         ),
         const SizedBox(height: 10),
+        for (final (index, company) in StorageCompany.fromUser(detail).indexed)
+          Padding(padding: const EdgeInsets.only(bottom: 10), child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: context.sixMobileColors.accent,
+              backgroundColor: context.sixMobileColors.softAccentSurface,
+              minimumSize: const Size.fromHeight(48)),
+            icon: const Icon(Icons.cloud_outlined),
+            label: Text('${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => StorageUsageMobileScreen(
+              adminCompanyId: company.id, companyLabel: company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name))),
+          )),
         _MobileDetailSection(
           icon: Icons.storefront_outlined,
           title: context.t(
@@ -896,3 +909,4 @@ String _mobileFormatValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
+
