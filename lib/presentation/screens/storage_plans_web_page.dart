@@ -182,10 +182,7 @@ class _StoragePlansWebPageState extends State<StoragePlansWebPage> {
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 280,
-                                              ),
+                                            Flexible(
                                               child: Text(
                                                 selected == null
                                                     ? storageText(
