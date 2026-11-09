@@ -1,6 +1,9 @@
+import '../../l10n/billing_texts.dart';
+import 'billing_access_web_page.dart';
 import '../../l10n/storage_texts.dart';
 import '../../data/models/storage_company.dart';
 import 'storage_usage_web_page.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../providers/agenda_email_reenvio_controller.dart';
@@ -41,10 +44,9 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
   bool _resettingPassword = false;
   bool _reenvioAberto = false;
 
-  String get _idUsuario =>
-      widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
-          ? widget.usuario.idUnicoDoUsuario.trim()
-          : widget.usuario.keycloakId.trim();
+  String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
+      ? widget.usuario.idUnicoDoUsuario.trim()
+      : widget.usuario.keycloakId.trim();
 
   @override
   void initState() {
@@ -133,8 +135,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogMessage',
-              fallback:
-                  'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
+              fallback: 'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
             ),
           ),
           actions: <Widget>[
@@ -167,8 +168,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.successMessage',
-              fallback:
-                  'Solicitação de recuperação recebida. O envio será processado em instantes.',
+              fallback: 'Solicitação de recuperação recebida. O envio será processado em instantes.',
             ),
           ),
         ),
@@ -180,8 +180,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.errorMessage',
-              fallback:
-                  'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
+              fallback: 'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
             ),
           ),
         ),
@@ -274,10 +273,9 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
               const SizedBox(height: 16),
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final double width =
-                      constraints.maxWidth >= 900
-                          ? (constraints.maxWidth - 16) / 2
-                          : constraints.maxWidth;
+                  final double width = constraints.maxWidth >= 900
+                      ? (constraints.maxWidth - 16) / 2
+                      : constraints.maxWidth;
                   return Wrap(
                     spacing: 16,
                     runSpacing: 16,
@@ -331,15 +329,47 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
                 },
               ),
               const SizedBox(height: 16),
-              Wrap(spacing: 12, runSpacing: 12, children: [
-                for (final (index, company) in StorageCompany.fromUser(detail).indexed)
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.cloud_outlined),
-                    label: Text('${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}'),
-                    onPressed: () => showStorageUsageWeb(context, companyId: company.id,
-                      companyLabel: company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name),
-                  ),
-              ]),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final company in StorageCompany.fromUser(detail))
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.lock_open_outlined),
+                      label: Text(
+                        '${billingText(context, 'title')} · ${company.name}',
+                      ),
+                      onPressed: () => showBillingAccessWeb(
+                        context,
+                        company.id,
+                        company.name,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final (index, company) in StorageCompany.fromUser(
+                    detail,
+                  ).indexed)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.cloud_outlined),
+                      label: Text(
+                        '${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}',
+                      ),
+                      onPressed: () => showStorageUsageWeb(
+                        context,
+                        companyId: company.id,
+                        companyLabel: company.name.isEmpty
+                            ? '${storageText(context, 'company')} ${index + 1}'
+                            : company.name,
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 16),
               _WebCollectionSection(
                 icon: Icons.storefront_outlined,
@@ -480,13 +510,13 @@ class _WebUserHero extends StatelessWidget {
                     Text(
                       complete
                           ? context.t(
-                            'usuariosSixo.onboarding.completed',
-                            fallback: 'Onboarding concluído',
-                          )
+                              'usuariosSixo.onboarding.completed',
+                              fallback: 'Onboarding concluído',
+                            )
                           : context.t(
-                            'usuariosSixo.onboarding.pending',
-                            fallback: 'Onboarding pendente',
-                          ),
+                              'usuariosSixo.onboarding.pending',
+                              fallback: 'Onboarding pendente',
+                            ),
                       style: TextStyle(
                         color: complete ? tokens.success : tokens.warning,
                         fontWeight: FontWeight.w900,
@@ -504,13 +534,13 @@ class _WebUserHero extends StatelessWidget {
                 label: Text(
                   complete
                       ? context.t(
-                        'usuariosSixo.onboarding.resetAction',
-                        fallback: 'Refazer onboarding',
-                      )
+                          'usuariosSixo.onboarding.resetAction',
+                          fallback: 'Refazer onboarding',
+                        )
                       : context.t(
-                        'usuariosSixo.onboarding.completeAction',
-                        fallback: 'Marcar como concluído',
-                      ),
+                          'usuariosSixo.onboarding.completeAction',
+                          fallback: 'Marcar como concluído',
+                        ),
                 ),
               ),
               OutlinedButton.icon(
@@ -527,16 +557,15 @@ class _WebUserHero extends StatelessWidget {
                   ),
                   backgroundColor: tokens.surfaceMuted,
                 ),
-                icon:
-                    resettingPassword
-                        ? SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: tokens.danger,
-                          ),
-                        )
-                        : Icon(Icons.lock_reset_rounded, color: tokens.danger),
+                icon: resettingPassword
+                    ? SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: tokens.danger,
+                        ),
+                      )
+                    : Icon(Icons.lock_reset_rounded, color: tokens.danger),
                 label: Text(
                   context.t(
                     'usuariosSixo.passwordReset.action',
@@ -624,13 +653,12 @@ class _WebCollectionSection extends StatelessWidget {
     return _WebDetailSection(
       icon: icon,
       title: title,
-      values:
-          items.isEmpty
-              ? <String, dynamic>{'situacao': emptyLabel}
-              : <String, dynamic>{
-                for (int i = 0; i < items.length; i++)
-                  ..._flatten(items[i], prefix: '${i + 1}'),
-              },
+      values: items.isEmpty
+          ? <String, dynamic>{'situacao': emptyLabel}
+          : <String, dynamic>{
+              for (int i = 0; i < items.length; i++)
+                ..._flatten(items[i], prefix: '${i + 1}'),
+            },
     );
   }
 }
@@ -738,4 +766,3 @@ String _formatDetailValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
-

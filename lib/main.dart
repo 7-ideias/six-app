@@ -1,5 +1,10 @@
 import 'dart:async';
 
+import 'core/services/auth_service.dart';
+import 'core/services/billing_http_client.dart';
+import 'presentation/screens/billing_access_web_page.dart';
+import 'presentation/screens/billing_access_mobile_screen.dart';
+
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
@@ -56,8 +61,9 @@ void main() async {
   final SharedPreferences? prefs = await _loadSharedPreferences();
   final ThemeProvider themeProvider = await ThemeProvider.load(
     enableLocalPersistence: !kIsWeb,
-    storage:
-        prefs == null ? null : SharedPreferencesThemePreferenceStorage(prefs),
+    storage: prefs == null
+        ? null
+        : SharedPreferencesThemePreferenceStorage(prefs),
   );
 
   if (!kIsWeb) {
@@ -70,10 +76,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         ChangeNotifierProvider(
-          create:
-              (_) => ProdutosListProvider<ProdutoModel>(
-                fetchFunction: ProdutoService().produtosList,
-              ),
+          create: (_) => ProdutosListProvider<ProdutoModel>(
+            fetchFunction: ProdutoService().produtosList,
+          ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
         ChangeNotifierProvider(
@@ -83,12 +88,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OnboardingInicialProvider()),
         ChangeNotifierProvider(
           lazy: false,
-          create:
-              (_) => LocaleSettingsProvider(
-                regionalizacaoService: RegionalizacaoService(
-                  apiClient: HttpRegionalizacaoApiClient(),
-                ),
-              )..initialize(),
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: HttpRegionalizacaoApiClient(),
+            ),
+          )..initialize(),
         ),
       ],
       child: const MyApp(),
@@ -116,8 +120,9 @@ class MyApp extends StatelessWidget {
     final Uri currentUri = Uri.base;
     final String path = currentUri.path.isEmpty ? '/' : currentUri.path;
     final String query = currentUri.hasQuery ? '?${currentUri.query}' : '';
-    final String fragment =
-        currentUri.hasFragment ? '#${currentUri.fragment}' : '';
+    final String fragment = currentUri.hasFragment
+        ? '#${currentUri.fragment}'
+        : '';
     return '$path$query$fragment';
   }
 
@@ -230,16 +235,15 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/atendimento/assinatura') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+        builder: (_) =>
+            AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/atendimento/status') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) => AtendimentoTecnicoStatusPublicoPage(initialUri: routeUri),
+        builder: (_) =>
+            AtendimentoTecnicoStatusPublicoPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/onboarding') {
@@ -303,11 +307,10 @@ class MyApp extends StatelessWidget {
     if (isFlutterColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) => ColaboradorConvitePublicoWebPage(
-              codigo: routeUri.pathSegments[3],
-              initialUri: routeUri,
-            ),
+        builder: (_) => ColaboradorConvitePublicoWebPage(
+          codigo: routeUri.pathSegments[3],
+          initialUri: routeUri,
+        ),
       );
     }
     if (isPublicClienteAutoCadastroRoute) {
@@ -324,15 +327,13 @@ class MyApp extends StatelessWidget {
       );
     }
     if (isPublicOsRoute) {
-      final String ordemId =
-          routeUri.pathSegments.length > 1
-              ? routeUri.pathSegments[1]
-              : 'os-sem-id';
+      final String ordemId = routeUri.pathSegments.length > 1
+          ? routeUri.pathSegments[1]
+          : 'os-sem-id';
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
+        builder: (_) =>
+            OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
       );
     }
 
@@ -362,11 +363,10 @@ class MyApp extends StatelessWidget {
   }) {
     return MaterialPageRoute<void>(
       settings: settings,
-      builder:
-          (_) => _BrowserLocationRedirectPage(
-            location: location,
-            fallbackRoute: fallbackRoute,
-          ),
+      builder: (_) => _BrowserLocationRedirectPage(
+        location: location,
+        fallbackRoute: fallbackRoute,
+      ),
     );
   }
 
@@ -376,8 +376,8 @@ class MyApp extends StatelessWidget {
   }) {
     return MaterialPageRoute<void>(
       settings: settings,
-      builder:
-          (_) => WebAuthGate(requestedLocation: settings.name, child: page),
+      builder: (_) =>
+          WebAuthGate(requestedLocation: settings.name, child: page),
     );
   }
 
@@ -391,12 +391,13 @@ class MyApp extends StatelessWidget {
       reverseTransitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (_, __, ___) => page,
       transitionsBuilder: (_, animation, __, child) {
-        final slide = Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
-        );
+        final slide =
+            Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+            );
         final fade = Tween<double>(
           begin: 0.0,
           end: 1.0,
@@ -417,19 +418,51 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: PushNavigationService.navigatorKey,
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
-      onGenerateTitle:
-          (context) => AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
+      onGenerateTitle: (context) =>
+          AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
-      themeAnimationDuration:
-          kIsWeb ? kThemeAnimationDuration : const Duration(milliseconds: 320),
+      themeAnimationDuration: kIsWeb
+          ? kThemeAnimationDuration
+          : const Duration(milliseconds: 320),
       themeAnimationCurve: kIsWeb ? Curves.linear : Curves.easeOutCubic,
       builder: (BuildContext context, Widget? child) {
         final Widget resolvedChild = child ?? const SizedBox.shrink();
-        if (kIsWeb) return resolvedChild;
-        return SixMobileThemeTransitionOverlay(child: resolvedChild);
+        return ValueListenableBuilder<String?>(
+          valueListenable: paymentRequiredCompany,
+          builder: (context, company, _) => Stack(
+            children: [
+              ExcludeSemantics(
+                excluding: company != null,
+                child: FocusScope(
+                  descendantsAreFocusable: company == null,
+                  child: IgnorePointer(
+                    ignoring: company != null,
+                    child: kIsWeb
+                        ? resolvedChild
+                        : SixMobileThemeTransitionOverlay(child: resolvedChild),
+                  ),
+                ),
+              ),
+              if (company != null)
+                Positioned.fill(
+                  child: kIsWeb
+                      ? BillingAccessWebPage(
+                          key: ValueKey(company),
+                          companyId: company,
+                          onExit: _exitBilling,
+                        )
+                      : BillingAccessMobileScreen(
+                          key: ValueKey(company),
+                          companyId: company,
+                          onExit: _exitBilling,
+                        ),
+                ),
+            ],
+          ),
+        );
       },
       locale: localeProvider.currentLocale,
       supportedLocales: LocaleSettingsProvider.supportedLocales,
@@ -497,4 +530,14 @@ class CatalogoPage extends StatelessWidget {
       body: Center(child: Text('Catálogo: $slug')),
     );
   }
+}
+
+Future<void> _exitBilling() async {
+  await AuthService().logout();
+  PushNavigationService.navigatorKey.currentState?.pushAndRemoveUntil(
+    MaterialPageRoute<void>(
+      builder: (_) => kIsWeb ? const LoginPageWeb() : const SplashScreen(),
+    ),
+    (_) => false,
+  );
 }

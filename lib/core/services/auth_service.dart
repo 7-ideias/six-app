@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'google_auth_service.dart';
 import 'http_client_factory.dart';
+import 'billing_http_client.dart';
 import 'empresa_service.dart';
 import 'secure_auth_storage_service.dart';
 import '../config/app_config.dart';
@@ -50,6 +53,7 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal() {
     registerUnauthorizedTokenRefreshHandler(_recoverFromUnauthorized);
+    billingCompanyResolver = getEmpresaId;
   }
 
   final SecureAuthStorageService _secureAuthStorage =
@@ -415,6 +419,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    paymentRequiredCompany.value = null;
     _refreshTimer?.cancel();
     _refreshTimer = null;
     final String? refreshToken = await getRefreshToken();
@@ -453,6 +458,7 @@ class AuthService {
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userDataKey);
     await prefs.remove(_empresaIdKey);
+    paymentRequiredCompany.value = null;
     await prefs.remove(_accessTokenExpiresAtKey);
     if (!kIsWeb) {
       await _secureAuthStorage.deleteRefreshToken();
@@ -470,6 +476,7 @@ class AuthService {
   }
 
   Future<void> setEmpresaId(String empresaId) async {
+    paymentRequiredCompany.value = null;
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String normalized = empresaId.trim();
 
@@ -753,17 +760,15 @@ class AuthService {
 
   Future<String> getUserProfileType() async {
     final List<String> permissions = await getUserPermissions();
-    final Set<String> normalized =
-        permissions
-            .map(
-              (String item) =>
-                  item
-                      .trim()
-                      .replaceAll('-', '_')
-                      .replaceAll(' ', '_')
-                      .toUpperCase(),
-            )
-            .toSet();
+    final Set<String> normalized = permissions
+        .map(
+          (String item) => item
+              .trim()
+              .replaceAll('-', '_')
+              .replaceAll(' ', '_')
+              .toUpperCase(),
+        )
+        .toSet();
 
     if (normalized.contains('ADMINISTRADOR') || normalized.contains('TODAS')) {
       return 'ADMIN';
