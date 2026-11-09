@@ -341,6 +341,21 @@ void main() {
     },
   );
 
+  testWidgets(
+    'nega ações do catálogo enquanto as permissões não foram validadas',
+    (WidgetTester tester) async {
+      await _pumpGestao(
+        tester,
+        colaboradorProvider: ColaboradorAutorizacoesProvider(),
+      );
+
+      expect(find.text('Produtos e Serviços'), findsNothing);
+      expect(find.text('Estoque'), findsNothing);
+      expect(find.text('Catálogo virtual'), findsNothing);
+      expect(find.text('24'), findsNothing);
+    },
+  );
+
   testWidgets('respeita permissão real do catálogo ao ocultar ação restrita', (
     WidgetTester tester,
   ) async {
@@ -398,7 +413,7 @@ Future<void> _pumpGestao(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
-          value: colaboradorProvider ?? ColaboradorAutorizacoesProvider(),
+          value: colaboradorProvider ?? _AuthenticatedCatalogProvider(),
         ),
         ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
         ChangeNotifierProvider<LocaleSettingsProvider>(
@@ -448,6 +463,17 @@ class _NoopGestaoAssetsController extends GestaoMobileAssetsContextController {
   void initialize() {
     // Testes de widgets nao acessam servicos de assets autenticados.
   }
+}
+
+// Cenários de catálogo assumem um usuário autenticado com permissões
+// explicitamente concedidas. O provider real agora nega acesso antes
+// da validação, por segurança, e não pode ser usado como fixture permissiva.
+class _AuthenticatedCatalogProvider extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get podeAcessarCatalogo => true;
+
+  @override
+  bool get podeVerEstoqueDeProduto => true;
 }
 
 class _SupplierAccessProvider extends ColaboradorAutorizacoesProvider {
