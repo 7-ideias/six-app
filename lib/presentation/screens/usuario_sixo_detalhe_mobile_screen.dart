@@ -1,6 +1,9 @@
+import '../../l10n/billing_texts.dart';
+import 'billing_access_mobile_screen.dart';
 import '../../l10n/storage_texts.dart';
 import '../../data/models/storage_company.dart';
 import 'storage_usage_mobile_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../providers/agenda_email_reenvio_controller.dart';
@@ -39,10 +42,9 @@ class _UsuarioSixoDetalheMobileScreenState
   bool _resettingPassword = false;
   bool _reenvioAberto = false;
 
-  String get _idUsuario =>
-      widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
-          ? widget.usuario.idUnicoDoUsuario.trim()
-          : widget.usuario.keycloakId.trim();
+  String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
+      ? widget.usuario.idUnicoDoUsuario.trim()
+      : widget.usuario.keycloakId.trim();
 
   @override
   void initState() {
@@ -87,26 +89,24 @@ class _UsuarioSixoDetalheMobileScreenState
           title: Text(
             novoValor
                 ? context.t(
-                  'usuariosSixo.onboarding.completeTitle',
-                  fallback: 'Marcar onboarding como concluído?',
-                )
+                    'usuariosSixo.onboarding.completeTitle',
+                    fallback: 'Marcar onboarding como concluído?',
+                  )
                 : context.t(
-                  'usuariosSixo.onboarding.resetTitle',
-                  fallback: 'Solicitar novo onboarding?',
-                ),
+                    'usuariosSixo.onboarding.resetTitle',
+                    fallback: 'Solicitar novo onboarding?',
+                  ),
           ),
           content: Text(
             novoValor
                 ? context.t(
-                  'usuariosSixo.onboarding.completeMessage',
-                  fallback:
-                      'O usuário deixará de ver o onboarding inicial nos próximos acessos.',
-                )
+                    'usuariosSixo.onboarding.completeMessage',
+                    fallback: 'O usuário deixará de ver o onboarding inicial nos próximos acessos.',
+                  )
                 : context.t(
-                  'usuariosSixo.onboarding.resetMessage',
-                  fallback:
-                      'No próximo acesso, o usuário deverá confirmar novamente seus dados iniciais antes de entrar no sistema.',
-                ),
+                    'usuariosSixo.onboarding.resetMessage',
+                    fallback: 'No próximo acesso, o usuário deverá confirmar novamente seus dados iniciais antes de entrar no sistema.',
+                  ),
           ),
           actions: <Widget>[
             TextButton(
@@ -118,13 +118,13 @@ class _UsuarioSixoDetalheMobileScreenState
               child: Text(
                 novoValor
                     ? context.t(
-                      'usuariosSixo.onboarding.completeAction',
-                      fallback: 'Marcar como concluído',
-                    )
+                        'usuariosSixo.onboarding.completeAction',
+                        fallback: 'Marcar como concluído',
+                      )
                     : context.t(
-                      'usuariosSixo.onboarding.resetAction',
-                      fallback: 'Refazer onboarding',
-                    ),
+                        'usuariosSixo.onboarding.resetAction',
+                        fallback: 'Refazer onboarding',
+                      ),
               ),
             ),
           ],
@@ -206,8 +206,7 @@ class _UsuarioSixoDetalheMobileScreenState
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogMessage',
-              fallback:
-                  'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
+              fallback: 'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
             ),
           ),
           actions: <Widget>[
@@ -240,8 +239,7 @@ class _UsuarioSixoDetalheMobileScreenState
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.successMessage',
-              fallback:
-                  'Solicitação de recuperação recebida. O envio será processado em instantes.',
+              fallback: 'Solicitação de recuperação recebida. O envio será processado em instantes.',
             ),
           ),
         ),
@@ -253,8 +251,7 @@ class _UsuarioSixoDetalheMobileScreenState
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.errorMessage',
-              fallback:
-                  'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
+              fallback: 'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
             ),
           ),
         ),
@@ -282,13 +279,14 @@ class _UsuarioSixoDetalheMobileScreenState
           icon: const Icon(Icons.refresh_rounded),
         ),
       ],
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return _buildBody(context, scrollController, topInset);
-      },
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return _buildBody(context, scrollController, topInset);
+          },
     );
   }
 
@@ -405,16 +403,48 @@ class _UsuarioSixoDetalheMobileScreenState
           values: _mobileFlatten(detail.preferenciasGlobais),
         ),
         const SizedBox(height: 10),
+        for (final company in StorageCompany.fromUser(detail))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.lock_open_outlined),
+              label: Text('${billingText(context, 'title')} · ${company.name}'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BillingAccessMobileScreen(
+                    companyId: company.id,
+                    companyName: company.name,
+                    admin: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
         for (final (index, company) in StorageCompany.fromUser(detail).indexed)
-          Padding(padding: const EdgeInsets.only(bottom: 10), child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: context.sixMobileColors.accent,
-              backgroundColor: context.sixMobileColors.softAccentSurface,
-              minimumSize: const Size.fromHeight(48)),
-            icon: const Icon(Icons.cloud_outlined),
-            label: Text('${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}'),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => StorageUsageMobileScreen(
-              adminCompanyId: company.id, companyLabel: company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name))),
-          )),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.sixMobileColors.accent,
+                backgroundColor: context.sixMobileColors.softAccentSurface,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              icon: const Icon(Icons.cloud_outlined),
+              label: Text(
+                '${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}',
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => StorageUsageMobileScreen(
+                    adminCompanyId: company.id,
+                    companyLabel: company.name.isEmpty
+                        ? '${storageText(context, 'company')} ${index + 1}'
+                        : company.name,
+                  ),
+                ),
+              ),
+            ),
+          ),
         _MobileDetailSection(
           icon: Icons.storefront_outlined,
           title: context.t(
@@ -542,13 +572,13 @@ class _MobileOnboardingCard extends StatelessWidget {
                 child: Text(
                   complete
                       ? context.t(
-                        'usuariosSixo.onboarding.completed',
-                        fallback: 'Onboarding concluído',
-                      )
+                          'usuariosSixo.onboarding.completed',
+                          fallback: 'Onboarding concluído',
+                        )
                       : context.t(
-                        'usuariosSixo.onboarding.pending',
-                        fallback: 'Onboarding pendente',
-                      ),
+                          'usuariosSixo.onboarding.pending',
+                          fallback: 'Onboarding pendente',
+                        ),
                   style: TextStyle(
                     color: colors.titleText,
                     fontWeight: FontWeight.w900,
@@ -562,27 +592,26 @@ class _MobileOnboardingCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: loading ? null : onPressed,
-              icon:
-                  loading
-                      ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : Icon(
-                        complete
-                            ? Icons.restart_alt_rounded
-                            : Icons.task_alt_rounded,
-                      ),
+              icon: loading
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      complete
+                          ? Icons.restart_alt_rounded
+                          : Icons.task_alt_rounded,
+                    ),
               label: Text(
                 complete
                     ? context.t(
-                      'usuariosSixo.onboarding.resetAction',
-                      fallback: 'Refazer onboarding',
-                    )
+                        'usuariosSixo.onboarding.resetAction',
+                        fallback: 'Refazer onboarding',
+                      )
                     : context.t(
-                      'usuariosSixo.onboarding.completeAction',
-                      fallback: 'Marcar como concluído',
-                    ),
+                        'usuariosSixo.onboarding.completeAction',
+                        fallback: 'Marcar como concluído',
+                      ),
               ),
             ),
           ),
@@ -649,8 +678,7 @@ class _MobilePasswordResetCard extends StatelessWidget {
                     Text(
                       context.t(
                         'usuariosSixo.passwordReset.subtitle',
-                        fallback:
-                            'Envie instruções ao titular para que ele escolha uma nova senha.',
+                        fallback: 'Envie instruções ao titular para que ele escolha uma nova senha.',
                       ),
                       style: TextStyle(
                         color: colors.mutedText,
@@ -674,16 +702,15 @@ class _MobilePasswordResetCard extends StatelessWidget {
                 side: BorderSide(color: colors.errorBorder),
                 backgroundColor: colors.softSurface,
               ),
-              icon:
-                  loading
-                      ? SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.error,
-                        ),
-                      )
-                      : Icon(Icons.lock_reset_rounded, color: colors.error),
+              icon: loading
+                  ? SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.error,
+                      ),
+                    )
+                  : Icon(Icons.lock_reset_rounded, color: colors.error),
               label: Text(
                 context.t(
                   'usuariosSixo.passwordReset.action',
@@ -909,4 +936,3 @@ String _mobileFormatValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
-
