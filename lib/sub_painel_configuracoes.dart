@@ -1,3 +1,5 @@
+import 'l10n/storage_texts.dart';
+import 'presentation/screens/storage_usage_web_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
@@ -82,6 +84,13 @@ class _ConfiguracoesRapidasWeb extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          _ConfigTile(
+            icon: Icons.cloud_outlined,
+            title: storageText(context, 'title'),
+            subtitle: storageText(context, 'subtitle'),
+            onTap: () => showStorageUsageWeb(context),
+          ),
+          const SizedBox(height: 12),
           _ConfigTile(
             icon: Icons.storefront_outlined,
             title: perfilNegocioText(context, 'profile'),
@@ -265,3 +274,4 @@ class _ConfigTile extends StatelessWidget {
     );
   }
 }
+
