@@ -1,3 +1,5 @@
+import 'storage_plan.dart';
+
 class StorageUsage {
   const StorageUsage({
     required this.companyId,
@@ -6,6 +8,7 @@ class StorageUsage {
     this.fileBytes,
     this.fileCount,
     this.measuredAt,
+    this.plan = const StorageEffectivePlan(),
   });
 
   final String companyId;
@@ -14,6 +17,7 @@ class StorageUsage {
   final int? fileBytes;
   final int? fileCount;
   final DateTime? measuredAt;
+  final StorageEffectivePlan plan;
 
   bool get pending => status == 'PENDENTE' || status == 'PROCESSANDO';
 
@@ -32,6 +36,9 @@ class StorageUsage {
 
     return StorageUsage(
       companyId: json['companyId'] as String,
+      plan: StorageEffectivePlan.fromJson(
+        json['plan'] as Map<String, dynamic>? ?? {},
+      ),
       status: json['status'] as String,
       databaseBytes: bytes('databaseBytes'),
       fileBytes: bytes('fileBytes'),

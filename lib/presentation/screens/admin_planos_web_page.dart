@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/storage_texts.dart';
+import 'storage_plans_web_page.dart';
 import '../../core/services/admin_planos_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
@@ -228,6 +230,15 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
           onCreate: () => _editar(),
         ),
         const SizedBox(height: AdminSpacing.lg),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: () => showStoragePlansWeb(context),
+            icon: const Icon(Icons.storage_outlined),
+            label: Text(storageText(context, 'managePlans')),
+          ),
+        ),
+        const SizedBox(height: AdminSpacing.md),
         if (_planos.isEmpty)
           _PlansEmpty(texts: texts, onCreate: () => _editar())
         else
@@ -1517,3 +1528,4 @@ class _PlansTexts {
         : 'Mensal';
   }
 }
+

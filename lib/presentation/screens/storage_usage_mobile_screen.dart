@@ -1,3 +1,7 @@
+import '../../data/models/storage_plan.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'storage_plans_mobile_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -94,6 +98,37 @@ class _StorageUsageMobileScreenState extends State<StorageUsageMobileScreen> {
                   style: TextStyle(color: colors.mutedText),
                 ),
                 const SizedBox(height: 16),
+                Text(
+                  '${storageText(context, 'plan')}: ${usage == null
+                      ? storageText(context, 'noMeasurement')
+                      : usage.plan.planId == null
+                      ? storageText(context, 'noPlan')
+                      : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (widget.adminCompanyId != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.accent,
+                        backgroundColor: colors.softAccentSurface,
+                      ),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => StoragePlansMobileScreen(
+                              companyId: widget.adminCompanyId!,
+                            ),
+                          ),
+                        );
+                        if (mounted) await _controller.load();
+                      },
+                      icon: const Icon(Icons.tune),
+                      label: Text(storageText(context, 'managePlans')),
+                    ),
+                  ),
+                const SizedBox(height: 12),
                 _usageCard(
                   context,
                   Icons.storage_outlined,
@@ -141,6 +176,18 @@ class _StorageUsageMobileScreenState extends State<StorageUsageMobileScreen> {
                       style: TextStyle(color: colors.mutedText, fontSize: 12),
                     ),
                   ),
+                if (usage?.plan.limits.maxUploadBytes != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
+                    ),
+                  ),
+                if (usage?.status == 'PARCIAL')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(storageText(context, 'partialQuota')),
+                  ),
                 const SizedBox(height: 24),
                 Text(
                   storageText(context, 'scope'),
@@ -148,7 +195,7 @@ class _StorageUsageMobileScreenState extends State<StorageUsageMobileScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  storageText(context, 'observation'),
+                  storageText(context, 'informational'),
                   style: TextStyle(color: colors.mutedText, fontSize: 12),
                 ),
               ],
@@ -215,8 +262,48 @@ class _StorageUsageMobileScreenState extends State<StorageUsageMobileScreen> {
                 ),
               ),
             ),
+          const SizedBox(height: 14),
+          ..._quota(context, label, bytes),
         ],
       ),
     );
+  }
+
+  List<Widget> _quota(BuildContext context, String label, int? bytes) {
+    final limits = _controller.usage?.plan.limits;
+    final limit = label == 'database'
+        ? limits?.databaseLimitBytes
+        : limits?.fileLimitBytes;
+    final status = storageQuotaStatus(bytes, limit);
+    final colors = context.sixMobileColors;
+    final color = status == 'quotaExceeded' || status == 'quotaReached'
+        ? colors.error
+        : colors.accent;
+    final ratio = bytes == null || limit == null ? null : bytes / limit;
+    return [
+      if (limit != null)
+        Text(
+          '${bytes == null ? storageText(context, 'noMeasurement') : storageBytes(context, bytes)} ${storageText(context, 'of')} ${storageBytes(context, limit)}',
+        ),
+      if (ratio != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: LinearProgressIndicator(
+            value: ratio.clamp(0.0, 1.0).toDouble(),
+            color: color,
+            backgroundColor: colors.softSurface,
+            semanticsLabel: storageText(context, label),
+            semanticsValue: context
+                .read<LocaleSettingsProvider>()
+                .formatPercent(ratio * 100),
+          ),
+        ),
+      if (ratio != null)
+        Text(
+          context.read<LocaleSettingsProvider>().formatPercent(ratio * 100),
+          style: TextStyle(color: colors.mutedText),
+        ),
+      Text(storageText(context, status), style: TextStyle(color: color)),
+    ];
   }
 }

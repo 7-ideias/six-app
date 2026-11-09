@@ -1,3 +1,7 @@
+import '../../data/models/storage_plan.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'storage_plans_web_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -122,6 +126,30 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Text(
+                        '${storageText(context, 'plan')}: ${usage == null
+                            ? storageText(context, 'noMeasurement')
+                            : usage.plan.planId == null
+                            ? storageText(context, 'noPlan')
+                            : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (widget.adminCompanyId != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await showStoragePlansWeb(
+                                context,
+                                companyId: widget.adminCompanyId,
+                              );
+                              if (mounted) await _controller.load();
+                            },
+                            icon: const Icon(Icons.tune),
+                            label: Text(storageText(context, 'managePlans')),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final width = constraints.maxWidth < 600
@@ -190,6 +218,18 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                             style: TextStyle(color: tokens.secondaryText),
                           ),
                         ),
+                      if (usage?.plan.limits.maxUploadBytes != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
+                          ),
+                        ),
+                      if (usage?.status == 'PARCIAL')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(storageText(context, 'partialQuota')),
+                        ),
                       const SizedBox(height: 24),
                       Text(
                         storageText(context, 'scope'),
@@ -197,7 +237,7 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        storageText(context, 'observation'),
+                        storageText(context, 'informational'),
                         style: TextStyle(color: tokens.secondaryText),
                       ),
                     ],
@@ -212,6 +252,56 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
   }
 
   Widget _metric(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int? bytes,
+  ) {
+    final limits = _controller.usage?.plan.limits;
+    final limit = label == 'database'
+        ? limits?.databaseLimitBytes
+        : limits?.fileLimitBytes;
+    final status = storageQuotaStatus(bytes, limit);
+    final tokens = WebThemeTokens.of(context);
+    final color = status == 'quotaExceeded' || status == 'quotaReached'
+        ? tokens.danger
+        : status == 'quotaNear'
+        ? tokens.warning
+        : tokens.info;
+    final ratio = bytes == null || limit == null ? null : bytes / limit;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _metricValue(context, icon, label, bytes),
+        const SizedBox(height: 10),
+        if (limit != null)
+          Text(
+            '${bytes == null ? storageText(context, 'noMeasurement') : storageBytes(context, bytes)} ${storageText(context, 'of')} ${storageBytes(context, limit)}',
+          ),
+        if (ratio != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0).toDouble(),
+              color: color,
+              backgroundColor: tokens.surfaceMuted,
+              semanticsLabel: storageText(context, label),
+              semanticsValue: context
+                  .read<LocaleSettingsProvider>()
+                  .formatPercent(ratio * 100),
+            ),
+          ),
+        if (ratio != null)
+          Text(
+            context.read<LocaleSettingsProvider>().formatPercent(ratio * 100),
+            style: TextStyle(color: tokens.secondaryText),
+          ),
+        Text(storageText(context, status), style: TextStyle(color: color)),
+      ],
+    );
+  }
+
+  Widget _metricValue(
     BuildContext context,
     IconData icon,
     String label,
