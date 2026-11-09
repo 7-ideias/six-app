@@ -329,48 +329,6 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
                 },
               ),
               const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final company in StorageCompany.fromUser(detail))
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.lock_open_outlined),
-                      label: Text(
-                        '${billingText(context, 'title')} · ${company.name}',
-                      ),
-                      onPressed: () => showBillingAccessWeb(
-                        context,
-                        company.id,
-                        company.name,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final (index, company) in StorageCompany.fromUser(
-                    detail,
-                  ).indexed)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.cloud_outlined),
-                      label: Text(
-                        '${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}',
-                      ),
-                      onPressed: () => showStorageUsageWeb(
-                        context,
-                        companyId: company.id,
-                        companyLabel: company.name.isEmpty
-                            ? '${storageText(context, 'company')} ${index + 1}'
-                            : company.name,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
               _WebCollectionSection(
                 icon: Icons.storefront_outlined,
                 title: context.t(
@@ -573,6 +531,31 @@ class _WebUserHero extends StatelessWidget {
                   ),
                 ),
               ),
+              for (final company in StorageCompany.fromUser(detail))
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.lock_open_outlined),
+                  label: Text(
+                    '${billingText(context, 'title')} · ${company.name}',
+                  ),
+                  onPressed: () =>
+                      showBillingAccessWeb(context, company.id, company.name),
+                ),
+              for (final (index, company) in StorageCompany.fromUser(
+                detail,
+              ).indexed)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.cloud_outlined),
+                  label: Text(
+                    '${storageText(context, 'view')} · ${company.name.isEmpty ? '${storageText(context, 'company')} ${index + 1}' : company.name}',
+                  ),
+                  onPressed: () => showStorageUsageWeb(
+                    context,
+                    companyId: company.id,
+                    companyLabel: company.name.isEmpty
+                        ? '${storageText(context, 'company')} ${index + 1}'
+                        : company.name,
+                  ),
+                ),
             ],
           ),
         ],
