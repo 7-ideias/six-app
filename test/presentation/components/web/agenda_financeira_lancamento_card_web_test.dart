@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sixpos/presentation/components/web/agenda_financeira_lancamento_card_web.dart';
 
 void main() {
@@ -45,6 +46,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('pt'),
+        supportedLocales: const [Locale('pt')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: Scaffold(
           body: SingleChildScrollView(
             child: AgendaFinanceiraLancamentoCardWeb(

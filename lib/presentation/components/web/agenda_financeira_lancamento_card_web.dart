@@ -227,11 +227,15 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
         children: [
           Icon(iconeStatus, size: 16, color: corStatus),
           const SizedBox(width: 5),
-          Text(
-            status.isEmpty ? 'Pendente' : status,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: corStatus,
-              fontWeight: FontWeight.w800,
+          Flexible(
+            child: Text(
+              status.isEmpty ? 'Pendente' : status,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: corStatus,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
