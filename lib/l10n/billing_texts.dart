@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'six_i18n.dart';
 
 const billingTexts = <String, List<String>>{
+  'plansIntro': [
+    'Escolha o plano para o seu comércio.',
+    'Choose the plan for your business.',
+    'Elige el plan para tu comercio.',
+  ],
+  'popular': ['Popular', 'Popular', 'Popular'],
   "selectedPlan": [
     "Plano escolhido no site",
     "Plan selected on the website",

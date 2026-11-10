@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/data/models/subscription_billing.dart';
 
 void main() {
-  test('purchase sends only selected plan, interval and expected amount', () {
+  test('legacy offer remains valid and checkout includes effective locale', () {
     final offer = BillingOffer.fromJson({
       'planId': 'plan',
       'name': 'Plano',
@@ -10,13 +10,17 @@ void main() {
       'currency': 'BRL',
       'amountMinor': 99900,
     });
-    expect(offer.purchase(), {
+    expect(offer.purchase(locale: 'en-US'), {
       'planId': 'plan',
       'interval': 'year',
       'expectedAmountMinor': 99900,
       'currency': 'BRL',
+      'locale': 'en-US',
     });
     expect(offer.currency, 'BRL');
+    expect(offer.description, isEmpty);
+    expect(offer.benefits, isEmpty);
+    expect(offer.featured, isFalse);
   });
   test('summary preserves commerce authorization and cancellation state', () {
     final value = SubscriptionSummary.fromJson({

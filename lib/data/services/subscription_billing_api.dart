@@ -69,8 +69,13 @@ class SubscriptionBillingApi {
     return result;
   }
 
-  Future<Uri> checkout(String company, BillingOffer offer) async =>
-      _url(await _request(company, 'checkout', body: offer.purchase()));
+  Future<Uri> checkout(
+    String company,
+    BillingOffer offer, {
+    String locale = 'pt-BR',
+  }) async => _url(
+    await _request(company, 'checkout', body: offer.purchase(locale: locale)),
+  );
   Future<Uri> portal(String company) async =>
       _url(await _request(company, 'portal', body: {}));
   static Uri _url(Map<String, dynamic> data) {

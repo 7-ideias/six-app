@@ -93,6 +93,10 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
       debugPrint(
         'Erro ao aplicar idioma/regionalizacao no login mobile: $error',
       );
+      if (!mounted) return;
+      await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
+        idiomaDePreferencia: idiomaDePreferencia,
+      );
     }
   }
 

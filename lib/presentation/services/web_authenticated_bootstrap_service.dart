@@ -139,6 +139,9 @@ class WebAuthenticatedBootstrapService {
       );
     } catch (e) {
       debugPrint('Erro ao aplicar idioma/regionalização no login web: $e');
+      await localeProvider.applyAuthenticatedLocale(
+        idiomaDePreferencia: idiomaDePreferencia,
+      );
     }
 
     try {
