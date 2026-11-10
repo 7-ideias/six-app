@@ -85,6 +85,7 @@ requireRewrite('/forgot-password/flutter', '/flutter.html');
 requireRewrite('/onboarding', '/onboarding.html');
 requireRewrite('/onboarding/flutter', '/flutter.html');
 requireRewrite('/checkout', '/checkout.html');
+requireRewrite('/mobile/billing-return', '/billing-return.html');
 requireRewrite('/checkout/flutter', '/flutter.html');
 requireRewrite('/catalogo', '/catalogo.html');
 requireRewrite('/app', '/flutter.html');
@@ -115,6 +116,8 @@ if (Array.isArray(config.rewrites) && config.rewrites.some((entry) => (
 }
 
 const sensitiveSources = [
+  '/mobile/billing-return',
+  '/billing-return.html',
   '/login',
   '/login.html',
   '/register',
@@ -139,6 +142,8 @@ for (const source of sensitiveSources) {
   requireHeader(
     source,
     'Referrer-Policy',
+    source === '/mobile/billing-return' ||
+    source === '/billing-return.html' ||
     source === '/colaborador/convites/:codigo' ||
     source === '/collaborator-invite.html' ||
     source === '/cliente/auto-cadastro' ||

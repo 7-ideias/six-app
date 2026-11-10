@@ -27,6 +27,13 @@ Somente o backend consulta a Stripe e decide o acesso e a vigência paga.
    o provisioning profile usado no TestFlight/produção, incluindo a capability.
    O Team ID padrão é `7FH3353D87`, presente no projeto. Se o perfil usa outro
    App ID prefix, ajustar `SIX_IOS_TEAM_ID` no build web para esse prefixo.
+   O workflow compara essa capability com o perfil instalado antes de compilar.
+   Se o perfil antigo ainda não a permite, remove somente Associated Domains
+   dos entitlements da cópia de build e usa o botão de retorno pelo esquema
+   do aplicativo. Push Notifications e autenticação permanecem intactos.
+   Ao atualizar `IOS_PROVISIONING_PROFILE_BASE64` com o perfil compatível, o
+   próximo build mantém Universal Links automaticamente. O archive valida
+   tanto o entitlement de push quanto o modo de retorno escolhido.
 5. Publicar o backend e instalar uma nova versão nativa Android/iOS. Atualizar
    somente web/backend não registra os links em versões antigas do aplicativo.
 
