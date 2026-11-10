@@ -111,7 +111,10 @@ class SubscriptionBillingController extends ChangeNotifier
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) load(sync: true);
+    // On web, regaining focus (including from DevTools) happens before the
+    // click. Starting a load here disables the checkout button mid-click.
+    // Mobile still refreshes when returning from the external payment app.
+    if (!kIsWeb && state == AppLifecycleState.resumed) load(sync: true);
   }
 
   @override
