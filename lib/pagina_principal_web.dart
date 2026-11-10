@@ -1,3 +1,4 @@
+import 'l10n/billing_texts.dart';
 import 'dart:async';
 
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_button.dart';
@@ -96,7 +97,7 @@ enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
 
-enum _WebHeaderUserAction { profile, support, logout }
+enum _WebHeaderUserAction { profile, subscription, support, logout }
 
 class _PdvItemMutationResult {
   const _PdvItemMutationResult({
@@ -995,6 +996,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             constraints: const BoxConstraints(minWidth: 228, maxWidth: 248),
             onSelected: (_WebHeaderUserAction action) {
               switch (action) {
+                case _WebHeaderUserAction.subscription:
+                  Navigator.of(context).pushNamed('/app/assinatura');
+                  return;
                 case _WebHeaderUserAction.profile:
                   showMeuPerfilWebDialog(context);
                   return;
@@ -1060,6 +1064,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                             ],
                           ),
                         ),
+                      PopupMenuItem<_WebHeaderUserAction>(value: _WebHeaderUserAction.subscription, child: Text(billingText(context, 'plans'))),
                       const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
                       PopupMenuItem<_WebHeaderUserAction>(
                         value: _WebHeaderUserAction.logout,
@@ -3574,3 +3579,4 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 }
+

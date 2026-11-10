@@ -1,3 +1,5 @@
+import 'subscription_web_page.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../core/services/billing_http_client.dart';
@@ -154,6 +156,10 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                         style: TextStyle(color: colors.danger),
                       ),
                     ),
+                  if (!widget.admin) ...[
+                    const SizedBox(height: 24),
+                    SubscriptionWebPanel(companyId: widget.companyId),
+                  ],
                   if (widget.admin) ...[
                     const SizedBox(height: 20),
                     TextField(

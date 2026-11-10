@@ -13,21 +13,20 @@ void main() {
       expect(mainSource, contains("fallbackRoute: '/checkout/flutter'"));
     });
 
-    test('/checkout/flutter preserva WebCheckoutPage no Flutter', () {
+    test('/checkout/flutter exige autenticação e usa assinatura real', () {
       final String mainSource = File('lib/main.dart').readAsStringSync();
 
       expect(mainSource, contains("routeUri.path == '/checkout/flutter'"));
       expect(
         mainSource,
-        contains('builder: (_) => WebCheckoutPage(initialUri: routeUri)'),
+        contains('page: WebCheckoutPage(initialUri: routeUri)'),
       );
     });
 
     test('antiga Home Flutter prefere checkout publico HTML', () {
-      final String source =
-          File(
-            'lib/presentation/pages/web_root/web_root_page.dart',
-          ).readAsStringSync();
+      final String source = File(
+        'lib/presentation/pages/web_root/web_root_page.dart',
+      ).readAsStringSync();
 
       expect(source, contains("path: '/checkout'"));
       expect(source, contains('assignBrowserLocation(htmlLocation)'));
@@ -35,10 +34,9 @@ void main() {
     });
 
     test('onboarding Flutter fallback prefere checkout publico HTML', () {
-      final String source =
-          File(
-            'lib/presentation/screens/web_trial_onboarding_page.dart',
-          ).readAsStringSync();
+      final String source = File(
+        'lib/presentation/screens/web_trial_onboarding_page.dart',
+      ).readAsStringSync();
 
       expect(source, contains("assignBrowserLocation('/checkout')"));
       expect(

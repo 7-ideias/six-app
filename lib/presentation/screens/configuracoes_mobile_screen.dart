@@ -1,5 +1,8 @@
+import '../../l10n/billing_texts.dart';
+import 'subscription_mobile_screen.dart';
 import '../../l10n/storage_texts.dart';
 import 'storage_usage_mobile_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -36,12 +39,25 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
           padding: EdgeInsets.all(16),
           children: <Widget>[
             _ConfigTile(
+              icon: Icons.credit_card_outlined,
+              title: billingText(context, 'plans'),
+              subtitle: billingText(context, 'portal'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SubscriptionMobileScreen(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _ConfigTile(
               icon: Icons.cloud_outlined,
               title: storageText(context, 'title'),
               subtitle: storageText(context, 'subtitle'),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const StorageUsageMobileScreen(),
-              )),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const StorageUsageMobileScreen(),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             _buildSectionLabel('Empresa'),
@@ -198,4 +214,3 @@ class _ConfigTile extends StatelessWidget {
     );
   }
 }
-

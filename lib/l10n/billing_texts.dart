@@ -3,6 +3,111 @@ import 'package:flutter/material.dart';
 import 'six_i18n.dart';
 
 const billingTexts = <String, List<String>>{
+  "plans": ["Planos e pagamento", "Plans and payment", "Planes y pago"],
+  "month": ["Mensal", "Monthly", "Mensual"],
+  "year": [
+    "Anual · 2 meses grátis",
+    "Annual · 2 months free",
+    "Anual · 2 meses gratis",
+  ],
+  "monthCycle": [
+    "por mês, com renovação automática",
+    "per month, automatically renewed",
+    "por mes, con renovación automática",
+  ],
+  "yearCycle": [
+    "por ano, em cobrança única com renovação automática",
+    "per year, one payment with automatic renewal",
+    "por año, un pago con renovación automática",
+  ],
+  "purchase": [
+    "Assinar com Stripe",
+    "Subscribe with Stripe",
+    "Suscribirse con Stripe",
+  ],
+  "portal": [
+    "Gerenciar pagamento e cancelamento",
+    "Manage payment and cancellation",
+    "Gestionar pago y cancelación",
+  ],
+  "sync": [
+    "Já paguei / atualizar pagamento",
+    "I have paid / refresh payment",
+    "Ya pagué / actualizar pago",
+  ],
+  "paymentTerms": [
+    "Ao confirmar na Stripe, a cobrança começa imediatamente, inclusive durante o teste. O anual custa 10 mensalidades e dá acesso por 12 meses. Cancelar interrompe a próxima renovação; o acesso segue até o fim do período pago.",
+    "Confirming in Stripe starts billing immediately, including during your trial. Annual billing costs 10 monthly payments for 12 months of access. Cancellation stops the next renewal; access continues until the paid period ends.",
+    "Al confirmar en Stripe, el cobro empieza inmediatamente, incluso durante la prueba. El anual cuesta 10 mensualidades por 12 meses de acceso. La cancelación detiene la próxima renovación; el acceso continúa hasta finalizar el período pagado.",
+  ],
+  "paymentTest": [
+    "Ambiente de testes · sem cobrança real",
+    "Test mode · no real charges",
+    "Modo de prueba · sin cobros reales",
+  ],
+  "paymentUnavailable": [
+    "Pagamento indisponível no momento. Tente novamente mais tarde ou contate o suporte.",
+    "Payment is currently unavailable. Try later or contact support.",
+    "Pago no disponible. Intenta más tarde o contacta con soporte.",
+  ],
+  "purchaseConflict": [
+    "Atualize o pagamento antes de continuar. Se já existe uma contratação aberta, retome o mesmo plano; para uma assinatura existente, use Gerenciar pagamento.",
+    "Refresh payment before continuing. Resume the same plan if checkout is already open; use Manage payment for an existing subscription.",
+    "Actualiza el pago antes de continuar. Retoma el mismo plan si ya hay una contratación abierta; usa Gestionar pago para una suscripción existente.",
+  ],
+  "ownerOnly": [
+    "A contratação é feita pelo administrador deste comércio.",
+    "Only this business administrator can subscribe.",
+    "Solo el administrador de este comercio puede contratar.",
+  ],
+  "noPlans": [
+    "Nenhum plano disponível para contratação. Contate o suporte.",
+    "No plans available. Contact support.",
+    "No hay planes disponibles. Contacta con soporte.",
+  ],
+  "cancelScheduled": [
+    "Cancelamento agendado para o fim do período pago.",
+    "Cancellation scheduled for the end of the paid period.",
+    "Cancelación programada al finalizar el período pagado.",
+  ],
+  "selectCompany": [
+    "Selecione um comércio para gerenciar sua assinatura.",
+    "Select a business to manage its subscription.",
+    "Selecciona un comercio para gestionar su suscripción.",
+  ],
+  "active": ["Assinatura ativa", "Active subscription", "Suscripción activa"],
+  "past_due": ["Pagamento pendente", "Payment overdue", "Pago pendiente"],
+  "unpaid": [
+    "Pagamento não regularizado",
+    "Unpaid subscription",
+    "Suscripción impagada",
+  ],
+  "incomplete": [
+    "Confirmação do pagamento pendente",
+    "Payment confirmation pending",
+    "Confirmación de pago pendiente",
+  ],
+  "incomplete_expired": [
+    "Contratação expirada",
+    "Checkout expired",
+    "Contratación caducada",
+  ],
+  "canceled": [
+    "Assinatura cancelada",
+    "Subscription canceled",
+    "Suscripción cancelada",
+  ],
+  "paused": [
+    "Assinatura pausada",
+    "Subscription paused",
+    "Suscripción pausada",
+  ],
+  "trialing": [
+    "Teste da assinatura",
+    "Subscription trial",
+    "Prueba de suscripción",
+  ],
+
   'title': [
     'Assinatura e acesso',
     'Subscription and access',
@@ -14,9 +119,9 @@ const billingTexts = <String, List<String>>{
     'Regulariza el acceso al comercio',
   ],
   'message': [
-    'O acesso está bloqueado por falta de pagamento ou término do teste. Seus dados foram preservados. Nesta etapa, entre em contato com a administração para regularizar o acesso.',
-    'Access is blocked due to missing payment or an expired trial. Your data has been preserved. At this stage, contact administration to restore access.',
-    'El acceso está bloqueado por falta de pago o fin de la prueba. Tus datos se conservaron. En esta etapa, contacta con la administración para regularizar el acceso.',
+    'O acesso está bloqueado por falta de pagamento ou término do teste. Seus dados foram preservados. O administrador pode escolher um plano ou regularizar o pagamento abaixo.',
+    'Access is blocked due to missing payment or an expired trial. Your data has been preserved. The administrator can choose a plan or resolve payment below.',
+    'El acceso está bloqueado por falta de pago o fin de la prueba. Tus datos se conservaron. El administrador puede elegir un plan o regularizar el pago abajo.',
   ],
   'adminMessage': [
     'A liberação vale para todos os usuários deste comércio até ser revogada. Ela não registra pagamento e não altera as franquias de armazenamento.',

@@ -1,3 +1,5 @@
+import 'subscription_mobile_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../core/services/billing_http_client.dart';
@@ -129,6 +131,10 @@ class _BillingAccessMobileScreenState extends State<BillingAccessMobileScreen> {
                     style: TextStyle(color: colors.error),
                   ),
                 ),
+              if (!widget.admin) ...[
+                const SizedBox(height: 24),
+                SubscriptionMobilePanel(companyId: widget.companyId),
+              ],
               if (widget.admin) ...[
                 const SizedBox(height: 20),
                 TextField(
