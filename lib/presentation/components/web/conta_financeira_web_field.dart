@@ -240,8 +240,19 @@ class _ContaFinanceiraWebFieldState extends State<ContaFinanceiraWebField> {
     for (final item in _items) {
       if (item.id == widget.value) label = item.nome;
     }
-    return OutlinedButton.icon(
-      onPressed: !widget.enabled
+    return TextFormField(
+      key: ValueKey('conta-${widget.espaco}-${widget.value}-$label'),
+      initialValue: label,
+      readOnly: true,
+      showCursor: false,
+      enableInteractiveSelection: false,
+      enabled: widget.enabled,
+      decoration: InputDecoration(
+        labelText: widget.label ?? context.t('space.account'),
+        prefixIcon: const Icon(Icons.account_balance_outlined),
+        suffixIcon: const Icon(Icons.expand_more_rounded),
+      ),
+      onTap: !widget.enabled
           ? null
           : () async {
               final espaco = widget.espaco;
@@ -256,8 +267,6 @@ class _ContaFinanceiraWebFieldState extends State<ContaFinanceiraWebField> {
                 await _load();
               }
             },
-      icon: const Icon(Icons.account_balance_outlined),
-      label: Text('${widget.label ?? context.t('space.account')}: $label'),
     );
   }
 }
