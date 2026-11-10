@@ -25,6 +25,7 @@ abstract final class WebNavigationIds {
   static const String peopleCollaborators = 'people.collaborators';
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
+  static const String adminPlans = 'admin.plans';
   static const String visualAssets = 'visual.assets';
   static const String cash = 'cash';
   static const String financial = 'financial';
@@ -102,7 +103,9 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Compras',
           icon: Icons.shopping_cart_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[WebNavigationPermission.podeConsultarCompras],
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeConsultarCompras,
+            ],
           ),
           destination: WebNavigationDestination.operationsPurchases,
         ),
@@ -130,13 +133,12 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.products',
           labelFallback: 'Produtos',
           icon: Icons.inventory_2_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarCatalogo,
-              WebNavigationPermission.podeCadastrarProduto,
-              WebNavigationPermission.podeEditarProduto,
-            ],
-          ),
+          visibility:
+              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+                WebNavigationPermission.podeAcessarCatalogo,
+                WebNavigationPermission.podeCadastrarProduto,
+                WebNavigationPermission.podeEditarProduto,
+              ]),
           destination: WebNavigationDestination.catalogProducts,
         ),
         WebNavigationItem(
@@ -178,7 +180,9 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Fornecedores',
           icon: Icons.local_shipping_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[WebNavigationPermission.podeConsultarFornecedores],
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeConsultarFornecedores,
+            ],
           ),
           destination: WebNavigationDestination.peopleSuppliers,
         ),
@@ -223,11 +227,9 @@ abstract final class WebNavigationRegistry {
       labelKey: 'web.navigation.visualAssets',
       labelFallback: 'Imagens',
       icon: Icons.image_search_outlined,
-      visibility: WebNavigationVisibilityRule.anyOf(
-        <WebNavigationPermission>[
-          WebNavigationPermission.podeAcessarImagensContextuais,
-        ],
-      ),
+      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+        WebNavigationPermission.podeAcessarImagensContextuais,
+      ]),
       destination: WebNavigationDestination.visualAssets,
     ),
     WebNavigationItem(
@@ -250,6 +252,16 @@ abstract final class WebNavigationRegistry {
           destination: WebNavigationDestination.financialAgenda,
         ),
       ],
+    ),
+    WebNavigationItem(
+      id: WebNavigationIds.adminPlans,
+      labelKey: 'web.navigation.adminPlans',
+      labelFallback: 'Planos',
+      icon: Icons.sell_outlined,
+      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+        WebNavigationPermission.podeGerenciarPlanos,
+      ]),
+      destination: WebNavigationDestination.adminPlans,
     ),
     WebNavigationItem(
       id: WebNavigationIds.settings,
@@ -352,3 +364,4 @@ abstract final class WebNavigationRegistry {
     return null;
   }
 }
+

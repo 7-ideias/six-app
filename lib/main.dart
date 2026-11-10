@@ -11,7 +11,7 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
-import 'package:sixpos/presentation/screens/admin_planos_web_page.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/screens/admin_usuarios_ativos_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_visual_assets_web_page.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
@@ -173,10 +173,13 @@ class MyApp extends StatelessWidget {
         builder: (_) => const AdminNovasIdeiasWebPage(),
       );
     }
-    if (routeUri.path == '/admin/planos') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const AdminPlanosWebPage(),
+    if (routeUri.path == '/admin/planos' ||
+        routeUri.path == '/app/admin/planos') {
+      return _authenticatedWebRoute(
+        settings: const RouteSettings(name: '/app/admin/planos'),
+        page: const PaginaPrincipalWeb(
+          initialDestination: WebNavigationDestination.adminPlans,
+        ),
       );
     }
     if (routeUri.path == '/admin/imagens-contextuais') {
@@ -549,3 +552,4 @@ Future<void> _exitBilling() async {
     (_) => false,
   );
 }
+

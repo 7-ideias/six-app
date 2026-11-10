@@ -93,6 +93,7 @@ enum WebNavigationDestination {
   peopleSixoUsers,
   peoplePerformance,
   visualAssets,
+  adminPlans,
   cash,
   financialAgenda,
   settings,
@@ -116,6 +117,7 @@ enum WebNavigationPermission {
   podeGerenciarDesempenho,
   podeAcessarUsuariosSixo,
   podeAcessarImagensContextuais,
+  podeGerenciarPlanos,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }
@@ -154,3 +156,4 @@ class WebNavigationVisibilityRule {
     }
   }
 }
+

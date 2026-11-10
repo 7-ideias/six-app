@@ -87,7 +87,8 @@ part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
 
 class PaginaPrincipalWeb extends StatefulWidget {
-  const PaginaPrincipalWeb({super.key});
+  const PaginaPrincipalWeb({super.key, this.initialDestination});
+  final WebNavigationDestination? initialDestination;
 
   @override
   State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
@@ -3542,6 +3543,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
 
     final Widget webShell = AuthenticatedWebShell(
+      initialDestination: widget.initialDestination,
       navigationItems: webNavigationItems,
       resolver: _webNavigationResolver,
       activeDestination: webNavigationDestinationForModuloCentralPdv(
@@ -3579,4 +3581,5 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 }
+
 
