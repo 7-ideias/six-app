@@ -9,6 +9,31 @@ const billingTexts = <String, List<String>>{
     'Elige el plan para tu comercio.',
   ],
   'popular': ['Popular', 'Popular', 'Popular'],
+  "paymentConfirming": [
+    "Estamos confirmando seu pagamento…",
+    "We are confirming your payment…",
+    "Estamos confirmando tu pago…",
+  ],
+  "paymentConfirmed": [
+    "Assinatura ativada! Tudo pronto para continuar.",
+    "Subscription activated! You are ready to continue.",
+    "¡Suscripción activada! Todo listo para continuar.",
+  ],
+  "paymentStillPending": [
+    "A confirmação ainda não chegou. Aguarde um momento e toque em atualizar pagamento. Não é necessário pagar novamente.",
+    "Confirmation has not arrived yet. Wait a moment and refresh payment. You do not need to pay again.",
+    "La confirmación aún no ha llegado. Espera un momento y actualiza el pago. No necesitas pagar de nuevo.",
+  ],
+  "checkoutCanceled": [
+    "Você voltou do checkout. Confira o status da assinatura antes de tentar novamente.",
+    "You returned from checkout. Check your subscription status before trying again.",
+    "Volviste del checkout. Revisa el estado de la suscripción antes de intentarlo de nuevo.",
+  ],
+  "returnOtherCompany": [
+    "Este retorno é de outro comércio. Selecione o comércio usado no pagamento e atualize a assinatura.",
+    "This return is for another business. Select the business used for payment and refresh its subscription.",
+    "Este retorno es de otro comercio. Selecciona el comercio del pago y actualiza su suscripción.",
+  ],
   "selectedPlan": [
     "Plano escolhido no site",
     "Plan selected on the website",

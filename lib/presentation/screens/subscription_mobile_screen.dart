@@ -10,11 +10,13 @@ import '../theme/subscription_visuals.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../l10n/billing_texts.dart';
 import '../../l10n/storage_texts.dart';
+import '../../core/services/billing_return_service.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../controllers/subscription_billing_controller.dart';
 
 class SubscriptionMobileScreen extends StatelessWidget {
-  const SubscriptionMobileScreen({super.key});
+  const SubscriptionMobileScreen({super.key, this.initialReturn});
+  final BillingReturn? initialReturn;
   @override
   Widget build(BuildContext context) {
     final colors = context.sixMobileColors;
@@ -27,7 +29,7 @@ class SubscriptionMobileScreen extends StatelessWidget {
       bodyBuilder: (context, scroll, topInset) => ListView(
         controller: scroll,
         padding: EdgeInsets.fromLTRB(20, topInset + 20, 20, 32),
-        children: const [SubscriptionMobilePanel()],
+        children: [SubscriptionMobilePanel(initialReturn: initialReturn)],
       ),
     );
   }
@@ -158,8 +160,13 @@ class SubscriptionOfferMobileCard extends StatelessWidget {
 }
 
 class SubscriptionMobilePanel extends StatefulWidget {
-  const SubscriptionMobilePanel({super.key, this.companyId});
+  const SubscriptionMobilePanel({
+    super.key,
+    this.companyId,
+    this.initialReturn,
+  });
   final String? companyId;
+  final BillingReturn? initialReturn;
   @override
   State<SubscriptionMobilePanel> createState() =>
       _SubscriptionMobilePanelState();
@@ -168,6 +175,7 @@ class SubscriptionMobilePanel extends StatefulWidget {
 class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
+    initialReturn: widget.initialReturn,
   );
   @override
   void didChangeDependencies() {
@@ -231,6 +239,17 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
                 compact: true,
                 backgroundColor: SubscriptionVisuals.surface,
                 borderColor: SubscriptionVisuals.border,
+              ),
+            if (controller.returnMessage != null)
+              Semantics(
+                liveRegion: true,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    billingText(context, controller.returnMessage!),
+                    style: const TextStyle(color: SubscriptionVisuals.cyan),
+                  ),
+                ),
               ),
             if (controller.error != null)
               Padding(

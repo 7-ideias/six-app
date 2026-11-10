@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'core/services/auth_service.dart';
 import 'core/services/billing_http_client.dart';
+import 'core/services/billing_return_service.dart';
 import 'presentation/screens/billing_access_web_page.dart';
 import 'presentation/screens/billing_access_mobile_screen.dart';
 
@@ -57,6 +58,7 @@ import 'core/ui/app_feedback.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb) BillingReturnService.instance.initialize();
   if (kIsWeb) usePathUrlStrategy();
   final SharedPreferences? prefs = await _loadSharedPreferences();
   final ThemeProvider themeProvider = await ThemeProvider.load(
@@ -484,7 +486,7 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: kIsWeb ? null : const SplashScreen(),
-      initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
+      initialRoute: kIsWeb ? _resolveInitialWebRoute() : '/',
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );
   }
@@ -552,4 +554,3 @@ Future<void> _exitBilling() async {
     (_) => false,
   );
 }
-

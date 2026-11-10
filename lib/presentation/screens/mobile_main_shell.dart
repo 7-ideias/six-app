@@ -9,6 +9,8 @@ import '../../core/services/notificacao_service.dart';
 import '../../core/services/notificacao_evento_sync_service.dart';
 import '../../core/services/push_destination_resolver.dart';
 import '../../core/services/push_navigation_service.dart';
+import '../../core/services/billing_return_service.dart';
+import 'subscription_mobile_screen.dart';
 import '../../core/ui/app_feedback.dart';
 import '../../core/services/websocket_service.dart';
 import '../../data/models/streak_models.dart';
@@ -86,6 +88,8 @@ class _MobileMainShellState extends State<MobileMainShell>
     WidgetsBinding.instance.addObserver(this);
     _navigationController.addListener(_onNavigationChanged);
     _notificacaoService.addListener(_onNotificacoesChanged);
+    BillingReturnService.instance.addListener(_onBillingReturn);
+    _onBillingReturn();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PushNavigationService().bindExecutor(_pushNavigationExecutor);
       _registrarOfensivaMobile();
@@ -95,6 +99,7 @@ class _MobileMainShellState extends State<MobileMainShell>
 
   @override
   void dispose() {
+    BillingReturnService.instance.removeListener(_onBillingReturn);
     WidgetsBinding.instance.removeObserver(this);
     _navigationController.removeListener(_onNavigationChanged);
     _notificacaoService.removeListener(_onNotificacoesChanged);
@@ -102,6 +107,21 @@ class _MobileMainShellState extends State<MobileMainShell>
     _navigationController.dispose();
     _transitionController.dispose();
     super.dispose();
+  }
+
+  void _onBillingReturn() {
+    // Existing billing panels get first chance to consume the event.
+    // This shell is only mounted after the normal authentication/bootstrap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || BillingReturnService.instance.pending == null) return;
+      final result = BillingReturnService.instance.take()!;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SubscriptionMobileScreen(initialReturn: result),
+        ),
+      );
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override

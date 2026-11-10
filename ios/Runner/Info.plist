@@ -66,6 +66,8 @@
 	<string>O Six precisa acessar sua galeria para anexar imagens aos produtos.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>O SixoApp usa o Face ID para permitir acesso seguro à sua conta.</string>
+    <key>FlutterDeepLinkingEnabled</key>
+    <true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -75,6 +77,7 @@
 			<array>
 				<string>com.googleusercontent.apps.841074493827-2i7fbt2g0fsv7pn2ikg9k9hlfh6jl6ud</string>
 				<string>com.sixoapp.app</string>
+                <string>com.sixoapp.billing</string>
 			</array>
 		</dict>
 	</array>
