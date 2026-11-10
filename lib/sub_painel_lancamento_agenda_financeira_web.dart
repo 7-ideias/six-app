@@ -26,10 +26,12 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
     super.key,
     required this.body,
     required this.textoDaAppBar,
+    this.maxWidth,
   });
 
   final Widget body;
   final String textoDaAppBar;
+  final double? maxWidth;
 
   void _fecharSubPainel(BuildContext context) {
     final NavigatorState navigator = Navigator.of(context);
@@ -58,7 +60,9 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
               child: AnimatedContainer(
                 duration: WebThemeTokens.transitionDuration,
                 curve: WebThemeTokens.transitionCurve,
-                width: MediaQuery.of(context).size.width * 0.97,
+                width: (MediaQuery.of(context).size.width * 0.97)
+                    .clamp(0.0, maxWidth ?? double.infinity)
+                    .toDouble(),
                 height: MediaQuery.of(context).size.height * 0.96,
                 decoration: BoxDecoration(
                   color: tokens.surfaceElevated,
@@ -121,7 +125,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 }) {
   return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: modoEdicao,
     barrierLabel: context.t(
       'agenda.launch.dialogBarrier',
       fallback: modoEdicao
@@ -134,6 +138,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
     padding: const EdgeInsets.all(12),
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
+        maxWidth: modoEdicao ? null : 1120,
         textoDaAppBar: modoEdicao
             ? context.t('agenda.form.edit')
             : context.t('agenda.form.create'),
