@@ -206,6 +206,8 @@ void main() {
     expect(submitted, isNull);
     await tester.tap(find.text('Receber total'));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
     expect(submitted!.dataLiquidacao, date);
     expect(submitted!.classificacao!.nomeContato, 'Escola da Laura');
     expect(submitted!.classificacao!.categoria, isNull);
@@ -315,6 +317,61 @@ void main() {
       });
     },
   );
+  testWidgets('multiple methods preserve allocation and block excess', (
+    tester,
+  ) async {
+    SixWebRecebimentoResultado? result;
+    await _pumpHarness(
+      tester,
+      permitirAjustes: true,
+      onResult: (v) => result = v,
+    );
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-method-0')),
+      '60',
+    );
+    await tester.ensureVisible(find.text('Adicionar forma'));
+    await tester.tap(find.text('Adicionar forma'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-discount')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-discount')),
+      '10',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('settlement-method-0')))
+          .controller!
+          .text,
+      '60',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('settlement-method-1')))
+          .controller!
+          .text,
+      '39,00',
+    );
+    expect(find.textContaining('Valor excedente'), findsWidgets);
+    final button = find.widgetWithText(FilledButton, 'Receber total');
+    expect(tester.widget<FilledButton>(button).onPressed, isNull);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-method-1')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-method-1')),
+      '29',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Receber total'));
+    await tester.pumpAndSettle();
+    expect(result!.valor, 89);
+  });
 }
 
 Color? _stateStripColor(WidgetTester tester) {

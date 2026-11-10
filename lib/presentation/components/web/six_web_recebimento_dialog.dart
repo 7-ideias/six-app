@@ -562,7 +562,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     try {
       if (widget.onConfirm != null) await widget.onConfirm!(resultado);
       if (!mounted) return;
-      setState(() => _sucesso = true);
+      setState(() => _sucesso = widget.onConfirm != null);
       await Future<void>.delayed(
         Duration(
           milliseconds: _reduceMotion
