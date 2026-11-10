@@ -179,6 +179,9 @@ jobs:
             exit 1
           fi
 
+          python3 scripts/ci/prepare_ios_associated_domains.py prepare \
+            "${profile_plist}" ios/Runner/Runner.entitlements
+
           security create-keychain -p "${keychain_password}" "${keychain_path}"
           security set-keychain-settings -lut 21600 "${keychain_path}"
           security unlock-keychain -p "${keychain_password}" "${keychain_path}"
@@ -244,7 +247,7 @@ jobs:
 
           echo "IOS_ARCHIVE_PATH=${archive_path}" >> "${GITHUB_ENV}"
 
-      - name: Validate signed push entitlement
+      - name: Validate signed push and link entitlements
         run: |
           set -euo pipefail
 
@@ -260,6 +263,9 @@ jobs:
             echo "::error::Runner.app foi assinado sem aps-environment=production"
             exit 1
           fi
+
+          python3 scripts/ci/prepare_ios_associated_domains.py verify \
+            "${IOS_ASSOCIATED_DOMAINS_ENABLED}" "${signed_entitlements}"
 
       - name: Export IPA
         run: |
