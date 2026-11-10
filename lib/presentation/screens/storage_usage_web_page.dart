@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/storage_texts.dart';
 import '../../providers/empresa_provider.dart';
 import '../controllers/storage_usage_controller.dart';
-import '../components/six_backend_loading.dart';
+import '../components/six_visual_asset_shimmer.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -126,110 +126,106 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        '${storageText(context, 'plan')}: ${usage == null
-                            ? storageText(context, 'noMeasurement')
-                            : usage.plan.planId == null
-                            ? storageText(context, 'noPlan')
-                            : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      if (widget.adminCompanyId != null)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              await showStoragePlansWeb(
-                                context,
-                                companyId: widget.adminCompanyId,
-                              );
-                              if (mounted) await _controller.load();
-                            },
-                            icon: const Icon(Icons.tune),
-                            label: Text(storageText(context, 'managePlans')),
+                      if (_controller.loading)
+                        _loadingSkeleton(context)
+                      else ...[
+                        Text(
+                          '${storageText(context, 'plan')}: ${usage == null
+                              ? storageText(context, 'noMeasurement')
+                              : usage.plan.planId == null
+                              ? storageText(context, 'noPlan')
+                              : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (widget.adminCompanyId != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                await showStoragePlansWeb(
+                                  context,
+                                  companyId: widget.adminCompanyId,
+                                );
+                                if (mounted) await _controller.load();
+                              },
+                              icon: const Icon(Icons.tune),
+                              label: Text(storageText(context, 'managePlans')),
+                            ),
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final width = constraints.maxWidth < 600
-                              ? constraints.maxWidth
-                              : (constraints.maxWidth - 16) / 2;
-                          return Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
-                            children: [
-                              SizedBox(
-                                width: width,
-                                child: _metric(
-                                  context,
-                                  Icons.storage_outlined,
-                                  'database',
-                                  usage?.databaseBytes,
+                        const SizedBox(height: 16),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final width = constraints.maxWidth < 600
+                                ? constraints.maxWidth
+                                : (constraints.maxWidth - 16) / 2;
+                            return Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              children: [
+                                SizedBox(
+                                  width: width,
+                                  child: _metric(
+                                    context,
+                                    Icons.storage_outlined,
+                                    'database',
+                                    usage?.databaseBytes,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: _metric(
-                                  context,
-                                  Icons.folder_outlined,
-                                  'files',
-                                  usage?.fileBytes,
+                                SizedBox(
+                                  width: width,
+                                  child: _metric(
+                                    context,
+                                    Icons.folder_outlined,
+                                    'files',
+                                    usage?.fileBytes,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      if (_controller.loading &&
-                          usage == null &&
-                          _controller.error == null)
-                        SixBackendLoading(
-                          title: storageText(context, 'pending'),
-                          subtitle: storageText(context, 'subtitle'),
-                          animation: SixBackendLoadingAnimation.skeletonPulse,
+                              ],
+                            );
+                          },
                         ),
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          _controller.error != null
-                              ? storageText(context, _controller.error!)
-                              : usage == null
-                              ? storageText(context, 'pending')
-                              : storageText(
-                                  context,
-                                  storageStatusKey(usage.status),
-                                ),
-                          style: TextStyle(
-                            color:
-                                _controller.error != null ||
-                                    usage?.status == 'ERRO'
-                                ? tokens.danger
-                                : tokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                      if (usage?.measuredAt != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                        const SizedBox(height: 18),
+                        Semantics(
+                          liveRegion: true,
                           child: Text(
-                            '${storageText(context, 'measuredAt')}: ${storageTimestamp(context, usage!.measuredAt!)}',
-                            style: TextStyle(color: tokens.secondaryText),
+                            _controller.error != null
+                                ? storageText(context, _controller.error!)
+                                : usage == null
+                                ? storageText(context, 'pending')
+                                : storageText(
+                                    context,
+                                    storageStatusKey(usage.status),
+                                  ),
+                            style: TextStyle(
+                              color:
+                                  _controller.error != null ||
+                                      usage?.status == 'ERRO'
+                                  ? tokens.danger
+                                  : tokens.secondaryText,
+                            ),
                           ),
                         ),
-                      if (usage?.plan.limits.maxUploadBytes != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
+                        if (usage?.measuredAt != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              '${storageText(context, 'measuredAt')}: ${storageTimestamp(context, usage!.measuredAt!)}',
+                              style: TextStyle(color: tokens.secondaryText),
+                            ),
                           ),
-                        ),
-                      if (usage?.status == 'PARCIAL')
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(storageText(context, 'partialQuota')),
-                        ),
+                        if (usage?.plan.limits.maxUploadBytes != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Text(
+                              '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
+                            ),
+                          ),
+                        if (usage?.status == 'PARCIAL')
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Text(storageText(context, 'partialQuota')),
+                          ),
+                      ],
                       const SizedBox(height: 24),
                       Text(
                         storageText(context, 'scope'),
@@ -248,6 +244,81 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _loadingSkeleton(BuildContext context) {
+    return Semantics(
+      label: storageText(context, 'pending'),
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: TickerMode(
+          enabled: !MediaQuery.disableAnimationsOf(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: .45,
+                child: SixVisualAssetShimmer(height: 22, borderRadius: 8),
+              ),
+              if (widget.adminCompanyId != null) ...[
+                const SizedBox(height: 8),
+                const FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: .55,
+                  child: SixVisualAssetShimmer(height: 44, borderRadius: 14),
+                ),
+              ],
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth < 600
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 16) / 2;
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: List.generate(
+                      2,
+                      (_) => SizedBox(
+                        width: width,
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SixVisualAssetShimmer(height: 88, borderRadius: 22),
+                            SizedBox(height: 10),
+                            FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: .65,
+                              child: SixVisualAssetShimmer(
+                                height: 16,
+                                borderRadius: 6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+              const FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: .3,
+                child: SixVisualAssetShimmer(height: 16, borderRadius: 6),
+              ),
+              const SizedBox(height: 8),
+              const FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: .55,
+                child: SixVisualAssetShimmer(height: 16, borderRadius: 6),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
