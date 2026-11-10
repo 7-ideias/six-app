@@ -1706,16 +1706,27 @@ class _LancamentoAgendaFinanceiraWebBodyState
     required String description,
     required bool selected,
     required VoidCallback onTap,
+    Color? accent,
   }) {
     final tokens = WebThemeTokens.of(context);
+    final highlight = accent ?? tokens.info;
     return Semantics(
       selected: selected,
       child: Material(
-        color: selected ? tokens.selectedBackground : tokens.cardBackground,
+        color: selected
+            ? accent == null
+                  ? tokens.selectedBackground
+                  : Color.alphaBlend(
+                      highlight.withValues(alpha: .12),
+                      tokens.cardBackground,
+                    )
+            : tokens.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: selected ? tokens.selectedBorder : tokens.cardBorder,
+            color: selected
+                ? (accent ?? tokens.selectedBorder)
+                : tokens.cardBorder,
             width: selected ? 2 : 1,
           ),
         ),
@@ -1730,13 +1741,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
               children: [
                 Row(
                   children: [
-                    Icon(icon, size: 30, color: tokens.info),
+                    Icon(icon, size: 30, color: highlight),
                     const Spacer(),
                     Icon(
                       selected
                           ? Icons.check_circle_rounded
                           : Icons.radio_button_unchecked,
-                      color: selected ? tokens.info : tokens.secondaryText,
+                      color: selected ? highlight : tokens.secondaryText,
                     ),
                   ],
                 ),
@@ -1969,50 +1980,97 @@ class _LancamentoAgendaFinanceiraWebBodyState
         !blocked &&
         (_etapa != 0 || _tipoEscolhido) &&
         (_etapa != 1 || _espacoEscolhido);
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    );
+    final cancel = TextButton(
+      onPressed: blocked ? null : _solicitarSaida,
+      style: TextButton.styleFrom(
+        foregroundColor: tokens.secondaryText,
+        minimumSize: const Size(96, 48),
+        shape: buttonShape,
+      ),
+      child: Text(_label('cancel')),
+    );
+    final back = OutlinedButton.icon(
+      onPressed: blocked ? null : () => _irParaEtapa(_etapa - 1),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(112, 48),
+        shape: buttonShape,
+      ),
+      icon: const Icon(Icons.arrow_back_rounded, size: 18),
+      label: Text(_journey('back')),
+    );
+    final next = FilledButton.icon(
+      key: const ValueKey('journey-next'),
+      onPressed: !canContinue
+          ? null
+          : _etapa < 3
+          ? _continuarJornada
+          : _salvar,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(160, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: buttonShape,
+      ),
+      iconAlignment: IconAlignment.end,
+      icon: Icon(
+        _etapa < 3 ? Icons.arrow_forward_rounded : Icons.check_rounded,
+        size: 18,
+      ),
+      label: Text(
+        _etapa < 3
+            ? _journey('continue')
+            : _label(
+                _isLoading
+                    ? 'saving'
+                    : _registrarPagamento
+                    ? (_tipoSelecionado == 'Receber'
+                          ? 'saveReceive'
+                          : 'saveContinue')
+                    : 'save',
+              ),
+        textAlign: TextAlign.center,
+      ),
+    );
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: tokens.cardBackground,
         border: Border(top: BorderSide(color: tokens.divider)),
       ),
-      child: Row(
-        children: [
-          TextButton(
-            onPressed: blocked ? null : _solicitarSaida,
-            child: Text(_label('cancel')),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 560) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [cancel, const Spacer(), if (_etapa > 0) back],
+                    ),
+                    const SizedBox(height: 12),
+                    next,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  cancel,
+                  const Spacer(),
+                  if (_etapa > 0) ...[back, const SizedBox(width: 12)],
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: next,
+                  ),
+                ],
+              );
+            },
           ),
-          const Spacer(),
-          if (_etapa > 0) ...[
-            OutlinedButton(
-              onPressed: blocked ? null : () => _irParaEtapa(_etapa - 1),
-              child: Text(_journey('back')),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Flexible(
-            child: FilledButton(
-              key: const ValueKey('journey-next'),
-              onPressed: !canContinue
-                  ? null
-                  : _etapa < 3
-                  ? _continuarJornada
-                  : _salvar,
-              child: Text(
-                _etapa < 3
-                    ? _journey('continue')
-                    : _label(
-                        _isLoading
-                            ? 'saving'
-                            : _registrarPagamento
-                            ? (_tipoSelecionado == 'Receber'
-                                  ? 'saveReceive'
-                                  : 'saveContinue')
-                            : 'save',
-                      ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -2163,6 +2221,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             for (final receber in [false, true])
                               _choice(
                                 id: receber ? 'receive' : 'pay',
+                                accent: receber
+                                    ? tokens.financialPositive
+                                    : tokens.financialNegative,
                                 icon: receber
                                     ? Icons.south_west_rounded
                                     : Icons.north_east_rounded,
