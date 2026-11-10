@@ -24,10 +24,14 @@ class SixWebRecebimentoResultado {
     required this.formaPagamentoBackend,
     required this.recebimentos,
     this.observacao,
+    this.desconto = 0,
+    this.acrescimo = 0,
   });
 
   final SixWebRecebimentoTipo tipo;
   final double valor;
+  final double desconto;
+  final double acrescimo;
   final String codigoTipoRecebimento;
   final String descricaoTipoRecebimento;
   final String formaPagamentoBackend;
@@ -60,6 +64,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     this.contato,
     this.permitirParcial = true,
     this.pagamento = false,
+    this.permitirAjustes = false,
     this.destinosFinanceiros = false,
     this.exigirConta = false,
     this.espacoFinanceiro = 'EMPRESA',
@@ -77,6 +82,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final String? contato;
   final bool permitirParcial;
   final bool pagamento;
+  final bool permitirAjustes;
   final bool destinosFinanceiros;
   final bool exigirConta;
   final String espacoFinanceiro;
@@ -94,6 +100,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     String? contato,
     bool permitirParcial = true,
     bool pagamento = false,
+    bool permitirAjustes = false,
     bool destinosFinanceiros = false,
     bool exigirConta = false,
     String espacoFinanceiro = 'EMPRESA',
@@ -112,33 +119,35 @@ class SixWebRecebimentoDialog extends StatefulWidget {
       barrierColor: Colors.transparent,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
-      pageBuilder: (
-        BuildContext routeContext,
-        Animation<double> animation,
-        Animation<double> secondaryAnimation,
-      ) {
-        return _RecebimentoRouteSurface(
-          animation: animation,
-          reduceMotion: reduceMotion,
-          child: SixWebRecebimentoDialog(
-            titulo: titulo,
-            descricao: descricao,
-            valorAberto: valorAberto,
-            caixaApiClient: caixaApiClient,
-            contato: contato,
-            permitirParcial: permitirParcial,
-            pagamento: pagamento,
-            destinosFinanceiros: destinosFinanceiros,
-            exigirConta: exigirConta,
-            espacoFinanceiro: espacoFinanceiro,
-            contaFinanceiraInicial: contaFinanceiraInicial,
-            contaService: contaService,
-            tipoInicial: tipoInicial,
-            observacaoInicial: observacaoInicial,
-            codigoTipoInicial: codigoTipoInicial,
-          ),
-        );
-      },
+      pageBuilder:
+          (
+            BuildContext routeContext,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+          ) {
+            return _RecebimentoRouteSurface(
+              animation: animation,
+              reduceMotion: reduceMotion,
+              child: SixWebRecebimentoDialog(
+                titulo: titulo,
+                descricao: descricao,
+                valorAberto: valorAberto,
+                caixaApiClient: caixaApiClient,
+                contato: contato,
+                permitirParcial: permitirParcial,
+                pagamento: pagamento,
+                permitirAjustes: permitirAjustes,
+                destinosFinanceiros: destinosFinanceiros,
+                exigirConta: exigirConta,
+                espacoFinanceiro: espacoFinanceiro,
+                contaFinanceiraInicial: contaFinanceiraInicial,
+                contaService: contaService,
+                tipoInicial: tipoInicial,
+                observacaoInicial: observacaoInicial,
+                codigoTipoInicial: codigoTipoInicial,
+              ),
+            );
+          },
       transitionBuilder:
           (
             BuildContext context,
@@ -161,6 +170,19 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
 
   late final CaixaApiClient _caixaApiClient;
   final TextEditingController _observacaoController = TextEditingController();
+  final _descontoController = TextEditingController();
+  final _acrescimoController = TextEditingController();
+  double get _desconto =>
+      widget.permitirAjustes ? _parseValor(_descontoController.text) : 0;
+  double get _acrescimo =>
+      widget.permitirAjustes ? _parseValor(_acrescimoController.text) : 0;
+  int _centavos(double valor) => (valor * 100).round();
+  double get _valorAjustado =>
+      (_centavos(widget.valorAberto) +
+          _centavos(_acrescimo) -
+          _centavos(_desconto)) /
+      100;
+
   final List<_RecebimentoFormaDraft> _formas = <_RecebimentoFormaDraft>[];
   late final AnimationController _iconController;
 
@@ -222,10 +244,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   void initState() {
     super.initState();
     _contaFinanceiraId = widget.contaFinanceiraInicial;
-    _tipo =
-        widget.permitirParcial
-            ? widget.tipoInicial
-            : SixWebRecebimentoTipo.total;
+    _tipo = widget.permitirParcial
+        ? widget.tipoInicial
+        : SixWebRecebimentoTipo.total;
     _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
     _iconController = AnimationController(
       vsync: this,
@@ -235,10 +256,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       _RecebimentoFormaDraft(
         opcao: _resolverInicial(_opcoes),
         controller: TextEditingController(
-          text:
-              _tipo == SixWebRecebimentoTipo.total
-                  ? _formatarValorDigitavel(widget.valorAberto)
-                  : '',
+          text: _tipo == SixWebRecebimentoTipo.total
+              ? _formatarValorDigitavel(widget.valorAberto)
+              : '',
         ),
       ),
     );
@@ -261,13 +281,15 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     }
     _iconController.dispose();
     _observacaoController.dispose();
+    _descontoController.dispose();
+    _acrescimoController.dispose();
     super.dispose();
   }
 
   Future<void> _carregarTipos() async {
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
+          .getInformacoesBasicasDoCaixa();
       final List<SixWebTipoRecebimentoOpcao> opcoes = _montarOpcoes(
         informacoes.tiposRecebimento,
       );
@@ -306,10 +328,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       final String? backend = _formaPagamentoBackendPorCodigo(codigo);
       if (backend == null) continue;
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : _descricaoPadraoPorBackend(backend);
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : _descricaoPadraoPorBackend(backend);
       if (descricao.isEmpty) continue;
       if (opcoes.any(
         (SixWebTipoRecebimentoOpcao opcao) => opcao.codigoTipo == codigo,
@@ -354,14 +375,19 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       _tipo = tipo;
       _erroValor = null;
       if (tipo == SixWebRecebimentoTipo.total && _formas.length == 1) {
-        _formas.first.controller.text = _formatarValorDigitavel(
-          widget.valorAberto,
-        );
+        _formas.first.controller.text = _formatarValorDigitavel(_valorAjustado);
       }
     });
   }
 
   Future<void> _confirmar() async {
+    if (!_ajusteValido(_descontoController.text) ||
+        !_ajusteValido(_acrescimoController.text) ||
+        _valorAjustado <= 0) {
+      setState(() => _erroValor = context.t('agenda.adjustments.invalid'));
+      return;
+    }
+
     if (_exigeContaSelecionada &&
         (_contaFinanceiraId?.trim().isEmpty ?? true)) {
       setState(
@@ -375,33 +401,31 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     for (final _RecebimentoFormaDraft forma in _formas) {
       if (!codigos.add(forma.opcao.codigoTipo)) {
         setState(
-          () =>
-              _erroValor =
-                  (widget.pagamento
-                      ? context.t('agenda.settlement.duplicateMethod')
-                      : context.t(
-                        'recebimento.erroFormaDuplicada',
-                        fallback:
-                            'Cada forma de recebimento pode ser usada apenas uma vez.',
-                      )),
+          () => _erroValor = (widget.pagamento
+              ? context.t('agenda.settlement.duplicateMethod')
+              : context.t(
+                  'recebimento.erroFormaDuplicada',
+                  fallback:
+                      'Cada forma de recebimento pode ser usada apenas uma vez.',
+                )),
         );
         return;
       }
       final double valorForma = _parseValor(forma.controller.text);
       if (valorForma <= 0) {
         setState(
-          () =>
-              _erroValor = context.t(
-                'recebimento.erroValoresMaioresQueZero',
-                fallback: 'Informe valores maiores que zero.',
-              ),
+          () => _erroValor = context.t(
+            'recebimento.erroValoresMaioresQueZero',
+            fallback: 'Informe valores maiores que zero.',
+          ),
         );
         return;
       }
       recebimentos.add(
         RecebimentoFormaInput(
-          contaFinanceiraId:
-              _formaExigeConta(forma) ? _contaFinanceiraId : null,
+          contaFinanceiraId: _formaExigeConta(forma)
+              ? _contaFinanceiraId
+              : null,
           codigo: forma.opcao.codigoTipo,
           descricao: forma.opcao.descricao,
           valor: valorForma,
@@ -415,32 +439,28 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     );
     if (valor <= 0) {
       setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroValorMaiorQueZero',
-              fallback: 'Informe um valor maior que zero.',
-            ),
+        () => _erroValor = context.t(
+          'recebimento.erroValorMaiorQueZero',
+          fallback: 'Informe um valor maior que zero.',
+        ),
       );
       return;
     }
-    if (_tipo == SixWebRecebimentoTipo.parcial && valor >= widget.valorAberto) {
+    if (_tipo == SixWebRecebimentoTipo.parcial &&
+        (_centavos(valor) >= _centavos(_valorAjustado) ||
+            _centavos(valor + _desconto - _acrescimo) <= 0)) {
       setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroParcialMenorQueAberto',
-              fallback: 'Para parcial, informe um valor menor que o aberto.',
-            ),
+        () => _erroValor = context.t('agenda.adjustments.partialInvalid'),
       );
       return;
     }
     if (_tipo == SixWebRecebimentoTipo.total &&
-        (valor - widget.valorAberto).abs() > 0.009) {
+        _centavos(valor) != _centavos(_valorAjustado)) {
       setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroTotalIgualSaldo',
-              fallback: 'Para total, o valor precisa quitar o saldo em aberto.',
-            ),
+        () => _erroValor = context.t(
+          'recebimento.erroTotalIgualSaldo',
+          fallback: 'Para total, o valor precisa quitar o saldo em aberto.',
+        ),
       );
       return;
     }
@@ -454,16 +474,17 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     setState(() => _processando = true);
     final SixWebRecebimentoResultado resultado = SixWebRecebimentoResultado(
+      desconto: _desconto,
+      acrescimo: _acrescimo,
       tipo: _tipo,
       valor: valor,
       codigoTipoRecebimento: primeiraForma.opcao.codigoTipo,
       descricaoTipoRecebimento: primeiraForma.opcao.descricao,
       formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
       recebimentos: recebimentos,
-      observacao:
-          _observacaoController.text.trim().isEmpty
-              ? null
-              : _observacaoController.text.trim(),
+      observacao: _observacaoController.text.trim().isEmpty
+          ? null
+          : _observacaoController.text.trim(),
     );
     Future<void>.delayed(Duration(milliseconds: _reduceMotion ? 80 : 220), () {
       if (!mounted) return;
@@ -476,14 +497,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color accent = _stateColor;
-    final Color surface =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF17253A)
-            : tokens.surfaceElevated;
-    final Color outline =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF2E4467)
-            : tokens.cardBorder;
+    final Color surface = theme.brightness == Brightness.dark
+        ? const Color(0xFF17253A)
+        : tokens.surfaceElevated;
+    final Color outline = theme.brightness == Brightness.dark
+        ? const Color(0xFF2E4467)
+        : tokens.cardBorder;
     final Color accentSofter = Color.alphaBlend(
       accent.withValues(alpha: 0.08),
       tokens.surfaceMuted,
@@ -497,12 +516,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
     final ButtonStyle cancelActionStyle = TextButton.styleFrom(
-      foregroundColor:
-          theme.brightness == Brightness.dark ? tokens.primaryText : accent,
-      backgroundColor:
-          theme.brightness == Brightness.dark
-              ? tokens.surfaceMuted.withValues(alpha: 0.92)
-              : accent.withValues(alpha: 0.08),
+      foregroundColor: theme.brightness == Brightness.dark
+          ? tokens.primaryText
+          : accent,
+      backgroundColor: theme.brightness == Brightness.dark
+          ? tokens.surfaceMuted.withValues(alpha: 0.92)
+          : accent.withValues(alpha: 0.08),
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -564,8 +583,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                       accent.withValues(
                                         alpha:
                                             theme.brightness == Brightness.dark
-                                                ? 0.14
-                                                : 0.08,
+                                            ? 0.14
+                                            : 0.08,
                                       ),
                                       surface,
                                     ),
@@ -668,32 +687,35 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                             data: theme.copyWith(
                                               segmentedButtonTheme: SegmentedButtonThemeData(
                                                 style: ButtonStyle(
-                                                  backgroundColor: WidgetStateProperty.resolveWith((
-                                                    Set<WidgetState> states,
-                                                  ) {
-                                                    if (states.contains(
-                                                      WidgetState.selected,
-                                                    )) {
-                                                      final bool selectedTotal =
-                                                          _tipo ==
-                                                          SixWebRecebimentoTipo
-                                                              .total;
-                                                      final Color
-                                                      selectedColor =
-                                                          selectedTotal
+                                                  backgroundColor:
+                                                      WidgetStateProperty.resolveWith((
+                                                        Set<WidgetState> states,
+                                                      ) {
+                                                        if (states.contains(
+                                                          WidgetState.selected,
+                                                        )) {
+                                                          final bool
+                                                          selectedTotal =
+                                                              _tipo ==
+                                                              SixWebRecebimentoTipo
+                                                                  .total;
+                                                          final Color
+                                                          selectedColor =
+                                                              selectedTotal
                                                               ? _totalColor
                                                               : _partialColor;
-                                                      return selectedColor.withValues(
-                                                        alpha:
-                                                            theme.brightness ==
-                                                                    Brightness
-                                                                        .dark
-                                                                ? 0.18
-                                                                : 0.12,
-                                                      );
-                                                    }
-                                                    return surface;
-                                                  }),
+                                                          return selectedColor
+                                                              .withValues(
+                                                                alpha:
+                                                                    theme.brightness ==
+                                                                        Brightness
+                                                                            .dark
+                                                                    ? 0.18
+                                                                    : 0.12,
+                                                              );
+                                                        }
+                                                        return surface;
+                                                      }),
                                                   foregroundColor:
                                                       WidgetStateProperty.resolveWith((
                                                         Set<WidgetState> states,
@@ -706,15 +728,15 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                                         final Color
                                                         selectedColor =
                                                             selectedTotal
-                                                                ? _totalColor
-                                                                : _partialColor;
+                                                            ? _totalColor
+                                                            : _partialColor;
                                                         return states.contains(
                                                               WidgetState
                                                                   .selected,
                                                             )
                                                             ? selectedColor
                                                             : tokens
-                                                                .secondaryText;
+                                                                  .secondaryText;
                                                       }),
                                                   side: WidgetStateProperty.resolveWith((
                                                     Set<WidgetState> states,
@@ -722,18 +744,18 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                                     return BorderSide(
                                                       color:
                                                           states.contains(
-                                                                WidgetState
-                                                                    .selected,
-                                                              )
-                                                              ? (_tipo ==
-                                                                          SixWebRecebimentoTipo
-                                                                              .total
-                                                                      ? _totalColor
-                                                                      : _partialColor)
-                                                                  .withValues(
-                                                                    alpha: 0.65,
-                                                                  )
-                                                              : outline,
+                                                            WidgetState
+                                                                .selected,
+                                                          )
+                                                          ? (_tipo ==
+                                                                        SixWebRecebimentoTipo
+                                                                            .total
+                                                                    ? _totalColor
+                                                                    : _partialColor)
+                                                                .withValues(
+                                                                  alpha: 0.65,
+                                                                )
+                                                          : outline,
                                                     );
                                                   }),
                                                   overlayColor:
@@ -769,9 +791,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                                 ),
                                               ),
                                             ),
-                                            child: SegmentedButton<
-                                              SixWebRecebimentoTipo
-                                            >(
+                                            child: SegmentedButton<SixWebRecebimentoTipo>(
                                               selected: <SixWebRecebimentoTipo>{
                                                 _tipo,
                                               },
@@ -781,44 +801,46 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                                     value,
                                                   ) =>
                                                       _alterarTipo(value.first),
-                                              segments: <
-                                                ButtonSegment<
-                                                  SixWebRecebimentoTipo
-                                                >
-                                              >[
-                                                ButtonSegment<
-                                                  SixWebRecebimentoTipo
-                                                >(
-                                                  value:
+                                              segments:
+                                                  <
+                                                    ButtonSegment<
                                                       SixWebRecebimentoTipo
-                                                          .total,
-                                                  label: Text(
-                                                    context.t(
-                                                      'recebimento.total',
-                                                      fallback: 'Total',
-                                                    ),
-                                                  ),
-                                                  icon: const Icon(
-                                                    Icons.done_all_rounded,
-                                                  ),
-                                                ),
-                                                ButtonSegment<
-                                                  SixWebRecebimentoTipo
-                                                >(
-                                                  value:
+                                                    >
+                                                  >[
+                                                    ButtonSegment<
                                                       SixWebRecebimentoTipo
-                                                          .parcial,
-                                                  label: Text(
-                                                    context.t(
-                                                      'recebimento.parcial',
-                                                      fallback: 'Parcial',
+                                                    >(
+                                                      value:
+                                                          SixWebRecebimentoTipo
+                                                              .total,
+                                                      label: Text(
+                                                        context.t(
+                                                          'recebimento.total',
+                                                          fallback: 'Total',
+                                                        ),
+                                                      ),
+                                                      icon: const Icon(
+                                                        Icons.done_all_rounded,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  icon: const Icon(
-                                                    Icons.call_split_rounded,
-                                                  ),
-                                                ),
-                                              ],
+                                                    ButtonSegment<
+                                                      SixWebRecebimentoTipo
+                                                    >(
+                                                      value:
+                                                          SixWebRecebimentoTipo
+                                                              .parcial,
+                                                      label: Text(
+                                                        context.t(
+                                                          'recebimento.parcial',
+                                                          fallback: 'Parcial',
+                                                        ),
+                                                      ),
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .call_split_rounded,
+                                                      ),
+                                                    ),
+                                                  ],
                                             ),
                                           ),
                                         if (widget.permitirParcial)
@@ -837,12 +859,15 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                                   ? 'agenda.settlement.sourceAccount'
                                                   : 'agenda.settlement.destinationAccount',
                                             ),
-                                            onChanged:
-                                                (value) => setState(() {
-                                                  _contaFinanceiraId = value;
-                                                  _erroValor = null;
-                                                }),
+                                            onChanged: (value) => setState(() {
+                                              _contaFinanceiraId = value;
+                                              _erroValor = null;
+                                            }),
                                           ),
+                                          const SizedBox(height: 14),
+                                        ],
+                                        if (widget.permitirAjustes) ...[
+                                          _ajustesSection(),
                                           const SizedBox(height: 14),
                                         ],
                                         _formasRecebimentoSection(),
@@ -890,11 +915,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                   children: <Widget>[
                                     TextButton(
                                       style: cancelActionStyle,
-                                      onPressed:
-                                          _processando
-                                              ? null
-                                              : () =>
-                                                  Navigator.of(context).pop(),
+                                      onPressed: _processando
+                                          ? null
+                                          : () => Navigator.of(context).pop(),
                                       child: Text(
                                         context.t(
                                           'common.cancel',
@@ -907,47 +930,44 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                       style: primaryActionStyle,
                                       onPressed:
                                           _carregandoTipos || _processando
-                                              ? null
-                                              : _confirmar,
-                                      icon:
-                                          _processando
-                                              ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2.2,
-                                                      color: Colors.white,
-                                                    ),
-                                              )
-                                              : const Icon(
-                                                Icons.payments_rounded,
+                                          ? null
+                                          : _confirmar,
+                                      icon: _processando
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.2,
+                                                color: Colors.white,
                                               ),
+                                            )
+                                          : const Icon(Icons.payments_rounded),
                                       label: Text(
                                         _processando
                                             ? context.t(
-                                              'vendasAReceber.processingTitle',
-                                              fallback:
-                                                  'Processando recebimento',
-                                            )
+                                                'vendasAReceber.processingTitle',
+                                                fallback:
+                                                    'Processando recebimento',
+                                              )
                                             : _tipo ==
-                                                SixWebRecebimentoTipo.total
+                                                  SixWebRecebimentoTipo.total
                                             ? (widget.pagamento
-                                                ? context.t(
-                                                  'agenda.settlement.payTotal',
-                                                )
-                                                : context.t(
-                                                  'recebimento.receberTotal',
-                                                  fallback: 'Receber total',
-                                                ))
+                                                  ? context.t(
+                                                      'agenda.settlement.payTotal',
+                                                    )
+                                                  : context.t(
+                                                      'recebimento.receberTotal',
+                                                      fallback: 'Receber total',
+                                                    ))
                                             : (widget.pagamento
-                                                ? context.t(
-                                                  'agenda.settlement.payPartial',
-                                                )
-                                                : context.t(
-                                                  'recebimento.receberParcial',
-                                                  fallback: 'Receber parcial',
-                                                )),
+                                                  ? context.t(
+                                                      'agenda.settlement.payPartial',
+                                                    )
+                                                  : context.t(
+                                                      'recebimento.receberParcial',
+                                                      fallback:
+                                                          'Receber parcial',
+                                                    )),
                                       ),
                                     ),
                                   ],
@@ -1011,10 +1031,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           surfaceSoft: surfaceSoft,
           icon: Icons.rule_folder_outlined,
           label: context.t('recebimento.summaryType', fallback: 'Tipo'),
-          value:
-              _tipo == SixWebRecebimentoTipo.total
-                  ? context.t('recebimento.total', fallback: 'Total')
-                  : context.t('recebimento.parcial', fallback: 'Parcial'),
+          value: _tipo == SixWebRecebimentoTipo.total
+              ? context.t('recebimento.total', fallback: 'Total')
+              : context.t('recebimento.parcial', fallback: 'Parcial'),
         ),
         _buildSummaryPill(
           theme: theme,
@@ -1022,13 +1041,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           accent: accent,
           surfaceSoft: surfaceSoft,
           icon: Icons.layers_outlined,
-          label:
-              (widget.pagamento
-                  ? context.t('agenda.settlement.methods')
-                  : context.t(
-                    'recebimento.formasRecebimento',
-                    fallback: 'Formas de recebimento',
-                  )),
+          label: (widget.pagamento
+              ? context.t('agenda.settlement.methods')
+              : context.t(
+                  'recebimento.formasRecebimento',
+                  fallback: 'Formas de recebimento',
+                )),
           value: _formas.length.toString(),
         ),
       ],
@@ -1101,19 +1119,18 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color accent = tokens.info;
     final ButtonStyle addMethodStyle = OutlinedButton.styleFrom(
-      foregroundColor:
-          theme.brightness == Brightness.dark ? accent : tokens.primaryText,
-      backgroundColor:
-          theme.brightness == Brightness.dark
-              ? accent.withValues(alpha: 0.10)
-              : Colors.transparent,
+      foregroundColor: theme.brightness == Brightness.dark
+          ? accent
+          : tokens.primaryText,
+      backgroundColor: theme.brightness == Brightness.dark
+          ? accent.withValues(alpha: 0.10)
+          : Colors.transparent,
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,
       side: BorderSide(
-        color:
-            theme.brightness == Brightness.dark
-                ? accent.withValues(alpha: 0.34)
-                : tokens.cardBorder,
+        color: theme.brightness == Brightness.dark
+            ? accent.withValues(alpha: 0.34)
+            : tokens.cardBorder,
       ),
       minimumSize: const Size.fromHeight(48),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -1139,9 +1156,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                 (widget.pagamento
                     ? context.t('agenda.settlement.loadingMethods')
                     : context.t(
-                      'recebimento.carregandoTipos',
-                      fallback: 'Carregando tipos de recebimento...',
-                    )),
+                        'recebimento.carregandoTipos',
+                        fallback: 'Carregando tipos de recebimento...',
+                      )),
                 style: TextStyle(color: tokens.primaryText),
               ),
             ),
@@ -1155,7 +1172,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       (double total, _RecebimentoFormaDraft forma) =>
           total + _parseValor(forma.controller.text),
     );
-    final double restante = widget.valorAberto - totalInformado;
+    final double restante = _valorAjustado - totalInformado;
     final bool podeAdicionar = _formas.length < _opcoes.length;
 
     return Column(
@@ -1168,9 +1185,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                 (widget.pagamento
                     ? context.t('agenda.settlement.methods')
                     : context.t(
-                      'recebimento.formasRecebimento',
-                      fallback: 'Formas de recebimento',
-                    )),
+                        'recebimento.formasRecebimento',
+                        fallback: 'Formas de recebimento',
+                      )),
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
@@ -1219,11 +1236,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Set<String> codigosEmUso =
-        _formas
-            .where((_RecebimentoFormaDraft item) => !identical(item, forma))
-            .map((_RecebimentoFormaDraft item) => item.opcao.codigoTipo)
-            .toSet();
+    final Set<String> codigosEmUso = _formas
+        .where((_RecebimentoFormaDraft item) => !identical(item, forma))
+        .map((_RecebimentoFormaDraft item) => item.opcao.codigoTipo)
+        .toSet();
     final List<SixWebTipoRecebimentoOpcao> opcoesDisponiveis = _opcoes
         .where(
           (SixWebTipoRecebimentoOpcao opcao) =>
@@ -1246,6 +1262,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
             children: <Widget>[
               Expanded(
                 child: TextField(
+                  key: ValueKey('settlement-method-$index'),
                   controller: forma.controller,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -1287,13 +1304,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           ),
           const SizedBox(height: 10),
           _TipoRecebimentoDropdown(
-            label:
-                (widget.pagamento
-                    ? context.t('agenda.settlement.methodType')
-                    : context.t(
-                      'recebimento.tipoRecebimento',
-                      fallback: 'Tipo de recebimento',
-                    )),
+            label: (widget.pagamento
+                ? context.t('agenda.settlement.methodType')
+                : context.t(
+                    'recebimento.tipoRecebimento',
+                    fallback: 'Tipo de recebimento',
+                  )),
             value: forma.opcao,
             options: opcoesDisponiveis,
             onSelected: (SixWebTipoRecebimentoOpcao value) {
@@ -1309,10 +1325,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   }
 
   void _adicionarForma() {
-    final Set<String> usados =
-        _formas
-            .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
-            .toSet();
+    final Set<String> usados = _formas
+        .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
+        .toSet();
     SixWebTipoRecebimentoOpcao? novaOpcao;
     for (final SixWebTipoRecebimentoOpcao opcao in _opcoes) {
       if (!usados.contains(opcao.codigoTipo)) {
@@ -1328,7 +1343,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       (double total, _RecebimentoFormaDraft forma) =>
           total + _parseValor(forma.controller.text),
     );
-    final double restante = widget.valorAberto - totalAtual;
+    final double restante = _valorAjustado - totalAtual;
     setState(() {
       _formas.add(
         _RecebimentoFormaDraft(
@@ -1350,20 +1365,95 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     });
   }
 
+  bool _ajusteValido(String text) {
+    if (text.trim().isEmpty) return true;
+    final value = _parseValor(text);
+    return RegExp(r'^\d+([.,]\d{1,2})?$').hasMatch(text.trim()) &&
+        value.isFinite &&
+        value >= 0;
+  }
+
+  Widget _ajustesSection() {
+    final tokens = WebThemeTokens.of(context);
+    final informado = _formas.fold<double>(
+      0,
+      (sum, f) => sum + _parseValor(f.controller.text),
+    );
+    Widget campo(String key, TextEditingController controller) => TextField(
+      key: ValueKey('settlement-$key'),
+      controller: controller,
+      enabled: !_processando,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: context.t('agenda.adjustments.$key'),
+        prefixText: '${context.read<LocaleSettingsProvider>().currencySymbol} ',
+      ),
+      onChanged: (_) => setState(() => _erroValor = null),
+    );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.t('agenda.adjustments.title'),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: campo('discount', _descontoController)),
+              const SizedBox(width: 12),
+              Expanded(child: campo('surcharge', _acrescimoController)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${context.t('agenda.adjustments.adjusted')}: ${_formatarMoeda(_valorAjustado)}',
+          ),
+          Text(
+            '${context.t('agenda.adjustments.balanceAfter')}: ${_formatarMoeda(_valorAjustado - informado)}',
+          ),
+          if (_tipo == SixWebRecebimentoTipo.total && _formas.length == 1)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const ValueKey('settlement-use-adjusted'),
+                onPressed: _valorAjustado <= 0 || _processando
+                    ? null
+                    : () => setState(() {
+                        _formas.first.controller.text = _formatarValorDigitavel(
+                          _valorAjustado,
+                        );
+                        _erroValor = null;
+                      }),
+                child: Text(context.t('agenda.adjustments.useAdjusted')),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   String _formatarMoeda(double valor) =>
       context.read<LocaleSettingsProvider>().formatCurrency(valor);
   String _formatarValorDigitavel(double valor) =>
       valor.toStringAsFixed(2).replaceAll('.', ',');
 
   double _parseValor(String value) {
-    final LocaleSettingsProvider regionalizacao =
-        context.read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao = context
+        .read<LocaleSettingsProvider>();
     final String texto = regionalizacao.stripCurrencyMarkers(value);
-    final String normalizado =
-        texto.contains(',') && texto.contains('.')
-            ? texto.replaceAll('.', '').replaceAll(',', '.')
-            : texto.replaceAll(',', '.');
-    return double.tryParse(normalizado) ?? 0;
+    final String normalizado = texto.contains(',') && texto.contains('.')
+        ? texto.replaceAll('.', '').replaceAll(',', '.')
+        : texto.replaceAll(',', '.');
+    final parsed = double.tryParse(normalizado);
+    return parsed != null && parsed.isFinite ? parsed : 0;
   }
 
   String? _formaPagamentoBackendPorCodigo(String codigoTipo) {
@@ -1487,15 +1577,15 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = _open || _hover;
-    final Color borderColor =
-        active ? tokens.selectedBorder : tokens.cardBorder;
-    final Color backgroundColor =
-        active
-            ? Color.alphaBlend(
-              tokens.info.withValues(alpha: 0.10),
-              tokens.surfaceElevated,
-            )
-            : tokens.inputBackground;
+    final Color borderColor = active
+        ? tokens.selectedBorder
+        : tokens.cardBorder;
+    final Color backgroundColor = active
+        ? Color.alphaBlend(
+            tokens.info.withValues(alpha: 0.10),
+            tokens.surfaceElevated,
+          )
+        : tokens.inputBackground;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1529,16 +1619,15 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                       color: backgroundColor,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: borderColor),
-                      boxShadow:
-                          active
-                              ? <BoxShadow>[
-                                BoxShadow(
-                                  color: tokens.info.withValues(alpha: 0.10),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ]
-                              : null,
+                      boxShadow: active
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: tokens.info.withValues(alpha: 0.10),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Row(
                       children: <Widget>[
@@ -1548,10 +1637,9 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color:
-                                active
-                                    ? tokens.info.withValues(alpha: 0.16)
-                                    : tokens.surfaceElevated,
+                            color: active
+                                ? tokens.info.withValues(alpha: 0.16)
+                                : tokens.surfaceElevated,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -1595,10 +1683,9 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                           width: 26,
                           height: 26,
                           decoration: BoxDecoration(
-                            color:
-                                active
-                                    ? tokens.info.withValues(alpha: 0.16)
-                                    : tokens.surfaceMuted,
+                            color: active
+                                ? tokens.info.withValues(alpha: 0.16)
+                                : tokens.surfaceMuted,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Center(
@@ -1696,8 +1783,9 @@ class _RecebimentoRouteSurface extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (BuildContext context, Widget? child) {
-        final double progress =
-            reduceMotion ? 1 : Curves.easeOutCubic.transform(animation.value);
+        final double progress = reduceMotion
+            ? 1
+            : Curves.easeOutCubic.transform(animation.value);
         return Stack(
           fit: StackFit.expand,
           children: <Widget>[

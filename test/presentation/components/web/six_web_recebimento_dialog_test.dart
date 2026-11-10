@@ -74,6 +74,89 @@ void main() {
     expect(_stateStripColor(tester), const Color(0xFFF59E0B));
     expect(tester.takeException(), isNull);
   });
+  for (final pagamento in [false, true]) {
+    testWidgets('adjusted total returns cash separately, payment=$pagamento', (
+      tester,
+    ) async {
+      SixWebRecebimentoResultado? result;
+      await _pumpHarness(
+        tester,
+        permitirAjustes: true,
+        pagamento: pagamento,
+        onResult: (v) => result = v,
+      );
+      await tester.tap(find.text('Abrir recebimento'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('settlement-discount')),
+        '10,00',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('settlement-surcharge')),
+        '2,00',
+      );
+      await tester.tap(find.byKey(const ValueKey('settlement-use-adjusted')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(pagamento ? 'Pagar total' : 'Receber total'));
+      await tester.pumpAndSettle();
+      expect(result, isNotNull);
+      expect(result!.valor, 91);
+      expect(result!.desconto, 10);
+      expect(result!.acrescimo, 2);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('partial keeps remaining balance and rejects full discount', (
+    tester,
+  ) async {
+    SixWebRecebimentoResultado? result;
+    await _pumpHarness(
+      tester,
+      permitirAjustes: true,
+      onResult: (v) => result = v,
+    );
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-discount')),
+      '99',
+    );
+    await tester.tap(find.text('Receber total'));
+    await tester.pumpAndSettle();
+    expect(result, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-discount')),
+      '10',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-surcharge')),
+      '2',
+    );
+    await tester.tap(find.text('Parcial'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-method-0')),
+      '40',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Receber parcial'));
+    await tester.pumpAndSettle();
+    expect(result, isNotNull);
+    expect(result!.valor, 40);
+    expect(result!.desconto, 10);
+    expect(result!.acrescimo, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('other flows do not display settlement adjustments', (
+    tester,
+  ) async {
+    await _pumpHarness(tester);
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settlement-discount')), findsNothing);
+  });
 }
 
 Color? _stateStripColor(WidgetTester tester) {
@@ -86,6 +169,8 @@ Color? _stateStripColor(WidgetTester tester) {
 Future<void> _pumpHarness(
   WidgetTester tester, {
   ValueChanged<SixWebRecebimentoResultado?>? onResult,
+  bool permitirAjustes = false,
+  bool pagamento = false,
 }) async {
   tester.view.physicalSize = const Size(1440, 960);
   tester.view.devicePixelRatio = 1;
@@ -119,6 +204,8 @@ Future<void> _pumpHarness(
                     dialogResult = await SixWebRecebimentoDialog.show(
                       context,
                       titulo: 'Receber venda em aberto',
+                      permitirAjustes: permitirAjustes,
+                      pagamento: pagamento,
                       descricao:
                           'Venda web para receber depois 2026-08-25T13:30:33.043',
                       valorAberto: 99,

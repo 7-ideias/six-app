@@ -1363,8 +1363,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Excluir parcial?'),
-        content: const Text(
-          'Esta ação vai remover apenas esta confirmação/parcial e recalcular o valor em aberto do lançamento.',
+        content: Text(
+          liquidacao['grupoLiquidacaoId'] != null
+              ? context.t('agenda.adjustments.reverseGroup')
+              : 'Esta ação vai remover apenas esta confirmação/parcial e recalcular o valor em aberto do lançamento.',
         ),
         actions: <Widget>[
           TextButton(
@@ -1374,7 +1376,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           FilledButton.icon(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             icon: const Icon(Icons.delete_outline_rounded),
-            label: const Text('Excluir parcial'),
+            label: Text(context.t('agenda.adjustments.reverse')),
             style: SixWebActionStyles.danger(dialogContext),
           ),
         ],
@@ -1450,6 +1452,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final resultado = await SixWebRecebimentoDialog.show(
       context,
       destinosFinanceiros: destinosFinanceiros,
+      permitirAjustes: true,
       exigirConta: true,
       espacoFinanceiro: _service.espacoFinanceiro,
       contaFinanceiraInicial: contaInicial,
@@ -1487,6 +1490,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 ) ??
                 DateTime.now(),
             valorLiquidado: resultado.valor,
+            desconto: resultado.desconto,
+            acrescimo: resultado.acrescimo,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
             observacoes: resultado.observacao,
@@ -1506,6 +1511,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 ) ??
                 DateTime.now(),
             valorLiquidado: resultado.valor,
+            desconto: resultado.desconto,
+            acrescimo: resultado.acrescimo,
             formaPagamentoRealizada: resultado.codigoTipoRecebimento,
             recebimentos: resultado.recebimentos,
             observacoes: resultado.observacao,
@@ -3109,6 +3116,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final responsavel = _mapa(detalhe['responsavel']);
     final historico = _listaMapas(detalhe['historico']);
     final liquidacoes = _liquidacoes();
+    final estornadas = _listaMapas(detalhe['liquidacoesEstornadas']);
     final comprovantes = _listaStrings(detalhe['comprovantes']);
     final String codigoOperacao = _texto(
       detalhe['codigoOperacao'],
@@ -3312,6 +3320,27 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 18),
+                            if (_numero(detalhe['descontoTotal'], null) > 0 ||
+                                _numero(detalhe['acrescimoTotal'], null) > 0)
+                              _section(
+                                theme,
+                                context.t('agenda.adjustments.title'),
+                                Icons.tune,
+                                [
+                                  _info(
+                                    context.t('agenda.adjustments.discount'),
+                                    formatarMoeda(
+                                      _numero(detalhe['descontoTotal'], null),
+                                    ),
+                                  ),
+                                  _info(
+                                    context.t('agenda.adjustments.surcharge'),
+                                    formatarMoeda(
+                                      _numero(detalhe['acrescimoTotal'], null),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             if (AgendaItensVendaResumo.ehVenda(detalhe))
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 18),
@@ -3437,6 +3466,17 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                 liquidacoes
                                     .map(
                                       (l) => _liquidacaoTile(context, theme, l),
+                                    )
+                                    .toList(),
+                              ),
+                            if (estornadas.isNotEmpty)
+                              _section(
+                                theme,
+                                context.t('agenda.adjustments.reversed'),
+                                Icons.undo,
+                                estornadas
+                                    .map(
+                                      (r) => _liquidacaoTile(context, theme, r),
                                     )
                                     .toList(),
                               ),
@@ -3697,6 +3737,16 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                 _texto(liquidacao['tipoLiquidacao'], liquidacao['tipo']),
               ),
               _info('Data', formatarData(liquidacao['dataLiquidacao'])),
+              if (_numero(liquidacao['desconto'], null) > 0)
+                _info(
+                  context.t('agenda.adjustments.discount'),
+                  formatarMoeda(_numero(liquidacao['desconto'], null)),
+                ),
+              if (_numero(liquidacao['acrescimo'], null) > 0)
+                _info(
+                  context.t('agenda.adjustments.surcharge'),
+                  formatarMoeda(_numero(liquidacao['acrescimo'], null)),
+                ),
               _info(
                 'Valor',
                 formatarMoeda(_numero(liquidacao['valorLiquidado'], null)),
@@ -3719,7 +3769,8 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                   context.t('space.actualAccount'),
                   liquidacao['contaFinanceiraNome'].toString(),
                 ),
-              if (idLiquidacao.isNotEmpty)
+              if (idLiquidacao.isNotEmpty &&
+                  !liquidacao.containsKey('estornadoPor'))
                 TextButton.icon(
                   onPressed: () async {
                     final excluiu = await onExcluirLiquidacao(liquidacao);
@@ -3728,7 +3779,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                     }
                   },
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                  label: const Text('Excluir parcial'),
+                  label: Text(context.t('agenda.adjustments.reverse')),
                   style: SixWebActionStyles.dangerText(context),
                 ),
             ],

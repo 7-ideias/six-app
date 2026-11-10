@@ -71,6 +71,20 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.adjustments.title': 'Desconto e acréscimo',
+    'agenda.adjustments.reversed': 'Baixas estornadas',
+    'agenda.adjustments.reverse': 'Estornar baixa',
+    'agenda.adjustments.discount': 'Desconto',
+    'agenda.adjustments.surcharge': 'Acréscimo',
+    'agenda.adjustments.adjusted': 'Total para quitar',
+    'agenda.adjustments.balanceAfter': 'Saldo após esta baixa',
+    'agenda.adjustments.useAdjusted': 'Usar total ajustado',
+    'agenda.adjustments.invalid':
+        'Informe ajustes positivos com até duas casas decimais. O total deve ser maior que zero.',
+    'agenda.adjustments.partialInvalid':
+        'A baixa parcial deve reduzir a dívida e deixar saldo em aberto. Para quitar, selecione Total.',
+    'agenda.adjustments.reverseGroup':
+        'Esta ação desfaz todas as formas de pagamento desta baixa, incluindo seu desconto e acréscimo, e recalcula o saldo.',
     'agenda.category.search': 'Buscar categoria',
     'agenda.category.create': 'Nova categoria',
     'agenda.category.edit': 'Editar categoria',
@@ -3007,6 +3021,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.adjustments.title': 'Discount and surcharge',
+    'agenda.adjustments.reversed': 'Reversed settlements',
+    'agenda.adjustments.reverse': 'Reverse settlement',
+    'agenda.adjustments.discount': 'Discount',
+    'agenda.adjustments.surcharge': 'Surcharge',
+    'agenda.adjustments.adjusted': 'Total to settle',
+    'agenda.adjustments.balanceAfter': 'Balance after settlement',
+    'agenda.adjustments.useAdjusted': 'Use adjusted total',
+    'agenda.adjustments.invalid':
+        'Enter non-negative adjustments with up to two decimal places. The total must exceed zero.',
+    'agenda.adjustments.partialInvalid':
+        'A partial settlement must reduce the debt and leave a positive balance. To settle in full, select Total.',
+    'agenda.adjustments.reverseGroup':
+        'This reverses all payment methods in this settlement, including its discount and surcharge, and recalculates the balance.',
     'agenda.category.search': 'Search categories',
     'agenda.category.create': 'New category',
     'agenda.category.edit': 'Edit category',
@@ -5722,6 +5750,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.adjustments.title': 'Descuento y recargo',
+    'agenda.adjustments.reversed': 'Liquidaciones revertidas',
+    'agenda.adjustments.reverse': 'Revertir liquidación',
+    'agenda.adjustments.discount': 'Descuento',
+    'agenda.adjustments.surcharge': 'Recargo',
+    'agenda.adjustments.adjusted': 'Total para liquidar',
+    'agenda.adjustments.balanceAfter': 'Saldo después de esta liquidación',
+    'agenda.adjustments.useAdjusted': 'Usar total ajustado',
+    'agenda.adjustments.invalid':
+        'Introduce ajustes no negativos con hasta dos decimales. El total debe ser mayor que cero.',
+    'agenda.adjustments.partialInvalid':
+        'La liquidación parcial debe reducir la deuda y dejar saldo pendiente. Para liquidar, selecciona Total.',
+    'agenda.adjustments.reverseGroup':
+        'Esta acción revierte todas las formas de pago de esta liquidación, incluidos su descuento y recargo, y recalcula el saldo.',
     'agenda.category.search': 'Buscar categoría',
     'agenda.category.create': 'Nueva categoría',
     'agenda.category.edit': 'Editar categoría',
