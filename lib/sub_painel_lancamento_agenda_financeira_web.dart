@@ -1764,50 +1764,199 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Widget _journeyProgress() {
     final tokens = WebThemeTokens.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 320);
     final labels = ['type', 'space', 'details', 'recurrence'];
+    final icons = [
+      Icons.swap_vert_rounded,
+      Icons.account_balance_wallet_outlined,
+      Icons.edit_note_rounded,
+      Icons.event_repeat_outlined,
+    ];
+    final stepLabel = _journey('step').replaceAll('{step}', '${_etapa + 1}');
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
       decoration: BoxDecoration(
         color: tokens.cardBackground,
         border: Border(bottom: BorderSide(color: tokens.divider)),
       ),
-      child: Wrap(
-        spacing: 18,
-        runSpacing: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (int index = 0; index < labels.length; index++)
-            TextButton.icon(
-              onPressed: index < _etapa && !_isLoading && !_ir.carregando
-                  ? () => _irParaEtapa(index)
-                  : null,
-              icon: CircleAvatar(
-                radius: 13,
-                backgroundColor: index <= _etapa
-                    ? tokens.selectedBackground
-                    : tokens.surfaceMuted,
-                child: index < _etapa
-                    ? Icon(Icons.check, size: 16, color: tokens.info)
-                    : Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: tokens.primaryText,
-                        ),
-                      ),
-              ),
-              label: Text(
-                _journey(labels[index]),
-                style: TextStyle(
-                  color: index == _etapa
-                      ? tokens.primaryText
-                      : tokens.secondaryText,
-                  fontWeight: index == _etapa
-                      ? FontWeight.w800
-                      : FontWeight.w500,
-                ),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              stepLabel,
+              style: TextStyle(
+                color: tokens.secondaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Positioned(
+                    top: 21,
+                    left: constraints.maxWidth / 8,
+                    right: constraints.maxWidth / 8,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: ColoredBox(
+                        color: tokens.divider,
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: _etapa / 3),
+                            duration: duration,
+                            curve: Curves.easeInOutCubic,
+                            builder: (context, value, _) =>
+                                FractionallySizedBox(
+                                  widthFactor: value,
+                                  child: Container(
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          colors.primary.withValues(
+                                            alpha: 0.65,
+                                          ),
+                                          colors.primary,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int index = 0; index < labels.length; index++)
+                        Expanded(
+                          child: Semantics(
+                            selected: index == _etapa,
+                            label: '${index + 1}. ${_journey(labels[index])}',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap:
+                                    index < _etapa &&
+                                        !_isLoading &&
+                                        !_ir.carregando
+                                    ? () => _irParaEtapa(index)
+                                    : null,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: duration,
+                                        curve: Curves.easeOutCubic,
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: index <= _etapa
+                                              ? colors.primary
+                                              : tokens.cardBackground,
+                                          border: Border.all(
+                                            color: index == _etapa
+                                                ? colors.primary.withValues(
+                                                    alpha: 0.3,
+                                                  )
+                                                : tokens.cardBackground,
+                                            width: 4,
+                                            strokeAlign:
+                                                BorderSide.strokeAlignOutside,
+                                          ),
+                                          boxShadow:
+                                              index == _etapa && !reduceMotion
+                                              ? [
+                                                  BoxShadow(
+                                                    color: colors.primary
+                                                        .withValues(alpha: 0.2),
+                                                    blurRadius: 14,
+                                                    spreadRadius: 2,
+                                                  ),
+                                                ]
+                                              : [],
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: duration,
+                                          child: Icon(
+                                            index < _etapa
+                                                ? Icons.check_rounded
+                                                : icons[index],
+                                            key: ValueKey(
+                                              '$index-${index < _etapa}',
+                                            ),
+                                            size: 23,
+                                            color: index <= _etapa
+                                                ? colors.onPrimary
+                                                : tokens.mutedText,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      AnimatedDefaultTextStyle(
+                                        duration: duration,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium!
+                                            .copyWith(
+                                              color: index == _etapa
+                                                  ? tokens.primaryText
+                                                  : tokens.secondaryText,
+                                              fontWeight: index == _etapa
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w500,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        child: Text(
+                                          _journey(labels[index]),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      AnimatedContainer(
+                                        duration: duration,
+                                        height: 3,
+                                        width: index == _etapa ? 28 : 0,
+                                        decoration: BoxDecoration(
+                                          color: colors.primary,
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
