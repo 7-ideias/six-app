@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
 import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
@@ -1434,6 +1435,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         !pagamento &&
         _service.espacoFinanceiro == 'EMPRESA' &&
         item['origem']?.toString().toUpperCase() == 'VENDA';
+    AgendaBaixaDados? dadosBaixa;
     String? contaInicial = item['contaFinanceiraId']?.toString();
     setState(() => _executandoAcao = true);
     try {
@@ -1441,9 +1443,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         item['id'].toString(),
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
-      contaInicial = AgendaFinanceiraLancamentoDetalhe.fromJson(
-        detalhe,
-      ).paraEdicao(item)['contaFinanceiraId']?.toString();
+      dadosBaixa = AgendaBaixaDados.fromDetalhe(detalhe, item);
+      contaInicial = dadosBaixa.contaPrevistaId;
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -1469,69 +1470,61 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       descricao: item['descricao']?.toString() ?? '',
       contato: item['contato']?.toString(),
-      valorAberto: valorAberto,
+      valorAberto: dadosBaixa?.valorAberto ?? valorAberto,
       pagamento: pagamento,
       tipoInicial: parcialInicial
           ? SixWebRecebimentoTipo.parcial
           : SixWebRecebimentoTipo.total,
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
+      dadosBaixa: dadosBaixa,
+      agendaService: _service,
+      onConfirm: (resultado) async {
+        final contaFinanceiraId =
+            resultado.recebimentos.first.contaFinanceiraId;
+        final String? idSessaoCaixa = _service.espacoFinanceiro == 'PESSOAL'
+            ? null
+            : await _buscarIdSessaoCaixaAberta();
+        if (resultado.total) {
+          await _acoesService.executarTotal(
+            idLancamento: item['id'].toString(),
+            request: AgendaFinanceiraLiquidacaoRequest(
+              contaFinanceiraId: contaFinanceiraId,
+              tipoLiquidacao: 'TOTAL',
+              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              classificacao: resultado.classificacao,
+              valorLiquidado: resultado.valor,
+              desconto: resultado.desconto,
+              acrescimo: resultado.acrescimo,
+              formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+              recebimentos: resultado.recebimentos,
+              observacoes: resultado.observacao,
+              referenciaExterna: item['id']?.toString(),
+              idSessaoCaixa: idSessaoCaixa,
+            ),
+          );
+        } else {
+          await _acoesService.executarAbatimento(
+            idLancamento: item['id'].toString(),
+            request: AgendaFinanceiraParcialRequest(
+              contaFinanceiraId: contaFinanceiraId,
+              tipoLiquidacao: 'PARCIAL',
+              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              classificacao: resultado.classificacao,
+              valorLiquidado: resultado.valor,
+              desconto: resultado.desconto,
+              acrescimo: resultado.acrescimo,
+              formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+              recebimentos: resultado.recebimentos,
+              observacoes: resultado.observacao,
+              idSessaoCaixa: idSessaoCaixa,
+            ),
+          );
+        }
+      },
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
-    // Dinheiro vai para o caixa; a conta pode ser nula após a validação do formulário.
-    await _executarComLoading(() async {
-      final String? idSessaoCaixa = _service.espacoFinanceiro == 'PESSOAL'
-          ? null
-          : await _buscarIdSessaoCaixaAberta();
-      if (resultado.total) {
-        await _acoesService.executarTotal(
-          idLancamento: item['id'].toString(),
-          request: AgendaFinanceiraLiquidacaoRequest(
-            contaFinanceiraId: contaFinanceiraId,
-            tipoLiquidacao: 'TOTAL',
-            dataLiquidacao:
-                DateTime.tryParse(
-                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
-                ) ??
-                DateTime.now(),
-            valorLiquidado: resultado.valor,
-            desconto: resultado.desconto,
-            acrescimo: resultado.acrescimo,
-            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-            recebimentos: resultado.recebimentos,
-            observacoes: resultado.observacao,
-            referenciaExterna: item['id']?.toString(),
-            idSessaoCaixa: idSessaoCaixa,
-          ),
-        );
-      } else {
-        await _acoesService.executarAbatimento(
-          idLancamento: item['id'].toString(),
-          request: AgendaFinanceiraParcialRequest(
-            contaFinanceiraId: contaFinanceiraId,
-            tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao:
-                DateTime.tryParse(
-                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
-                ) ??
-                DateTime.now(),
-            valorLiquidado: resultado.valor,
-            desconto: resultado.desconto,
-            acrescimo: resultado.acrescimo,
-            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-            recebimentos: resultado.recebimentos,
-            observacoes: resultado.observacao,
-            idSessaoCaixa: idSessaoCaixa,
-          ),
-        );
-      }
-      await _consultar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t('agenda.settlement.success'))),
-      );
-    });
+    await _consultar();
   }
 
   Future<String?> _buscarIdSessaoCaixaAberta() async {

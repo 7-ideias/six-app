@@ -72,6 +72,29 @@ extension SixI18nBuildContext on BuildContext {
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
     'agenda.adjustments.title': 'Desconto e acréscimo',
+    'agenda.settlementEdit.date': 'Data efetiva do pagamento/recebimento',
+    'agenda.settlementEdit.classification': 'Editar classificação',
+    'agenda.settlementEdit.noCategory': 'Sem categoria',
+    'agenda.settlementEdit.category': 'Categoria',
+    'agenda.settlementEdit.supplier': 'Fornecedor',
+    'agenda.settlementEdit.customer': 'Cliente',
+    'agenda.settlementEdit.originContact':
+        'Contato vinculado: altere no registro de origem.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'As alterações valem apenas para este lançamento e serão salvas ao confirmar a baixa.',
+    'agenda.settlementEdit.moreInfo': 'Mais informações',
+    'agenda.settlementEdit.note': 'Observação desta baixa',
+    'agenda.settlementEdit.launchNote': 'Observação do lançamento',
+    'agenda.settlementEdit.original': 'Valor original',
+    'agenda.settlementEdit.due': 'Vencimento',
+    'agenda.settlementEdit.competence': 'Competência',
+    'agenda.settlementEdit.originalHint':
+        'Valor original e datas previstas são preservados. Para alterá-los, edite o lançamento.',
+    'agenda.settlementEdit.excess': 'Valor excedente',
+    'agenda.settlementEdit.distribute': 'Falta distribuir',
+    'agenda.settlementEdit.saveError':
+        'Não foi possível confirmar a baixa. Revise os dados e tente novamente.',
+    'agenda.settlementEdit.success': 'Baixa confirmada',
     'agenda.adjustments.reversed': 'Baixas estornadas',
     'agenda.adjustments.reversedSuccess': 'Baixa estornada com sucesso.',
     'agenda.adjustments.reverseLaterFirst':
@@ -3025,6 +3048,29 @@ const Map<String, Map<String, String>> _fallbacks = {
   },
   'en': {
     'agenda.adjustments.title': 'Discount and surcharge',
+    'agenda.settlementEdit.date': 'Actual payment/receipt date',
+    'agenda.settlementEdit.classification': 'Edit classification',
+    'agenda.settlementEdit.noCategory': 'No category',
+    'agenda.settlementEdit.category': 'Category',
+    'agenda.settlementEdit.supplier': 'Supplier',
+    'agenda.settlementEdit.customer': 'Customer',
+    'agenda.settlementEdit.originContact':
+        'Linked contact: edit in the source record.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'Changes apply only to this entry and are saved when confirming the settlement.',
+    'agenda.settlementEdit.moreInfo': 'More information',
+    'agenda.settlementEdit.note': 'Settlement note',
+    'agenda.settlementEdit.launchNote': 'Entry note',
+    'agenda.settlementEdit.original': 'Original amount',
+    'agenda.settlementEdit.due': 'Due date',
+    'agenda.settlementEdit.competence': 'Accrual date',
+    'agenda.settlementEdit.originalHint':
+        'Original amount and planned dates are preserved. Edit the entry to change them.',
+    'agenda.settlementEdit.excess': 'Excess amount',
+    'agenda.settlementEdit.distribute': 'Left to allocate',
+    'agenda.settlementEdit.saveError':
+        'Could not confirm the settlement. Review the details and try again.',
+    'agenda.settlementEdit.success': 'Settlement confirmed',
     'agenda.adjustments.reversed': 'Reversed settlements',
     'agenda.adjustments.reversedSuccess': 'Settlement reversed successfully.',
     'agenda.adjustments.reverseLaterFirst':
@@ -5757,6 +5803,29 @@ const Map<String, Map<String, String>> _fallbacks = {
   },
   'es': {
     'agenda.adjustments.title': 'Descuento y recargo',
+    'agenda.settlementEdit.date': 'Fecha efectiva del pago/cobro',
+    'agenda.settlementEdit.classification': 'Editar clasificación',
+    'agenda.settlementEdit.noCategory': 'Sin categoría',
+    'agenda.settlementEdit.category': 'Categoría',
+    'agenda.settlementEdit.supplier': 'Proveedor',
+    'agenda.settlementEdit.customer': 'Cliente',
+    'agenda.settlementEdit.originContact':
+        'Contacto vinculado: edítelo en el registro de origen.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'Los cambios se aplican solo a este registro y se guardan al confirmar la liquidación.',
+    'agenda.settlementEdit.moreInfo': 'Más información',
+    'agenda.settlementEdit.note': 'Nota de esta liquidación',
+    'agenda.settlementEdit.launchNote': 'Nota del registro',
+    'agenda.settlementEdit.original': 'Importe original',
+    'agenda.settlementEdit.due': 'Vencimiento',
+    'agenda.settlementEdit.competence': 'Fecha de devengo',
+    'agenda.settlementEdit.originalHint':
+        'Se conservan el importe original y las fechas previstas. Edite el registro para cambiarlos.',
+    'agenda.settlementEdit.excess': 'Importe excedente',
+    'agenda.settlementEdit.distribute': 'Falta distribuir',
+    'agenda.settlementEdit.saveError':
+        'No se pudo confirmar la liquidación. Revise los datos e inténtelo de nuevo.',
+    'agenda.settlementEdit.success': 'Liquidación confirmada',
     'agenda.adjustments.reversed': 'Liquidaciones revertidas',
     'agenda.adjustments.reversedSuccess':
         'Liquidación revertida correctamente.',

@@ -1,3 +1,4 @@
+import 'agenda_financeira_baixa_model.dart';
 import 'competencia_financeira.dart';
 import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
@@ -337,6 +338,7 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String? contaFinanceiraId;
   AgendaFinanceiraLiquidacaoRequest({
     this.contaFinanceiraId,
+    this.classificacao,
     this.desconto = 0,
     this.acrescimo = 0,
     required this.tipoLiquidacao,
@@ -353,6 +355,7 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String tipoLiquidacao;
   final DateTime dataLiquidacao;
   final double valorLiquidado;
+  final AgendaClassificacaoBaixa? classificacao;
   final double desconto;
   final double acrescimo;
   final String formaPagamentoRealizada;
@@ -368,6 +371,7 @@ class AgendaFinanceiraLiquidacaoRequest {
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
+      if (classificacao != null) 'classificacao': classificacao!.toJson(),
       'desconto': desconto,
       'acrescimo': acrescimo,
       'formaPagamentoRealizada': formaPagamentoRealizada,
@@ -387,6 +391,7 @@ class AgendaFinanceiraParcialRequest {
   final String? contaFinanceiraId;
   AgendaFinanceiraParcialRequest({
     this.contaFinanceiraId,
+    this.classificacao,
     this.desconto = 0,
     this.acrescimo = 0,
     required this.tipoLiquidacao,
@@ -401,6 +406,7 @@ class AgendaFinanceiraParcialRequest {
   final String tipoLiquidacao;
   final DateTime dataLiquidacao;
   final double valorLiquidado;
+  final AgendaClassificacaoBaixa? classificacao;
   final double desconto;
   final double acrescimo;
   final String formaPagamentoRealizada;
@@ -414,6 +420,7 @@ class AgendaFinanceiraParcialRequest {
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
+      if (classificacao != null) 'classificacao': classificacao!.toJson(),
       'desconto': desconto,
       'acrescimo': acrescimo,
       'formaPagamentoRealizada': formaPagamentoRealizada,

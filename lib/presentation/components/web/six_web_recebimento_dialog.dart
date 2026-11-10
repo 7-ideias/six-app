@@ -1,3 +1,6 @@
+import 'agenda_centro_custo_web_field.dart';
+import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
+import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'conta_financeira_web_field.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'dart:ui' as ui;
@@ -24,6 +27,8 @@ class SixWebRecebimentoResultado {
     required this.formaPagamentoBackend,
     required this.recebimentos,
     this.observacao,
+    this.dataLiquidacao,
+    this.classificacao,
     this.desconto = 0,
     this.acrescimo = 0,
   });
@@ -37,6 +42,8 @@ class SixWebRecebimentoResultado {
   final String formaPagamentoBackend;
   final List<RecebimentoFormaInput> recebimentos;
   final String? observacao;
+  final DateTime? dataLiquidacao;
+  final AgendaClassificacaoBaixa? classificacao;
 
   bool get total => tipo == SixWebRecebimentoTipo.total;
   bool get parcial => tipo == SixWebRecebimentoTipo.parcial;
@@ -62,6 +69,9 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     required this.valorAberto,
     this.caixaApiClient,
     this.contato,
+    this.dadosBaixa,
+    this.agendaService,
+    this.onConfirm,
     this.permitirParcial = true,
     this.pagamento = false,
     this.permitirAjustes = false,
@@ -80,6 +90,9 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final double valorAberto;
   final CaixaApiClient? caixaApiClient;
   final String? contato;
+  final AgendaBaixaDados? dadosBaixa;
+  final AgendaFinanceiraLancamentoService? agendaService;
+  final Future<void> Function(SixWebRecebimentoResultado)? onConfirm;
   final bool permitirParcial;
   final bool pagamento;
   final bool permitirAjustes;
@@ -98,6 +111,9 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     required String descricao,
     required double valorAberto,
     String? contato,
+    AgendaBaixaDados? dadosBaixa,
+    AgendaFinanceiraLancamentoService? agendaService,
+    Future<void> Function(SixWebRecebimentoResultado)? onConfirm,
     bool permitirParcial = true,
     bool pagamento = false,
     bool permitirAjustes = false,
@@ -134,6 +150,9 @@ class SixWebRecebimentoDialog extends StatefulWidget {
                 valorAberto: valorAberto,
                 caixaApiClient: caixaApiClient,
                 contato: contato,
+                dadosBaixa: dadosBaixa,
+                agendaService: agendaService,
+                onConfirm: onConfirm,
                 permitirParcial: permitirParcial,
                 pagamento: pagamento,
                 permitirAjustes: permitirAjustes,
@@ -170,6 +189,27 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
 
   late final CaixaApiClient _caixaApiClient;
   final TextEditingController _observacaoController = TextEditingController();
+  final _categoriaController = TextEditingController();
+  final _contatoController = TextEditingController();
+  final _observacaoLancamentoController = TextEditingController();
+  late DateTime _dataLiquidacao;
+  String? _centroCustoId;
+  String _centroCustoNome = '';
+  bool _centroAlterado = false;
+  bool _sucesso = false;
+  double get _totalInformado =>
+      _formas.fold(0, (sum, f) => sum + _parseValor(f.controller.text));
+  bool get _valoresValidos =>
+      _valorAjustado > 0 &&
+      _totalInformado > 0 &&
+      _formas.every((f) => _parseValor(f.controller.text) > 0) &&
+      _ajusteValido(_descontoController.text) &&
+      _ajusteValido(_acrescimoController.text) &&
+      (_tipo == SixWebRecebimentoTipo.total
+          ? _centavos(_totalInformado) == _centavos(_valorAjustado)
+          : _centavos(_totalInformado) < _centavos(_valorAjustado) &&
+                _centavos(_totalInformado + _desconto - _acrescimo) > 0);
+
   final _descontoController = TextEditingController();
   final _acrescimoController = TextEditingController();
   double get _desconto =>
@@ -243,6 +283,16 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   @override
   void initState() {
     super.initState();
+    final dados = widget.dadosBaixa;
+    _dataLiquidacao = dados?.dataInicial ?? DateTime.now();
+    if (_dataLiquidacao.isAfter(DateTime.now()))
+      _dataLiquidacao = DateTime.now();
+    _categoriaController.text = dados?.categoria ?? '';
+    _contatoController.text = dados?.contato ?? '';
+    _observacaoLancamentoController.text = dados?.observacoes ?? '';
+    _centroCustoId = dados?.centroCustoId;
+    _centroCustoNome = dados?.centroCustoNome ?? '';
+
     _contaFinanceiraId = widget.contaFinanceiraInicial;
     _tipo = widget.permitirParcial
         ? widget.tipoInicial
@@ -281,6 +331,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     }
     _iconController.dispose();
     _observacaoController.dispose();
+    _categoriaController.dispose();
+    _contatoController.dispose();
+    _observacaoLancamentoController.dispose();
     _descontoController.dispose();
     _acrescimoController.dispose();
     super.dispose();
@@ -474,6 +527,25 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     setState(() => _processando = true);
     final SixWebRecebimentoResultado resultado = SixWebRecebimentoResultado(
+      dataLiquidacao: widget.dadosBaixa == null ? null : _dataLiquidacao,
+      classificacao: widget.dadosBaixa == null
+          ? null
+          : AgendaClassificacaoBaixa(
+              categoria:
+                  _categoriaController.text == widget.dadosBaixa!.categoria
+                  ? null
+                  : _categoriaController.text,
+              nomeContato: _contatoController.text == widget.dadosBaixa!.contato
+                  ? null
+                  : _contatoController.text,
+              alterarCentroCusto: _centroAlterado,
+              centroCustoId: _centroCustoId,
+              observacoesLancamento:
+                  _observacaoLancamentoController.text ==
+                      widget.dadosBaixa!.observacoes
+                  ? null
+                  : _observacaoLancamentoController.text,
+            ),
       desconto: _desconto,
       acrescimo: _acrescimo,
       tipo: _tipo,
@@ -486,10 +558,27 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           ? null
           : _observacaoController.text.trim(),
     );
-    Future<void>.delayed(Duration(milliseconds: _reduceMotion ? 80 : 220), () {
+    try {
+      if (widget.onConfirm != null) await widget.onConfirm!(resultado);
       if (!mounted) return;
-      Navigator.of(context).pop(resultado);
-    });
+      setState(() => _sucesso = true);
+      await Future<void>.delayed(
+        Duration(
+          milliseconds: _reduceMotion
+              ? 80
+              : widget.onConfirm == null
+              ? 220
+              : 700,
+        ),
+      );
+      if (mounted) Navigator.of(context).pop(resultado);
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _processando = false;
+          _erroValor = context.t('agenda.settlementEdit.saveError');
+        });
+    }
   }
 
   @override
@@ -845,6 +934,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                           ),
                                         if (widget.permitirParcial)
                                           const SizedBox(height: 16),
+                                        if (widget.dadosBaixa != null) ...[
+                                          _dataBaixaField(),
+                                          const SizedBox(height: 14),
+                                        ],
                                         if (_exigeContaSelecionada) ...[
                                           ContaFinanceiraWebField(
                                             key: const ValueKey(
@@ -871,6 +964,11 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                           const SizedBox(height: 14),
                                         ],
                                         _formasRecebimentoSection(),
+                                        if (widget.dadosBaixa != null) ...[
+                                          const SizedBox(height: 14),
+                                          _classificacaoSection(),
+                                          _maisInformacoesSection(),
+                                        ],
                                         const SizedBox(height: 14),
                                         TextField(
                                           controller: _observacaoController,
@@ -878,7 +976,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                           maxLines: 3,
                                           decoration: InputDecoration(
                                             labelText: context.t(
-                                              'recebimento.observacao',
+                                              widget.dadosBaixa == null
+                                                  ? 'recebimento.observacao'
+                                                  : 'agenda.settlementEdit.note',
                                               fallback: 'Observação',
                                             ),
                                             filled: true,
@@ -929,7 +1029,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                     FilledButton.icon(
                                       style: primaryActionStyle,
                                       onPressed:
-                                          _carregandoTipos || _processando
+                                          _carregandoTipos ||
+                                              _processando ||
+                                              (widget.permitirAjustes &&
+                                                  !_valoresValidos)
                                           ? null
                                           : _confirmar,
                                       icon: _processando
@@ -979,7 +1082,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                             Positioned.fill(
                               child: _RecebimentoProcessingOverlay(
                                 title: context.t(
-                                  'vendasAReceber.processingTitle',
+                                  _sucesso
+                                      ? 'agenda.settlementEdit.success'
+                                      : 'vendasAReceber.processingTitle',
                                   fallback: 'Processando recebimento',
                                 ),
                                 subtitle: context.t(
@@ -1192,7 +1297,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
               ),
             ),
             Text(
-              '${context.t('recebimento.restante', fallback: 'Restante')}: ${_formatarMoeda(restante < 0 ? 0 : restante)}',
+              '${context.t(restante < 0 ? 'agenda.settlementEdit.excess' : 'agenda.settlementEdit.distribute')}: ${_formatarMoeda(restante.abs())}',
               style: TextStyle(
                 color: tokens.secondaryText,
                 fontSize: 12,
@@ -1365,6 +1470,163 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     });
   }
 
+  Widget _dataBaixaField() => TextFormField(
+    key: ValueKey('settlement-date-${_dataLiquidacao.toIso8601String()}'),
+    initialValue: context.read<LocaleSettingsProvider>().formatDate(
+      _dataLiquidacao,
+    ),
+    readOnly: true,
+    decoration: InputDecoration(
+      labelText: context.t('agenda.settlementEdit.date'),
+      prefixIcon: const Icon(Icons.event_available_outlined),
+      suffixIcon: const Icon(Icons.expand_more),
+    ),
+    onTap: _processando
+        ? null
+        : () async {
+            final hoje = DateTime.now();
+            final selecionada = await showDatePicker(
+              context: context,
+              initialDate: _dataLiquidacao,
+              firstDate: DateTime(1900),
+              lastDate: hoje,
+            );
+            if (selecionada != null && mounted)
+              setState(() => _dataLiquidacao = selecionada);
+          },
+  );
+
+  Widget _classificacaoSection() {
+    final tokens = WebThemeTokens.of(context);
+    final resumo = [
+      _categoriaController.text.isEmpty
+          ? context.t('agenda.settlementEdit.noCategory')
+          : _categoriaController.text,
+      context.t('space.${widget.espacoFinanceiro}'),
+      _centroCustoNome.isEmpty
+          ? context.t('agenda.costCenter.none')
+          : _centroCustoNome,
+    ].join(' · ');
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: ExpansionTile(
+        key: const ValueKey('settlement-classification'),
+        title: Text(
+          context.t('agenda.settlementEdit.classification'),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(resumo, maxLines: 2, overflow: TextOverflow.ellipsis),
+        leading: const Icon(Icons.tune),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          TextField(
+            key: const ValueKey('settlement-contact'),
+            controller: _contatoController,
+            readOnly: !widget.dadosBaixa!.contatoEditavel,
+            maxLength: 255,
+            decoration: InputDecoration(
+              labelText: context.t(
+                widget.pagamento
+                    ? 'agenda.settlementEdit.supplier'
+                    : 'agenda.settlementEdit.customer',
+              ),
+              helperText: widget.dadosBaixa!.contatoEditavel
+                  ? null
+                  : context.t('agenda.settlementEdit.originContact'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const ValueKey('settlement-category'),
+            controller: _categoriaController,
+            readOnly: true,
+            decoration: InputDecoration(
+              labelText: context.t('agenda.settlementEdit.category'),
+              prefixIcon: const Icon(Icons.category_outlined),
+              suffixIcon: const Icon(Icons.expand_more),
+            ),
+            onTap: () async {
+              final categoria = await selecionarContaWeb(
+                context,
+                widget.espacoFinanceiro,
+                grupo: 'CATEGORIAS',
+                permitirLimpar: true,
+              );
+              if (categoria != null && mounted)
+                setState(() => _categoriaController.text = categoria);
+            },
+          ),
+          const SizedBox(height: 12),
+          AgendaCentroCustoWebField(
+            service: widget.agendaService,
+            initialId: _centroCustoId,
+            initialName: _centroCustoNome,
+            enabled: !_processando,
+            onChanged: (centro) => setState(() {
+              _centroCustoId = centro?.id;
+              _centroCustoNome = centro?.nome ?? '';
+              _centroAlterado = true;
+            }),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            context.t('agenda.settlementEdit.onlyOccurrence'),
+            style: TextStyle(color: tokens.secondaryText, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _maisInformacoesSection() {
+    final dados = widget.dadosBaixa!;
+    final regional = context.read<LocaleSettingsProvider>();
+    return ExpansionTile(
+      key: const ValueKey('settlement-more-info'),
+      title: Text(context.t('agenda.settlementEdit.moreInfo')),
+      childrenPadding: const EdgeInsets.symmetric(vertical: 12),
+      children: [
+        TextField(
+          key: const ValueKey('settlement-launch-note'),
+          controller: _observacaoLancamentoController,
+          minLines: 2,
+          maxLines: 4,
+          maxLength: 4000,
+          decoration: InputDecoration(
+            labelText: context.t('agenda.settlementEdit.launchNote'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Text(
+                '${context.t('agenda.settlementEdit.original')}: ${_formatarMoeda(dados.valorOriginal)}',
+              ),
+              if (dados.vencimento != null)
+                Text(
+                  '${context.t('agenda.settlementEdit.due')}: ${regional.formatDate(dados.vencimento!)}',
+                ),
+              if (dados.competencia != null)
+                Text(
+                  '${context.t('agenda.settlementEdit.competence')}: ${regional.formatDate(dados.competencia!)}',
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(context.t('agenda.settlementEdit.originalHint')),
+      ],
+    );
+  }
+
   bool _ajusteValido(String text) {
     if (text.trim().isEmpty) return true;
     final value = _parseValor(text);
@@ -1388,7 +1650,14 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
         labelText: context.t('agenda.adjustments.$key'),
         prefixText: '${context.read<LocaleSettingsProvider>().currencySymbol} ',
       ),
-      onChanged: (_) => setState(() => _erroValor = null),
+      onChanged: (_) => setState(() {
+        _erroValor = null;
+        if (_tipo == SixWebRecebimentoTipo.total && _formas.length == 1) {
+          _formas.first.controller.text = _formatarValorDigitavel(
+            _valorAjustado > 0 ? _valorAjustado : 0,
+          );
+        }
+      }),
     );
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1417,24 +1686,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
             '${context.t('agenda.adjustments.adjusted')}: ${_formatarMoeda(_valorAjustado)}',
           ),
           Text(
-            '${context.t('agenda.adjustments.balanceAfter')}: ${_formatarMoeda(_valorAjustado - informado)}',
+            '${context.t(_valorAjustado - informado < 0 ? 'agenda.settlementEdit.excess' : 'agenda.adjustments.balanceAfter')}: ${_formatarMoeda((_valorAjustado - informado).abs())}',
           ),
-          if (_tipo == SixWebRecebimentoTipo.total && _formas.length == 1)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                key: const ValueKey('settlement-use-adjusted'),
-                onPressed: _valorAjustado <= 0 || _processando
-                    ? null
-                    : () => setState(() {
-                        _formas.first.controller.text = _formatarValorDigitavel(
-                          _valorAjustado,
-                        );
-                        _erroValor = null;
-                      }),
-                child: Text(context.t('agenda.adjustments.useAdjusted')),
-              ),
-            ),
         ],
       ),
     );
@@ -1442,8 +1695,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
 
   String _formatarMoeda(double valor) =>
       context.read<LocaleSettingsProvider>().formatCurrency(valor);
-  String _formatarValorDigitavel(double valor) =>
-      valor.toStringAsFixed(2).replaceAll('.', ',');
+  String _formatarValorDigitavel(double valor) => valor
+      .toStringAsFixed(2)
+      .replaceAll('.', context.read<LocaleSettingsProvider>().decimalSeparator);
 
   double _parseValor(String value) {
     final LocaleSettingsProvider regionalizacao = context

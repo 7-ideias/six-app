@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -95,7 +99,15 @@ void main() {
         find.byKey(const ValueKey('settlement-surcharge')),
         '2,00',
       );
-      await tester.tap(find.byKey(const ValueKey('settlement-use-adjusted')));
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('settlement-method-0')),
+            )
+            .controller!
+            .text,
+        '91,00',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text(pagamento ? 'Pagar total' : 'Receber total'));
       await tester.pumpAndSettle();
@@ -157,6 +169,152 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settlement-discount')), findsNothing);
   });
+  testWidgets('classification and notes stay local until settlement', (
+    tester,
+  ) async {
+    SixWebRecebimentoResultado? submitted;
+    final date = DateTime(2026, 1, 20);
+    await _pumpHarness(
+      tester,
+      permitirAjustes: true,
+      dadosBaixa: AgendaBaixaDados(
+        categoria: 'Escola',
+        contato: 'Fornecedor original',
+        contatoEditavel: true,
+        observacoes: 'Nota original',
+        dataInicial: date,
+        valorOriginal: 99,
+        valorAberto: 99,
+      ),
+      onConfirm: (v) async => submitted = v,
+    );
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Escola ·'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-classification')),
+    );
+    await tester.tap(find.text('Editar classificação'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-contact')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-contact')),
+      'Escola da Laura',
+    );
+    expect(submitted, isNull);
+    await tester.tap(find.text('Receber total'));
+    await tester.pumpAndSettle();
+    expect(submitted!.dataLiquidacao, date);
+    expect(submitted!.classificacao!.nomeContato, 'Escola da Laura');
+    expect(submitted!.classificacao!.categoria, isNull);
+    expect(submitted!.classificacao!.observacoesLancamento, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cancel discards edited contact without calling backend', (
+    tester,
+  ) async {
+    var calls = 0;
+    await _pumpHarness(
+      tester,
+      dadosBaixa: const AgendaBaixaDados(
+        contato: 'Original',
+        contatoEditavel: true,
+      ),
+      onConfirm: (_) async {
+        calls++;
+      },
+    );
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-classification')),
+    );
+    await tester.tap(find.text('Editar classificação'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settlement-contact')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('settlement-contact')),
+      'Alterado',
+    );
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    expect(find.text('Abrir recebimento'), findsOneWidget);
+  });
+
+  testWidgets(
+    'save failure preserves form and processing blocks duplicate submits',
+    (tester) async {
+      var calls = 0;
+      final pending = Completer<void>();
+      await _pumpHarness(
+        tester,
+        permitirAjustes: true,
+        onConfirm: (_) async {
+          calls++;
+          if (calls == 1) throw StateError('offline');
+          await pending.future;
+        },
+      );
+      await tester.tap(find.text('Abrir recebimento'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('settlement-discount')),
+        '10',
+      );
+      await tester.tap(find.text('Receber total'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Não foi possível confirmar a baixa'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('settlement-discount')),
+            )
+            .controller!
+            .text,
+        '10',
+      );
+      await tester.tap(find.text('Receber total'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Receber venda em aberto'), findsOneWidget);
+      expect(calls, 2);
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Abrir recebimento'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'classification patch preserves omitted fields and clears explicitly',
+    () {
+      final request = AgendaFinanceiraLiquidacaoRequest(
+        tipoLiquidacao: 'TOTAL',
+        dataLiquidacao: DateTime(2026, 1, 20),
+        valorLiquidado: 99,
+        formaPagamentoRealizada: 'tipo2',
+        classificacao: const AgendaClassificacaoBaixa(
+          categoria: '',
+          alterarCentroCusto: true,
+        ),
+      );
+      expect(request.toJson()['classificacao'], {
+        'categoria': '',
+        'alterarCentroCusto': true,
+        'centroCustoId': null,
+      });
+    },
+  );
 }
 
 Color? _stateStripColor(WidgetTester tester) {
@@ -171,6 +329,8 @@ Future<void> _pumpHarness(
   ValueChanged<SixWebRecebimentoResultado?>? onResult,
   bool permitirAjustes = false,
   bool pagamento = false,
+  AgendaBaixaDados? dadosBaixa,
+  Future<void> Function(SixWebRecebimentoResultado)? onConfirm,
 }) async {
   tester.view.physicalSize = const Size(1440, 960);
   tester.view.devicePixelRatio = 1;
@@ -206,6 +366,9 @@ Future<void> _pumpHarness(
                       titulo: 'Receber venda em aberto',
                       permitirAjustes: permitirAjustes,
                       pagamento: pagamento,
+                      dadosBaixa: dadosBaixa,
+                      agendaService: _FakeAgendaService(),
+                      onConfirm: onConfirm,
                       descricao:
                           'Venda web para receber depois 2026-08-25T13:30:33.043',
                       valorAberto: 99,
@@ -352,4 +515,9 @@ class _FakeCaixaApiClient implements CaixaApiClient {
   Future<T> _unsupported<T>() {
     throw UnimplementedError();
   }
+}
+
+class _FakeAgendaService extends AgendaFinanceiraLancamentoService {
+  @override
+  Future<List<CentroCustoModel>> listarCentrosCusto() async => [];
 }
