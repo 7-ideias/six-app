@@ -1428,9 +1428,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }) async {
     if (_executandoAcao) return;
     final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
-    final double valorAberto = _toDouble(
-      item['valorRestante'] ?? item['valor'],
-    );
     final destinosFinanceiros =
         !pagamento &&
         _service.espacoFinanceiro == 'EMPRESA' &&
