@@ -1327,7 +1327,11 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
               ),
             ),
             Text(
-              '${context.t(restante < 0 ? 'agenda.settlementEdit.excess' : 'agenda.settlementEdit.distribute')}: ${_formatarMoeda(restante.abs())}',
+              '${context.t(restante < 0
+                  ? 'agenda.settlementEdit.excess'
+                  : _tipo == SixWebRecebimentoTipo.total
+                  ? 'agenda.settlementEdit.distribute'
+                  : 'agenda.adjustments.balanceAfter')}: ${_formatarMoeda(restante.abs())}',
               style: TextStyle(
                 color: tokens.secondaryText,
                 fontSize: 12,
