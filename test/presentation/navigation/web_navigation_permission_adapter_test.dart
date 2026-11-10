@@ -50,7 +50,10 @@ void main() {
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.operationsPos, WebNavigationIds.operationsSales],
+          <String>[
+            WebNavigationIds.operationsPos,
+            WebNavigationIds.operationsSales,
+          ],
         );
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
@@ -116,14 +119,11 @@ void main() {
           _FakeAutorizacoesProvider(podeCadastrarProduto: true),
         );
 
-        expect(
-          _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
-          <String>[
-            WebNavigationIds.catalogProducts,
-          ],
-        );
-      },
-    );
+      expect(
+        _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
+        <String>[WebNavigationIds.catalogProducts],
+      );
+    });
 
     test('Pessoas parcial com clientes nao libera colaboradores', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
@@ -144,12 +144,17 @@ void main() {
       final comCompras = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeConsultarCompras: true),
       );
-      expect(_childIds(_requiredItem(comCompras, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.operationsPurchases]);
+      expect(
+        _childIds(_requiredItem(comCompras, WebNavigationIds.operations)),
+        <String>[WebNavigationIds.operationsPurchases],
+      );
       final semCompras = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeEditarCliente: true),
       );
-      expect(_findItem(semCompras, WebNavigationIds.operationsPurchases), isNull);
+      expect(
+        _findItem(semCompras, WebNavigationIds.operationsPurchases),
+        isNull,
+      );
     });
 
     test('fornecedores independem de permissao de clientes', () {
@@ -159,9 +164,39 @@ void main() {
       final somenteCliente = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeEditarCliente: true),
       );
-      expect(_childIds(_requiredItem(comFornecedor, WebNavigationIds.people)),
-          <String>[WebNavigationIds.peopleSuppliers]);
-      expect(_findItem(somenteCliente, WebNavigationIds.peopleSuppliers), isNull);
+      expect(
+        _childIds(_requiredItem(comFornecedor, WebNavigationIds.people)),
+        <String>[WebNavigationIds.peopleSuppliers],
+      );
+      expect(
+        _findItem(somenteCliente, WebNavigationIds.peopleSuppliers),
+        isNull,
+      );
+    });
+
+    test('Planos aparece apenas para SUPER, logo apos Financeiro', () {
+      final superVisible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(admin: true, superUser: true),
+      );
+      final ids = _topLevelIds(superVisible);
+      expect(
+        ids.indexOf(WebNavigationIds.adminPlans),
+        ids.indexOf(WebNavigationIds.financial) + 1,
+      );
+      expect(
+        _findItem(
+          _visibleItemsFor(_FakeAutorizacoesProvider(admin: true)),
+          WebNavigationIds.adminPlans,
+        ),
+        isNull,
+      );
+      expect(
+        _findItem(
+          _visibleItemsFor(_FakeAutorizacoesProvider()),
+          WebNavigationIds.adminPlans,
+        ),
+        isNull,
+      );
     });
 
     test('somente SUPER enxerga o painel de Imagens', () {
@@ -176,10 +211,7 @@ void main() {
         _topLevelIds(superVisible),
         contains(WebNavigationIds.visualAssets),
       );
-      expect(
-        _findItem(adminVisible, WebNavigationIds.visualAssets),
-        isNull,
-      );
+      expect(_findItem(adminVisible, WebNavigationIds.visualAssets), isNull);
     });
 
     test('somente SUPER enxerga Usuarios do Sixo', () {
@@ -194,10 +226,7 @@ void main() {
         _childIds(_requiredItem(superVisible, WebNavigationIds.people)),
         contains(WebNavigationIds.peopleSixoUsers),
       );
-      expect(
-        _findItem(adminVisible, WebNavigationIds.peopleSixoUsers),
-        isNull,
-      );
+      expect(_findItem(adminVisible, WebNavigationIds.peopleSixoUsers), isNull);
     });
 
     test('colaborador com relatorio nao enxerga desempenho da equipe', () {
@@ -379,3 +408,4 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
   @override
   bool get autorizacoesCarregadasComSucesso => loaded;
 }
+

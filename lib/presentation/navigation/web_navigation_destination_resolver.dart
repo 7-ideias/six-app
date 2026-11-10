@@ -122,6 +122,7 @@ class WebNavigationDestinationResolver {
         );
       case WebNavigationDestination.peoplePerformance:
         return actions.openPeoplePerformance();
+      case WebNavigationDestination.adminPlans:
       case WebNavigationDestination.visualAssets:
         return WebNavigationResolutionResult.reserved(
           destination,
@@ -141,3 +142,4 @@ class WebNavigationDestinationResolver {
     }
   }
 }
+

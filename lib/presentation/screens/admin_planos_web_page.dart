@@ -4,12 +4,11 @@ import 'package:provider/provider.dart';
 import '../../l10n/storage_texts.dart';
 import 'storage_plans_web_page.dart';
 import '../../core/services/admin_planos_service.dart';
-import '../../core/services/auth_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
-import '../admin/admin_navigation_shell.dart';
+import '../layouts/six_web_page_shell.dart';
+import '../theme/web_theme_tokens.dart';
 import '../admin/admin_portal_components.dart';
-import '../admin/admin_portal_texts.dart';
 
 class AdminPlanosWebPage extends StatefulWidget {
   const AdminPlanosWebPage({super.key});
@@ -20,39 +19,36 @@ class AdminPlanosWebPage extends StatefulWidget {
 
 class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
   final AdminPlanosService _service = AdminPlanosService();
-  final AuthService _authService = AuthService();
 
   bool _carregando = true;
-  bool _saindo = false;
   String? _erro;
-  String? _userName;
-  String? _userEmail;
+  bool _authorized = false;
   List<AdminPlanoPublico> _planos = const <AdminPlanoPublico>[];
 
   @override
-  void initState() {
-    super.initState();
-    _carregarUsuario();
-    _carregar();
-  }
-
-  Future<void> _carregarUsuario() async {
-    final String? email = await _authService.getUserEmail();
-    if (!mounted) return;
-    setState(() {
-      _userEmail = email;
-      _userName = _nomeExibicaoPorEmail(email);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final allowed = context
+        .watch<ColaboradorAutorizacoesProvider>()
+        .ehSuperUsuario;
+    if (allowed && !_authorized) {
+      _authorized = true;
+      _carregar();
+    } else if (!allowed) {
+      _authorized = false;
+      _planos = const <AdminPlanoPublico>[];
+    }
   }
 
   Future<void> _carregar() async {
+    if (!_authorized) return;
     setState(() {
       _carregando = true;
       _erro = null;
     });
     try {
       final List<AdminPlanoPublico> planos = await _service.listar();
-      if (!mounted) return;
+      if (!mounted || !_authorized) return;
       setState(() {
         _planos = planos;
         _carregando = false;
@@ -63,7 +59,7 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
       if (_erroDeSessao(message)) {
         Navigator.of(
           context,
-        ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
+        ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
         return;
       }
       setState(() {
@@ -73,20 +69,8 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
     }
   }
 
-  Future<void> _logout() async {
-    if (_saindo) return;
-    setState(() => _saindo = true);
-    try {
-      await _authService.logout();
-    } finally {
-      if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
-    }
-  }
-
   Future<void> _editar({AdminPlanoPublico? plano}) async {
+    if (!_authorized) return;
     final _PlansTexts texts = _PlansTexts.of(context);
     final AdminPlanoSalvarInput? input =
         await showDialog<AdminPlanoSalvarInput>(
@@ -96,7 +80,7 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
               (BuildContext context) =>
                   _PlanoEditorDialog(plano: plano, texts: texts),
         );
-    if (input == null || !mounted) return;
+    if (input == null || !mounted || !_authorized) return;
 
     try {
       await _service.salvar(id: plano?.id, input: input);
@@ -113,26 +97,26 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
   }
 
   Future<void> _arquivar(AdminPlanoPublico plano) async {
+    if (!_authorized) return;
     final _PlansTexts texts = _PlansTexts.of(context);
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (BuildContext context) => AlertDialog(
-            title: Text(texts.archiveTitle),
-            content: Text(texts.archiveBody(plano.codigo)),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(texts.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(texts.archive),
-              ),
-            ],
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(texts.archiveTitle),
+        content: Text(texts.archiveBody(plano.codigo)),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(texts.cancel),
           ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(texts.archive),
+          ),
+        ],
+      ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted || !_authorized) return;
     try {
       await _service.arquivar(plano.id);
       if (!mounted) return;
@@ -151,7 +135,9 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? Colors.red.shade800 : AdminPalette.dark,
+        backgroundColor: error
+            ? Colors.red.shade800
+            : WebThemeTokens.of(context).primaryText,
       ),
     );
   }
@@ -163,41 +149,31 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
         normalized.contains('faça login');
   }
 
-  String? _nomeExibicaoPorEmail(String? email) {
-    final String normalized = email?.trim() ?? '';
-    if (normalized.isEmpty || !normalized.contains('@')) return null;
-    return normalized
-        .split('@')
-        .first
-        .replaceAll('.', ' ')
-        .replaceAll('_', ' ');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final String profileType = context
-        .select<ColaboradorAutorizacoesProvider, String>(
-          (ColaboradorAutorizacoesProvider provider) =>
-              provider.tipoPerfilUnificado,
-        );
-    final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
-    final _PlansTexts texts = _PlansTexts.of(context);
-    return AdminNavigationShell(
-      texts: portalTexts,
-      userInfo: AdminPortalUserInfo(
-        name: _userName,
-        email: _userEmail,
-        profileType: profileType,
-      ),
-      currentRoute: '/admin/planos',
-      pageTitle: texts.title,
-      onLogout: _logout,
-      onRefresh: _carregar,
-      refreshing: _carregando,
-      loggingOut: _saindo,
-      child: AnimatedSwitcher(
-        duration: AdminMotion.medium,
-        child: _buildContent(texts),
+    final texts = _PlansTexts.of(context);
+    if (!context.watch<ColaboradorAutorizacoesProvider>().ehSuperUsuario) {
+      return Center(child: Text(texts.superOnly));
+    }
+    return SingleChildScrollView(
+      child: SixWebPageShell(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                tooltip: texts.refresh,
+                onPressed: _carregando ? null : _carregar,
+                icon: const Icon(Icons.refresh),
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: AdminMotion.medium,
+              child: _buildContent(texts),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -259,6 +235,24 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
   }
 }
 
+class _PlansSurface extends StatelessWidget {
+  const _PlansSurface({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    final colors = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        border: Border.all(color: colors.cardBorder),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _PlansHeader extends StatelessWidget {
   const _PlansHeader({
     required this.texts,
@@ -274,7 +268,7 @@ class _PlansHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdminSurfaceCard(
+    return _PlansSurface(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 720;
@@ -283,8 +277,8 @@ class _PlansHeader extends StatelessWidget {
             children: <Widget>[
               Text(
                 texts.eyebrow,
-                style: const TextStyle(
-                  color: AdminPalette.mutedText,
+                style: TextStyle(
+                  color: WebThemeTokens.of(context).mutedText,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -292,15 +286,15 @@ class _PlansHeader extends StatelessWidget {
               Text(
                 texts.heading,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AdminPalette.dark,
+                  color: WebThemeTokens.of(context).primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 texts.subtitle,
-                style: const TextStyle(
-                  color: AdminPalette.bodyText,
+                style: TextStyle(
+                  color: WebThemeTokens.of(context).secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -348,9 +342,9 @@ class _SummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: WebThemeTokens.of(context).surfaceMuted,
         borderRadius: BorderRadius.circular(AdminRadius.md),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: WebThemeTokens.of(context).cardBorder),
       ),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
     );
@@ -381,7 +375,7 @@ class _PlanCard extends StatelessWidget {
             : 'pt-BR';
     final AdminPlanoTraducao? translation =
         plano.traducoes[locale] ?? plano.traducoes['pt-BR'];
-    return AdminSurfaceCard(
+    return _PlansSurface(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 760;
@@ -408,14 +402,14 @@ class _PlanCard extends StatelessWidget {
                     : plano.codigo,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: AdminPalette.dark,
+                  color: WebThemeTokens.of(context).primaryText,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 plano.codigo,
-                style: const TextStyle(
-                  color: AdminPalette.mutedText,
+                style: TextStyle(
+                  color: WebThemeTokens.of(context).mutedText,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.6,
                 ),
@@ -424,7 +418,9 @@ class _PlanCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   translation!.descricao,
-                  style: const TextStyle(color: AdminPalette.bodyText),
+                  style: TextStyle(
+                    color: WebThemeTokens.of(context).secondaryText,
+                  ),
                 ),
               ],
               const SizedBox(height: 14),
@@ -484,7 +480,7 @@ class _PricePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: WebThemeTokens.of(context).surfaceMuted,
         borderRadius: BorderRadius.circular(AdminRadius.md),
       ),
       child: Text(
@@ -507,12 +503,11 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color:
-            published
-                ? AdminPalette.activeGreen
-                : archived
-                ? Colors.grey.shade200
-                : Colors.amber.shade100,
+        color: published
+            ? WebThemeTokens.of(context).success.withValues(alpha: .15)
+            : archived
+            ? WebThemeTokens.of(context).surfaceMuted
+            : WebThemeTokens.of(context).warning.withValues(alpha: .15),
         borderRadius: BorderRadius.circular(AdminRadius.md),
       ),
       child: Text(
@@ -533,13 +528,13 @@ class _TagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: WebThemeTokens.of(context).cardBorder),
         borderRadius: BorderRadius.circular(AdminRadius.md),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: AdminPalette.mutedText),
+          Icon(icon, size: 15, color: WebThemeTokens.of(context).mutedText),
           const SizedBox(width: 5),
           Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
@@ -1146,7 +1141,7 @@ class _PlansError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdminSurfaceCard(
+    return _PlansSurface(
       child: Column(
         children: <Widget>[
           const Icon(Icons.error_outline_rounded, size: 42),
@@ -1167,7 +1162,7 @@ class _PlansEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdminSurfaceCard(
+    return _PlansSurface(
       child: Column(
         children: <Widget>[
           const Icon(Icons.sell_outlined, size: 48),
@@ -1195,6 +1190,16 @@ class _PlansTexts {
   factory _PlansTexts.of(BuildContext context) =>
       _PlansTexts(Localizations.localeOf(context).languageCode);
 
+  String get superOnly => en
+      ? 'Access restricted to SUPER.'
+      : es
+      ? 'Acceso exclusivo para SUPER.'
+      : 'Acesso exclusivo para SUPER.';
+  String get refresh => en
+      ? 'Refresh plans'
+      : es
+      ? 'Actualizar planes'
+      : 'Atualizar planos';
   bool get en => language == 'en';
   bool get es => language == 'es';
   String get title =>
@@ -1531,3 +1536,4 @@ class _PlansTexts {
         : 'Mensal';
   }
 }
+

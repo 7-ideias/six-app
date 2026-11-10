@@ -14,6 +14,7 @@ import 'package:sixpos/presentation/screens/admin_visual_assets_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
+import '../screens/admin_planos_web_page.dart';
 import 'web_header.dart';
 
 class AuthenticatedWebShell extends StatefulWidget {
@@ -25,6 +26,7 @@ class AuthenticatedWebShell extends StatefulWidget {
     required this.child,
     required this.appVersion,
     this.currentCommerceName,
+    this.initialDestination,
     this.headerActions = const <Widget>[],
   });
 
@@ -34,6 +36,7 @@ class AuthenticatedWebShell extends StatefulWidget {
   final Widget child;
   final String appVersion;
   final String? currentCommerceName;
+  final WebNavigationDestination? initialDestination;
   final List<Widget> headerActions;
 
   @override
@@ -50,6 +53,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   @override
   void initState() {
     super.initState();
+    _shellManagedDestination = widget.initialDestination;
     _expandedGroupIds = _groupIdsForDestination(widget.activeDestination);
   }
 
@@ -80,18 +84,17 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     final Widget effectiveChild = switch (effectiveDestination) {
       WebNavigationDestination.catalogLabels => const EtiquetasWebPage(),
       WebNavigationDestination.operationsSales => ConsultaVendasWebPage(
-        onNovaVenda:
-            () => _resolveDestination(
-              WebNavigationDestination.operationsPointOfSale,
-            ),
+        onNovaVenda: () =>
+            _resolveDestination(WebNavigationDestination.operationsPointOfSale),
         onAbrirDevolucoes: _abrirDevolucoesDaVenda,
       ),
       WebNavigationDestination.operationsReturns =>
         const DevolucoesProdutosWebPage(),
-      WebNavigationDestination.peopleSixoUsers =>
-        const UsuariosSixoWebPage(),
-      WebNavigationDestination.visualAssets =>
-        const AdminVisualAssetsWebPage(embeddedInMainShell: true),
+      WebNavigationDestination.peopleSixoUsers => const UsuariosSixoWebPage(),
+      WebNavigationDestination.adminPlans => const AdminPlanosWebPage(),
+      WebNavigationDestination.visualAssets => const AdminVisualAssetsWebPage(
+        embeddedInMainShell: true,
+      ),
       _ => widget.child,
     };
 
@@ -176,17 +179,14 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     if (_isShellManaged(destination)) {
       setState(() {
         _shellManagedDestination = destination;
-        _expandedGroupIds.add(
-          switch (destination) {
-            WebNavigationDestination.catalogLabels =>
-              WebNavigationIds.catalog,
-            WebNavigationDestination.peopleSixoUsers =>
-              WebNavigationIds.people,
-            WebNavigationDestination.visualAssets =>
-              WebNavigationIds.visualAssets,
-            _ => WebNavigationIds.operations,
-          },
-        );
+        _expandedGroupIds.add(switch (destination) {
+          WebNavigationDestination.catalogLabels => WebNavigationIds.catalog,
+          WebNavigationDestination.peopleSixoUsers => WebNavigationIds.people,
+          WebNavigationDestination.adminPlans => WebNavigationIds.adminPlans,
+          WebNavigationDestination.visualAssets =>
+            WebNavigationIds.visualAssets,
+          _ => WebNavigationIds.operations,
+        });
       });
       return;
     }
@@ -222,7 +222,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         destination == WebNavigationDestination.operationsSales ||
         destination == WebNavigationDestination.operationsReturns ||
         destination == WebNavigationDestination.peopleSixoUsers ||
-        destination == WebNavigationDestination.visualAssets;
+        destination == WebNavigationDestination.visualAssets ||
+        destination == WebNavigationDestination.adminPlans;
   }
 
   Future<void> _abrirDevolucoesDaVenda(String identificador) async {
@@ -319,3 +320,4 @@ String _shellText(BuildContext context, String key, String fallback) {
   final String resolved = context.t(key);
   return resolved == key ? fallback : resolved;
 }
+
