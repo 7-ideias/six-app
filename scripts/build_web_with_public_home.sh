@@ -49,6 +49,8 @@ cp web/public_register.html build/web/register.html
 cp web/public_forgot_password.html build/web/forgot-password.html
 cp web/public_onboarding.html build/web/onboarding.html
 cp web/public_checkout.html build/web/checkout.html
+cp web/public_billing_return.html build/web/billing-return.html
+"$NODE_BIN" scripts/generate_app_associations.mjs build/web/.well-known
 cp web/public_catalog.html build/web/catalogo.html
 cp web/public_collaborator_invite.html build/web/collaborator-invite.html
 cp web/public_customer_signup.html build/web/customer-signup.html
@@ -60,6 +62,7 @@ rm -f build/web/public_register.html
 rm -f build/web/public_forgot_password.html
 rm -f build/web/public_onboarding.html
 rm -f build/web/public_checkout.html
+rm -f build/web/public_billing_return.html
 rm -f build/web/public_catalog.html
 rm -f build/web/public_collaborator_invite.html
 rm -f build/web/public_customer_signup.html

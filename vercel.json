@@ -27,6 +27,21 @@
   ],
   "headers": [
     {
+      "source": "/.well-known/:path*",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/mobile/billing-return",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    },
+    {
       "source": "/login",
       "headers": [
         {
@@ -367,6 +382,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/mobile/billing-return",
+      "destination": "/billing-return.html"
+    },
     {
       "source": "/atendimento/status",
       "destination": "https://api.sixappback.com/atendimento/status"

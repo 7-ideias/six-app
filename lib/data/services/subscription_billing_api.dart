@@ -73,11 +73,24 @@ class SubscriptionBillingApi {
     String company,
     BillingOffer offer, {
     String locale = 'pt-BR',
+    bool mobile = false,
   }) async => _url(
-    await _request(company, 'checkout', body: offer.purchase(locale: locale)),
+    await _request(
+      company,
+      'checkout',
+      body: {
+        ...offer.purchase(locale: locale),
+        'returnTarget': mobile ? 'MOBILE' : 'WEB',
+      },
+    ),
   );
-  Future<Uri> portal(String company) async =>
-      _url(await _request(company, 'portal', body: {}));
+  Future<Uri> portal(String company, {bool mobile = false}) async => _url(
+    await _request(
+      company,
+      'portal?returnTarget=${mobile ? 'MOBILE' : 'WEB'}',
+      body: {},
+    ),
+  );
   static Uri _url(Map<String, dynamic> data) {
     final uri = Uri.parse(data['url'] as String);
     if (uri.scheme != 'https' ||
