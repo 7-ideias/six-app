@@ -129,6 +129,11 @@ class SubscriptionBillingController extends ChangeNotifier
       }
       if (!canceled && !portal) returnMessage = 'paymentStillPending';
       if (canceled) _checkoutOpened = false;
+    } catch (_) {
+      if (!_disposed) {
+        error = 'error';
+        returnMessage = 'paymentStillPending';
+      }
     } finally {
       _reconciling = false;
       _notify();
