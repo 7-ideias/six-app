@@ -8,6 +8,7 @@ import '../../l10n/storage_texts.dart';
 import '../controllers/billing_access_controller.dart';
 import '../components/six_backend_loading.dart';
 import '../theme/web_theme_tokens.dart';
+import '../theme/subscription_visuals.dart';
 
 Future<void> showBillingAccessWeb(
   BuildContext context,
@@ -77,16 +78,28 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.admin) {
+      return Theme(
+        data: SubscriptionVisuals.theme(context),
+        child: Builder(builder: _content),
+      );
+    }
+    return _content(context);
+  }
+
+  Widget _content(BuildContext context) {
     final colors = WebThemeTokens.of(context);
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) => PopScope(
         canPop: widget.admin && !controller.busy,
         child: Material(
-          color: colors.workspaceBackground,
+          color: widget.admin
+              ? colors.workspaceBackground
+              : SubscriptionVisuals.background,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
+              constraints: BoxConstraints(maxWidth: widget.admin ? 680 : 1152),
               child: ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.all(28),

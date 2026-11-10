@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,18 +12,43 @@ import '../../data/services/subscription_billing_api.dart';
 
 class SubscriptionBillingController extends ChangeNotifier
     with WidgetsBindingObserver {
-  SubscriptionBillingController({String? companyId, Uri? selection})
-    : _company = companyId {
+  SubscriptionBillingController({
+    String? companyId,
+    Uri? selection,
+    SubscriptionBillingApi? api,
+    BillingAccessApi? accessApi,
+  }) : _company = companyId,
+       _api = api ?? SubscriptionBillingApi(),
+       _access = accessApi ?? BillingAccessApi() {
     selection ??= kIsWeb ? Uri.base : null;
     selectedPlanId = selection?.queryParameters['plan'];
     selectedInterval = selection?.queryParameters['interval'];
     currency = selection?.queryParameters['currency'] ?? 'BRL';
-    locale = selection?.queryParameters['locale'] ?? 'pt-BR';
+    // Public/login locale must not override the authenticated preference.
     WidgetsBinding.instance.addObserver(this);
   }
   String? _company;
   String? selectedPlanId, selectedInterval;
   String currency = 'BRL', locale = 'pt-BR';
+  bool _localeInitialized = false, _reloadPending = false;
+
+  void setEffectiveLocale(Locale? effectiveLocale) {
+    final next = switch (effectiveLocale?.languageCode) {
+      'en' => 'en-US',
+      'es' => 'es-ES',
+      _ => 'pt-BR',
+    };
+    if (_disposed || (_localeInitialized && next == locale)) return;
+    _localeInitialized = true;
+    locale = next;
+    value = null;
+    _reloadPending = true;
+    // didChangeDependencies may run during build. Notify only after it ends.
+    scheduleMicrotask(() {
+      if (!_disposed && _reloadPending && !busy) load();
+    });
+  }
+
   List<BillingOffer> get visibleOffers {
     final offers = value?.offers ?? const <BillingOffer>[];
     return offers.where((offer) => offer.interval == selectedInterval).toList();
@@ -36,8 +63,8 @@ class SubscriptionBillingController extends ChangeNotifier
     _notify();
   }
 
-  final _api = SubscriptionBillingApi();
-  final _access = BillingAccessApi();
+  final SubscriptionBillingApi _api;
+  final BillingAccessApi _access;
   SubscriptionSummary? value;
   String? error;
   bool busy = false, _disposed = false;
@@ -47,6 +74,8 @@ class SubscriptionBillingController extends ChangeNotifier
 
   Future<void> load({bool sync = false}) async {
     if (busy || _disposed) return;
+    _reloadPending = false;
+    final requestedLocale = locale;
     busy = true;
     error = null;
     _notify();
@@ -57,11 +86,11 @@ class SubscriptionBillingController extends ChangeNotifier
       final summary = await _api.summary(
         _company!,
         sync: sync && value?.canManage == true,
-        locale: locale,
+        locale: requestedLocale,
         currency: currency,
       );
       final access = await _access.load(_company!);
-      if (!_disposed) {
+      if (!_disposed && requestedLocale == locale) {
         value = summary;
         if (!intervals.contains(selectedInterval)) {
           selectedInterval = intervals.isEmpty ? null : intervals.first;
@@ -74,12 +103,13 @@ class SubscriptionBillingController extends ChangeNotifier
           paymentRequiredCompany.value = null;
       }
     } on BillingAccessException catch (e) {
-      error = e.code;
+      if (requestedLocale == locale) error = e.code;
     } catch (_) {
-      error = 'error';
+      if (requestedLocale == locale) error = 'error';
     } finally {
       busy = false;
       _notify();
+      if (_reloadPending && !_disposed) unawaited(load());
     }
   }
 
@@ -91,7 +121,7 @@ class SubscriptionBillingController extends ChangeNotifier
     try {
       final uri = offer == null
           ? await _api.portal(_company!)
-          : await _api.checkout(_company!, offer);
+          : await _api.checkout(_company!, offer, locale: locale);
       if (_disposed) return;
       if (!await launchUrl(
         uri,
@@ -106,6 +136,7 @@ class SubscriptionBillingController extends ChangeNotifier
     } finally {
       busy = false;
       _notify();
+      if (_reloadPending && !_disposed) unawaited(load());
     }
   }
 

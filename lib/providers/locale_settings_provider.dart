@@ -200,8 +200,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   /// Aplica a ordem de decisão do idioma para usuário autenticado:
   /// 1. preferência individual, quando diferente de DEFAULT;
   /// 2. regionalização da empresa;
-  /// 3. locale detectado anteriormente no sistema/navegador;
-  /// 4. pt-BR.
+  /// 3. pt-BR (o idioma público/navegador não substitui a configuração).
   Future<void> applyAuthenticatedLocale({
     String? idiomaDePreferencia,
     ConfiguracaoRegionalizacaoResponse? regionalizacao,
@@ -209,6 +208,11 @@ class LocaleSettingsProvider extends ChangeNotifier {
     if (regionalizacao != null) {
       _companyConfig = _regionalizacaoService.converterResponseParaDominio(
         regionalizacao,
+      );
+    } else {
+      _companyConfig = _companyConfig.copyWith(
+        languageCode: _systemFallbackLocale.languageCode,
+        countryCode: _systemFallbackLocale.countryCode!,
       );
     }
 

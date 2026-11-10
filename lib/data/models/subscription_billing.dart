@@ -5,6 +5,9 @@ class BillingOffer {
     required this.interval,
     required this.currency,
     required this.amountMinor,
+    this.description = '',
+    this.benefits = const [],
+    this.featured = false,
   });
   factory BillingOffer.fromJson(Map<String, dynamic> json) => BillingOffer(
     planId: json['planId'] as String,
@@ -12,14 +15,23 @@ class BillingOffer {
     interval: json['interval'] as String,
     currency: json['currency'] as String,
     amountMinor: (json['amountMinor'] as num).toInt(),
+    description: json['description'] as String? ?? '',
+    benefits: (json['benefits'] as List? ?? const [])
+        .whereType<String>()
+        .toList(growable: false),
+    featured: json['featured'] == true,
   );
   final String planId, name, interval, currency;
   final int amountMinor;
-  Map<String, dynamic> purchase() => {
+  final String description;
+  final List<String> benefits;
+  final bool featured;
+  Map<String, dynamic> purchase({String locale = 'pt-BR'}) => {
     'planId': planId,
     'interval': interval,
     'currency': currency,
     'expectedAmountMinor': amountMinor,
+    'locale': locale,
   };
 }
 

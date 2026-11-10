@@ -303,8 +303,9 @@ class _AuthGateMobileState extends State<AuthGateMobile>
   }
 
   Future<void> _applyAuthenticatedLocale() async {
+    String? idiomaDePreferencia;
     try {
-      final String? idiomaDePreferencia = await _usuarioService
+      idiomaDePreferencia = await _usuarioService
           .buscarDadosDoUsuario_atualizaProviders()
           .timeout(const Duration(seconds: 8));
       if (!mounted) return;
@@ -324,6 +325,10 @@ class _AuthGateMobileState extends State<AuthGateMobile>
     } catch (error) {
       debugPrint(
         '[AuthGateMobile] Erro ao aplicar idioma/regionalizacao: $error',
+      );
+      if (!mounted) return;
+      await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
+        idiomaDePreferencia: idiomaDePreferencia,
       );
     }
   }
