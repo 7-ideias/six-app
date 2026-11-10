@@ -40,28 +40,26 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
         apply(value);
         onChanged();
       },
-      itemBuilder:
-          (_) =>
-              values
-                  .map(
-                    (code) => PopupMenuItem(
-                      value: code,
-                      child: Row(
-                        children: [
-                          Icon(
-                            code == current
-                                ? Icons.check_circle_outline
-                                : Icons.circle_outlined,
-                            size: 18,
-                            color: tokens.info,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(recorrenciaLabel(context, code)),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
+      itemBuilder: (_) => values
+          .map(
+            (code) => PopupMenuItem(
+              value: code,
+              child: Row(
+                children: [
+                  Icon(
+                    code == current
+                        ? Icons.check_circle_outline
+                        : Icons.circle_outlined,
+                    size: 18,
+                    color: tokens.info,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(recorrenciaLabel(context, code))),
+                ],
+              ),
+            ),
+          )
+          .toList(),
       child: Container(
         constraints: const BoxConstraints(minHeight: 54),
         padding: const EdgeInsets.all(12),
@@ -88,14 +86,13 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: compact ? EdgeInsets.zero : const EdgeInsets.all(18),
-      decoration:
-          compact
-              ? null
-              : BoxDecoration(
-                color: tokens.surfaceMuted,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: tokens.cardBorder),
-              ),
+      decoration: compact
+          ? null
+          : BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: tokens.cardBorder),
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -127,13 +124,12 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             title: Text(recorrenciaLabel(context, 'repeat')),
             value: config.ativa,
-            onChanged:
-                enabled && config.permiteConfigurar
-                    ? (value) {
-                      config.ativa = value;
-                      onChanged();
-                    }
-                    : null,
+            onChanged: enabled && config.permiteConfigurar
+                ? (value) {
+                    config.ativa = value;
+                    onChanged();
+                  }
+                : null,
           ),
           if (!config.permiteConfigurar)
             Text(recorrenciaLabel(context, 'singleHint')),
@@ -164,13 +160,12 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
                       decoration: InputDecoration(
                         labelText: recorrenciaLabel(context, 'count'),
                       ),
-                      onChanged:
-                          (v) => config.quantidade = int.tryParse(v) ?? 0,
-                      validator:
-                          (_) =>
-                              config.quantidade < 1 || config.quantidade > 10000
-                                  ? recorrenciaLabel(context, 'quantityError')
-                                  : null,
+                      onChanged: (v) =>
+                          config.quantidade = int.tryParse(v) ?? 0,
+                      validator: (_) =>
+                          config.quantidade < 1 || config.quantidade > 10000
+                          ? recorrenciaLabel(context, 'quantityError')
+                          : null,
                     ),
                   ),
                 if (config.termino == 'DATA')
@@ -180,34 +175,33 @@ class AgendaRecorrenciaWebFields extends StatelessWidget {
                       config.fim == null
                           ? recorrenciaLabel(context, 'selectDate')
                           : context.read<LocaleSettingsProvider>().formatDate(
-                            config.fim!,
-                          ),
+                              config.fim!,
+                            ),
                     ),
-                    onPressed:
-                        !enabled
-                            ? null
-                            : () async {
-                              final first = DateTime(
-                                vencimento.year,
-                                vencimento.month,
-                                vencimento.day,
-                              );
-                              final selected =
-                                  config.fim == null ||
-                                          config.fim!.isBefore(first)
-                                      ? first
-                                      : config.fim!;
-                              final date = await showDatePicker(
-                                context: context,
-                                initialDate: selected,
-                                firstDate: first,
-                                lastDate: DateTime(2200),
-                              );
-                              if (date != null && context.mounted) {
-                                config.fim = date;
-                                onChanged();
-                              }
-                            },
+                    onPressed: !enabled
+                        ? null
+                        : () async {
+                            final first = DateTime(
+                              vencimento.year,
+                              vencimento.month,
+                              vencimento.day,
+                            );
+                            final selected =
+                                config.fim == null ||
+                                    config.fim!.isBefore(first)
+                                ? first
+                                : config.fim!;
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selected,
+                              firstDate: first,
+                              lastDate: DateTime(2200),
+                            );
+                            if (date != null && context.mounted) {
+                              config.fim = date;
+                              onChanged();
+                            }
+                          },
                   ),
               ],
             ),

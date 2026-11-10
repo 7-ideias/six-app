@@ -181,6 +181,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
+  String? _erroJornada;
   int _etapa = 0;
   bool _tipoEscolhido = false;
   bool _espacoEscolhido = false;
@@ -739,6 +740,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Future<void> _salvar() async {
     if (_isLoading || _ir.carregando) return;
+    if (!widget.modoEdicao) setState(() => _erroJornada = null);
     if (!_formKey.currentState!.validate()) {
       if (!widget.modoEdicao) _irParaEtapa(2);
       return;
@@ -758,6 +760,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (erroRecorrencia != null ||
         (_recorrencia.ativa &&
             !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      if (!widget.modoEdicao) {
+        setState(
+          () => _erroJornada = recorrenciaLabel(
+            context,
+            erroRecorrencia ?? 'pendingError',
+          ),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -798,6 +809,17 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } catch (error) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+      if (!widget.modoEdicao) {
+        setState(
+          () => _erroJornada = recorrenciaLabel(
+            context,
+            error is AgendaFinanceiraLancamentoApiException
+                ? error.codigoRecorrencia ?? 'saveError'
+                : 'saveError',
+          ),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1635,6 +1657,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     FocusScope.of(context).unfocus();
     setState(() {
       _etapa = etapa;
+      _erroJornada = null;
       if (etapa == 2) _detalhesVisitados = true;
     });
     if (_journeyScroll.hasClients) _journeyScroll.jumpTo(0);
@@ -2068,6 +2091,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
               ),
             ),
           ),
+          if (_erroJornada != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+              child: Semantics(
+                liveRegion: true,
+                child: _notice(_erroJornada!, warning: true),
+              ),
+            ),
           _journeyActions(),
         ],
       ),

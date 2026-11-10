@@ -6,6 +6,7 @@ on:
     paths:
       - 'lib/sub_painel_lancamento_agenda_financeira_web.dart'
       - 'lib/l10n/six_i18n.dart'
+      - 'lib/presentation/components/agenda_recorrencia_web_fields.dart'
       - 'test/presentation/screens/agenda_financeira_jornada_web_test.dart'
       - '.github/workflows/agenda-web-journey-validation.yml'
 
@@ -25,7 +26,7 @@ jobs:
           cache: true
       - run: flutter pub get
       - name: Analyze changed Dart files
-        run: dart analyze lib/sub_painel_lancamento_agenda_financeira_web.dart lib/l10n/six_i18n.dart test/presentation/screens/agenda_financeira_jornada_web_test.dart
+        run: dart analyze lib/presentation/components/agenda_recorrencia_web_fields.dart lib/sub_painel_lancamento_agenda_financeira_web.dart lib/l10n/six_i18n.dart test/presentation/screens/agenda_financeira_jornada_web_test.dart
       - name: Validate journey and financial regressions
         run: flutter test --reporter expanded test/presentation/screens/agenda_financeira_jornada_web_test.dart test/presentation/screens/agenda_recorrencia_fields_test.dart test/presentation/screens/agenda_imposto_renda_test.dart
       - name: Build Web
