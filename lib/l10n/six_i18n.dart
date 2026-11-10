@@ -71,6 +71,11 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.list.showCanceled': 'Mostrar cancelados',
+    'agenda.list.originalValue': 'Valor original',
+    'agenda.list.noBalance': 'Sem efeito no saldo',
+    'agenda.list.cancelOccurrence': 'Cancelar ocorrência',
+    'agenda.list.deleteLaunch': 'Excluir lançamento',
     'agenda.journey.currentCompany': 'Empresa atual',
     'agenda.journey.type': 'Tipo',
     'agenda.journey.space': 'Espaço',
@@ -2996,6 +3001,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.list.showCanceled': 'Show canceled',
+    'agenda.list.originalValue': 'Original amount',
+    'agenda.list.noBalance': 'No effect on balance',
+    'agenda.list.cancelOccurrence': 'Cancel occurrence',
+    'agenda.list.deleteLaunch': 'Delete entry',
     'agenda.journey.currentCompany': 'Current business',
     'agenda.journey.type': 'Type',
     'agenda.journey.space': 'Space',
@@ -5701,6 +5711,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.list.showCanceled': 'Mostrar cancelados',
+    'agenda.list.originalValue': 'Importe original',
+    'agenda.list.noBalance': 'Sin efecto en el saldo',
+    'agenda.list.cancelOccurrence': 'Cancelar ocurrencia',
+    'agenda.list.deleteLaunch': 'Eliminar movimiento',
     'agenda.journey.currentCompany': 'Empresa actual',
     'agenda.journey.type': 'Tipo',
     'agenda.journey.space': 'Espacio',
