@@ -1,3 +1,5 @@
+import '../../l10n/admin_password_reset_texts.dart';
+import '../components/mobile/six_mobile_password_reset_sheet.dart';
 import '../../l10n/billing_texts.dart';
 import 'billing_access_mobile_screen.dart';
 import '../../l10n/storage_texts.dart';
@@ -40,6 +42,7 @@ class _UsuarioSixoDetalheMobileScreenState
   bool _loadFailed = false;
   bool _updatingOnboarding = false;
   bool _resettingPassword = false;
+  bool _defaultPasswordResetOpen = false;
   bool _reenvioAberto = false;
 
   String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
@@ -188,9 +191,27 @@ class _UsuarioSixoDetalheMobileScreenState
     }
   }
 
+  Future<void> _resetDefaultPassword() async {
+    final detail = _detail;
+    if (detail == null || _defaultPasswordResetOpen || _resettingPassword) return;
+    setState(() => _defaultPasswordResetOpen = true);
+    try {
+      await showSixMobilePasswordResetSheet(
+        context: context,
+        userName: detail.nomeExibicao,
+        userId: detail.identificador,
+        onConfirm: () => _service.resetarSenhaPadraoUsuarioSixo(
+          idUsuario: detail.identificador,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _defaultPasswordResetOpen = false);
+    }
+  }
+
   Future<void> _resetPassword() async {
     final AdminUsuarioDetalhe? detail = _detail;
-    if (detail == null || _resettingPassword) return;
+    if (detail == null || _resettingPassword || _defaultPasswordResetOpen) return;
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -347,6 +368,20 @@ class _UsuarioSixoDetalheMobileScreenState
           onPressed: _reenvioAberto ? null : _reenviarAgenda,
           icon: const Icon(Icons.forward_to_inbox_outlined),
           label: Text(agendaEmailText(context, 'action')),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _defaultPasswordResetOpen || _resettingPassword
+              ? null
+              : _resetDefaultPassword,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: context.sixMobileColors.error,
+            backgroundColor: context.sixMobileColors.softSurface,
+            side: BorderSide(color: context.sixMobileColors.errorBorder),
+          ),
+          icon: const Icon(Icons.password_rounded),
+          label: Text(adminPasswordResetText(context, 'action')),
         ),
         const SizedBox(height: 12),
         _MobilePasswordResetCard(
@@ -936,3 +971,4 @@ String _mobileFormatValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
+
