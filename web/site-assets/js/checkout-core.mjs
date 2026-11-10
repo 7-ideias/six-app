@@ -326,6 +326,16 @@ function normalizePlanItem(item, language) {
 
   return Object.freeze({
     id,
+    planId: typeof item.id === 'string' ? item.id : id,
+    priceOptions: Object.freeze((Array.isArray(item.precos) && item.precos.length ? item.precos : [priceData])
+      .filter((entry) => entry && entry.currencyCode?.toUpperCase() === currencyCode)
+      .map((entry) => Object.freeze({
+        currencyCode,
+        rawAmount: Number(entry.valor),
+        billingPeriod: entry.periodicidade,
+        price: formatPlanPrice(entry.valor, currencyCode, language),
+        cadence: cadenceForPeriodicity(entry.periodicidade, language),
+      }))),
     name,
     price,
     cadence,

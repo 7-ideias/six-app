@@ -39,7 +39,6 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
   );
-  String interval = 'month';
   @override
   void initState() {
     super.initState();
@@ -104,20 +103,18 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final option in ['month', 'year'])
+                    for (final option in controller.intervals)
                       ChoiceChip(
                         label: Text(billingText(context, option)),
-                        selected: interval == option,
+                        selected: controller.selectedInterval == option,
                         onSelected: controller.busy
                             ? null
-                            : (_) => setState(() => interval = option),
+                            : (_) => controller.selectInterval(option),
                       ),
                   ],
                 ),
                 if (state.offers.isEmpty) Text(billingText(context, 'noPlans')),
-                for (final offer in state.offers.where(
-                  (o) => o.interval == interval,
-                ))
+                for (final offer in controller.visibleOffers)
                   Container(
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(20),
@@ -133,6 +130,8 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
                           offer.name,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
+                        if (offer.planId == controller.selectedPlanId)
+                          Text(billingText(context, 'selectedPlan')),
                         const SizedBox(height: 12),
                         Text(
                           NumberFormat.currency(
@@ -145,7 +144,9 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
                         Text(
                           billingText(
                             context,
-                            interval == 'year' ? 'yearCycle' : 'monthCycle',
+                            offer.interval == 'year'
+                                ? 'yearCycle'
+                                : 'monthCycle',
                           ),
                         ),
                         const SizedBox(height: 16),

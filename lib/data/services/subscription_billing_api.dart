@@ -39,8 +39,12 @@ class SubscriptionBillingApi {
       throw const BillingAccessException('forbidden');
     if (response.statusCode == 401)
       throw const BillingAccessException('session');
-    if (response.statusCode == 409)
+    if (response.statusCode == 409) {
+      if (response.body.contains('BILLING_PRICE_CHANGED')) {
+        throw const BillingAccessException('priceChanged');
+      }
       throw const BillingAccessException('purchaseConflict');
+    }
     if (response.statusCode == 503)
       throw const BillingAccessException('paymentUnavailable');
     if (response.statusCode != 200) throw const BillingAccessException('error');
@@ -50,11 +54,13 @@ class SubscriptionBillingApi {
   Future<SubscriptionSummary> summary(
     String company, {
     bool sync = false,
+    String locale = 'pt-BR',
+    String currency = 'BRL',
   }) async {
     final result = SubscriptionSummary.fromJson(
       await _request(
         company,
-        sync ? 'sincronizar' : 'resumo',
+        '${sync ? 'sincronizar' : 'resumo'}?${Uri(queryParameters: {'locale': locale, 'currency': currency}).query}',
         body: sync ? {} : null,
       ),
     );

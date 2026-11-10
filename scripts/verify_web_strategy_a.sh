@@ -402,7 +402,9 @@ require_contains build/web/checkout.html '<noscript>'
 require_no_public_forbidden_terms build/web/checkout.html
 require_not_contains build/web/checkout.html '<form'
 require_not_contains build/web/checkout.html '<input'
-require_contains build/web/site-assets/js/checkout.js "window.location.replace('/app/assinatura')"
+require_contains build/web/site-assets/js/checkout.js 'window.location.replace('
+require_contains build/web/site-assets/js/checkout.js '/app/assinatura'
+require_contains build/web/site-assets/js/checkout.js "['plan', 'interval', 'currency', 'locale']"
 validate_public_site_asset_references build/web/checkout.html
 
 section "CATALOG"

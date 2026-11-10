@@ -103,8 +103,37 @@ function renderPlan(plan, index, language) {
     `button ${plan.featured ? 'button-light' : 'button-quiet'}`,
     plan.cta,
   );
-  const query = new URLSearchParams({ plan: plan.id });
-  action.href = `${plan.billingPeriod === 'GRATUITO' || plan.rawAmount === 0 ? '/register' : '/checkout'}?${query}`;
+  function choosePrice(option) {
+    price.querySelector('strong').textContent = option.price;
+    price.querySelector('span').textContent = option.cadence;
+    const query = new URLSearchParams({
+      plan: plan.planId,
+      interval: option.billingPeriod === 'ANUAL' ? 'year' : 'month',
+      currency: option.currencyCode,
+      locale: ({pt: 'pt-BR', en: 'en-US', es: 'es-ES'})[language] || 'pt-BR',
+    });
+    const destination = `/app/assinatura?${query}`;
+    action.href = option.billingPeriod === 'GRATUITO' || option.rawAmount === 0
+      ? `/register?${new URLSearchParams({redirect: destination})}`
+      : `/checkout?${query}`;
+  }
+  choosePrice(plan);
+  if (plan.priceOptions.length > 1) {
+    const choices = document.createElement('div');
+    choices.className = 'public-plan-periods';
+    const buttons = [];
+    for (const option of plan.priceOptions) {
+      const button = appendText(choices, 'button', 'button button-quiet', option.cadence);
+      button.type = 'button';
+      button.setAttribute('aria-pressed', String(option.billingPeriod === plan.billingPeriod));
+      button.addEventListener('click', () => {
+        choosePrice(option);
+        buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      });
+      buttons.push(button);
+    }
+    card.insertBefore(choices, price);
+  }
   return card;
 }
 

@@ -11,7 +11,7 @@ test('home carrega catalogo publico configurado pelo backend', () => {
   assert.match(html, /site-assets\/js\/public-config\.js/);
   assert.match(html, /site-assets\/js\/home-plans\.js/);
   assert.match(plansSource, /loadPublicCheckoutPlans/);
-  assert.match(plansSource, /plan\.billingPeriod === 'GRATUITO'/);
+  assert.match(plansSource, /option\.billingPeriod === 'GRATUITO'/);
 });
 
 test('troca de idioma recarrega traducoes e moeda dos planos', () => {
@@ -22,7 +22,7 @@ test('troca de idioma recarrega traducoes e moeda dos planos', () => {
 test('home nao aceita preco nem html arbitrario pela URL ou API', () => {
   assert.equal(plansSource.includes('innerHTML'), false);
   assert.equal(plansSource.includes("URLSearchParams(window.location.search)"), false);
-  assert.match(plansSource, /plan\.rawAmount/);
+  assert.match(plansSource, /option\.rawAmount/);
 });
 
 

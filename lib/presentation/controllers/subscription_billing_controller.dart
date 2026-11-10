@@ -10,10 +10,32 @@ import '../../data/services/subscription_billing_api.dart';
 
 class SubscriptionBillingController extends ChangeNotifier
     with WidgetsBindingObserver {
-  SubscriptionBillingController({String? companyId}) : _company = companyId {
+  SubscriptionBillingController({String? companyId, Uri? selection})
+    : _company = companyId {
+    selection ??= kIsWeb ? Uri.base : null;
+    selectedPlanId = selection?.queryParameters['plan'];
+    selectedInterval = selection?.queryParameters['interval'];
+    currency = selection?.queryParameters['currency'] ?? 'BRL';
+    locale = selection?.queryParameters['locale'] ?? 'pt-BR';
     WidgetsBinding.instance.addObserver(this);
   }
   String? _company;
+  String? selectedPlanId, selectedInterval;
+  String currency = 'BRL', locale = 'pt-BR';
+  List<BillingOffer> get visibleOffers {
+    final offers = value?.offers ?? const <BillingOffer>[];
+    return offers.where((offer) => offer.interval == selectedInterval).toList();
+  }
+
+  List<String> get intervals => (value?.offers ?? const <BillingOffer>[])
+      .map((offer) => offer.interval)
+      .toSet()
+      .toList();
+  void selectInterval(String interval) {
+    selectedInterval = interval;
+    _notify();
+  }
+
   final _api = SubscriptionBillingApi();
   final _access = BillingAccessApi();
   SubscriptionSummary? value;
@@ -35,10 +57,19 @@ class SubscriptionBillingController extends ChangeNotifier
       final summary = await _api.summary(
         _company!,
         sync: sync && value?.canManage == true,
+        locale: locale,
+        currency: currency,
       );
       final access = await _access.load(_company!);
       if (!_disposed) {
         value = summary;
+        if (!intervals.contains(selectedInterval)) {
+          selectedInterval = intervals.isEmpty ? null : intervals.first;
+        }
+        if (selectedPlanId != null &&
+            !summary.offers.any((o) => o.planId == selectedPlanId)) {
+          error = 'selectedPlanUnavailable';
+        }
         if (access.allowed && paymentRequiredCompany.value == _company)
           paymentRequiredCompany.value = null;
       }

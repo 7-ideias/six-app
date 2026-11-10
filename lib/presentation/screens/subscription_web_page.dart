@@ -7,7 +7,8 @@ import '../controllers/subscription_billing_controller.dart';
 import '../theme/web_theme_tokens.dart';
 
 class SubscriptionWebPage extends StatelessWidget {
-  const SubscriptionWebPage({super.key});
+  const SubscriptionWebPage({super.key, this.selection});
+  final Uri? selection;
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(billingText(context, 'plans'))),
@@ -16,7 +17,7 @@ class SubscriptionWebPage extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 920),
-          child: const SubscriptionWebPanel(),
+          child: SubscriptionWebPanel(selection: selection),
         ),
       ),
     ),
@@ -24,7 +25,8 @@ class SubscriptionWebPage extends StatelessWidget {
 }
 
 class SubscriptionWebPanel extends StatefulWidget {
-  const SubscriptionWebPanel({super.key, this.companyId});
+  const SubscriptionWebPanel({super.key, this.companyId, this.selection});
+  final Uri? selection;
   final String? companyId;
   @override
   State<SubscriptionWebPanel> createState() => _SubscriptionWebPanelState();
@@ -33,8 +35,8 @@ class SubscriptionWebPanel extends StatefulWidget {
 class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
+    selection: widget.selection,
   );
-  String interval = 'month';
   @override
   void initState() {
     super.initState();
@@ -96,13 +98,13 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    for (final option in ['month', 'year'])
+                    for (final option in controller.intervals)
                       ChoiceChip(
                         label: Text(billingText(context, option)),
-                        selected: interval == option,
+                        selected: controller.selectedInterval == option,
                         onSelected: controller.busy
                             ? null
-                            : (_) => setState(() => interval = option),
+                            : (_) => controller.selectInterval(option),
                       ),
                   ],
                 ),
@@ -112,9 +114,7 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                   spacing: 16,
                   runSpacing: 16,
                   children: [
-                    for (final offer in state.offers.where(
-                      (o) => o.interval == interval,
-                    ))
+                    for (final offer in controller.visibleOffers)
                       SizedBox(
                         width: 270,
                         child: Card(
@@ -129,6 +129,8 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                                       .textTheme
                                       .titleMedium,
                                 ),
+                                if (offer.planId == controller.selectedPlanId)
+                                  Text(billingText(context, 'selectedPlan')),
                                 const SizedBox(height: 12),
                                 Text(
                                   NumberFormat.currency(
@@ -143,7 +145,7 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                                 Text(
                                   billingText(
                                     context,
-                                    interval == 'year'
+                                    offer.interval == 'year'
                                         ? 'yearCycle'
                                         : 'monthCycle',
                                   ),

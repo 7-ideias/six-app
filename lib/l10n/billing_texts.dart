@@ -3,13 +3,24 @@ import 'package:flutter/material.dart';
 import 'six_i18n.dart';
 
 const billingTexts = <String, List<String>>{
+  "selectedPlan": [
+    "Plano escolhido no site",
+    "Plan selected on the website",
+    "Plan elegido en el sitio",
+  ],
+  "selectedPlanUnavailable": [
+    "O plano escolhido não está disponível nesta moeda. Confira os planos e valores antes de continuar.",
+    "The selected plan is unavailable in this currency. Review plans and prices before continuing.",
+    "El plan elegido no está disponible en esta moneda. Revisa planes y precios antes de continuar.",
+  ],
+  "priceChanged": [
+    "O preço foi atualizado. Atualize os planos e confira o novo valor antes de assinar.",
+    "The price has changed. Refresh plans and review the new price before subscribing.",
+    "El precio cambió. Actualiza los planes y revisa el nuevo valor antes de suscribirte.",
+  ],
   "plans": ["Planos e pagamento", "Plans and payment", "Planes y pago"],
   "month": ["Mensal", "Monthly", "Mensual"],
-  "year": [
-    "Anual · 2 meses grátis",
-    "Annual · 2 months free",
-    "Anual · 2 meses gratis",
-  ],
+  "year": ["Anual", "Annual", "Anual"],
   "monthCycle": [
     "por mês, com renovação automática",
     "per month, automatically renewed",
@@ -36,9 +47,9 @@ const billingTexts = <String, List<String>>{
     "Ya pagué / actualizar pago",
   ],
   "paymentTerms": [
-    "Ao confirmar na Stripe, a cobrança começa imediatamente, inclusive durante o teste. O anual custa 10 mensalidades e dá acesso por 12 meses. Cancelar interrompe a próxima renovação; o acesso segue até o fim do período pago.",
-    "Confirming in Stripe starts billing immediately, including during your trial. Annual billing costs 10 monthly payments for 12 months of access. Cancellation stops the next renewal; access continues until the paid period ends.",
-    "Al confirmar en Stripe, el cobro empieza inmediatamente, incluso durante la prueba. El anual cuesta 10 mensualidades por 12 meses de acceso. La cancelación detiene la próxima renovación; el acceso continúa hasta finalizar el período pagado.",
+    "Ao confirmar na Stripe, a cobrança começa imediatamente, inclusive durante o teste. O valor e a periodicidade são os do plano selecionado. O anual dá acesso por 12 meses. Cancelar interrompe a próxima renovação; o acesso segue até o fim do período pago.",
+    "Confirming in Stripe starts billing immediately, including during your trial. The selected plan determines the price and billing interval. Annual billing includes 12 months of access. Cancellation stops the next renewal; access continues until the paid period ends.",
+    "Al confirmar en Stripe, el cobro empieza inmediatamente, incluso durante la prueba. El plan seleccionado define el precio y la periodicidad. El anual incluye 12 meses de acceso. La cancelación detiene la próxima renovación; el acceso continúa hasta finalizar el período pagado.",
   ],
   "paymentTest": [
     "Ambiente de testes · sem cobrança real",

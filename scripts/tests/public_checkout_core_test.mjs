@@ -255,3 +255,38 @@ test('checkout core nao persiste storage sensivel', () => {
     assert.equal(source.includes(forbidden), false);
   }
 });
+
+test('catalog preserves monthly and annual prices independently for the same currency', () => {
+  const plans = extractCheckoutPlans({planos: [{
+    ...catalog.planos[0], id: 'mongo-plan', codigo: 'PROFESSIONAL',
+    preco: {currencyCode: 'BRL', valor: 499, periodicidade: 'ANUAL'},
+    precos: [
+      {currencyCode: 'BRL', valor: 499, periodicidade: 'ANUAL'},
+      {currencyCode: 'BRL', valor: 49.90, periodicidade: 'MENSAL'},
+      {currencyCode: 'USD', valor: 99, periodicidade: 'ANUAL'},
+    ],
+  }]}, 'pt');
+  assert.equal(plans[0].planId, 'mongo-plan');
+  assert.deepEqual(plans[0].priceOptions.map(p => [p.billingPeriod, p.rawAmount]), [
+    ['ANUAL', 499], ['MENSAL', 49.90],
+  ]);
+});
+
+test('checkout handoff preserves selected plan and currency but never accepts a price or external URL', async () => {
+  const {runInNewContext} = await import('node:vm');
+  let destination;
+  runInNewContext(readFileSync(new URL('../../web/site-assets/js/checkout.js', import.meta.url), 'utf8'), {
+    URLSearchParams,
+    window: {location: {
+      search: '?plan=mongo-plan&interval=year&currency=BRL&locale=pt-BR&price=1&redirect=https://evil.example',
+      replace: value => {destination = value;},
+    }},
+  });
+  const url = new URL(destination, 'https://sixoapp.com');
+  assert.equal(url.pathname, '/app/assinatura');
+  assert.equal(url.searchParams.get('plan'), 'mongo-plan');
+  assert.equal(url.searchParams.get('interval'), 'year');
+  assert.equal(url.searchParams.get('currency'), 'BRL');
+  assert.equal(url.searchParams.has('price'), false);
+  assert.equal(url.searchParams.has('redirect'), false);
+});
