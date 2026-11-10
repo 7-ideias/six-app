@@ -1470,7 +1470,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       descricao: item['descricao']?.toString() ?? '',
       contato: item['contato']?.toString(),
-      valorAberto: dadosBaixa?.valorAberto ?? valorAberto,
+      valorAberto: dadosBaixa.valorAberto,
       pagamento: pagamento,
       tipoInicial: parcialInicial
           ? SixWebRecebimentoTipo.parcial
@@ -1542,26 +1542,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       return null;
     }
     return codigo;
-  }
-
-  Future<void> _executarComLoading(Future<void> Function() action) async {
-    if (_executandoAcao) {
-      return;
-    }
-    setState(() => _executandoAcao = true);
-    try {
-      await action();
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha na ação (${e.statusCode}).')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _executandoAcao = false);
-      }
-    }
   }
 
   Future<void> _novoLancamento() async {
