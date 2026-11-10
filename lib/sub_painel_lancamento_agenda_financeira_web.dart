@@ -1500,10 +1500,31 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 controller: _contatoController,
                 label: _label(receber ? 'customer' : 'supplier'),
               ),
-              _buildTextField(
+              TextFormField(
+                key: const ValueKey('agenda-category-field'),
                 controller: _categoriaController,
-                label: _label('category'),
-                requiredField: false,
+                readOnly: true,
+                enabled: !_isLoading,
+                decoration: InputDecoration(
+                  labelText: _label('category'),
+                  hintText: context.t('agenda.category.choose'),
+                  prefixIcon: const Icon(Icons.category_outlined),
+                  suffixIcon: const Icon(Icons.expand_more_rounded),
+                ),
+                onTap: () async {
+                  final nome = await selecionarContaWeb(
+                    context,
+                    _service.espacoFinanceiro,
+                    grupo: 'CATEGORIAS',
+                    permitirLimpar: true,
+                  );
+                  if (nome != null && mounted) {
+                    setState(() {
+                      _categoriaController.text = nome;
+                      _alterado = true;
+                    });
+                  }
+                },
               ),
               if (widget.modoEdicao)
                 Column(
@@ -1532,19 +1553,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 espaco: _service.espacoFinanceiro,
                 value: _contaFinanceiraId,
                 onChanged: (id) => setState(() => _contaFinanceiraId = id),
-              ),
-              TextButton.icon(
-                onPressed: () async {
-                  final nome = await selecionarContaWeb(
-                    context,
-                    _service.espacoFinanceiro,
-                    grupo: 'CATEGORIAS',
-                  );
-                  if (nome != null && mounted)
-                    setState(() => _categoriaController.text = nome);
-                },
-                icon: const Icon(Icons.category_outlined),
-                label: Text(context.t('space.CATEGORIAS')),
               ),
               AgendaCentroCustoWebField(
                 key: ValueKey(_service.espacoFinanceiro),

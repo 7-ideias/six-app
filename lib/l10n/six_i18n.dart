@@ -71,6 +71,12 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.category.search': 'Buscar categoria',
+    'agenda.category.create': 'Nova categoria',
+    'agenda.category.edit': 'Editar categoria',
+    'agenda.category.empty':
+        'Nenhuma categoria cadastrada. Crie a primeira aqui.',
+    'agenda.category.choose': 'Escolher ou cadastrar categoria',
     'agenda.list.showCanceled': 'Mostrar cancelados',
     'agenda.list.originalValue': 'Valor original',
     'agenda.list.noBalance': 'Sem efeito no saldo',
@@ -3001,6 +3007,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.category.search': 'Search categories',
+    'agenda.category.create': 'New category',
+    'agenda.category.edit': 'Edit category',
+    'agenda.category.empty': 'No categories yet. Create the first one here.',
+    'agenda.category.choose': 'Choose or create a category',
     'agenda.list.showCanceled': 'Show canceled',
     'agenda.list.originalValue': 'Original amount',
     'agenda.list.noBalance': 'No effect on balance',
@@ -5711,6 +5722,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.category.search': 'Buscar categoría',
+    'agenda.category.create': 'Nueva categoría',
+    'agenda.category.edit': 'Editar categoría',
+    'agenda.category.empty': 'No hay categorías. Crea la primera aquí.',
+    'agenda.category.choose': 'Elegir o crear una categoría',
     'agenda.list.showCanceled': 'Mostrar cancelados',
     'agenda.list.originalValue': 'Importe original',
     'agenda.list.noBalance': 'Sin efecto en el saldo',

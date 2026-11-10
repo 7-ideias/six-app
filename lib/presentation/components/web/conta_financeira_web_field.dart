@@ -27,97 +27,151 @@ Future<String?> selecionarContaWeb(
     return null;
   }
   bool abrindoCadastro = false;
-  final options = StatefulBuilder(
-    builder:
-        (context, setState) => ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              context.t('space.' + grupo),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            if (permitirLimpar)
-              ListTile(
-                title: Text(context.t('space.none')),
-                onTap: () => Navigator.of(context).pop(''),
-              ),
-            if (!items.any((e) => e.ativo))
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  context.t(
-                    grupo == 'CONTAS'
-                        ? 'space.emptyAccountHint'
-                        : 'space.emptyHint',
-                  ),
-                ),
-              ),
-            for (final item in items.where((e) => e.ativo))
-              ListTile(
-                title: Text(item.nome),
-                subtitle:
-                    item.instituicao.isEmpty ? null : Text(item.instituicao),
-                onTap:
-                    () => Navigator.of(
-                      context,
-                    ).pop(grupo != 'CATEGORIAS' ? item.id : item.nome),
-              ),
-            if (grupo == 'CONTAS')
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: FilledButton.icon(
-                  key: const ValueKey('cadastrar-conta-no-seletor'),
-                  icon: const Icon(Icons.add),
-                  label: Text(context.t('space.createAccount')),
-                  onPressed:
-                      abrindoCadastro
-                          ? null
-                          : () async {
-                            setState(() => abrindoCadastro = true);
-                            final conta =
-                                await showDialog<ConfiguracaoFinanceira>(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder:
-                                      (_) => Dialog(
-                                        child: ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                            maxWidth: 520,
-                                          ),
-                                          child:
-                                              ConfiguracaoFinanceiraWebEditor(
-                                                service: ownedService,
-                                                grupo: 'CONTAS',
-                                                selecionarAoCriar: true,
-                                              ),
-                                        ),
-                                      ),
-                                );
-                            if (!context.mounted) return;
-                            setState(() => abrindoCadastro = false);
-                            if (conta != null)
-                              Navigator.of(context).pop(conta.id);
-                          },
-                ),
-              ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.t('space.cancel')),
-            ),
-          ],
+  String busca = '';
+  Future<void> editarCategoria(
+    BuildContext dialogContext,
+    StateSetter update, [
+    ConfiguracaoFinanceira? item,
+  ]) async {
+    if (abrindoCadastro) return;
+    update(() => abrindoCadastro = true);
+    String? nomeSalvo;
+    await showDialog<void>(
+      context: dialogContext,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ConfiguracaoFinanceiraWebEditor(
+            service: ownedService,
+            grupo: 'CATEGORIAS',
+            item: item,
+            onSaved: (nome) => nomeSalvo = nome,
+          ),
         ),
+      ),
+    );
+    if (!dialogContext.mounted) return;
+    update(() => abrindoCadastro = false);
+    if (nomeSalvo != null) Navigator.of(dialogContext).pop(nomeSalvo);
+  }
+
+  final options = StatefulBuilder(
+    builder: (context, setState) => ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          context.t('space.' + grupo),
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        if (grupo == 'CATEGORIAS') ...[
+          const SizedBox(height: 8),
+          Text(context.t('space.' + espaco)),
+          const SizedBox(height: 16),
+          TextField(
+            decoration: InputDecoration(
+              labelText: context.t('agenda.category.search'),
+              prefixIcon: const Icon(Icons.search),
+            ),
+            onChanged: (value) =>
+                setState(() => busca = value.trim().toLowerCase()),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const ValueKey('agenda-category-create'),
+            onPressed: abrindoCadastro
+                ? null
+                : () => editarCategoria(context, setState),
+            icon: const Icon(Icons.add),
+            label: Text(context.t('agenda.category.create')),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (permitirLimpar)
+          ListTile(
+            title: Text(context.t('space.none')),
+            onTap: () => Navigator.of(context).pop(''),
+          ),
+        if (!items.any((e) => e.ativo))
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              context.t(
+                grupo == 'CONTAS'
+                    ? 'space.emptyAccountHint'
+                    : grupo == 'CATEGORIAS'
+                    ? 'agenda.category.empty'
+                    : 'space.emptyHint',
+              ),
+            ),
+          ),
+        for (final item in items.where(
+          (e) => e.ativo && e.nome.toLowerCase().contains(busca),
+        ))
+          ListTile(
+            title: Text(item.nome),
+            trailing: grupo != 'CATEGORIAS'
+                ? null
+                : IconButton(
+                    tooltip: context.t('agenda.category.edit'),
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: abrindoCadastro
+                        ? null
+                        : () => editarCategoria(context, setState, item),
+                  ),
+            subtitle: item.instituicao.isEmpty ? null : Text(item.instituicao),
+            onTap: () => Navigator.of(
+              context,
+            ).pop(grupo != 'CATEGORIAS' ? item.id : item.nome),
+          ),
+        if (grupo == 'CONTAS')
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: FilledButton.icon(
+              key: const ValueKey('cadastrar-conta-no-seletor'),
+              icon: const Icon(Icons.add),
+              label: Text(context.t('space.createAccount')),
+              onPressed: abrindoCadastro
+                  ? null
+                  : () async {
+                      setState(() => abrindoCadastro = true);
+                      final conta = await showDialog<ConfiguracaoFinanceira>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => Dialog(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: ConfiguracaoFinanceiraWebEditor(
+                              service: ownedService,
+                              grupo: 'CONTAS',
+                              selecionarAoCriar: true,
+                            ),
+                          ),
+                        ),
+                      );
+                      if (!context.mounted) return;
+                      setState(() => abrindoCadastro = false);
+                      if (conta != null) Navigator.of(context).pop(conta.id);
+                    },
+            ),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.t('space.cancel')),
+        ),
+      ],
+    ),
   );
   try {
     return await showDialog<String>(
       context: context,
-      builder:
-          (context) => Dialog(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520, maxHeight: 500),
-              child: options,
-            ),
-          ),
+      builder: (context) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 500),
+          child: options,
+        ),
+      ),
     );
   } finally {
     if (service == null) ownedService.dispose();
@@ -187,22 +241,21 @@ class _ContaFinanceiraWebFieldState extends State<ContaFinanceiraWebField> {
       if (item.id == widget.value) label = item.nome;
     }
     return OutlinedButton.icon(
-      onPressed:
-          !widget.enabled
-              ? null
-              : () async {
-                final espaco = widget.espaco;
-                final id = await selecionarContaWeb(
-                  context,
-                  widget.espaco,
-                  permitirLimpar: true,
-                  service: widget.service,
-                );
-                if (id != null && mounted && widget.espaco == espaco) {
-                  widget.onChanged(id.isEmpty ? null : id);
-                  await _load();
-                }
-              },
+      onPressed: !widget.enabled
+          ? null
+          : () async {
+              final espaco = widget.espaco;
+              final id = await selecionarContaWeb(
+                context,
+                widget.espaco,
+                permitirLimpar: true,
+                service: widget.service,
+              );
+              if (id != null && mounted && widget.espaco == espaco) {
+                widget.onChanged(id.isEmpty ? null : id);
+                await _load();
+              }
+            },
       icon: const Icon(Icons.account_balance_outlined),
       label: Text('${widget.label ?? context.t('space.account')}: $label'),
     );
