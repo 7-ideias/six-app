@@ -1,3 +1,5 @@
+import '../../l10n/admin_password_reset_texts.dart';
+import '../components/web/six_web_password_reset_dialog.dart';
 import '../../l10n/billing_texts.dart';
 import 'billing_access_web_page.dart';
 import '../../l10n/storage_texts.dart';
@@ -42,6 +44,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
   bool _loading = true;
   bool _loadFailed = false;
   bool _resettingPassword = false;
+  bool _defaultPasswordResetOpen = false;
   bool _reenvioAberto = false;
 
   String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
@@ -117,9 +120,27 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
     }
   }
 
+  Future<void> _resetDefaultPassword() async {
+    final detail = _detail;
+    if (detail == null || _defaultPasswordResetOpen || _resettingPassword) return;
+    setState(() => _defaultPasswordResetOpen = true);
+    try {
+      await showSixWebPasswordResetDialog(
+        context: context,
+        userName: detail.nomeExibicao,
+        userId: detail.identificador,
+        onConfirm: () => _service.resetarSenhaPadraoUsuarioSixo(
+          idUsuario: detail.identificador,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _defaultPasswordResetOpen = false);
+    }
+  }
+
   Future<void> _resetPassword() async {
     final AdminUsuarioDetalhe? detail = _detail;
-    if (detail == null || _resettingPassword) return;
+    if (detail == null || _resettingPassword || _defaultPasswordResetOpen) return;
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -267,6 +288,10 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
                 detail: detail,
                 onChangeOnboarding: _changeOnboarding,
                 onResetPassword: _resetPassword,
+                onResetDefaultPassword:
+                    _defaultPasswordResetOpen || _resettingPassword
+                        ? null
+                        : _resetDefaultPassword,
                 resettingPassword: _resettingPassword,
                 onReenviarAgenda: _reenvioAberto ? null : _reenviarAgenda,
               ),
@@ -383,6 +408,7 @@ class _WebUserHero extends StatelessWidget {
     required this.detail,
     required this.onChangeOnboarding,
     required this.onResetPassword,
+    required this.onResetDefaultPassword,
     required this.resettingPassword,
     required this.onReenviarAgenda,
   });
@@ -390,6 +416,7 @@ class _WebUserHero extends StatelessWidget {
   final AdminUsuarioDetalhe detail;
   final VoidCallback onChangeOnboarding;
   final VoidCallback onResetPassword;
+  final VoidCallback? onResetDefaultPassword;
   final bool resettingPassword;
   final VoidCallback? onReenviarAgenda;
 
@@ -530,6 +557,16 @@ class _WebUserHero extends StatelessWidget {
                     fallback: 'Enviar recuperação',
                   ),
                 ),
+              ),
+              OutlinedButton.icon(
+                onPressed: onResetDefaultPassword,
+                icon: const Icon(Icons.password_rounded),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tokens.danger,
+                  backgroundColor: tokens.surfaceMuted,
+                  side: BorderSide(color: tokens.danger.withValues(alpha: 0.32)),
+                ),
+                label: Text(adminPasswordResetText(context, 'action')),
               ),
               for (final company in StorageCompany.fromUser(detail))
                 OutlinedButton.icon(
@@ -749,3 +786,4 @@ String _formatDetailValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
+

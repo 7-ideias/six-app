@@ -610,6 +610,25 @@ class AdminPortalService {
     );
   }
 
+  Future<void> resetarSenhaPadraoUsuarioSixo({required String idUsuario}) async {
+    final String baseUrl = AppConfig.baseUrl;
+    if (baseUrl.trim().isEmpty || idUsuario.trim().isEmpty) {
+      throw const AdminPasswordResetException('error');
+    }
+    final String id = Uri.encodeComponent(idUsuario.trim());
+    final response = await _client.put(
+      Uri.parse('$baseUrl/private/api/admin/usuarios-sixo/$id/resetar-senha-padrao'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 204) return;
+    throw AdminPasswordResetException(switch (response.statusCode) {
+      401 || 403 => 'forbidden',
+      404 => 'notFound',
+      409 => 'policy',
+      _ => 'error',
+    });
+  }
+
   Future<void> resetarSenhaUsuarioSixo({required String idUsuario}) async {
     final String baseUrl = AppConfig.baseUrl;
     if (baseUrl.trim().isEmpty) {
@@ -700,4 +719,9 @@ DateTime? _parseDate(dynamic value) {
   final String normalized = value?.toString().trim() ?? '';
   if (normalized.isEmpty) return null;
   return DateTime.tryParse(normalized);
+}
+
+class AdminPasswordResetException implements Exception {
+  const AdminPasswordResetException(this.messageKey);
+  final String messageKey;
 }
