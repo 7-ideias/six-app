@@ -1362,7 +1362,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ).workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Excluir parcial?'),
+        title: Text(context.t('agenda.adjustments.reverse')),
         content: Text(
           liquidacao['grupoLiquidacaoId'] != null
               ? context.t('agenda.adjustments.reverseGroup')
@@ -1391,7 +1391,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Parcial excluída com sucesso.')),
+          SnackBar(
+            content: Text(context.t('agenda.adjustments.reversedSuccess')),
+          ),
         );
       }
       return true;
@@ -1399,7 +1401,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Falha ao excluir parcial (${e.statusCode}).'),
+            content: Text(
+              e.statusCode == 409
+                  ? context.t('agenda.adjustments.reverseLaterFirst')
+                  : 'Falha ao estornar baixa (${e.statusCode}).',
+            ),
           ),
         );
       }

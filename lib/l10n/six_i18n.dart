@@ -73,6 +73,9 @@ const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
     'agenda.adjustments.title': 'Desconto e acréscimo',
     'agenda.adjustments.reversed': 'Baixas estornadas',
+    'agenda.adjustments.reversedSuccess': 'Baixa estornada com sucesso.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Estorne primeiro as baixas posteriores para manter o saldo consistente.',
     'agenda.adjustments.reverse': 'Estornar baixa',
     'agenda.adjustments.discount': 'Desconto',
     'agenda.adjustments.surcharge': 'Acréscimo',
@@ -3023,6 +3026,9 @@ const Map<String, Map<String, String>> _fallbacks = {
   'en': {
     'agenda.adjustments.title': 'Discount and surcharge',
     'agenda.adjustments.reversed': 'Reversed settlements',
+    'agenda.adjustments.reversedSuccess': 'Settlement reversed successfully.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Reverse later settlements first to keep the balance consistent.',
     'agenda.adjustments.reverse': 'Reverse settlement',
     'agenda.adjustments.discount': 'Discount',
     'agenda.adjustments.surcharge': 'Surcharge',
@@ -5752,6 +5758,10 @@ const Map<String, Map<String, String>> _fallbacks = {
   'es': {
     'agenda.adjustments.title': 'Descuento y recargo',
     'agenda.adjustments.reversed': 'Liquidaciones revertidas',
+    'agenda.adjustments.reversedSuccess':
+        'Liquidación revertida correctamente.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Revierta primero las liquidaciones posteriores para mantener el saldo consistente.',
     'agenda.adjustments.reverse': 'Revertir liquidación',
     'agenda.adjustments.discount': 'Descuento',
     'agenda.adjustments.surcharge': 'Recargo',
