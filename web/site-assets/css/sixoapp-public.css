@@ -495,3 +495,15 @@
     animation: none;
   }
 }
+
+/* Independent catalog billing periods. */
+.public-plan-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.public-plan-periods [aria-pressed="true"] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

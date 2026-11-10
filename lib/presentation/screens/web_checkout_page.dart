@@ -7,5 +7,6 @@ class WebCheckoutPage extends StatelessWidget {
   const WebCheckoutPage({super.key, this.initialUri});
   final Uri? initialUri;
   @override
-  Widget build(BuildContext context) => const SubscriptionWebPage();
+  Widget build(BuildContext context) =>
+      SubscriptionWebPage(selection: initialUri);
 }

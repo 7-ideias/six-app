@@ -18,6 +18,7 @@ class BillingOffer {
   Map<String, dynamic> purchase() => {
     'planId': planId,
     'interval': interval,
+    'currency': currency,
     'expectedAmountMinor': amountMinor,
   };
 }

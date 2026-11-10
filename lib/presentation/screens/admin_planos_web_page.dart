@@ -652,6 +652,7 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
     }
 
     final List<AdminPlanoPreco> prices = <AdminPlanoPreco>[];
+    final priceKeys = <String>{};
     for (final _PriceDraft draft in _prices) {
       final String currency = draft.currency.text.trim().toUpperCase();
       final double? amount = double.tryParse(
@@ -659,7 +660,9 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
       );
       if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency) ||
           amount == null ||
-          amount < 0) {
+          amount < 0 ||
+          !amount.isFinite ||
+          !priceKeys.add('$currency:${draft.periodicity}')) {
         setState(() => _error = widget.texts.invalidPrice);
         return;
       }
@@ -1352,10 +1355,10 @@ class _PlansTexts {
           : 'Somente um plano publicado fica destacado por vez.';
   String get prices =>
       en
-          ? 'Prices by currency'
+          ? 'Prices by currency and billing period'
           : es
-          ? 'Precios por moneda'
-          : 'Preços por moeda';
+          ? 'Precios por moneda y periodicidad'
+          : 'Preços por moeda e periodicidade';
   String get addPrice =>
       en
           ? 'Add price'
@@ -1466,10 +1469,10 @@ class _PlansTexts {
           : 'Informe uma ordem válida e não negativa.';
   String get invalidPrice =>
       en
-          ? 'Check currency, amount and billing period.'
+          ? 'Check currency, amount and billing period. Do not repeat the same currency and period.'
           : es
-          ? 'Revisa la moneda, el valor y la periodicidad.'
-          : 'Revise a moeda, o valor e a periodicidade.';
+          ? 'Revisa la moneda, el valor y la periodicidad. No repitas la misma moneda y periodicidad.'
+          : 'Revise a moeda, o valor e a periodicidade. Não repita a mesma moeda e periodicidade.';
   String get invalidConditions =>
       en
           ? 'Check the commercial conditions.'
@@ -1528,4 +1531,3 @@ class _PlansTexts {
         : 'Mensal';
   }
 }
-

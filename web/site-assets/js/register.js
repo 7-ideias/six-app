@@ -1,3 +1,4 @@
+import { resolvePublicLoginRedirect } from './login-core.mjs';
 import {
   applyPublicLanguage,
   cleanupLegacyFlutterWorker,
@@ -326,7 +327,7 @@ import {
         aceiteTermos: true,
         idioma: state.language,
       });
-      window.location.replace('/app');
+      window.location.replace(resolvePublicLoginRedirect(window.location.search, window.location.origin));
     } catch (error) {
       setGoogleBusy(elements, false);
       const key = googleErrorKey(error, 'register');
@@ -363,7 +364,7 @@ import {
         aceiteTermos: true,
         idioma: state.language,
       });
-      window.location.replace('/app');
+      window.location.replace(resolvePublicLoginRedirect(window.location.search, window.location.origin));
     } catch (error) {
       setGoogleBusy(elements, false);
       setFeedback(elements, googleErrorKey(error, 'register'), true);
@@ -425,6 +426,17 @@ import {
   }
 
   function initialize() {
+    const selectionRedirect = resolvePublicLoginRedirect(window.location.search, window.location.origin);
+    if (selectionRedirect.startsWith('/app/assinatura')) {
+      document.querySelectorAll('a[href]').forEach((link) => {
+        const target = new URL(link.href, window.location.origin);
+        if (target.origin === window.location.origin && ['/login', '/register'].includes(target.pathname)) {
+          target.searchParams.set('redirect', selectionRedirect);
+          link.href = target.pathname + target.search;
+        }
+      });
+    }
+
     const elements = collectElements();
     if (!Object.values(elements).every(Boolean)) return;
 
@@ -464,7 +476,7 @@ import {
     elements.confirmPassword.addEventListener('input', () => updateMismatch(elements));
     elements.terms.addEventListener('change', () => updateGoogleAvailability(elements));
     elements.successLogin.addEventListener('click', () => {
-      window.location.replace(REGISTER_SUCCESS_LOGIN_PATH);
+      window.location.replace(`${REGISTER_SUCCESS_LOGIN_PATH}?${new URLSearchParams({redirect: resolvePublicLoginRedirect(window.location.search, window.location.origin)})}`);
     });
     elements.googleLinkSubmit.addEventListener('click', () => void handleGoogleLink(elements));
     elements.googleLinkCancel.addEventListener('click', () => {

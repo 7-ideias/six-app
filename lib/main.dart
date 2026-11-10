@@ -266,9 +266,17 @@ class MyApp extends StatelessWidget {
         fallbackRoute: '/checkout/flutter',
       );
     }
-    if (routeUri.path == '/checkout/flutter' || routeUri.path == '/app/assinatura') {
+    if (routeUri.path == '/checkout/flutter' ||
+        routeUri.path == '/app/assinatura') {
       return _authenticatedWebRoute(
-        settings: const RouteSettings(name: '/app/assinatura'),
+        settings: RouteSettings(
+          name: Uri(
+            path: '/app/assinatura',
+            queryParameters: routeUri.queryParameters.isEmpty
+                ? null
+                : routeUri.queryParameters,
+          ).toString(),
+        ),
         page: WebCheckoutPage(initialUri: routeUri),
       );
     }
@@ -541,4 +549,3 @@ Future<void> _exitBilling() async {
     (_) => false,
   );
 }
-

@@ -14,6 +14,7 @@ void main() {
       'planId': 'plan',
       'interval': 'year',
       'expectedAmountMinor': 99900,
+      'currency': 'BRL',
     });
     expect(offer.currency, 'BRL');
   });
