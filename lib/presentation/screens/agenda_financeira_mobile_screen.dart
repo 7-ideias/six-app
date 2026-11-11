@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
 import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
@@ -85,11 +86,10 @@ class _AgendaFinanceiraMobileScreenState
             isDismissible: false,
             enableDrag: false,
             backgroundColor: context.sixMobileColors.surface,
-            builder:
-                (_) => PaymentNameEditorMobile(
-                  tipo: tipo,
-                  service: CaixaService(apiClient: _caixaApiClient),
-                ),
+            builder: (_) => PaymentNameEditorMobile(
+              tipo: tipo,
+              service: CaixaService(apiClient: _caixaApiClient),
+            ),
           );
       if (!mounted || salvo == null) return null;
       setState(() {
@@ -97,11 +97,10 @@ class _AgendaFinanceiraMobileScreenState
           for (final item in _tiposPagamentoEditaveis)
             if (item.codigoTipo == salvo.codigoTipo) salvo else item,
         ];
-        final selecionados =
-            _formasPagamentoSelecionadas
-                .map((label) => _codigoTipoPorDescricaoFormaPagamento[label])
-                .whereType<String>()
-                .toSet();
+        final selecionados = _formasPagamentoSelecionadas
+            .map((label) => _codigoTipoPorDescricaoFormaPagamento[label])
+            .whereType<String>()
+            .toSet();
         final formas = _montarFormasPagamentoFiltro(_tiposPagamentoEditaveis);
         _formasPagamentoFiltro = ['Todos', ...formas];
         _formasPagamentoSelecionadas
@@ -140,6 +139,7 @@ class _AgendaFinanceiraMobileScreenState
       _acoesService.espacoFinanceiro = espaco;
       _centrosCusto = [];
     });
+    _salvarPreferenciasAgendaFinanceiraMobile();
     await _carregarTiposPagamentoConfigurados();
     await _carregarCentrosCusto();
     if (mounted) await _consultar(mostrarFeedback: true);
@@ -149,14 +149,23 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _configurarEspaco() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder:
-            (_) => ConfiguracoesEspacoMobile(espaco: _service.espacoFinanceiro),
+        builder: (_) =>
+            ConfiguracoesEspacoMobile(espaco: _service.espacoFinanceiro),
       ),
     );
     if (mounted) await _carregarCentrosCusto();
   }
 
   bool _somenteImpostoRenda = false;
+  bool _mostrarCancelados = false;
+  bool _calendarioDataDecrescente = true;
+  Future<void> _filaPreferencias = Future<void>.value();
+  static const _visoesPreferencia = [
+    'AGENDA',
+    'CALENDARIO',
+    'FLUXO_PREVISTO',
+    'VALORES_CONFIRMADOS',
+  ];
 
   Widget _seletorEspaco() => Wrap(
     spacing: 8,
@@ -167,40 +176,45 @@ class _AgendaFinanceiraMobileScreenState
         key: const ValueKey('ir-filter'),
         label: Text(context.t('ir.filter')),
         selected: _somenteImpostoRenda,
-        onSelected:
-            (_trocandoEspaco || _carregando || _executandoAcao)
-                ? null
-                : (value) async {
-                  setState(() => _somenteImpostoRenda = value);
-                  await _consultar(mostrarFeedback: true);
-                },
+        onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
+            ? null
+            : (value) async {
+                setState(() => _somenteImpostoRenda = value);
+                _salvarPreferenciasAgendaFinanceiraMobile();
+                await _consultar(mostrarFeedback: true);
+              },
+      ),
+      FilterChip(
+        label: Text(context.t('agenda.list.showCanceled')),
+        selected: _mostrarCancelados,
+        onSelected: (value) {
+          setState(() => _mostrarCancelados = value);
+          _salvarPreferenciasAgendaFinanceiraMobile();
+        },
       ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
         ChoiceChip(
           label: Text(context.t('space.' + tipo)),
           selected: _service.espacoFinanceiro == tipo,
-          onSelected:
-              (_trocandoEspaco || _carregando || _executandoAcao)
-                  ? null
-                  : (_) => _trocarEspaco(tipo),
+          onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
+              ? null
+              : (_) => _trocarEspaco(tipo),
         ),
       if (_service.espacoFinanceiro == 'EMPRESA')
         OutlinedButton.icon(
           icon: const Icon(Icons.payments_outlined),
           label: Text(context.t('machine.receivables')),
-          onPressed:
-              () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const RecebiveisVendasMobile(),
-                ),
-              ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const RecebiveisVendasMobile(),
+            ),
+          ),
         ),
       IconButton(
         tooltip: context.t('space.settings'),
-        onPressed:
-            (_trocandoEspaco || _carregando || _executandoAcao)
-                ? null
-                : _configurarEspaco,
+        onPressed: (_trocandoEspaco || _carregando || _executandoAcao)
+            ? null
+            : _configurarEspaco,
         icon: const Icon(Icons.account_balance_outlined),
       ),
     ],
@@ -359,9 +373,18 @@ class _AgendaFinanceiraMobileScreenState
           _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
       if (!mounted || preferencias == null || _usuarioAlterouFiltros) return;
       final String assinaturaAnterior = _assinaturaFiltrosAgendaMobile();
+      final espacoAnterior = _service.espacoFinanceiro;
       _aplicarPreferenciasAgendaFinanceiraMobile(
         preferencias.agendaFinanceiraFiltrosMobile,
       );
+      if (espacoAnterior != _service.espacoFinanceiro) {
+        await _carregarTiposPagamentoConfigurados();
+        await _carregarCentrosCusto();
+        if (!mounted || _usuarioAlterouFiltros) return;
+        _aplicarPreferenciasAgendaFinanceiraMobile(
+          preferencias.agendaFinanceiraFiltrosMobile,
+        );
+      }
       if (mounted && assinaturaAnterior != _assinaturaFiltrosAgendaMobile()) {
         await _consultar();
       }
@@ -379,15 +402,28 @@ class _AgendaFinanceiraMobileScreenState
     final String periodo = _periodoLabelPreferencia(filtros.periodo);
     final String tipo = _tipoLabelPreferencia(filtros.tipo);
     final String status = _statusLabelPreferencia(filtros.status);
-    final Set<String> formasPagamento =
-        filtros.tiposDePagamento
-            .map(_formaPagamentoLabelPorCodigoPreferencia)
-            .whereType<String>()
-            .where(_formasPagamentoFiltro.contains)
-            .toSet();
+    final Set<String> formasPagamento = filtros.tiposDePagamento
+        .map(_formaPagamentoLabelPorCodigoPreferencia)
+        .whereType<String>()
+        .where(_formasPagamentoFiltro.contains)
+        .toSet();
 
     _aplicandoPreferencias = true;
     setState(() {
+      _service.espacoFinanceiro = filtros.espacoFinanceiro;
+      _acoesService.espacoFinanceiro = filtros.espacoFinanceiro;
+      _somenteImpostoRenda = filtros.somenteImpostoRenda;
+      _mostrarCancelados = filtros.mostrarCancelados;
+      _calendarioDataDecrescente = filtros.calendarioDataDecrescente;
+      _abaSelecionada = _visoesPreferencia.indexOf(filtros.visaoSelecionada);
+      if (_abaSelecionada < 0) _abaSelecionada = 0;
+      _centrosCustoSelecionados
+        ..clear()
+        ..addAll(
+          _centrosCusto
+              .where((c) => filtros.centrosCustoIds.contains(c.id))
+              .map((c) => c.nome),
+        );
       if (_periodos.contains(periodo)) _periodoSelecionado = periodo;
       if (_tipos.contains(tipo)) _tipoSelecionado = tipo;
       if (_status.contains(status)) _statusSelecionado = status;
@@ -410,12 +446,22 @@ class _AgendaFinanceiraMobileScreenState
     _usuarioAlterouFiltros = true;
     final AgendaFinanceiraFiltrosPreferencia filtros =
         AgendaFinanceiraFiltrosPreferencia(
+          espacoFinanceiro: _service.espacoFinanceiro,
+          somenteImpostoRenda: _somenteImpostoRenda,
+          mostrarCancelados: _mostrarCancelados,
+          calendarioDataDecrescente: _calendarioDataDecrescente,
+          visaoSelecionada: _visoesPreferencia[_abaSelecionada],
+          centrosCustoIds: _centrosCusto
+              .where((c) => _centrosCustoSelecionados.contains(c.nome))
+              .map((c) => c.id)
+              .toList(),
           periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
             _periodoCodigoPreferencia(_periodoSelecionado),
             AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
           ),
-          dataInicio:
-              _usaPeriodoPersonalizado ? _dataInicioPersonalizada : null,
+          dataInicio: _usaPeriodoPersonalizado
+              ? _dataInicioPersonalizada
+              : null,
           dataFim: _usaPeriodoPersonalizado ? _dataFimPersonalizada : null,
           tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
             _tipoCodigoPreferencia(_tipoSelecionado),
@@ -429,21 +475,27 @@ class _AgendaFinanceiraMobileScreenState
             _formasPagamentoSelecionadas,
           ),
         );
-    unawaited(
-      _usuarioService
-          .atualizarPreferenciasIndividuais(
+    _filaPreferencias = _filaPreferencias
+        .then(
+          (_) => _usuarioService.atualizarPreferenciasIndividuais(
             agendaFinanceiraFiltrosMobile: filtros.toJson(),
-          )
-          .catchError((Object error, StackTrace stackTrace) {
-            debugPrint(
-              'Erro ao salvar preferencias da agenda financeira mobile: '
-              '$error\n$stackTrace',
-            );
-          }),
-    );
+          ),
+        )
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint(
+            'Erro ao salvar preferencias da agenda financeira mobile: '
+            '$error\n$stackTrace',
+          );
+        });
   }
 
   String _assinaturaFiltrosAgendaMobile() => <Object?>[
+    _service.espacoFinanceiro,
+    _somenteImpostoRenda,
+    _mostrarCancelados,
+    _abaSelecionada,
+    _calendarioDataDecrescente,
+    ...(_centrosCustoSelecionados.toList()..sort()),
     _periodoSelecionado,
     _dataInicioPersonalizada.toIso8601String(),
     _dataFimPersonalizada.toIso8601String(),
@@ -464,10 +516,9 @@ class _AgendaFinanceiraMobileScreenState
   List<Map<String, dynamic>> get _itensConfirmadosFiltrados =>
       _itensConfirmados.where(_passaFiltrosLocais).toList();
 
-  List<Map<String, dynamic>> get _itensSomaveis =>
-      _itensAgenda
-          .where((item) => item['status']?.toString() != 'Cancelado')
-          .toList();
+  List<Map<String, dynamic>> get _itensSomaveis => _itensAgenda
+      .where((item) => item['status']?.toString() != 'Cancelado')
+      .toList();
 
   double get _totalReceberPrevisto =>
       _somar(_itensSomaveis, 'receber', 'valorRestante');
@@ -495,7 +546,12 @@ class _AgendaFinanceiraMobileScreenState
         _codigosTipoRecebimentoFiltro().contains(
           item['codigoTipoRecebimento']?.toString().trim().toLowerCase(),
         );
-    return tipoOk && statusOk && formaOk;
+    return tipoOk &&
+        statusOk &&
+        formaOk &&
+        (_mostrarCancelados ||
+            _statusSelecionado == 'Cancelado' ||
+            item['status'] != 'Cancelado');
   }
 
   Future<void> _executarDicaScrollPeriodos() async {
@@ -585,10 +641,9 @@ class _AgendaFinanceiraMobileScreenState
     return AgendaFinanceiraConsultaRequest(
       periodo: _periodoRequest(),
       filtros: AgendaFinanceiraFiltrosRequest(
-        tipo:
-            _tipoSelecionado == 'Todos'
-                ? 'TODOS'
-                : _tipoSelecionado.toUpperCase(),
+        tipo: _tipoSelecionado == 'Todos'
+            ? 'TODOS'
+            : _tipoSelecionado.toUpperCase(),
         status: _statusFiltro(),
         origens: <String>[],
         categorias: <String>[],
@@ -610,8 +665,8 @@ class _AgendaFinanceiraMobileScreenState
     final espaco = _service.espacoFinanceiro;
     _podeEditarTiposPagamento = false;
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
+          .getInformacoesBasicasDoCaixa();
       if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoFiltro(
         informacoes.tiposRecebimento,
@@ -656,10 +711,9 @@ class _AgendaFinanceiraMobileScreenState
     for (final TiposRecebimento tipo in ativos) {
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       if (codigo.isEmpty) continue;
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : (_descricaoPorCodigoTipoFormaPagamento[codigo] ?? codigo);
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : (_descricaoPorCodigoTipoFormaPagamento[codigo] ?? codigo);
       if (descricao.isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
       codigosAtualizados[descricao] = codigo;
@@ -873,12 +927,14 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   List<String> _codigosTipoPagamentoPreferencia(Set<String> formasPagamento) {
-    final List<String> codigos = formasPagamento
-      .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
-      .whereType<String>()
-      .where((String codigo) => codigo.trim().isNotEmpty)
-      .toSet()
-      .toList(growable: false)..sort();
+    final List<String> codigos =
+        formasPagamento
+            .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
+            .whereType<String>()
+            .where((String codigo) => codigo.trim().isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
     return codigos;
   }
 
@@ -920,13 +976,12 @@ class _AgendaFinanceiraMobileScreenState
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens':
-              itensRaw is List
-                  ? itensRaw
-                      .whereType<Map<String, dynamic>>()
-                      .map(_mapearItemAgenda)
-                      .toList()
-                  : <Map<String, dynamic>>[],
+          'itens': itensRaw is List
+              ? itensRaw
+                    .whereType<Map<String, dynamic>>()
+                    .map(_mapearItemAgenda)
+                    .toList()
+              : <Map<String, dynamic>>[],
         });
       }
     }
@@ -942,16 +997,17 @@ class _AgendaFinanceiraMobileScreenState
       ..addAll(
         itens is List
             ? itens
-                .whereType<Map<String, dynamic>>()
-                .map(_mapearItemConfirmado)
-                .toList()
+                  .whereType<Map<String, dynamic>>()
+                  .map(_mapearItemConfirmado)
+                  .toList()
             : <Map<String, dynamic>>[],
       );
   }
 
   Map<String, dynamic> _mapearItemAgenda(Map<String, dynamic> item) {
-    final tipo =
-        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
+        ? 'pagar'
+        : 'receber';
     final valorOriginal = _toDouble(item['valorOriginal'] ?? item['valor']);
     final quitado = const [
       'PAGO',
@@ -964,17 +1020,20 @@ class _AgendaFinanceiraMobileScreenState
       item['valorRestante'] ?? (valorOriginal - valorConfirmado),
     );
     final acoesRaw = item['acoesDisponiveis'];
-    final acoes =
-        acoesRaw is List
-            ? acoesRaw
-                .map((acao) => _acaoLabel(acao?.toString()))
-                .where((acao) => acao.isNotEmpty)
-                .toList()
-            : <String>[];
+    final acoes = acoesRaw is List
+        ? acoesRaw
+              .map((acao) => _acaoLabel(acao?.toString()))
+              .where((acao) => acao.isNotEmpty)
+              .toList()
+        : <String>[];
 
     if (item['serieRecorrenciaId'] != null &&
-        !['PAGO', 'RECEBIDO', 'CANCELADO', 'PARCIAL']
-            .contains(item['status']?.toString().toUpperCase())) {
+        ![
+          'PAGO',
+          'RECEBIDO',
+          'CANCELADO',
+          'PARCIAL',
+        ].contains(item['status']?.toString().toUpperCase())) {
       acoes.add('Cancelar');
     }
     return <String, dynamic>{
@@ -1001,10 +1060,9 @@ class _AgendaFinanceiraMobileScreenState
       'centroDeCusto': item['centroDeCusto']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'acoes':
-          acoes.isNotEmpty
-              ? acoes
-              : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
+      'acoes': acoes.isNotEmpty
+          ? acoes
+          : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
       'dataOperacao': item['dataOperacao']?.toString(),
       'dataCompetencia': item['dataCompetencia']?.toString(),
@@ -1012,8 +1070,9 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
-    final tipo =
-        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
+        ? 'pagar'
+        : 'receber';
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
@@ -1043,9 +1102,9 @@ class _AgendaFinanceiraMobileScreenState
   List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) {
     return raw is List
         ? raw
-            .whereType<Map<String, dynamic>>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
         : <Map<String, dynamic>>[];
   }
 
@@ -1063,10 +1122,9 @@ class _AgendaFinanceiraMobileScreenState
         }
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
-        item['valor'] =
-            _toDouble(confirmado['valorRestante']) > 0
-                ? confirmado['valorRestante']
-                : item['valorOriginal'];
+        item['valor'] = _toDouble(confirmado['valorRestante']) > 0
+            ? confirmado['valorRestante']
+            : item['valorOriginal'];
         item['liquidacoes'] =
             confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
         item['quantidadeConfirmacoes'] =
@@ -1082,11 +1140,10 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _novoLancamento() async {
     final item = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute<Map<String, dynamic>>(
-        builder:
-            (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
-              service: _service,
-              caixaApiClient: _caixaApiClient,
-            ),
+        builder: (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
+          service: _service,
+          caixaApiClient: _caixaApiClient,
+        ),
       ),
     );
     if (!mounted || item == null) return;
@@ -1103,18 +1160,16 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
-    final itemAtualizado = await Navigator.of(
-      context,
-    ).push<Map<String, dynamic>>(
-      MaterialPageRoute<Map<String, dynamic>>(
-        builder:
-            (_) => AgendaFinanceiraLancamentoMobileEditScreen(
+    final itemAtualizado = await Navigator.of(context)
+        .push<Map<String, dynamic>>(
+          MaterialPageRoute<Map<String, dynamic>>(
+            builder: (_) => AgendaFinanceiraLancamentoMobileEditScreen(
               lancamento: item,
               service: _service,
               caixaApiClient: _caixaApiClient,
             ),
-      ),
-    );
+          ),
+        );
     if (!mounted || itemAtualizado == null) return;
     if (itemAtualizado['registrarPagamento'] == true) {
       await _liquidarComFormas(itemAtualizado, parcialInicial: false);
@@ -1131,6 +1186,10 @@ class _AgendaFinanceiraMobileScreenState
     }
     if (comando == 'editar') {
       await _editarLancamento(item);
+      return;
+    }
+    if (comando == 'excluir') {
+      await _excluirLancamentoDaLista(item);
       return;
     }
     if (comando == 'cancelar') {
@@ -1153,6 +1212,44 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
+  Future<void> _excluirLancamentoDaLista(Map<String, dynamic> item) async {
+    final confirmado = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: _surfaceColor,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              recorrenciaLabel(context, 'deleteConfirm'),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            Text(item['descricao']?.toString() ?? ''),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => Navigator.pop(sheetContext, true),
+              style: FilledButton.styleFrom(backgroundColor: _colors.error),
+              child: Text(context.t('common.confirm', fallback: 'Confirmar')),
+            ),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(sheetContext, false),
+              child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmado != true || !mounted) return;
+    await _executarComLoading(() async {
+      await _service.excluirLancamento(item['id'].toString());
+      await _consultar();
+    });
+  }
+
   Future<bool> _cancelarRecorrencia(Map<String, dynamic> item) async {
     if (_executandoAcao || item['serieRecorrenciaId'] == null) return false;
     final id = item['id']?.toString() ?? '';
@@ -1163,7 +1260,9 @@ class _AgendaFinanceiraMobileScreenState
       mobile: true,
       recorrencia: config,
       descricao: item['descricao']?.toString() ?? 'Lançamento recorrente',
-      valorFormatado: _formatarMoeda(_toDouble(item['valorOriginal'] ?? item['valor'])),
+      valorFormatado: _formatarMoeda(
+        _toDouble(item['valorOriginal'] ?? item['valor']),
+      ),
       vencimentoFormatado: item['vencimento']?.toString() ?? '',
       cancelar: true,
       permitirTrocarEscopo: true,
@@ -1171,19 +1270,31 @@ class _AgendaFinanceiraMobileScreenState
     if (confirmacao == null || !mounted) return false;
     setState(() => _executandoAcao = true);
     try {
-      await _service.cancelarRecorrencia(id,
-          escopo: confirmacao.escopo, motivo: confirmacao.motivo);
+      await _service.cancelarRecorrencia(
+        id,
+        escopo: confirmacao.escopo,
+        motivo: confirmacao.motivo,
+      );
       if (!mounted) return false;
       await _consultar(mostrarFeedback: true);
       return true;
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError')),
-      ));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
+            ),
+          ),
+        );
       return false;
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível cancelar a ocorrência.')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível cancelar a ocorrência.'),
+          ),
+        );
       return false;
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
@@ -1202,24 +1313,18 @@ class _AgendaFinanceiraMobileScreenState
   }) async {
     if (_executandoAcao) return;
     final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
-    final double valorAberto = _toDouble(
-      item['valorRestante'] ?? item['valor'],
-    );
     final destinosFinanceiros =
         !pagamento &&
         _service.espacoFinanceiro == 'EMPRESA' &&
         item['origem']?.toString().toUpperCase() == 'VENDA';
-    String? contaInicial = item['contaFinanceiraId']?.toString();
+    late AgendaBaixaDados dadosBaixa;
     setState(() => _executandoAcao = true);
     try {
       final detalhe = await _service.buscarDetalheLancamento(
         item['id'].toString(),
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
-      contaInicial =
-          AgendaFinanceiraLancamentoDetalhe.fromJson(
-            detalhe,
-          ).paraEdicao(item)['contaFinanceiraId']?.toString();
+      dadosBaixa = AgendaBaixaDados.fromDetalhe(detalhe, item);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -1236,7 +1341,9 @@ class _AgendaFinanceiraMobileScreenState
       destinosFinanceiros: destinosFinanceiros,
       exigirConta: true,
       espacoFinanceiro: _service.espacoFinanceiro,
-      contaFinanceiraInicial: contaInicial,
+      contaFinanceiraInicial: dadosBaixa.contaPrevistaId,
+      dadosBaixa: dadosBaixa,
+      agendaService: _service,
       titulo: context.t(
         pagamento
             ? 'agenda.settlement.payTitle'
@@ -1244,69 +1351,65 @@ class _AgendaFinanceiraMobileScreenState
       ),
       descricao: item['descricao']?.toString() ?? '',
       contato: item['contato']?.toString(),
-      valorAberto: valorAberto,
-      valorOriginal: _toDouble(item['valorOriginal'] ?? item['valor']),
+      valorAberto: dadosBaixa.valorAberto,
+      valorOriginal: dadosBaixa.valorOriginal,
       valorJaRecebido: _toDouble(item['valorConfirmado']),
       pagamento: pagamento,
-      tipoInicial:
-          parcialInicial
-              ? SixMobileRecebimentoTipo.parcial
-              : SixMobileRecebimentoTipo.total,
+      tipoInicial: parcialInicial
+          ? SixMobileRecebimentoTipo.parcial
+          : SixMobileRecebimentoTipo.total,
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
+      onConfirm: (resultado) async {
+        final contaFinanceiraId =
+            resultado.recebimentos.first.contaFinanceiraId;
+        final String? idSessaoCaixa = _service.espacoFinanceiro == 'PESSOAL'
+            ? null
+            : await _buscarIdSessaoCaixaAberta();
+        if (resultado.total) {
+          await _acoesService.executarTotal(
+            idLancamento: item['id'].toString(),
+            request: AgendaFinanceiraLiquidacaoRequest(
+              contaFinanceiraId: contaFinanceiraId,
+              tipoLiquidacao: 'TOTAL',
+              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              desconto: resultado.desconto,
+              acrescimo: resultado.acrescimo,
+              classificacao: resultado.classificacao,
+              valorLiquidado: resultado.valor,
+              formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+              recebimentos: resultado.recebimentos,
+              observacoes: resultado.observacao,
+              referenciaExterna: item['id']?.toString(),
+              idSessaoCaixa: idSessaoCaixa,
+            ),
+          );
+        } else {
+          await _acoesService.executarAbatimento(
+            idLancamento: item['id'].toString(),
+            request: AgendaFinanceiraParcialRequest(
+              contaFinanceiraId: contaFinanceiraId,
+              tipoLiquidacao: 'PARCIAL',
+              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              desconto: resultado.desconto,
+              acrescimo: resultado.acrescimo,
+              classificacao: resultado.classificacao,
+              valorLiquidado: resultado.valor,
+              formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+              recebimentos: resultado.recebimentos,
+              observacoes: resultado.observacao,
+              idSessaoCaixa: idSessaoCaixa,
+            ),
+          );
+        }
+      },
     );
     if (resultado == null || !mounted) return;
-    final contaFinanceiraId = resultado.recebimentos.first.contaFinanceiraId;
-    // Dinheiro vai para o caixa; a conta pode ser nula após a validação do formulário.
-    await _executarComLoading(() async {
-      final String? idSessaoCaixa =
-          _service.espacoFinanceiro == 'PESSOAL'
-              ? null
-              : await _buscarIdSessaoCaixaAberta();
-      if (resultado.total) {
-        await _acoesService.executarTotal(
-          idLancamento: item['id'].toString(),
-          request: AgendaFinanceiraLiquidacaoRequest(
-            contaFinanceiraId: contaFinanceiraId,
-            tipoLiquidacao: 'TOTAL',
-            dataLiquidacao:
-                DateTime.tryParse(
-                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
-                ) ??
-                DateTime.now(),
-            valorLiquidado: resultado.valor,
-            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-            recebimentos: resultado.recebimentos,
-            observacoes: resultado.observacao,
-            referenciaExterna: item['id']?.toString(),
-            idSessaoCaixa: idSessaoCaixa,
-          ),
-        );
-      } else {
-        await _acoesService.executarAbatimento(
-          idLancamento: item['id'].toString(),
-          request: AgendaFinanceiraParcialRequest(
-            contaFinanceiraId: contaFinanceiraId,
-            tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao:
-                DateTime.tryParse(
-                  item['dataLiquidacaoSolicitada']?.toString() ?? '',
-                ) ??
-                DateTime.now(),
-            valorLiquidado: resultado.valor,
-            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-            recebimentos: resultado.recebimentos,
-            observacoes: resultado.observacao,
-            idSessaoCaixa: idSessaoCaixa,
-          ),
-        );
-      }
-      await _consultar();
-      if (!mounted) return;
+    await _consultar();
+    if (mounted)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.t('agenda.settlement.success'))),
       );
-    });
   }
 
   Future<String?> _buscarIdSessaoCaixaAberta() async {
@@ -1565,10 +1668,9 @@ class _AgendaFinanceiraMobileScreenState
                 style: _outlinedCtaStyle(),
               ),
               FilledButton.icon(
-                onPressed:
-                    _carregando
-                        ? null
-                        : () => _consultar(mostrarFeedback: true),
+                onPressed: _carregando
+                    ? null
+                    : () => _consultar(mostrarFeedback: true),
                 icon: Icon(Icons.search_rounded, size: 18),
                 label: Text('Buscar'),
                 style: _filledCtaStyle(),
@@ -1599,18 +1701,17 @@ class _AgendaFinanceiraMobileScreenState
                 selected: selected,
                 visualDensity: VisualDensity.compact,
                 label: Text(periodo),
-                onSelected:
-                    _carregando
-                        ? null
-                        : (_) {
-                          setState(() {
-                            _periodoSelecionado = periodo;
-                            if (_usaPeriodoPersonalizado) {
-                              _ajustarPeriodoPersonalizadoSeguro();
-                            }
-                          });
-                          _salvarPreferenciasAgendaFinanceiraMobile();
-                        },
+                onSelected: _carregando
+                    ? null
+                    : (_) {
+                        setState(() {
+                          _periodoSelecionado = periodo;
+                          if (_usaPeriodoPersonalizado) {
+                            _ajustarPeriodoPersonalizadoSeguro();
+                          }
+                        });
+                        _salvarPreferenciasAgendaFinanceiraMobile();
+                      },
                 selectedColor: _primaryColor,
                 backgroundColor: _softSurfaceColor,
                 side: BorderSide(
@@ -1622,14 +1723,13 @@ class _AgendaFinanceiraMobileScreenState
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
                 ),
-                avatar:
-                    selected
-                        ? Icon(
-                          Icons.check_rounded,
-                          size: 15,
-                          color: _colors.onPrimary,
-                        )
-                        : null,
+                avatar: selected
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 15,
+                        color: _colors.onPrimary,
+                      )
+                    : null,
               );
             },
           ),
@@ -1826,8 +1926,8 @@ class _AgendaFinanceiraMobileScreenState
                                       );
                                   final DateTime ultimaData =
                                       limite.isAfter(DateTime(2100, 12, 31))
-                                          ? DateTime(2100, 12, 31)
-                                          : limite;
+                                      ? DateTime(2100, 12, 31)
+                                      : limite;
                                   final DateTime? selecionada =
                                       await _abrirSeletorDataMobile(
                                         sheetContext,
@@ -1841,10 +1941,9 @@ class _AgendaFinanceiraMobileScreenState
                                     return;
                                   }
                                   setModalState(
-                                    () =>
-                                        dataFimTemp = _normalizarData(
-                                          selecionada,
-                                        ),
+                                    () => dataFimTemp = _normalizarData(
+                                      selecionada,
+                                    ),
                                   );
                                 },
                               ),
@@ -1857,33 +1956,32 @@ class _AgendaFinanceiraMobileScreenState
                         title: 'Tipo',
                         values: _tipos,
                         selected: tipoTemp,
-                        onSelected:
-                            (value) => setModalState(() => tipoTemp = value),
+                        onSelected: (value) =>
+                            setModalState(() => tipoTemp = value),
                       ),
                       SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Status',
                         values: _status,
                         selected: statusTemp,
-                        onSelected:
-                            (value) => setModalState(() => statusTemp = value),
+                        onSelected: (value) =>
+                            setModalState(() => statusTemp = value),
                       ),
                       SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Tipo de pagamento',
-                        onEdit:
-                            !_podeEditarTiposPagamento
-                                ? null
-                                : (value) async {
-                                  final atualizado =
-                                      await _editarNomeTipoPagamento(value);
-                                  if (!context.mounted || atualizado == null)
-                                    return;
-                                  setModalState(() {
-                                    if (formasPagamentoTemp.remove(value))
-                                      formasPagamentoTemp.add(atualizado);
-                                  });
-                                },
+                        onEdit: !_podeEditarTiposPagamento
+                            ? null
+                            : (value) async {
+                                final atualizado =
+                                    await _editarNomeTipoPagamento(value);
+                                if (!context.mounted || atualizado == null)
+                                  return;
+                                setModalState(() {
+                                  if (formasPagamentoTemp.remove(value))
+                                    formasPagamentoTemp.add(atualizado);
+                                });
+                              },
                         values: _formasPagamentoFiltro,
                         selectedValues: formasPagamentoTemp,
                         onSelected: (value) {
@@ -1997,13 +2095,12 @@ class _AgendaFinanceiraMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (BuildContext context) => DateSelectorMobileBottomSheet(
-            title: titulo,
-            initialDate: dataInicial,
-            firstDate: primeiraData,
-            lastDate: ultimaData,
-          ),
+      builder: (BuildContext context) => DateSelectorMobileBottomSheet(
+        title: titulo,
+        initialDate: dataInicial,
+        firstDate: primeiraData,
+        lastDate: ultimaData,
+      ),
     );
   }
 
@@ -2081,47 +2178,45 @@ class _AgendaFinanceiraMobileScreenState
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children:
-              values.map((value) {
-                final bool isMultiSelection = selectedValues != null;
-                final isSelected =
-                    isMultiSelection
-                        ? (value == 'Todos'
-                            ? selectedValues.isEmpty
-                            : selectedValues.contains(value))
-                        : value == selected;
-                final chip = ChoiceChip(
-                  selected: isSelected,
-                  label: Text(value),
-                  onSelected: (_) => onSelected(value),
-                  selectedColor: _primaryColor,
-                  backgroundColor: _softSurfaceColor,
-                  side: BorderSide(
-                    color: isSelected ? _primaryColor : _borderColor,
+          children: values.map((value) {
+            final bool isMultiSelection = selectedValues != null;
+            final isSelected = isMultiSelection
+                ? (value == 'Todos'
+                      ? selectedValues.isEmpty
+                      : selectedValues.contains(value))
+                : value == selected;
+            final chip = ChoiceChip(
+              selected: isSelected,
+              label: Text(value),
+              onSelected: (_) => onSelected(value),
+              selectedColor: _primaryColor,
+              backgroundColor: _softSurfaceColor,
+              side: BorderSide(
+                color: isSelected ? _primaryColor : _borderColor,
+              ),
+              showCheckmark: false,
+              labelStyle: TextStyle(
+                color: isSelected ? _colors.onPrimary : _titleTextColor,
+                fontWeight: FontWeight.w700,
+              ),
+            );
+            if (onEdit == null || value == 'Todos') return chip;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: chip),
+                IconButton.filledTonal(
+                  tooltip: context.t('paymentSettings.edit'),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _colors.softAccentSurface,
+                    foregroundColor: _colors.accent,
                   ),
-                  showCheckmark: false,
-                  labelStyle: TextStyle(
-                    color: isSelected ? _colors.onPrimary : _titleTextColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                );
-                if (onEdit == null || value == 'Todos') return chip;
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(child: chip),
-                    IconButton.filledTonal(
-                      tooltip: context.t('paymentSettings.edit'),
-                      style: IconButton.styleFrom(
-                        backgroundColor: _colors.softAccentSurface,
-                        foregroundColor: _colors.accent,
-                      ),
-                      onPressed: () => onEdit(value),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                    ),
-                  ],
-                );
-              }).toList(),
+                  onPressed: () => onEdit(value),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                ),
+              ],
+            );
+          }).toList(),
         ),
       ],
     );
@@ -2297,16 +2392,15 @@ class _AgendaFinanceiraMobileScreenState
                 tween: Tween<double>(begin: 0, end: item.value),
                 duration: Duration(milliseconds: 650),
                 curve: Curves.easeOutCubic,
-                builder:
-                    (context, value, child) => Text(
-                      _formatarMoeda(value),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                builder: (context, value, child) => Text(
+                  _formatarMoeda(value),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ],
           ),
@@ -2337,7 +2431,10 @@ class _AgendaFinanceiraMobileScreenState
           return ChoiceChip(
             selected: selected,
             label: Text(aba),
-            onSelected: (_) => setState(() => _abaSelecionada = index),
+            onSelected: (_) {
+              setState(() => _abaSelecionada = index);
+              _salvarPreferenciasAgendaFinanceiraMobile();
+            },
             selectedColor: _primaryColor,
             backgroundColor: _softSurfaceColor,
             side: BorderSide(color: selected ? _primaryColor : _borderColor),
@@ -2363,7 +2460,27 @@ class _AgendaFinanceiraMobileScreenState
 
     switch (_abaSelecionada) {
       case 1:
-        return _buildCalendario();
+        return Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  setState(
+                    () => _calendarioDataDecrescente =
+                        !_calendarioDataDecrescente,
+                  );
+                  _salvarPreferenciasAgendaFinanceiraMobile();
+                },
+                icon: Icon(
+                  _calendarioDataDecrescente ? Icons.south : Icons.north,
+                ),
+                label: Text(context.t('agenda.settlementEdit.due')),
+              ),
+            ),
+            _buildCalendario(),
+          ],
+        );
       case 2:
         return _buildFluxo();
       case 3:
@@ -2385,7 +2502,8 @@ class _AgendaFinanceiraMobileScreenState
     return Column(children: _itensAgenda.map(_buildLancamentoCard).toList());
   }
 
-  Widget _buildLancamentoCard(Map<String, dynamic> item, {
+  Widget _buildLancamentoCard(
+    Map<String, dynamic> item, {
     bool calendario = false,
   }) {
     return AgendaFinanceiraLancamentoCardMobile(
@@ -2399,18 +2517,27 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _abrirAcoesLancamento(Map<String, dynamic> item) {
-    final Set<String> acoesInformadas =
-        item['acoes'] is List
-            ? (item['acoes'] as List)
-                .map((dynamic acao) => acao.toString())
-                .toSet()
-            : <String>{};
-    if (!['Pago', 'Recebido', 'Cancelado', 'Parcial']
-        .contains(item['status']?.toString())) {
+    final Set<String> acoesInformadas = item['acoes'] is List
+        ? (item['acoes'] as List).map((dynamic acao) => acao.toString()).toSet()
+        : <String>{};
+    if (![
+      'Pago',
+      'Recebido',
+      'Cancelado',
+      'Parcial',
+    ].contains(item['status']?.toString())) {
       acoesInformadas.add('Editar');
     } else {
       acoesInformadas.remove('Editar');
     }
+    if ((item['serieRecorrenciaId']?.toString() ?? '').isEmpty &&
+        [
+          'DESPESA_MANUAL',
+          'RECEITA_MANUAL',
+        ].contains(item['origem']?.toString().toUpperCase()) &&
+        !['Pago', 'Recebido', 'Parcial'].contains(item['status']) &&
+        _toDouble(item['valorConfirmado']) == 0)
+      acoesInformadas.add('Excluir');
     acoesInformadas.add('Detalhes');
     const List<String> ordemAcoes = <String>[
       'Editar',
@@ -2418,6 +2545,7 @@ class _AgendaFinanceiraMobileScreenState
       'Registrar parcial',
       'Cancelar',
       'Detalhes',
+      'Excluir',
     ];
     final List<String> acoes = ordemAcoes
         .where((String acao) => acoesInformadas.contains(acao))
@@ -2427,8 +2555,12 @@ class _AgendaFinanceiraMobileScreenState
       item['valorRestante'] ?? item['valor'],
     );
     final double valorConfirmado = _toDouble(item['valorConfirmado']);
-    final String? contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
-    final String? formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(item);
+    final String? contato = AgendaFinanceiraResumoVisual.contatoInformado(
+      item['contato'],
+    );
+    final String? formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(
+      item,
+    );
 
     return showModalBottomSheet<void>(
       context: context,
@@ -2471,8 +2603,9 @@ class _AgendaFinanceiraMobileScreenState
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: _corNaturezaFinanceira(tipoEntrada)
-                              .withValues(alpha: 0.12),
+                          color: _corNaturezaFinanceira(
+                            tipoEntrada,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Icon(
@@ -2531,7 +2664,9 @@ class _AgendaFinanceiraMobileScreenState
                       _pill(
                         item['status']?.toString() ?? '-',
                         Icons.flag_outlined,
-                        cor: _corStatusFinanceiro(item['status']?.toString() ?? ''),
+                        cor: _corStatusFinanceiro(
+                          item['status']?.toString() ?? '',
+                        ),
                       ),
                       if (item['ocorrenciaAjustada'] == true)
                         _pill('Ajustado', Icons.tune_outlined),
@@ -2545,8 +2680,11 @@ class _AgendaFinanceiraMobileScreenState
                         _pill(
                           'Aberto: ${_formatarMoeda(valorAberto)}',
                           Icons.pending_actions_outlined,
-                          cor: item['status']?.toString().toLowerCase() == 'vencido'
-                              ? _colors.error : _mutedTextColor,
+                          cor:
+                              item['status']?.toString().toLowerCase() ==
+                                  'vencido'
+                              ? _colors.error
+                              : _mutedTextColor,
                         ),
                     ],
                   ),
@@ -2607,14 +2745,13 @@ class _AgendaFinanceiraMobileScreenState
                       child: SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed:
-                              _executandoAcao
-                                  ? null
-                                  : () => _executarAcaoDoBottomSheet(
-                                    sheetContext,
-                                    acao,
-                                    item,
-                                  ),
+                          onPressed: _executandoAcao
+                              ? null
+                              : () => _executarAcaoDoBottomSheet(
+                                  sheetContext,
+                                  acao,
+                                  item,
+                                ),
                           icon: Icon(_iconeAcaoAgenda(acao), size: 19),
                           label: Text(acao),
                           style: _outlinedCtaStyle(),
@@ -2651,6 +2788,8 @@ class _AgendaFinanceiraMobileScreenState
         return Icons.check_circle_outline_rounded;
       case 'Registrar parcial':
         return Icons.pie_chart_outline_rounded;
+      case 'Excluir':
+        return Icons.delete_outline;
       case 'Cancelar':
         return Icons.event_busy_outlined;
       default:
@@ -2672,7 +2811,9 @@ class _AgendaFinanceiraMobileScreenState
     itens.sort((a, b) {
       final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
       final dataB = _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999);
-      return dataA.compareTo(dataB);
+      return _calendarioDataDecrescente
+          ? dataB.compareTo(dataA)
+          : dataA.compareTo(dataB);
     });
     if (itens.isEmpty) {
       return _buildEmptyState(
@@ -2725,8 +2866,11 @@ class _AgendaFinanceiraMobileScreenState
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.calendar_month_outlined,
-                                color: _accentColor, size: 17),
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              color: _accentColor,
+                              size: 17,
+                            ),
                             const SizedBox(width: 7),
                             Expanded(
                               child: Text(
@@ -2744,28 +2888,34 @@ class _AgendaFinanceiraMobileScreenState
                             Text(
                               '${entry.value.length} ${context.t(entry.value.length == 1 ? 'agenda.calendar.launchSingular' : 'agenda.calendar.launchPlural')}',
                               style: TextStyle(
-                                color: _mutedTextColor, fontSize: 10,
+                                color: _mutedTextColor,
+                                fontSize: 10,
                               ),
                             ),
                             IconButton(
                               key: Key('agenda-calendario-toggle-${entry.key}'),
                               tooltip: acao,
-                              onPressed: () => _alternarDiaCalendario(entry.key),
+                              onPressed: () =>
+                                  _alternarDiaCalendario(entry.key),
                               visualDensity: VisualDensity.compact,
                               constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40,
+                                minWidth: 40,
+                                minHeight: 40,
                               ),
                               icon: Icon(
                                 expandido
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.keyboard_arrow_down_rounded,
-                                color: _titleTextColor, size: 22,
+                                color: _titleTextColor,
+                                size: 22,
                               ),
                             ),
                           ],
                         ),
-                        if (resumo.recebido > 0 || resumo.pago > 0 ||
-                            resumo.aReceber > 0 || resumo.aPagar > 0)
+                        if (resumo.recebido > 0 ||
+                            resumo.pago > 0 ||
+                            resumo.aReceber > 0 ||
+                            resumo.aPagar > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 1, bottom: 2),
                             child: Wrap(
@@ -2775,19 +2925,27 @@ class _AgendaFinanceiraMobileScreenState
                                 if (resumo.recebido > 0)
                                   _resumoCalendarioDia(
                                     context.t('agenda.calendar.received'),
-                                    resumo.recebido, verde),
+                                    resumo.recebido,
+                                    verde,
+                                  ),
                                 if (resumo.pago > 0)
                                   _resumoCalendarioDia(
                                     context.t('agenda.calendar.paid'),
-                                    resumo.pago, vermelho),
+                                    resumo.pago,
+                                    vermelho,
+                                  ),
                                 if (resumo.aReceber > 0)
                                   _resumoCalendarioDia(
                                     context.t('agenda.calendar.toReceive'),
-                                    resumo.aReceber, verde),
+                                    resumo.aReceber,
+                                    verde,
+                                  ),
                                 if (resumo.aPagar > 0)
                                   _resumoCalendarioDia(
                                     context.t('agenda.calendar.toPay'),
-                                    resumo.aPagar, vermelho),
+                                    resumo.aPagar,
+                                    vermelho,
+                                  ),
                               ],
                             ),
                           ),
@@ -2805,8 +2963,10 @@ class _AgendaFinanceiraMobileScreenState
                         padding: const EdgeInsets.only(top: 8),
                         child: Column(
                           children: [
-                            ...entry.value.map((item) =>
-                                _buildLancamentoCard(item, calendario: true)),
+                            ...entry.value.map(
+                              (item) =>
+                                  _buildLancamentoCard(item, calendario: true),
+                            ),
                           ],
                         ),
                       )
@@ -2827,21 +2987,19 @@ class _AgendaFinanceiraMobileScreenState
         Container(
           width: 6,
           height: 6,
-          decoration: BoxDecoration(
-            color: cor, shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
         Text(
           '$titulo ',
-          style: TextStyle(
-            color: _mutedTextColor, fontSize: 11,
-          ),
+          style: TextStyle(color: _mutedTextColor, fontSize: 11),
         ),
         Text(
           _formatarMoeda(valor),
           style: TextStyle(
-            color: cor, fontSize: 11, fontWeight: FontWeight.w800,
+            color: cor,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -2852,10 +3010,9 @@ class _AgendaFinanceiraMobileScreenState
     final fluxoPorMes = <String, Map<String, double>>{};
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
-      final mes =
-          data == null
-              ? 'Sem competência'
-              : '${data.year}-${data.month.toString().padLeft(2, '0')}';
+      final mes = data == null
+          ? 'Sem competência'
+          : '${data.year}-${data.month.toString().padLeft(2, '0')}';
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
       final registro = fluxoPorMes.putIfAbsent(
         mes,
@@ -2876,67 +3033,66 @@ class _AgendaFinanceiraMobileScreenState
     }
     final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
     return Column(
-      children:
-          mesesOrdenados.map((mes) {
-            final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
-            final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
-            final saldo = entrada - saida;
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      children: mesesOrdenados.map((mes) {
+        final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
+        final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
+        final saldo = entrada - saida;
+        return Container(
+          margin: EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text(
-                        mes,
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        'Saldo: ${_formatarMoeda(saldo)}',
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    mes,
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                  SizedBox(height: 14),
-                  _buildFluxoBarra(entrada: entrada, saida: saida),
-                  SizedBox(height: 12),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: _fluxoValor(
-                          'Entradas',
-                          entrada,
-                          Icons.south_west_rounded,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _fluxoValor(
-                          'Saídas',
-                          saida,
-                          Icons.north_east_rounded,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Saldo: ${_formatarMoeda(saldo)}',
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
-            );
-          }).toList(),
+              SizedBox(height: 14),
+              _buildFluxoBarra(entrada: entrada, saida: saida),
+              SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _fluxoValor(
+                      'Entradas',
+                      entrada,
+                      Icons.south_west_rounded,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: _fluxoValor(
+                      'Saídas',
+                      saida,
+                      Icons.north_east_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -3026,86 +3182,84 @@ class _AgendaFinanceiraMobileScreenState
       );
     }
     return Column(
-      children:
-          _itensConfirmados.map((item) {
-            final tipoEntrada = item['tipo'] == 'receber';
-            final corNatureza = _corNaturezaFinanceira(tipoEntrada);
-            final contato = AgendaFinanceiraResumoVisual.contatoInformado(
-              item['contato'],
-            );
-            final formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(item);
-            final data = item['data']?.toString() ?? '';
-            final metadados = <String>[
-              if (contato != null) contato,
-              if (data.isNotEmpty && data != '-') data,
-              if (formaRealizada != null) formaRealizada,
-            ];
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _borderColor),
+      children: _itensConfirmados.map((item) {
+        final tipoEntrada = item['tipo'] == 'receber';
+        final corNatureza = _corNaturezaFinanceira(tipoEntrada);
+        final contato = AgendaFinanceiraResumoVisual.contatoInformado(
+          item['contato'],
+        );
+        final formaRealizada = AgendaFinanceiraResumoVisual.formaRealizada(
+          item,
+        );
+        final data = item['data']?.toString() ?? '';
+        final metadados = <String>[
+          if (contato != null) contato,
+          if (data.isNotEmpty && data != '-') data,
+          if (formaRealizada != null) formaRealizada,
+        ];
+        return Container(
+          margin: EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: corNatureza.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  tipoEntrada
+                      ? Icons.south_west_rounded
+                      : Icons.north_east_rounded,
+                  color: corNatureza,
+                  size: 20,
+                ),
               ),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: corNatureza.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      item['descricao']?.toString() ?? '-',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                    child: Icon(
-                      tipoEntrada
-                          ? Icons.south_west_rounded
-                          : Icons.north_east_rounded,
-                      color: corNatureza,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          item['descricao']?.toString() ?? '-',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _titleTextColor,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        if (metadados.isNotEmpty) ...[
-                          SizedBox(height: 4),
-                          Text(
-                            metadados.join(' • '),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _mutedTextColor,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    _formatarMoeda(_toDouble(item['valorConfirmado'])),
-                    style: TextStyle(
-                      color: corNatureza,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+                    if (metadados.isNotEmpty) ...[
+                      SizedBox(height: 4),
+                      Text(
+                        metadados.join(' • '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            );
-          }).toList(),
+              SizedBox(width: 10),
+              Text(
+                _formatarMoeda(_toDouble(item['valorConfirmado'])),
+                style: TextStyle(
+                  color: corNatureza,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -3201,8 +3355,9 @@ class _AgendaFinanceiraMobileScreenState
           ),
           SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed:
-                _carregando ? null : () => _consultar(mostrarFeedback: true),
+            onPressed: _carregando
+                ? null
+                : () => _consultar(mostrarFeedback: true),
             icon: Icon(Icons.refresh_rounded),
             label: Text('Tentar novamente'),
             style: _outlinedCtaStyle(),
@@ -3277,9 +3432,15 @@ class _AgendaFinanceiraMobileScreenState
                       onChanged: () {},
                     ),
                   if (AgendaFinanceiraResumoVisual.contatoInformado(
-                        item['contato']) != null)
-                    _detalheLinha('Contato',
-                        AgendaFinanceiraResumoVisual.contatoInformado(item['contato'])!),
+                        item['contato'],
+                      ) !=
+                      null)
+                    _detalheLinha(
+                      'Contato',
+                      AgendaFinanceiraResumoVisual.contatoInformado(
+                        item['contato'],
+                      )!,
+                    ),
                   _detalheLinha(
                     'Vencimento',
                     item['vencimento']?.toString() ?? '-',
@@ -3298,8 +3459,10 @@ class _AgendaFinanceiraMobileScreenState
                       item['centroDeCusto'].toString(),
                     ),
                   if (AgendaFinanceiraResumoVisual.formaRealizada(item) != null)
-                    _detalheLinha('Forma realizada',
-                        AgendaFinanceiraResumoVisual.formaRealizada(item)!),
+                    _detalheLinha(
+                      'Forma realizada',
+                      AgendaFinanceiraResumoVisual.formaRealizada(item)!,
+                    ),
                   for (final liquidacao in _mapearLiquidacoes(
                     item['liquidacoes'],
                   ))
@@ -3356,12 +3519,23 @@ class _AgendaFinanceiraMobileScreenState
                             border: Border.all(color: _accentColor),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Icon(Icons.picture_as_pdf_outlined, color: _accentColor),
-                            const SizedBox(width: 8),
-                            Text(context.t('agenda.saleItems.sharePdf'),
-                              style: TextStyle(color: _accentColor, fontWeight: FontWeight.w700)),
-                          ]),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf_outlined,
+                                color: _accentColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                context.t('agenda.saleItems.sharePdf'),
+                                style: TextStyle(
+                                  color: _accentColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -3390,7 +3564,8 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _compartilharComprovanteVenda(
-    String idOperacao, FormatoImpressaoOperacao formato,
+    String idOperacao,
+    FormatoImpressaoOperacao formato,
   ) async {
     try {
       final servico = AgendaVendaComprovanteService();
@@ -3407,9 +3582,13 @@ class _AgendaFinanceiraMobileScreenState
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Não foi possível compartilhar o comprovante da venda.'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível compartilhar o comprovante da venda.',
+          ),
+        ),
+      );
     }
   }
 
@@ -3494,8 +3673,10 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
-    final codigo =
-        item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
+    final codigo = item['codigoTipoRecebimento']
+        ?.toString()
+        .trim()
+        .toLowerCase();
     if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
       return codigo;
     }
@@ -3572,10 +3753,9 @@ class _AgendaFinanceiraMobileScreenState
     if (value is num) return value.toDouble();
     if (value is String) {
       final texto = value.trim();
-      final normalizado =
-          texto.contains(',') && texto.contains('.')
-              ? texto.replaceAll('.', '').replaceAll(',', '.')
-              : texto.replaceAll(',', '.');
+      final normalizado = texto.contains(',') && texto.contains('.')
+          ? texto.replaceAll('.', '').replaceAll(',', '.')
+          : texto.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;
