@@ -2374,13 +2374,17 @@ class _AgendaFinanceiraMobileScreenState
                       ? Duration.zero
                       : const Duration(milliseconds: 650),
                   curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Text(
-                    _formatarMoeda(value),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontWeight: FontWeight.w900,
+                  builder: (context, value, child) => Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _formatarMoeda(value),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),

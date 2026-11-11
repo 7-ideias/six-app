@@ -77,7 +77,14 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
           text:
               ' • ${context.t('agenda.mobile.due').replaceAll('{date}', vencimento)}',
         ),
-      if (item['recorrente'] == true) TextSpan(text: ' • $rotuloRecorrente'),
+      if (item['recorrente'] == true) ...[
+        const TextSpan(text: ' • '),
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Icon(Icons.repeat_rounded, size: 12, color: cores.accent),
+        ),
+        TextSpan(text: ' $rotuloRecorrente'),
+      ],
     ];
     final valor = cancelado
         ? AgendaFinanceiraCalendarioResumo.numero(
