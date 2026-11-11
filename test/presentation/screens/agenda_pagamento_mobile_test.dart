@@ -143,10 +143,9 @@ Widget _app(
   String language = 'pt',
   Brightness brightness = Brightness.light,
 }) => ChangeNotifierProvider(
-  create:
-      (_) => LocaleSettingsProvider(
-        regionalizacaoService: RegionalizacaoService(apiClient: _RegionalApi()),
-      ),
+  create: (_) => LocaleSettingsProvider(
+    regionalizacaoService: RegionalizacaoService(apiClient: _RegionalApi()),
+  ),
   child: MaterialApp(
     locale: Locale(language),
     supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
@@ -181,6 +180,15 @@ Future<void> _pump(
 }
 
 Future<void> _tap(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isEmpty &&
+      find
+          .byType(AgendaFinanceiraLancamentoMobileCreateScreen)
+          .evaluate()
+          .isNotEmpty &&
+      find.text('Etapa 3 de 4').evaluate().isNotEmpty) {
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+  }
   if (finder.evaluate().isEmpty) {
     await tester.scrollUntilVisible(
       finder,
@@ -207,6 +215,10 @@ Future<void> _date(WidgetTester tester, String key, DateTime date) async {
 }
 
 Future<void> _fillCreate(WidgetTester tester) async {
+  for (var step = 0; step < 2; step++) {
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+  }
   final description = find.widgetWithText(TextFormField, 'Descrição');
   await tester.ensureVisible(description);
   await tester.enterText(description, 'Conta de teste');
@@ -244,33 +256,31 @@ void main() {
         await _pump(
           tester,
           Builder(
-            builder:
-                (context) => Scaffold(
-                  body: TextButton(
-                    child: const Text('Abrir formulário'),
-                    onPressed: () {
-                      if (web) {
-                        showSubPainelLancamentoAgendaFinanceiraWeb(
-                          context,
-                          service: service,
-                          empresaSelecionada: 'Empresa',
-                          empresas: const ['Empresa'],
-                        );
-                      } else {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder:
-                                (_) =>
-                                    AgendaFinanceiraLancamentoMobileCreateScreen(
-                                      service: service,
-                                      caixaApiClient: _Caixa(),
-                                    ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
+            builder: (context) => Scaffold(
+              body: TextButton(
+                child: const Text('Abrir formulário'),
+                onPressed: () {
+                  if (web) {
+                    showSubPainelLancamentoAgendaFinanceiraWeb(
+                      context,
+                      service: service,
+                      empresaSelecionada: 'Empresa',
+                      empresas: const ['Empresa'],
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AgendaFinanceiraLancamentoMobileCreateScreen(
+                              service: service,
+                              caixaApiClient: _Caixa(),
+                            ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
           ),
         );
         if (web) {
@@ -278,56 +288,49 @@ void main() {
           await tester.pumpAndSettle();
         }
         await _tap(tester, find.text('Abrir formulário'));
-        final selector = find.byKey(const ValueKey('lancamento-espaco'));
-        if (selector.evaluate().isEmpty) {
+        await _tap(tester, find.text('Continuar'));
+        await _tap(tester, find.text('Continuar'));
+        final accountFinder = web
+            ? find.byType(ContaFinanceiraWebField)
+            : find.byType(ContaFinanceiraMobileField);
+        if (accountFinder.evaluate().isEmpty)
           await tester.scrollUntilVisible(
-            selector,
+            accountFinder,
             250,
             scrollable: find.byType(Scrollable).first,
           );
-        }
-        await tester.ensureVisible(selector);
-        await tester.pumpAndSettle();
         if (web) {
           tester
-              .widget<ContaFinanceiraWebField>(
-                find.byType(ContaFinanceiraWebField),
-              )
+              .widget<ContaFinanceiraWebField>(accountFinder)
               .onChanged('conta-empresa');
         } else {
           tester
-              .widget<ContaFinanceiraMobileField>(
-                find.byType(ContaFinanceiraMobileField),
-              )
+              .widget<ContaFinanceiraMobileField>(accountFinder)
               .onChanged('conta-empresa');
         }
         await tester.pumpAndSettle();
-        final widget = tester.widget<SegmentedButton<String>>(selector);
-        final pessoal =
-            widget.segments.firstWhere((s) => s.value == 'PESSOAL').label
-                as Text;
-        await _tap(
-          tester,
-          find.descendant(of: selector, matching: find.text(pessoal.data!)),
-        );
-        expect(tester.widget<SegmentedButton<String>>(selector).selected, {
-          'PESSOAL',
-        });
-        if (web) {
-          final account = tester.widget<ContaFinanceiraWebField>(
-            find.byType(ContaFinanceiraWebField),
+        await _tap(tester, find.widgetWithText(OutlinedButton, 'Voltar'));
+        await _tap(tester, find.text('Pessoal').last);
+        await _tap(tester, find.text('Continuar'));
+        if (accountFinder.evaluate().isEmpty)
+          await tester.scrollUntilVisible(
+            accountFinder,
+            250,
+            scrollable: find.byType(Scrollable).first,
           );
+        if (web) {
+          final account = tester.widget<ContaFinanceiraWebField>(accountFinder);
           expect(account.espaco, 'PESSOAL');
           expect(account.value, isNull);
         } else {
           final account = tester.widget<ContaFinanceiraMobileField>(
-            find.byType(ContaFinanceiraMobileField),
+            accountFinder,
           );
           expect(account.espaco, 'PESSOAL');
           expect(account.value, isNull);
         }
         expect(service.espacoFinanceiro, 'EMPRESA');
-        Navigator.of(tester.element(selector)).pop();
+        Navigator.of(tester.element(accountFinder)).pop();
         await tester.pumpAndSettle();
         expect(service.espacoFinanceiro, 'EMPRESA');
         expect(tester.takeException(), isNull);
@@ -367,26 +370,22 @@ void main() {
       await _pump(
         tester,
         Builder(
-          builder:
-              (context) => Scaffold(
-                body: TextButton(
-                  onPressed: () async {
-                    result = await Navigator.of(
-                      context,
-                    ).push<Map<String, dynamic>>(
-                      MaterialPageRoute(
-                        builder:
-                            (_) => AgendaFinanceiraLancamentoMobileEditScreen(
-                              lancamento: _item,
-                              service: service,
-                              caixaApiClient: _Caixa(),
-                            ),
-                      ),
-                    );
-                  },
-                  child: const Text('open'),
-                ),
-              ),
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                result = await Navigator.of(context).push<Map<String, dynamic>>(
+                  MaterialPageRoute(
+                    builder: (_) => AgendaFinanceiraLancamentoMobileEditScreen(
+                      lancamento: _item,
+                      service: service,
+                      caixaApiClient: _Caixa(),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
         ),
       );
       await _tap(tester, find.text('open'));
@@ -428,25 +427,22 @@ void main() {
       await _pump(
         tester,
         Builder(
-          builder:
-              (context) => Scaffold(
-                body: TextButton(
-                  onPressed: () async {
-                    result = await Navigator.of(
-                      context,
-                    ).push<Map<String, dynamic>>(
-                      MaterialPageRoute(
-                        builder:
-                            (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
-                              service: service,
-                              caixaApiClient: _Caixa(),
-                            ),
-                      ),
-                    );
-                  },
-                  child: const Text('open'),
-                ),
-              ),
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                result = await Navigator.of(context).push<Map<String, dynamic>>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AgendaFinanceiraLancamentoMobileCreateScreen(
+                          service: service,
+                          caixaApiClient: _Caixa(),
+                        ),
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
         ),
       );
       await _tap(tester, find.text('open'));
@@ -606,25 +602,29 @@ void main() {
         if (mode == 'cancel') {
           navigator.pop();
         } else {
-          navigator.pop(
-            SixMobileRecebimentoResultado(
-              tipo:
-                  mode == 'total'
-                      ? SixMobileRecebimentoTipo.total
-                      : SixMobileRecebimentoTipo.parcial,
-              valor: mode == 'total' ? 100 : 40,
-              codigoTipoRecebimento: 'tipo1',
-              descricaoTipoRecebimento: 'Dinheiro',
-              formaPagamentoBackend: 'tipo1',
-              recebimentos: [
-                RecebimentoFormaInput(
-                  codigo: 'tipo1',
-                  valor: mode == 'total' ? 100 : 40,
-                  contaFinanceiraId: 'account',
-                ),
-              ],
-            ),
+          final result = SixMobileRecebimentoResultado(
+            dataLiquidacao: effective,
+            tipo: mode == 'total'
+                ? SixMobileRecebimentoTipo.total
+                : SixMobileRecebimentoTipo.parcial,
+            valor: mode == 'total' ? 100 : 40,
+            codigoTipoRecebimento: 'tipo1',
+            descricaoTipoRecebimento: 'Dinheiro',
+            formaPagamentoBackend: 'tipo1',
+            recebimentos: [
+              RecebimentoFormaInput(
+                codigo: 'tipo1',
+                valor: mode == 'total' ? 100 : 40,
+                contaFinanceiraId: 'account',
+              ),
+            ],
           );
+          await tester
+              .widget<SixMobileRecebimentoBottomSheet>(
+                find.byType(SixMobileRecebimentoBottomSheet),
+              )
+              .onConfirm!(result);
+          navigator.pop(result);
         }
         await tester.pumpAndSettle();
         if (mode == 'cancel') {
@@ -650,20 +650,17 @@ void main() {
         tester,
         Scaffold(
           body: StatefulBuilder(
-            builder:
-                (context, setState) => SingleChildScrollView(
-                  child: AgendaPagamentoMobileFields(
-                    receber: true,
-                    previsao: forecast,
-                    registrarPagamento: register,
-                    dataEfetiva: DateTime.now(),
-                    onPrevisaoChanged:
-                        (date) => setState(() => forecast = date),
-                    onRegistrarChanged:
-                        (value) => setState(() => register = value),
-                    onDataEfetivaChanged: (_) {},
-                  ),
-                ),
+            builder: (context, setState) => SingleChildScrollView(
+              child: AgendaPagamentoMobileFields(
+                receber: true,
+                previsao: forecast,
+                registrarPagamento: register,
+                dataEfetiva: DateTime.now(),
+                onPrevisaoChanged: (date) => setState(() => forecast = date),
+                onRegistrarChanged: (value) => setState(() => register = value),
+                onDataEfetivaChanged: (_) {},
+              ),
+            ),
           ),
         ),
         language: language,

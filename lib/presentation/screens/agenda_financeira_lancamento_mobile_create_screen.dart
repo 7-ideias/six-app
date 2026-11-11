@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
@@ -183,7 +184,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 minHeight: 6,
                 borderRadius: BorderRadius.circular(8),
                 color: _tipoSelecionado == 'Receber'
-                    ? Colors.green
+                    ? AgendaFinanceiraLancamentoCardMobile.corNatureza(
+                        context,
+                        true,
+                      )
                     : SixMobilePalette.error,
               ),
             ),
@@ -216,7 +220,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
                         color: tipo == 'Receber'
-                            ? Colors.green
+                            ? AgendaFinanceiraLancamentoCardMobile.corNatureza(
+                                context,
+                                true,
+                              )
                             : SixMobilePalette.error,
                         width: _tipoSelecionado == tipo ? 2 : 0.5,
                       ),
@@ -225,7 +232,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                       value: tipo,
                       groupValue: _tipoSelecionado,
                       activeColor: tipo == 'Receber'
-                          ? Colors.green
+                          ? AgendaFinanceiraLancamentoCardMobile.corNatureza(
+                              context,
+                              true,
+                            )
                           : SixMobilePalette.error,
                       title: Text(tipo == 'Receber' ? 'A receber' : 'A pagar'),
                       subtitle: Text(

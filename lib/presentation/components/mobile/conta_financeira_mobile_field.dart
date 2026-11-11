@@ -27,6 +27,7 @@ Future<String?> selecionarContaMobile(
     if (service == null) ownedService.dispose();
     return null;
   }
+  String busca = '';
   bool abrindoCadastro = false;
   Future<void> editarCategoria(
     BuildContext sheetContext,
@@ -83,11 +84,13 @@ Future<String?> selecionarContaMobile(
               context.t(
                 grupo == 'CONTAS'
                     ? 'space.emptyAccountHint'
-                    : 'space.emptyHint',
+                    : 'agenda.category.empty',
               ),
             ),
           ),
-        for (final item in items.where((e) => e.ativo))
+        for (final item in items.where(
+          (e) => e.ativo && e.nome.toLowerCase().contains(busca),
+        ))
           ListTile(
             title: Text(item.nome),
             trailing: grupo == 'CATEGORIAS'
@@ -110,7 +113,7 @@ Future<String?> selecionarContaMobile(
                 ? null
                 : () => editarCategoria(context, setState),
             icon: const Icon(Icons.add),
-            label: Text(context.t('space.add', fallback: 'Adicionar')),
+            label: Text(context.t('agenda.category.create')),
           ),
         if (grupo == 'CONTAS')
           Padding(
