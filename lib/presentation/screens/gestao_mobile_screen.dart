@@ -1254,7 +1254,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.south_west_rounded,
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: () => _navigateTo(
+              context,
+              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.receber),
+            ),
             visualGroupId: 'finance-receivable-payable',
           ),
           _ManagementItem(
@@ -1269,7 +1272,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.north_east_rounded,
             accentColor: _attentionAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: () => _navigateTo(
+              context,
+              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.pagar),
+            ),
             visualGroupId: 'finance-receivable-payable',
           ),
           _ManagementItem(

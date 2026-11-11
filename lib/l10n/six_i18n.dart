@@ -71,6 +71,16 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'accounts.mobile.openPeriod': 'Em aberto no período',
+    'accounts.mobile.count': '{count} conta(s) em aberto',
+    'accounts.mobile.search': 'Buscar descrição ou contato',
+    'accounts.mobile.open': 'Em aberto',
+    'accounts.mobile.overdue': 'Vencidos',
+    'accounts.mobile.received': 'Recebidos',
+    'accounts.mobile.paid': 'Pagos',
+    'accounts.mobile.all': 'Todos',
+    'accounts.mobile.empty': 'Nenhuma conta nesta seleção',
+    'accounts.mobile.emptyHelp': 'Confira o período e os filtros ou use + para cadastrar.',
     'agenda.edit.action': "Editar lançamento",
     'agenda.edit.protected':
         "Você pode alterar os dados cadastrais. Valores, datas e formas já confirmadas serão preservados.",
@@ -3083,6 +3093,16 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'accounts.mobile.openPeriod': 'Outstanding in this period',
+    'accounts.mobile.count': '{count} outstanding account(s)',
+    'accounts.mobile.search': 'Search description or contact',
+    'accounts.mobile.open': 'Outstanding',
+    'accounts.mobile.overdue': 'Overdue',
+    'accounts.mobile.received': 'Received',
+    'accounts.mobile.paid': 'Paid',
+    'accounts.mobile.all': 'All',
+    'accounts.mobile.empty': 'No accounts in this selection',
+    'accounts.mobile.emptyHelp': 'Check the period and filters or use + to add an entry.',
     'agenda.edit.action': "Edit entry",
     'agenda.edit.protected':
         "You can edit the entry details. Confirmed amounts, dates and payment methods will be preserved.",
@@ -5873,6 +5893,16 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'accounts.mobile.openPeriod': 'Pendiente en el período',
+    'accounts.mobile.count': '{count} cuenta(s) pendiente(s)',
+    'accounts.mobile.search': 'Buscar descripción o contacto',
+    'accounts.mobile.open': 'Pendientes',
+    'accounts.mobile.overdue': 'Vencidas',
+    'accounts.mobile.received': 'Recibidas',
+    'accounts.mobile.paid': 'Pagadas',
+    'accounts.mobile.all': 'Todas',
+    'accounts.mobile.empty': 'No hay cuentas en esta selección',
+    'accounts.mobile.emptyHelp': 'Revisa el período y los filtros o usa + para agregar.',
     'agenda.edit.action': "Editar movimiento",
     'agenda.edit.protected':
         "Puedes editar los datos del movimiento. Se conservarán los importes, fechas y medios ya confirmados.",
