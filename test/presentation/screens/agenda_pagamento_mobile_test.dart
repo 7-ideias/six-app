@@ -191,7 +191,7 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
           .byType(AgendaFinanceiraLancamentoMobileCreateScreen)
           .evaluate()
           .isNotEmpty &&
-      find.text('Etapa 3 de 4').evaluate().isNotEmpty) {
+      find.widgetWithText(FilledButton, 'Continuar').evaluate().isNotEmpty) {
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
   }
@@ -202,7 +202,7 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
       scrollable: find.byType(Scrollable).first,
     );
   }
-  await tester.ensureVisible(finder);
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();

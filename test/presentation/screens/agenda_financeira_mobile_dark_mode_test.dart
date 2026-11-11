@@ -176,9 +176,9 @@ void main() {
         find.byKey(const Key('agenda-calendario-dia-09/08/2026')),
         findsOneWidget,
       );
-      expect(find.text('A receber'), findsOneWidget);
-      expect(find.text('Recebido'), findsWidgets);
-      expect(find.text('A pagar'), findsWidgets);
+      expect(find.text('A receber '), findsOneWidget);
+      expect(find.text('Recebido '), findsWidgets);
+      expect(find.text('A pagar '), findsWidgets);
       expect(find.textContaining('Diferença'), findsNothing);
       expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
       expect(find.byTooltip('Expandir lançamentos'), findsNWidgets(2));
@@ -264,7 +264,7 @@ void main() {
     final diaDois = find.byKey(
       const Key('agenda-calendario-toggle-09/08/2026'),
     );
-    expect(find.text('A receber'), findsNWidgets(2));
+    expect(find.text('A receber '), findsNWidgets(2));
     expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
     expect(tester.getSize(diaUm).height, greaterThanOrEqualTo(40));
 
@@ -276,7 +276,7 @@ void main() {
     await tester.tap(diaUm);
     await tester.pumpAndSettle();
     expect(find.text('Venda dia um'), findsNothing);
-    expect(find.text('A receber'), findsNWidgets(2));
+    expect(find.text('A receber '), findsNWidgets(2));
 
     await tester.ensureVisible(diaDois);
     await tester.tap(diaDois);

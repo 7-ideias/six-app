@@ -53,3 +53,9 @@ jobs:
           java-version: '17'
       - name: Build Android debug
         run: flutter build apk --debug
+      - name: Keep Android APK for validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenda-mobile-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 5
