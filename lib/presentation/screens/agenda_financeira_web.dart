@@ -1151,6 +1151,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         : 'receber';
     return <String, dynamic>{
       ...item,
+      'acoes': <String>{
+        'Detalhes',
+        ...((item['acoesDisponiveis'] as List?) ?? [])
+            .map((a) => _acaoLabel(a?.toString()))
+            .where((a) => a.isNotEmpty),
+      }.toList(),
       'id': item['idLancamento']?.toString() ?? '',
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'tipo': tipo,
@@ -1615,6 +1621,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
       if (!mounted) return;
+      final dadosEdicao = detalhe['dadosEdicao'];
+      if (dadosEdicao is Map && dadosEdicao['podeEditar'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('agenda.edit.AGF_EDICAO_INDISPONIVEL')),
+          ),
+        );
+        return;
+      }
       item = AgendaFinanceiraLancamentoDetalhe.fromJson(
         detalhe,
       ).paraEdicao(item);

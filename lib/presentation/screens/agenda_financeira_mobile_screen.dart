@@ -1042,6 +1042,12 @@ class _AgendaFinanceiraMobileScreenState
         : 'receber';
     return <String, dynamic>{
       ...item,
+      'acoes': <String>{
+        'Detalhes',
+        ...((item['acoesDisponiveis'] as List?) ?? [])
+            .map((a) => _acaoLabel(a?.toString()))
+            .where((a) => a.isNotEmpty),
+      }.toList(),
       'id': item['idLancamento']?.toString() ?? '',
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
@@ -1062,7 +1068,6 @@ class _AgendaFinanceiraMobileScreenState
       'quantidadeConfirmacoes':
           item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
-      'acoes': <String>['Detalhes'],
     };
   }
 
@@ -2498,16 +2503,6 @@ class _AgendaFinanceiraMobileScreenState
     final Set<String> acoesInformadas = item['acoes'] is List
         ? (item['acoes'] as List).map((dynamic acao) => acao.toString()).toSet()
         : <String>{};
-    if (![
-      'Pago',
-      'Recebido',
-      'Cancelado',
-      'Parcial',
-    ].contains(item['status']?.toString())) {
-      acoesInformadas.add('Editar');
-    } else {
-      acoesInformadas.remove('Editar');
-    }
     if ((item['serieRecorrenciaId']?.toString() ?? '').isEmpty &&
         item['recorrente'] != true &&
         [

@@ -3,6 +3,48 @@ import 'competencia_financeira.dart';
 import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
+/// Dados cadastrais: este contrato não transporta valores nem a baixa financeira.
+class AgendaFinanceiraEdicaoCadastroRequest {
+  const AgendaFinanceiraEdicaoCadastroRequest({
+    required this.descricao,
+    required this.categoria,
+    required this.alterarCentroCusto,
+    this.centroCustoId,
+    this.nomeContato,
+    required this.nomeColaborador,
+    required this.referenciaExterna,
+    required this.documentoFiscal,
+    required this.observacoes,
+    required this.impostoRenda,
+  });
+
+  final String descricao,
+      categoria,
+      nomeColaborador,
+      referenciaExterna,
+      documentoFiscal,
+      observacoes;
+  final String? centroCustoId, nomeContato;
+  final bool alterarCentroCusto;
+  final Map<String, dynamic> impostoRenda;
+
+  Map<String, dynamic> toJson() => {
+    'descricao': descricao,
+    'categoria': categoria,
+    'alterarCentroCusto': alterarCentroCusto,
+    if (alterarCentroCusto) 'centroCustoId': centroCustoId,
+    if (nomeContato != null) 'nomeContato': nomeContato,
+    'nomeColaborador': nomeColaborador,
+    'referenciaExterna': referenciaExterna,
+    'documentoFiscal': documentoFiscal,
+    'observacoes': observacoes,
+    'impostoRenda': {
+      'separarImpostoRenda': impostoRenda['separarImpostoRenda'],
+      'comprovantesImpostoRenda': impostoRenda['comprovantesImpostoRenda'],
+    },
+  };
+}
+
 class LancamentoAgendaFinanceiraRequest {
   final String? contaFinanceiraId;
   LancamentoAgendaFinanceiraRequest({
@@ -282,6 +324,24 @@ class AgendaFinanceiraLancamentoDetalhe {
   DateTime? get dataLiquidacao =>
       _dataPersistida('dataLiquidacao', alias: 'dataQuitacao');
 
+  bool get somenteCadastro {
+    final edicao = dados['dadosEdicao'];
+    if (edicao is Map && edicao['somenteCadastro'] is bool) {
+      return edicao['somenteCadastro'] as bool;
+    }
+    return dados['somenteCadastro'] == true ||
+        const {
+          'PAGO',
+          'RECEBIDO',
+          'PARCIAL',
+        }.contains(dados['status']?.toString().toUpperCase()) ||
+        (num.tryParse(
+                  '${dados['valorPagoRecebido'] ?? dados['valorConfirmado'] ?? 0}',
+                ) ??
+                0) >
+            0;
+  }
+
   /// Combina dados persistidos com os labels da consulta sem trocar IDs por textos.
   Map<String, dynamic> paraEdicao(Map<String, dynamic> item) {
     final contato = dados['contato'];
@@ -291,7 +351,10 @@ class AgendaFinanceiraLancamentoDetalhe {
     return {
       ...item,
       if (edicao is Map) ...Map<String, dynamic>.from(edicao),
+      'somenteCadastro': somenteCadastro,
       for (final key in [
+        'tipo',
+        'status',
         'dataCriacao',
         'dataOperacao',
         'dataCompetencia',
@@ -318,6 +381,11 @@ class AgendaFinanceiraLancamentoDetalhe {
       if (dados['valorPagoRecebido'] != null)
         'valorConfirmado': dados['valorPagoRecebido'],
       if (dados['valorAberto'] != null) 'valorRestante': dados['valorAberto'],
+      if (dados['origem'] is Map) 'origem': dados['origem']['tipo'],
+      if (dados['contato'] == null && dados.containsKey('contato')) ...{
+        'idContato': null,
+        'contato': '',
+      },
       if (contato is Map) ...{
         'idContato': contato['id'],
         'contato': contato['nome'],

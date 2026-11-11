@@ -71,6 +71,22 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.edit.action': "Editar lançamento",
+    'agenda.edit.protected':
+        "Você pode alterar os dados cadastrais. Valores, datas e formas já confirmadas serão preservados.",
+    'agenda.edit.onlyOccurrence':
+        "As alterações serão aplicadas somente a esta ocorrência. As demais permanecem como estão.",
+    'agenda.edit.saved': "Lançamento atualizado com sucesso.",
+    'agenda.edit.error':
+        "Não foi possível salvar. Confira os dados e tente novamente.",
+    'agenda.edit.AGF_EDICAO_SOMENTE_CADASTRO':
+        "Este lançamento recebeu uma confirmação financeira. Reabra a edição para alterar os dados cadastrais.",
+    'agenda.edit.AGF_EDICAO_INDISPONIVEL':
+        "Este lançamento não está disponível para edição na agenda. Atualize a lista.",
+    'agenda.edit.AGF_EDICAO_SEM_PERMISSAO':
+        "Você não tem permissão para editar lançamentos neste espaço.",
+    'agenda.edit.AGF_CONTATO_NA_ORIGEM':
+        "Altere o contato vinculado no cadastro de origem.",
     'agenda.adjustments.title': 'Desconto e acréscimo',
     'agenda.settlementEdit.date': 'Data efetiva do pagamento/recebimento',
     'agenda.settlementEdit.classification': 'Editar classificação',
@@ -3067,6 +3083,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.edit.action': "Edit entry",
+    'agenda.edit.protected':
+        "You can edit the entry details. Confirmed amounts, dates and payment methods will be preserved.",
+    'agenda.edit.onlyOccurrence':
+        "Changes apply only to this occurrence. Other occurrences will remain unchanged.",
+    'agenda.edit.saved': "Entry updated successfully.",
+    'agenda.edit.error': "Could not save. Check the details and try again.",
+    'agenda.edit.AGF_EDICAO_SOMENTE_CADASTRO':
+        "This entry has received a financial confirmation. Reopen it to edit its details.",
+    'agenda.edit.AGF_EDICAO_INDISPONIVEL':
+        "This entry is not available for editing in the agenda. Refresh the list.",
+    'agenda.edit.AGF_EDICAO_SEM_PERMISSAO':
+        "You do not have permission to edit entries in this workspace.",
+    'agenda.edit.AGF_CONTATO_NA_ORIGEM':
+        "Edit the linked contact in its original record.",
     'agenda.adjustments.title': 'Discount and surcharge',
     'agenda.settlementEdit.date': 'Actual payment/receipt date',
     'agenda.settlementEdit.classification': 'Edit classification',
@@ -5842,6 +5873,22 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.edit.action': "Editar movimiento",
+    'agenda.edit.protected':
+        "Puedes editar los datos del movimiento. Se conservarán los importes, fechas y medios ya confirmados.",
+    'agenda.edit.onlyOccurrence':
+        "Los cambios se aplican solo a esta ocurrencia. Las demás permanecerán sin cambios.",
+    'agenda.edit.saved': "Movimiento actualizado correctamente.",
+    'agenda.edit.error':
+        "No se pudo guardar. Revisa los datos e inténtalo de nuevo.",
+    'agenda.edit.AGF_EDICAO_SOMENTE_CADASTRO':
+        "Este movimiento recibió una confirmación financiera. Vuelve a abrirlo para editar sus datos.",
+    'agenda.edit.AGF_EDICAO_INDISPONIVEL':
+        "Este movimiento no está disponible para edición en la agenda. Actualiza la lista.",
+    'agenda.edit.AGF_EDICAO_SEM_PERMISSAO':
+        "No tienes permiso para editar movimientos en este espacio.",
+    'agenda.edit.AGF_CONTATO_NA_ORIGEM':
+        "Edita el contacto vinculado en su registro de origen.",
     'agenda.adjustments.title': 'Descuento y recargo',
     'agenda.settlementEdit.date': 'Fecha efectiva del pago/cobro',
     'agenda.settlementEdit.classification': 'Editar clasificación',

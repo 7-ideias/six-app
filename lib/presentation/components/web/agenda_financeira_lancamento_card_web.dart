@@ -100,7 +100,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
         !finalizado &&
         restante > 0 &&
         acoes.any((a) => const {'liquidar', 'receber', 'pagar'}.contains(a));
-    final podeEditar = !finalizado && !parcial && acoes.contains('editar');
+    final podeEditar = !cancelado && acoes.contains('editar');
     final podeParcial = podeLiquidar && acoes.contains('registrar parcial');
     final podeCancelar = !finalizado && !parcial && acoes.contains('cancelar');
     final podeExcluir =
@@ -300,13 +300,6 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        if (podeEditar)
-          OutlinedButton.icon(
-            key: const Key('agenda-card-editar'),
-            onPressed: bloqueado ? null : onEditar,
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            label: const Text('Editar'),
-          ),
         if (podeLiquidar)
           SizedBox(
             width: _ctaWidth,
@@ -354,6 +347,12 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
           icon: const Icon(Icons.more_vert_rounded),
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'detalhes', child: Text('Detalhes')),
+            if (podeEditar)
+              PopupMenuItem(
+                key: const Key('agenda-card-editar'),
+                value: 'editar',
+                child: Text(context.t('agenda.edit.action')),
+              ),
             if (podeParcial)
               const PopupMenuItem(
                 value: 'parcial',
@@ -376,6 +375,8 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
           onSelected: (acao) {
             if (acao == 'excluir') {
               onExcluir?.call();
+            } else if (acao == 'editar') {
+              onEditar();
             } else if (acao == 'parcial') {
               onRegistrarParcial();
             } else if (acao == 'cancelar') {

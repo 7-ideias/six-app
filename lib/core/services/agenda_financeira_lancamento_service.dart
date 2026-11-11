@@ -324,6 +324,23 @@ class AgendaFinanceiraLancamentoService {
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
   }
 
+  Future<void> editarCadastroLancamento(
+    String idLancamento,
+    AgendaFinanceiraEdicaoCadastroRequest request,
+  ) async {
+    final response = await _httpClient.patch(
+      Uri.parse('${_endpointLancamento(idLancamento)}/cadastro'),
+      headers: await _buildHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+  }
+
   /// Cancela a ocorrência sem apagar o histórico nem recriar vencimentos futuros.
   Future<LancamentoAgendaFinanceiraResponse> cancelarRecorrencia(
     String idLancamento, {
@@ -442,6 +459,25 @@ class AgendaFinanceiraLancamentoApiException implements Exception {
       }
     } catch (_) {
       /* Erro sem JSON usa mensagem genérica da apresentação. */
+    }
+    return null;
+  }
+
+  String? get codigoEdicao {
+    if (statusCode == 403) return 'AGF_EDICAO_SEM_PERMISSAO';
+    if (statusCode == 404) return 'AGF_EDICAO_INDISPONIVEL';
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        for (final key in ['code', 'message', 'detail', 'reason']) {
+          final value = decoded[key]?.toString() ?? '';
+          if (value.startsWith('AGF_EDICAO_') ||
+              value == 'AGF_CONTATO_NA_ORIGEM')
+            return value;
+        }
+      }
+    } catch (_) {
+      // Resposta sem código estável recebe a mensagem genérica da interface.
     }
     return null;
   }
