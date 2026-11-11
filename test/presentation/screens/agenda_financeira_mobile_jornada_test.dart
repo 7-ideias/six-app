@@ -1,3 +1,6 @@
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +71,8 @@ class _Service extends AgendaFinanceiraLancamentoService {
     'formaPagamento': 'tipo1',
   };
   final saved = <LancamentoAgendaFinanceiraRequest>[];
+  String? consultedSpace;
+  AgendaFinanceiraConsultaRequest? lastQuery;
   bool failSave = false;
   bool failDetail = false;
   @override
@@ -94,7 +99,12 @@ class _Service extends AgendaFinanceiraLancamentoService {
   @override
   Future<Map<String, dynamic>> consultarLancamentos(
     AgendaFinanceiraConsultaRequest request,
-  ) async => {};
+  ) async {
+    consultedSpace = espacoFinanceiro;
+    lastQuery = request;
+    return {};
+  }
+
   @override
   Future<Map<String, dynamic>> consultarValoresConfirmados(
     AgendaFinanceiraConsultaRequest request,
@@ -112,6 +122,10 @@ Widget _app(
     regionalizacaoService: RegionalizacaoService(apiClient: _RegionalApi()),
   ),
   child: MaterialApp(
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: true),
+      child: child!,
+    ),
     locale: Locale(language),
     supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -121,6 +135,13 @@ Widget _app(
 );
 
 void main() {
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets('journey preserves details when navigating back', (tester) async {
     await tester.pumpWidget(
@@ -148,6 +169,155 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Escola'), findsOneWidget);
   });
+  testWidgets('restores mobile space and filters before consulting', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'sixapp.preferenciasIndividuaisDoUsuario': jsonEncode({
+        'agendaFinanceiraFiltrosMobile': {
+          'espacoFinanceiro': 'PESSOAL',
+          'somenteImpostoRenda': true,
+          'mostrarCancelados': true,
+          'visaoSelecionada': 'FLUXO_PREVISTO',
+        },
+      }),
+    });
+    final service = _Service();
+    await tester.pumpWidget(
+      _app(
+        AgendaFinanceiraMobileScreen(
+          lancamentoService: service,
+          caixaApiClient: _Caixa(),
+          enablePeriodHint: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(service.consultedSpace, 'PESSOAL');
+    expect(service.lastQuery!.filtros.somenteImpostoRenda, isTrue);
+    expect(
+      tester
+          .widget<FilterChip>(
+            find.widgetWithText(FilterChip, 'Mostrar cancelados'),
+          )
+          .selected,
+      isTrue,
+    );
+  });
+  testWidgets(
+    'surcharge and classification save atomically and prevent double submit',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final pending = Completer<void>();
+      final saved = <SixMobileRecebimentoResultado>[];
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: SixMobileRecebimentoBottomSheet(
+              titulo: 'Baixa',
+              descricao: 'Escola',
+              valorAberto: 100,
+              tipoInicial: SixMobileRecebimentoTipo.total,
+              caixaApiClient: _Caixa(),
+              agendaService: _Service(),
+              dadosBaixa: const AgendaBaixaDados(
+                valorAberto: 100,
+                valorOriginal: 100,
+                contato: 'Laura',
+                contatoEditavel: true,
+              ),
+              onConfirm: (result) {
+                saved.add(result);
+                return pending.future;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('agenda-surcharge')),
+        '10,50',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Cliente'),
+        'Laura Silva',
+      );
+      final confirm = find.widgetWithText(FilledButton, 'Receber total');
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pump();
+      expect(saved.single.valor, 110.50);
+      expect(saved.single.acrescimo, 10.50);
+      expect(saved.single.classificacao!.nomeContato, 'Laura Silva');
+      expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+      pending.completeError(StateError('offline'));
+      await tester.pumpAndSettle();
+      expect(find.text('Laura Silva'), findsOneWidget);
+      expect(saved.length, 1);
+    },
+  );
+  testWidgets(
+    'partial adjustment retains cash amount and rejects overpayment',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final saved = <SixMobileRecebimentoResultado>[];
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: SixMobileRecebimentoBottomSheet(
+              titulo: 'Baixa',
+              descricao: 'Escola',
+              valorAberto: 100,
+              tipoInicial: SixMobileRecebimentoTipo.parcial,
+              caixaApiClient: _Caixa(),
+              agendaService: _Service(),
+              dadosBaixa: const AgendaBaixaDados(
+                valorAberto: 100,
+                valorOriginal: 100,
+              ),
+              onConfirm: (result) async {
+                saved.add(result);
+                throw StateError('retain');
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Valor da forma 1'),
+        '40',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('agenda-discount')),
+        '10',
+      );
+      final confirm = find.widgetWithText(FilledButton, 'Receber parcial');
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
+      expect(saved.single.valor, 40);
+      expect(saved.single.desconto, 10);
+      await tester.ensureVisible(
+        find.widgetWithText(TextField, 'Valor da forma 1'),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Valor da forma 1'),
+        '100',
+      );
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
+      expect(saved.length, 1);
+    },
+  );
   for (final pagamento in [true, false]) {
     testWidgets('adjusted total and retry retained: payment=$pagamento', (
       tester,

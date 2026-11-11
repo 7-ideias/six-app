@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
@@ -22,6 +23,13 @@ import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart
 import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 
 void main() {
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
   setUp(() => SharedPreferences.setMockInitialValues({}));
   tearDown(() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
@@ -401,6 +409,8 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsWidgets);
     completer.complete(_agendaPayload);
     await tester.pump(const Duration(milliseconds: 1800));
+    await tester.pump();
+    await tester.pump();
   });
 
   testWidgets('agenda exposes themed error state in light mode', (
@@ -516,7 +526,7 @@ Future<void> _pumpScreen(
   bool settleInitialLoad = true,
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(390, 900);
+  tester.view.physicalSize = const Size(390, 1600);
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -529,6 +539,10 @@ Future<void> _pumpScreen(
 
   await tester.pumpWidget(
     MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child!,
+      ),
       locale: const Locale('pt'),
       supportedLocales: _testSupportedLocales,
       localizationsDelegates: _testLocalizationsDelegates,
@@ -558,6 +572,9 @@ class _FakeAgendaService extends AgendaFinanceiraLancamentoService {
     this.agendaCompleter,
     this.throwOnConsult = false,
   }) : super();
+
+  @override
+  Future<List<CentroCustoModel>> listarCentrosCusto() async => [];
 
   final Map<String, dynamic> agendaPayload;
   final Map<String, dynamic> detailPayload;

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 import 'package:sixpos/presentation/components/web/conta_financeira_web_field.dart';
 import 'package:sixpos/presentation/components/mobile/conta_financeira_mobile_field.dart';
@@ -147,6 +148,10 @@ Widget _app(
     regionalizacaoService: RegionalizacaoService(apiClient: _RegionalApi()),
   ),
   child: MaterialApp(
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: true),
+      child: child!,
+    ),
     locale: Locale(language),
     supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -180,7 +185,8 @@ Future<void> _pump(
 }
 
 Future<void> _tap(WidgetTester tester, Finder finder) async {
-  if (finder.evaluate().isEmpty &&
+  if (finder.description.contains('Salvar') &&
+      finder.evaluate().isEmpty &&
       find
           .byType(AgendaFinanceiraLancamentoMobileCreateScreen)
           .evaluate()
@@ -197,6 +203,7 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
     );
   }
   await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }
@@ -246,6 +253,13 @@ const _item = <String, dynamic>{
 };
 
 void main() {
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   for (final web in [true, false]) {
@@ -288,7 +302,9 @@ void main() {
           await tester.pumpAndSettle();
         }
         await _tap(tester, find.text('Abrir formulário'));
+        if (web) await _tap(tester, find.byKey(const Key('journey-pay')));
         await _tap(tester, find.text('Continuar'));
+        if (web) await _tap(tester, find.byKey(const Key('journey-company')));
         await _tap(tester, find.text('Continuar'));
         final accountFinder = web
             ? find.byType(ContaFinanceiraWebField)

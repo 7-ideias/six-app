@@ -130,7 +130,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: 'Novo lançamento',
+      title: context.t('agenda.form.create'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -145,7 +145,13 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: (_salvando || _ir.carregando)
             ? null
-            : () => Navigator.of(context).maybePop(),
+            : () {
+                if (_etapa > 0) {
+                  setState(() => _etapa--);
+                } else {
+                  Navigator.of(context).maybePop();
+                }
+              },
       ),
       bottomNavigationBar: _buildBottomBar(),
       bodyBuilder: _buildContent,
@@ -194,12 +200,25 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             const SizedBox(height: 12),
             Row(
               children: [
-                for (final step in ['type', 'space', 'details', 'recurrence'])
+                for (final step in [
+                  'type',
+                  'space',
+                  'details',
+                  'recurrence',
+                ].asMap().entries)
                   Expanded(
                     child: Text(
-                      context.t('agenda.journey.$step'),
+                      context.t('agenda.journey.${step.value}'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: _titleTextColor, fontSize: 11),
+                      style: TextStyle(
+                        color: step.key == _etapa
+                            ? _titleTextColor
+                            : _mutedTextColor,
+                        fontSize: 11,
+                        fontWeight: step.key == _etapa
+                            ? FontWeight.w800
+                            : FontWeight.w400,
+                      ),
                     ),
                   ),
               ],
@@ -237,7 +256,13 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                               true,
                             )
                           : SixMobilePalette.error,
-                      title: Text(tipo == 'Receber' ? 'A receber' : 'A pagar'),
+                      title: Text(
+                        context.t(
+                          tipo == 'Receber'
+                              ? 'agenda.form.receivable'
+                              : 'agenda.form.payable',
+                        ),
+                      ),
                       subtitle: Text(
                         context.t(
                           tipo == 'Receber'
@@ -784,8 +809,21 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             Expanded(
               flex: 2,
               child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      AgendaFinanceiraLancamentoCardMobile.corNatureza(
+                        context,
+                        _tipoSelecionado == 'Receber',
+                      ),
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF07111F)
+                      : Colors.white,
+                ),
                 onPressed:
-                    (_salvando || _ir.carregando || _carregandoTiposRecebimento)
+                    (_salvando ||
+                        _ir.carregando ||
+                        (_etapa == 3 && _carregandoTiposRecebimento))
                     ? null
                     : () {
                         if (_etapa == 3) {
