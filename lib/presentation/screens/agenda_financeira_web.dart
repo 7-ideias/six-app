@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
 import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
@@ -3170,8 +3171,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final valorAberto = _numero(detalhe['valorAberto'], item['valorRestante']);
     final descricao = _texto(detalhe['descricao'], item['descricao']);
     final stamp = _stampData(
+      context,
       tokens,
       _texto(detalhe['status'], item['status']),
+      _texto(detalhe['tipo'], item['tipo']),
       valorAberto,
     );
     return Semantics(
@@ -3584,8 +3587,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   }
 
   _DetalheStatusStampData? _stampData(
+    BuildContext context,
     WebThemeTokens tokens,
     String status,
+    String tipo,
     double valorAberto,
   ) {
     final normalized = status.trim().toUpperCase().replaceAll(' ', '_');
@@ -3593,7 +3598,14 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
         normalized == 'RECEBIDO' ||
         valorAberto <= 0 &&
             (normalized == 'FINALIZADA' || normalized == 'FINALIZADO')) {
-      return _DetalheStatusStampData('PAGO', tokens.success);
+      return _DetalheStatusStampData(
+        AgendaFinanceiraStatusLabels.rotuloQuitacao(
+          context,
+          tipo: tipo,
+          status: status,
+        ).toUpperCase(),
+        tokens.success,
+      );
     }
     if (normalized == 'PARCIAL') {
       return _DetalheStatusStampData('PARCIAL', tokens.warning);
@@ -3796,7 +3808,12 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                 formatarMoeda(_numero(liquidacao['valorRestanteDepois'], null)),
               ),
               _info(
-                'Tipo de pagamento',
+                context.t(
+                  _texto(detalhe['tipo'], item['tipo']).trim().toUpperCase() ==
+                          'RECEBER'
+                      ? 'recebimento.tipoRecebimento'
+                      : 'agenda.settlement.methodType',
+                ),
                 agendaFormaPagamentoExibicao(liquidacao),
               ),
               if ((liquidacao['contaFinanceiraNome']?.toString() ?? '')
