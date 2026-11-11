@@ -82,7 +82,9 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
             item['valorOriginal'] ?? item['valor'],
           )
         : AgendaFinanceiraCalendarioResumo.valorPrincipal(item);
-    final valorRotulo = AgendaFinanceiraCalendarioResumo.aberto(item) > 0
+    final valorRotulo = cancelado
+        ? context.t('agenda.list.noBalance')
+        : AgendaFinanceiraCalendarioResumo.aberto(item) > 0
         ? context.t('agenda.calendar.outstanding')
         : context.t(
             entrada ? 'agenda.calendar.received' : 'agenda.calendar.paid',
@@ -171,7 +173,7 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    if (mostrarRotuloValor)
+                    if (mostrarRotuloValor || cancelado)
                       Text(
                         valorRotulo,
                         style: TextStyle(color: cores.mutedText, fontSize: 10),

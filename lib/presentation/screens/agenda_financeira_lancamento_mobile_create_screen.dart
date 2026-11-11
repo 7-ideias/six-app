@@ -21,7 +21,6 @@ import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/date_selector_mobile_bottom_sheet.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
-import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 class AgendaFinanceiraLancamentoMobileCreateScreen extends StatefulWidget {
   const AgendaFinanceiraLancamentoMobileCreateScreen({
@@ -238,7 +237,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                       ),
                       onChanged: (value) => setState(() {
                         _tipoSelecionado = value!;
-                        _statusSelecionado = 'Pendente';
+                        _alinharCamposComTipo();
                       }),
                     ),
                   ),

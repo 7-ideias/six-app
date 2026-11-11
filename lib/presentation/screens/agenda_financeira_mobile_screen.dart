@@ -229,7 +229,6 @@ class _AgendaFinanceiraMobileScreenState
   Color get _secondaryColor => _colors.secondary;
   Color get _accentColor => _colors.accent;
   Color get _surfaceColor => _colors.surface;
-  Color get _surfaceElevatedColor => _colors.surfaceElevated;
   Color get _softSurfaceColor => _colors.softSurface;
   Color get _mutedTextColor => _colors.mutedText;
   Color get _titleTextColor => _colors.titleText;
@@ -3704,14 +3703,6 @@ class _AgendaFinanceiraMobileScreenState
       default:
         return null;
     }
-  }
-
-  String _descricaoTipoRecebimentoOuFallback(String codigo, String fallback) {
-    final descricao =
-        _descricaoPorCodigoTipoFormaPagamento[codigo.trim().toLowerCase()];
-    return descricao != null && descricao.trim().isNotEmpty
-        ? descricao
-        : fallback;
   }
 
   String _empresaNome(dynamic empresa) {

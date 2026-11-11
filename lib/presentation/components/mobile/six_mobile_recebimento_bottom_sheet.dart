@@ -1399,7 +1399,7 @@ class _SixMobileRecebimentoBottomSheetState
               ),
             ),
             Text(
-              '${context.t('recebimento.restante', fallback: 'Restante')} ${_formatarMoeda(restante < 0 ? 0 : restante)}',
+              '${context.t(restante < -0.009 ? 'agenda.settlementEdit.excess' : 'recebimento.restante', fallback: 'Restante')} ${_formatarMoeda(restante.abs())}',
               style: TextStyle(
                 color: colors.mutedText,
                 fontSize: 12,
