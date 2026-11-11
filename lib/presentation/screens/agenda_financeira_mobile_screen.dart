@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
 import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
 import 'package:sixpos/presentation/components/agenda_itens_venda_resumo.dart';
@@ -158,6 +160,7 @@ class _AgendaFinanceiraMobileScreenState
 
   bool _somenteImpostoRenda = false;
   bool _mostrarCancelados = false;
+  bool _resumoExpandido = false;
   bool _calendarioDataDecrescente = true;
   Future<void> _filaPreferencias = Future<void>.value();
   static const _visoesPreferencia = [
@@ -167,55 +170,55 @@ class _AgendaFinanceiraMobileScreenState
     'VALORES_CONFIRMADOS',
   ];
 
-  Widget _seletorEspaco() => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    crossAxisAlignment: WrapCrossAlignment.center,
+  bool get _ocupado => _trocandoEspaco || _carregando || _executandoAcao;
+
+  Widget _seletorEspaco() => Row(
     children: [
-      FilterChip(
-        key: const ValueKey('ir-filter'),
-        label: Text(context.t('ir.filter')),
-        selected: _somenteImpostoRenda,
-        onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
-            ? null
-            : (value) async {
-                setState(() => _somenteImpostoRenda = value);
-                _salvarPreferenciasAgendaFinanceiraMobile();
-                await _consultar(mostrarFeedback: true);
-              },
-      ),
-      FilterChip(
-        label: Text(context.t('agenda.list.showCanceled')),
-        selected: _mostrarCancelados,
-        onSelected: (value) {
-          setState(() => _mostrarCancelados = value);
-          _salvarPreferenciasAgendaFinanceiraMobile();
-        },
-      ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
-        ChoiceChip(
-          label: Text(context.t('space.' + tipo)),
-          selected: _service.espacoFinanceiro == tipo,
-          onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
-              ? null
-              : (_) => _trocarEspaco(tipo),
-        ),
-      if (_service.espacoFinanceiro == 'EMPRESA')
-        OutlinedButton.icon(
-          icon: const Icon(Icons.payments_outlined),
-          label: Text(context.t('machine.receivables')),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const RecebiveisVendasMobile(),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: ChoiceChip(
+              label: Text(
+                context.t('space.$tipo'),
+                overflow: TextOverflow.ellipsis,
+              ),
+              selected: _service.espacoFinanceiro == tipo,
+              showCheckmark: false,
+              onSelected: _ocupado ? null : (_) => _trocarEspaco(tipo),
+              selectedColor: _softBlueColor,
+              backgroundColor: _softSurfaceColor,
+              checkmarkColor: _accentColor,
+              side: BorderSide(
+                color: _service.espacoFinanceiro == tipo
+                    ? _accentColor
+                    : _borderColor,
+              ),
+              labelStyle: TextStyle(
+                color: _titleTextColor,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
+      if (_service.espacoFinanceiro == 'EMPRESA')
+        IconButton(
+          tooltip: context.t('machine.receivables'),
+          icon: const Icon(Icons.payments_outlined, size: 20),
+          color: _accentColor,
+          onPressed: _ocupado
+              ? null
+              : () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const RecebiveisVendasMobile(),
+                  ),
+                ),
+        ),
       IconButton(
         tooltip: context.t('space.settings'),
-        onPressed: (_trocandoEspaco || _carregando || _executandoAcao)
-            ? null
-            : _configurarEspaco,
-        icon: const Icon(Icons.account_balance_outlined),
+        onPressed: _ocupado ? null : _configurarEspaco,
+        color: _mutedTextColor,
+        icon: const Icon(Icons.account_balance_outlined, size: 20),
       ),
     ],
   );
@@ -251,7 +254,6 @@ class _AgendaFinanceiraMobileScreenState
       HttpCaixaApiClient(espacoFinanceiro: () => _service.espacoFinanceiro);
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
-  final ScrollController _periodosScrollController = ScrollController();
 
   final List<String> _abas = <String>[
     'Agenda',
@@ -319,7 +321,6 @@ class _AgendaFinanceiraMobileScreenState
 
   bool _carregando = false;
   bool _executandoAcao = false;
-  bool _dicaPeriodosExecutada = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
   String? _erroConsulta;
@@ -342,16 +343,7 @@ class _AgendaFinanceiraMobileScreenState
       await _restaurarPreferenciasAgendaFinanceiraMobile();
       await _consultar();
       unawaited(_restaurarPreferenciasAgendaFinanceiraMobileBackend());
-      if (widget.enablePeriodHint) {
-        _executarDicaScrollPeriodos();
-      }
     });
-  }
-
-  @override
-  void dispose() {
-    _periodosScrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _restaurarPreferenciasAgendaFinanceiraMobile() async {
@@ -551,30 +543,6 @@ class _AgendaFinanceiraMobileScreenState
         (_mostrarCancelados ||
             _statusSelecionado == 'Cancelado' ||
             item['status'] != 'Cancelado');
-  }
-
-  Future<void> _executarDicaScrollPeriodos() async {
-    if (_dicaPeriodosExecutada) return;
-    _dicaPeriodosExecutada = true;
-    await Future<void>.delayed(Duration(milliseconds: 650));
-    if (!mounted || !_periodosScrollController.hasClients) return;
-    final double maxOffset = _periodosScrollController.position.maxScrollExtent;
-    if (maxOffset <= 0) return;
-    final double hintOffset = maxOffset < 46 ? maxOffset : 46;
-    try {
-      await _periodosScrollController.animateTo(
-        hintOffset,
-        duration: Duration(milliseconds: 380),
-        curve: Curves.easeOutCubic,
-      );
-      await Future<void>.delayed(Duration(milliseconds: 160));
-      if (!mounted || !_periodosScrollController.hasClients) return;
-      await _periodosScrollController.animateTo(
-        0,
-        duration: Duration(milliseconds: 420),
-        curve: Curves.easeOutCubic,
-      );
-    } catch (_) {}
   }
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
@@ -1468,7 +1436,7 @@ class _AgendaFinanceiraMobileScreenState
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: 'Agenda financeira',
+      title: context.t('agenda.mobile.title'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -1484,6 +1452,11 @@ class _AgendaFinanceiraMobileScreenState
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
+        IconButton(
+          tooltip: context.t('common.refresh'),
+          onPressed: _ocupado ? null : () => _consultar(mostrarFeedback: true),
+          icon: const Icon(Icons.refresh_rounded),
+        ),
         IconButton(
           tooltip: 'Novo lançamento',
           onPressed: _executandoAcao ? null : _novoLancamento,
@@ -1508,9 +1481,6 @@ class _AgendaFinanceiraMobileScreenState
           physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
           children: <Widget>[
-            _seletorEspaco(),
-            SixStaggeredEntry(child: _buildHeaderCard()),
-            SizedBox(height: 12),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 60),
               child: _buildFilterCard(),
@@ -1540,263 +1510,129 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: <Color>[_primaryColor, _secondaryColor],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _colors.heroShadow,
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _colors.onPrimary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _colors.onPrimary.withValues(alpha: 0.18),
-              ),
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              color: _colors.onPrimary,
-              size: 22,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Agenda financeira',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _colors.onPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  _ultimaConsultaEm == null
-                      ? 'Previsões e confirmações do período.'
-                      : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _colors.heroSupportingText,
-                    fontSize: 12.5,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  List<String> get _filtrosAtivos => [
+    if (_tipoSelecionado != 'Todos') _tipoSelecionado,
+    if (_statusSelecionado != 'Todos') _statusSelecionado,
+    ..._formasPagamentoSelecionadas,
+    ..._centrosCustoSelecionados,
+    if (_somenteImpostoRenda) context.t('ir.filter'),
+    if (_mostrarCancelados) context.t('agenda.list.showCanceled'),
+  ];
+
+  String _periodoExibicao(String periodo) => context.t(
+    'agenda.mobile.period.${_periodos.indexOf(periodo)}',
+    fallback: periodo,
+  );
 
   Widget _buildFilterCard() {
+    final filtros = _filtrosAtivos;
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 12, 12, 14),
+      key: const ValueKey('agenda-mobile-filters'),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _colors.navigationShadow.withValues(alpha: 0.70),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _buildPeriodosSelector(),
-          if (_usaPeriodoPersonalizado) ...<Widget>[
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                _smallInfoChip(
-                  Icons.event_outlined,
-                  'De ${_formatarDataCurta(_dataInicioPersonalizada)}',
-                ),
-                _smallInfoChip(
-                  Icons.event_available_outlined,
-                  'Até ${_formatarDataCurta(_dataFimPersonalizada)}',
-                ),
-              ],
-            ),
-          ],
-          SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              _smallInfoChip(Icons.swap_vert_rounded, _tipoSelecionado),
-              _smallInfoChip(Icons.flag_outlined, _statusSelecionado),
-              _smallInfoChip(
-                Icons.payments_outlined,
-                _formasPagamentoFiltroLabel(),
-              ),
-              OutlinedButton.icon(
-                onPressed: _carregando ? null : _abrirFiltros,
-                icon: Icon(Icons.tune_rounded, size: 18),
-                label: Text('Filtros'),
-                style: _outlinedCtaStyle(),
-              ),
-              FilledButton.icon(
-                onPressed: _carregando
-                    ? null
-                    : () => _consultar(mostrarFeedback: true),
-                icon: Icon(Icons.search_rounded, size: 18),
-                label: Text('Buscar'),
-                style: _filledCtaStyle(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodosSelector() {
-    return SizedBox(
-      height: 40,
-      child: Stack(
-        children: <Widget>[
-          ListView.separated(
-            controller: _periodosScrollController,
-            scrollDirection: Axis.horizontal,
-            physics: BouncingScrollPhysics(),
-            padding: EdgeInsets.only(right: 34),
-            itemCount: _periodos.length,
-            separatorBuilder: (_, __) => SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final periodo = _periodos[index];
-              final selected = periodo == _periodoSelecionado;
-              return ChoiceChip(
-                selected: selected,
-                visualDensity: VisualDensity.compact,
-                label: Text(periodo),
-                onSelected: _carregando
-                    ? null
-                    : (_) {
-                        setState(() {
-                          _periodoSelecionado = periodo;
-                          if (_usaPeriodoPersonalizado) {
-                            _ajustarPeriodoPersonalizadoSeguro();
-                          }
-                        });
-                        _salvarPreferenciasAgendaFinanceiraMobile();
-                      },
-                selectedColor: _primaryColor,
-                backgroundColor: _softSurfaceColor,
-                side: BorderSide(
-                  color: selected ? _primaryColor : _borderColor,
-                ),
-                showCheckmark: false,
-                labelStyle: TextStyle(
-                  color: selected ? _colors.onPrimary : _titleTextColor,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                ),
-                avatar: selected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 15,
-                        color: _colors.onPrimary,
-                      )
-                    : null,
-              );
-            },
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: Container(
-                width: 42,
-                alignment: Alignment.centerRight,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: <Color>[
-                      _surfaceColor.withValues(alpha: 0),
-                      _surfaceColor,
+        children: [
+          _seletorEspaco(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  key: const ValueKey('agenda-mobile-period'),
+                  onPressed: _ocupado ? null : _abrirFiltros,
+                  style: _outlinedCtaStyle().copyWith(
+                    padding: const WidgetStatePropertyAll(
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.date_range_outlined,
+                        size: 18,
+                        color: _accentColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _usaPeriodoPersonalizado
+                              ? '${_formatarDataCurta(_dataInicioPersonalizada)} – ${_formatarDataCurta(_dataFimPersonalizada)}'
+                              : _periodoExibicao(_periodoSelecionado),
+                          maxLines: 2,
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.expand_more_rounded,
+                        size: 18,
+                        color: _mutedTextColor,
+                      ),
                     ],
                   ),
                 ),
-                child: Padding(
-                  padding: EdgeInsets.only(right: 2),
-                  child: SixPulsingBadge(
-                    enabled:
-                        widget.enablePeriodHint &&
-                        !MediaQuery.disableAnimationsOf(context),
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      color: _mutedTextColor,
-                      size: 22,
-                    ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('agenda-mobile-open-filters'),
+                onPressed: _ocupado ? null : _abrirFiltros,
+                icon: Badge(
+                  isLabelVisible: filtros.isNotEmpty,
+                  label: Text('${filtros.length}'),
+                  backgroundColor: _accentColor,
+                  textColor: _colors.onAccent,
+                  child: const Icon(Icons.tune_rounded, size: 18),
+                ),
+                label: Text(context.t('agenda.mobile.filters')),
+                style: _outlinedCtaStyle().copyWith(
+                  backgroundColor: WidgetStatePropertyAll(_softBlueColor),
+                  padding: const WidgetStatePropertyAll(
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _smallInfoChip(IconData icon, String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: _softBlueColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, color: _accentColor, size: 16),
-          SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              color: _titleTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+          if (filtros.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                filtros.join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: _mutedTextColor, fontSize: 12),
+              ),
             ),
-          ),
+          if (_ultimaConsultaEm != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                context
+                    .t('agenda.mobile.updated')
+                    .replaceAll(
+                      '{time}',
+                      context.read<LocaleSettingsProvider>().formatTime(
+                        _ultimaConsultaEm!,
+                      ),
+                    ),
+                style: TextStyle(color: _mutedTextColor, fontSize: 11),
+              ),
+            ),
         ],
       ),
     );
   }
 
   Future<void> _abrirFiltros() async {
+    bool irTemp = _somenteImpostoRenda;
+    bool canceladosTemp = _mostrarCancelados;
     String periodoTemp = _periodoSelecionado;
     DateTime dataInicioTemp = _dataInicioPersonalizada;
     DateTime dataFimTemp = _dataFimPersonalizada;
@@ -1829,79 +1665,75 @@ class _AgendaFinanceiraMobileScreenState
               ),
               child: SafeArea(
                 top: false,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Center(
-                        child: Container(
-                          width: 42,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: _strongBorderColor,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 18),
-                      Text(
-                        'Filtrar agenda',
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _buildFilterOptions(
-                        title: 'Período',
-                        values: _periodos,
-                        selected: periodoTemp,
-                        onSelected: (String value) {
-                          setModalState(() {
-                            periodoTemp = value;
-                            if (periodoTemp == _periodoIntervaloPersonalizado) {
-                              if (dataFimTemp.isBefore(dataInicioTemp)) {
-                                dataFimTemp = dataInicioTemp;
-                              }
-                              final DateTime limite =
-                                  _limiteFimPeriodoPersonalizado(
-                                    dataInicioTemp,
-                                  );
-                              if (dataFimTemp.isAfter(limite)) {
-                                dataFimTemp = limite;
-                              }
-                            }
-                          });
-                        },
-                      ),
-                      if (periodoTemp ==
-                          _periodoIntervaloPersonalizado) ...<Widget>[
-                        SizedBox(height: 16),
-                        Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Expanded(
-                              child: _buildDataFiltroMobile(
-                                label: 'Início',
-                                data: dataInicioTemp,
-                                onTap: () async {
-                                  final DateTime? selecionada =
-                                      await _abrirSeletorDataMobile(
-                                        sheetContext,
-                                        titulo: 'Data inicial',
-                                        dataInicial: dataInicioTemp,
-                                        primeiraData: DateTime(2000),
-                                        ultimaData: DateTime(2100, 12, 31),
-                                      );
-                                  if (selecionada == null ||
-                                      !sheetContext.mounted) {
-                                    return;
-                                  }
-                                  setModalState(() {
-                                    dataInicioTemp = _normalizarData(
-                                      selecionada,
-                                    );
+                            Center(
+                              child: Container(
+                                width: 42,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: _strongBorderColor,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 18),
+                            Text(
+                              context.t('agenda.mobile.filterTitle'),
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                FilterChip(
+                                  key: const ValueKey('ir-filter'),
+                                  label: Text(context.t('ir.filter')),
+                                  selected: irTemp,
+                                  onSelected: (value) =>
+                                      setModalState(() => irTemp = value),
+                                  selectedColor: _softBlueColor,
+                                  backgroundColor: _softSurfaceColor,
+                                  checkmarkColor: _accentColor,
+                                  labelStyle: TextStyle(color: _titleTextColor),
+                                ),
+                                FilterChip(
+                                  label: Text(
+                                    context.t('agenda.list.showCanceled'),
+                                  ),
+                                  selected: canceladosTemp,
+                                  onSelected: (value) => setModalState(
+                                    () => canceladosTemp = value,
+                                  ),
+                                  selectedColor: _softBlueColor,
+                                  backgroundColor: _softSurfaceColor,
+                                  checkmarkColor: _accentColor,
+                                  labelStyle: TextStyle(color: _titleTextColor),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildFilterOptions(
+                              title: context.t('agenda.mobile.period'),
+                              values: _periodos,
+                              selected: periodoTemp,
+                              onSelected: (String value) {
+                                setModalState(() {
+                                  periodoTemp = value;
+                                  if (periodoTemp ==
+                                      _periodoIntervaloPersonalizado) {
                                     if (dataFimTemp.isBefore(dataInicioTemp)) {
                                       dataFimTemp = dataInicioTemp;
                                     }
@@ -1912,154 +1744,232 @@ class _AgendaFinanceiraMobileScreenState
                                     if (dataFimTemp.isAfter(limite)) {
                                       dataFimTemp = limite;
                                     }
+                                  }
+                                });
+                              },
+                            ),
+                            if (periodoTemp ==
+                                _periodoIntervaloPersonalizado) ...<Widget>[
+                              SizedBox(height: 16),
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: _buildDataFiltroMobile(
+                                      label: 'Início',
+                                      data: dataInicioTemp,
+                                      onTap: () async {
+                                        final DateTime? selecionada =
+                                            await _abrirSeletorDataMobile(
+                                              sheetContext,
+                                              titulo: 'Data inicial',
+                                              dataInicial: dataInicioTemp,
+                                              primeiraData: DateTime(2000),
+                                              ultimaData: DateTime(
+                                                2100,
+                                                12,
+                                                31,
+                                              ),
+                                            );
+                                        if (selecionada == null ||
+                                            !sheetContext.mounted) {
+                                          return;
+                                        }
+                                        setModalState(() {
+                                          dataInicioTemp = _normalizarData(
+                                            selecionada,
+                                          );
+                                          if (dataFimTemp.isBefore(
+                                            dataInicioTemp,
+                                          )) {
+                                            dataFimTemp = dataInicioTemp;
+                                          }
+                                          final DateTime limite =
+                                              _limiteFimPeriodoPersonalizado(
+                                                dataInicioTemp,
+                                              );
+                                          if (dataFimTemp.isAfter(limite)) {
+                                            dataFimTemp = limite;
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildDataFiltroMobile(
+                                      label: 'Fim',
+                                      data: dataFimTemp,
+                                      onTap: () async {
+                                        final DateTime limite =
+                                            _limiteFimPeriodoPersonalizado(
+                                              dataInicioTemp,
+                                            );
+                                        final DateTime ultimaData =
+                                            limite.isAfter(
+                                              DateTime(2100, 12, 31),
+                                            )
+                                            ? DateTime(2100, 12, 31)
+                                            : limite;
+                                        final DateTime? selecionada =
+                                            await _abrirSeletorDataMobile(
+                                              sheetContext,
+                                              titulo: 'Data final',
+                                              dataInicial: dataFimTemp,
+                                              primeiraData: dataInicioTemp,
+                                              ultimaData: ultimaData,
+                                            );
+                                        if (selecionada == null ||
+                                            !sheetContext.mounted) {
+                                          return;
+                                        }
+                                        setModalState(
+                                          () => dataFimTemp = _normalizarData(
+                                            selecionada,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            SizedBox(height: 16),
+                            _buildFilterOptions(
+                              title: 'Tipo',
+                              values: _tipos,
+                              selected: tipoTemp,
+                              onSelected: (value) =>
+                                  setModalState(() => tipoTemp = value),
+                            ),
+                            SizedBox(height: 16),
+                            _buildFilterOptions(
+                              title: 'Status',
+                              values: _status,
+                              selected: statusTemp,
+                              onSelected: (value) =>
+                                  setModalState(() => statusTemp = value),
+                            ),
+                            SizedBox(height: 16),
+                            _buildFilterOptions(
+                              title: 'Tipo de pagamento',
+                              onEdit: !_podeEditarTiposPagamento
+                                  ? null
+                                  : (value) async {
+                                      final atualizado =
+                                          await _editarNomeTipoPagamento(value);
+                                      if (!context.mounted ||
+                                          atualizado == null)
+                                        return;
+                                      setModalState(() {
+                                        if (formasPagamentoTemp.remove(value))
+                                          formasPagamentoTemp.add(atualizado);
+                                      });
+                                    },
+                              values: _formasPagamentoFiltro,
+                              selectedValues: formasPagamentoTemp,
+                              onSelected: (value) {
+                                setModalState(() {
+                                  if (value == 'Todos') {
+                                    formasPagamentoTemp.clear();
+                                    return;
+                                  }
+                                  if (formasPagamentoTemp.contains(value)) {
+                                    formasPagamentoTemp.remove(value);
+                                  } else {
+                                    formasPagamentoTemp.add(value);
+                                  }
+                                });
+                              },
+                            ),
+                            if (_centrosCusto.isNotEmpty) ...<Widget>[
+                              SizedBox(height: 16),
+                              _buildFilterOptions(
+                                title: 'Centro de custos',
+                                values: <String>[
+                                  'Todos',
+                                  ..._centrosCusto.map((centro) => centro.nome),
+                                ],
+                                selectedValues: centrosCustoTemp,
+                                onSelected: (value) {
+                                  setModalState(() {
+                                    if (value == 'Todos') {
+                                      centrosCustoTemp.clear();
+                                    } else if (!centrosCustoTemp.remove(
+                                      value,
+                                    )) {
+                                      centrosCustoTemp.add(value);
+                                    }
                                   });
                                 },
                               ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: _buildDataFiltroMobile(
-                                label: 'Fim',
-                                data: dataFimTemp,
-                                onTap: () async {
-                                  final DateTime limite =
-                                      _limiteFimPeriodoPersonalizado(
-                                        dataInicioTemp,
-                                      );
-                                  final DateTime ultimaData =
-                                      limite.isAfter(DateTime(2100, 12, 31))
-                                      ? DateTime(2100, 12, 31)
-                                      : limite;
-                                  final DateTime? selecionada =
-                                      await _abrirSeletorDataMobile(
-                                        sheetContext,
-                                        titulo: 'Data final',
-                                        dataInicial: dataFimTemp,
-                                        primeiraData: dataInicioTemp,
-                                        ultimaData: ultimaData,
-                                      );
-                                  if (selecionada == null ||
-                                      !sheetContext.mounted) {
-                                    return;
-                                  }
-                                  setModalState(
-                                    () => dataFimTemp = _normalizarData(
-                                      selecionada,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+                            ],
                           ],
                         ),
-                      ],
-                      SizedBox(height: 16),
-                      _buildFilterOptions(
-                        title: 'Tipo',
-                        values: _tipos,
-                        selected: tipoTemp,
-                        onSelected: (value) =>
-                            setModalState(() => tipoTemp = value),
                       ),
-                      SizedBox(height: 16),
-                      _buildFilterOptions(
-                        title: 'Status',
-                        values: _status,
-                        selected: statusTemp,
-                        onSelected: (value) =>
-                            setModalState(() => statusTemp = value),
-                      ),
-                      SizedBox(height: 16),
-                      _buildFilterOptions(
-                        title: 'Tipo de pagamento',
-                        onEdit: !_podeEditarTiposPagamento
-                            ? null
-                            : (value) async {
-                                final atualizado =
-                                    await _editarNomeTipoPagamento(value);
-                                if (!context.mounted || atualizado == null)
-                                  return;
-                                setModalState(() {
-                                  if (formasPagamentoTemp.remove(value))
-                                    formasPagamentoTemp.add(atualizado);
-                                });
-                              },
-                        values: _formasPagamentoFiltro,
-                        selectedValues: formasPagamentoTemp,
-                        onSelected: (value) {
-                          setModalState(() {
-                            if (value == 'Todos') {
-                              formasPagamentoTemp.clear();
-                              return;
-                            }
-                            if (formasPagamentoTemp.contains(value)) {
-                              formasPagamentoTemp.remove(value);
-                            } else {
-                              formasPagamentoTemp.add(value);
-                            }
-                          });
-                        },
-                      ),
-                      if (_centrosCusto.isNotEmpty) ...<Widget>[
-                        SizedBox(height: 16),
-                        _buildFilterOptions(
-                          title: 'Centro de custos',
-                          values: <String>[
-                            'Todos',
-                            ..._centrosCusto.map((centro) => centro.nome),
-                          ],
-                          selectedValues: centrosCustoTemp,
-                          onSelected: (value) {
-                            setModalState(() {
-                              if (value == 'Todos') {
-                                centrosCustoTemp.clear();
-                              } else if (!centrosCustoTemp.remove(value)) {
-                                centrosCustoTemp.add(value);
-                              }
-                            });
-                          },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: _outlinedCtaStyle(),
+                          child: Text(context.t('common.cancel')),
                         ),
-                      ],
-                      SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            if (periodoTemp == _periodoIntervaloPersonalizado &&
-                                (dataFimTemp.isBefore(dataInicioTemp) ||
-                                    dataFimTemp.isAfter(
-                                      _limiteFimPeriodoPersonalizado(
-                                        dataInicioTemp,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  onPressed: () {
+                                    if (periodoTemp ==
+                                            _periodoIntervaloPersonalizado &&
+                                        (dataFimTemp.isBefore(dataInicioTemp) ||
+                                            dataFimTemp.isAfter(
+                                              _limiteFimPeriodoPersonalizado(
+                                                dataInicioTemp,
+                                              ),
+                                            ))) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'O intervalo deve ser válido e ter no máximo 1 ano.',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    Navigator.of(context).pop(
+                                      _AgendaMobileFiltro(
+                                        somenteImpostoRenda: irTemp,
+                                        mostrarCancelados: canceladosTemp,
+                                        periodo: periodoTemp,
+                                        dataInicio: dataInicioTemp,
+                                        dataFim: dataFimTemp,
+                                        tipo: tipoTemp,
+                                        status: statusTemp,
+                                        formasPagamento: formasPagamentoTemp,
+                                        centrosCusto: centrosCustoTemp,
                                       ),
-                                    ))) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'O intervalo deve ser válido e ter no máximo 1 ano.',
+                                    );
+                                  },
+                                  icon: Icon(Icons.check_rounded),
+                                  label: Text(
+                                    context.t('agenda.mobile.applyFilters'),
                                   ),
+                                  style: _filledCtaStyle(),
                                 ),
-                              );
-                              return;
-                            }
-                            Navigator.of(context).pop(
-                              _AgendaMobileFiltro(
-                                periodo: periodoTemp,
-                                dataInicio: dataInicioTemp,
-                                dataFim: dataFimTemp,
-                                tipo: tipoTemp,
-                                status: statusTemp,
-                                formasPagamento: formasPagamentoTemp,
-                                centrosCusto: centrosCustoTemp,
                               ),
-                            );
-                          },
-                          icon: Icon(Icons.check_rounded),
-                          label: Text('Aplicar filtros'),
-                          style: _filledCtaStyle(),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             );
@@ -2069,6 +1979,8 @@ class _AgendaFinanceiraMobileScreenState
     );
     if (result == null || !mounted) return;
     setState(() {
+      _somenteImpostoRenda = result.somenteImpostoRenda;
+      _mostrarCancelados = result.mostrarCancelados;
       _periodoSelecionado = result.periodo;
       _dataInicioPersonalizada = result.dataInicio;
       _dataFimPersonalizada = result.dataFim;
@@ -2083,6 +1995,7 @@ class _AgendaFinanceiraMobileScreenState
       if (_usaPeriodoPersonalizado) _ajustarPeriodoPersonalizadoSeguro();
     });
     _salvarPreferenciasAgendaFinanceiraMobile();
+    await _consultar(mostrarFeedback: true);
   }
 
   Future<DateTime?> _abrirSeletorDataMobile(
@@ -2189,7 +2102,9 @@ class _AgendaFinanceiraMobileScreenState
                 : value == selected;
             final chip = ChoiceChip(
               selected: isSelected,
-              label: Text(value),
+              label: Text(
+                _periodos.contains(value) ? _periodoExibicao(value) : value,
+              ),
               onSelected: (_) => onSelected(value),
               selectedColor: _primaryColor,
               backgroundColor: _softSurfaceColor,
@@ -2224,48 +2139,40 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
-  String _formasPagamentoFiltroLabel() {
-    if (_formasPagamentoSelecionadas.isEmpty) return 'Todos';
-    if (_formasPagamentoSelecionadas.length == 1) {
-      return _formasPagamentoSelecionadas.first;
-    }
-    return '${_formasPagamentoSelecionadas.length} tipos';
-  }
-
   Widget _buildResumo() {
     final items = <_ResumoAgendaCardData>[
       _ResumoAgendaCardData(
-        'A receber aberto',
+        context.t('agenda.mobile.summary.openReceivable'),
         _totalReceberPrevisto,
         Icons.south_west_rounded,
         _accentColor,
       ),
       _ResumoAgendaCardData(
-        'A pagar aberto',
+        context.t('agenda.mobile.summary.openPayable'),
         _totalPagarPrevisto,
         Icons.north_east_rounded,
         Color.lerp(Colors.greenAccent, _colors.titleText, 0.24)!,
       ),
       _ResumoAgendaCardData(
-        'Saldo previsto',
+        context.t('agenda.mobile.summary.forecastBalance'),
         _saldoPrevisto,
         Icons.query_stats_rounded,
         Color.lerp(Colors.deepPurpleAccent, _colors.titleText, 0.18)!,
       ),
       _ResumoAgendaCardData(
-        'Recebido confirmado',
+        context.t('agenda.mobile.summary.received'),
         _totalRecebidoConfirmado,
         Icons.verified_rounded,
         Color.lerp(Colors.cyanAccent, _colors.titleText, 0.22)!,
       ),
       _ResumoAgendaCardData(
-        'Pago confirmado',
+        context.t('agenda.mobile.summary.paid'),
         _totalPagoConfirmado,
         Icons.task_alt_rounded,
         Color.lerp(Colors.amberAccent, _colors.titleText, 0.18)!,
       ),
       _ResumoAgendaCardData(
-        'Saldo confirmado',
+        context.t('agenda.mobile.summary.confirmedBalance'),
         _saldoConfirmado,
         Icons.account_balance_wallet_rounded,
         _accentColor,
@@ -2277,77 +2184,142 @@ class _AgendaFinanceiraMobileScreenState
       return valorAbsoluto > maior ? valorAbsoluto : maior;
     });
 
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 220);
+    final detalhes = _resumoExpandido
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Column(
+              children: [
+                Divider(color: _borderColor, height: 20),
+                ...items
+                    .take(items.length - 1)
+                    .map(
+                      (item) => _buildResumoItem(
+                        item,
+                        percent: maiorValor <= 0
+                            ? 0
+                            : item.value.abs() / maiorValor,
+                      ),
+                    ),
+              ],
+            ),
+          )
+        : const SizedBox(width: double.infinity);
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
+      key: const ValueKey('agenda-mobile-summary'),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _colors.navigationShadow.withValues(alpha: 0.70),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: _softBlueColor,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: _accentColor,
-                  size: 20,
+        children: [
+          Semantics(
+            button: true,
+            expanded: _resumoExpandido,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: const ValueKey('agenda-mobile-summary-toggle'),
+                borderRadius: BorderRadius.circular(20),
+                onTap: () =>
+                    setState(() => _resumoExpandido = !_resumoExpandido),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _softBlueColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 20,
+                          color: _accentColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.t(
+                                'agenda.mobile.summary.confirmedBalance',
+                              ),
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            TweenAnimationBuilder<double>(
+                              key: ValueKey(
+                                'confirmed-balance-$_saldoConfirmado',
+                              ),
+                              tween: Tween(begin: 0, end: _saldoConfirmado),
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 650),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) => Text(
+                                _formatarMoeda(value),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: _saldoConfirmado < 0
+                                      ? _colors.error
+                                      : _titleTextColor,
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              context.t(
+                                _resumoExpandido
+                                    ? 'agenda.mobile.summary.hide'
+                                    : 'agenda.mobile.summary.show',
+                              ),
+                              style: TextStyle(
+                                color: _accentColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: _resumoExpandido ? 0.5 : 0,
+                        duration: duration,
+                        child: Icon(
+                          Icons.expand_more_rounded,
+                          color: _accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Resumo financeiro',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Distribuição dos valores do período selecionado.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 14),
-          ...items.map(
-            (item) => _buildResumoItem(
-              item,
-              percent: maiorValor <= 0 ? 0 : item.value.abs() / maiorValor,
             ),
           ),
+          if (duration == Duration.zero)
+            detalhes
+          else
+            AnimatedSize(
+              duration: duration,
+              alignment: Alignment.topCenter,
+              curve: Curves.easeInOutCubic,
+              child: detalhes,
+            ),
         ],
       ),
     );
@@ -2387,20 +2359,24 @@ class _AgendaFinanceiraMobileScreenState
                   ),
                 ),
               ),
-              TweenAnimationBuilder<double>(
-                key: ValueKey<String>(
-                  '${item.title}-${item.value.toStringAsFixed(2)}',
-                ),
-                tween: Tween<double>(begin: 0, end: item.value),
-                duration: Duration(milliseconds: 650),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) => Text(
-                  _formatarMoeda(value),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w900,
+              Flexible(
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey<String>(
+                    '${item.title}-${item.value.toStringAsFixed(2)}',
+                  ),
+                  tween: Tween<double>(begin: 0, end: item.value),
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 650),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) => Text(
+                    _formatarMoeda(value),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -3115,19 +3091,25 @@ class _AgendaFinanceiraMobileScreenState
           clipBehavior: Clip.antiAlias,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
-            duration: Duration(milliseconds: 650),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 650),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Row(
                 children: <Widget>[
                   AnimatedContainer(
-                    duration: Duration(milliseconds: 650),
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 650),
                     width: constraints.maxWidth * percentualEntrada * value,
                     height: 30,
                     color: _accentColor,
                   ),
                   AnimatedContainer(
-                    duration: Duration(milliseconds: 650),
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 650),
                     width: constraints.maxWidth * percentualSaida * value,
                     height: 30,
                     color: Color(0xFFE11D48),
@@ -3737,12 +3719,8 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
-  String _formatarDataCurta(DateTime data) {
-    final DateTime normalizada = _normalizarData(data);
-    return '${normalizada.day.toString().padLeft(2, '0')}/'
-        '${normalizada.month.toString().padLeft(2, '0')}/'
-        '${normalizada.year}';
-  }
+  String _formatarDataCurta(DateTime data) =>
+      context.read<LocaleSettingsProvider>().formatDate(_normalizarData(data));
 
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
@@ -3756,25 +3734,14 @@ class _AgendaFinanceiraMobileScreenState
     return 0;
   }
 
-  String _formatarMoeda(double valor) {
-    final negativo = valor < 0;
-    final absoluto = valor.abs();
-    final partes = absoluto.toStringAsFixed(2).split('.');
-    final inteiro = partes[0];
-    final decimal = partes[1];
-    final buffer = StringBuffer();
-    for (var i = 0; i < inteiro.length; i++) {
-      final indexInvertido = inteiro.length - i;
-      buffer.write(inteiro[i]);
-      if (indexInvertido > 1 && indexInvertido % 3 == 1) buffer.write('.');
-    }
-    final prefixo = negativo ? r'-R$ ' : r'R$ ';
-    return '$prefixo${buffer.toString()},$decimal';
-  }
+  String _formatarMoeda(double valor) =>
+      context.read<LocaleSettingsProvider>().formatCurrency(valor);
 }
 
 class _AgendaMobileFiltro {
   const _AgendaMobileFiltro({
+    required this.somenteImpostoRenda,
+    required this.mostrarCancelados,
     required this.periodo,
     required this.dataInicio,
     required this.dataFim,
@@ -3783,6 +3750,8 @@ class _AgendaMobileFiltro {
     required this.formasPagamento,
     required this.centrosCusto,
   });
+  final bool somenteImpostoRenda;
+  final bool mostrarCancelados;
   final String periodo;
   final DateTime dataInicio;
   final DateTime dataFim;

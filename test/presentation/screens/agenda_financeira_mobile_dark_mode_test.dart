@@ -35,6 +35,115 @@ void main() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
   });
 
+  for (final brightness in [Brightness.light, Brightness.dark]) {
+    testWidgets('compact summary expands and collapses in $brightness', (
+      tester,
+    ) async {
+      await _pumpAgenda(
+        tester,
+        brightness: brightness,
+        service: _FakeAgendaService(),
+      );
+      final toggle = find.byKey(const ValueKey('agenda-mobile-summary-toggle'));
+      expect(find.text('Saldo confirmado'), findsOneWidget);
+      expect(find.text('A receber aberto'), findsNothing);
+      expect(find.text('Pago confirmado'), findsNothing);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text('Saldo confirmado'), findsOneWidget);
+      expect(find.text('A receber aberto'), findsOneWidget);
+      expect(find.text('Pago confirmado'), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text('Saldo confirmado'), findsOneWidget);
+      expect(find.text('A receber aberto'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets(
+    'compact filters fit a narrow phone and apply only on confirmation',
+    (tester) async {
+      final service = _FakeAgendaService();
+      await _pumpAgenda(tester, service: service);
+      tester.view.physicalSize = const Size(320, 700);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('agenda-mobile-filters')))
+            .height,
+        lessThan(210),
+      );
+      expect(find.byType(FilterChip), findsNothing);
+      final initialQueries = service.queries;
+      await tester.tap(
+        find.byKey(const ValueKey('agenda-mobile-open-filters')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ir-filter')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(service.queries, initialQueries);
+      await tester.tap(
+        find.byKey(const ValueKey('agenda-mobile-open-filters')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<FilterChip>(find.byKey(const ValueKey('ir-filter')))
+            .selected,
+        isFalse,
+      );
+      await tester.tap(find.byKey(const ValueKey('ir-filter')));
+      await tester.pumpAndSettle();
+      // Footer remains reachable without scrolling the filter options.
+      await tester.tap(find.text('Aplicar filtros'));
+      await tester.pumpAndSettle();
+      expect(service.queries, initialQueries + 1);
+      expect(service.lastQuery!.filtros.somenteImpostoRenda, isTrue);
+      expect(find.text('Filtrar agenda'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'paid card starts with status and omits contact even when recurring',
+    (tester) async {
+      await _pumpScreen(
+        tester,
+        Scaffold(
+          body: AgendaFinanceiraLancamentoCardMobile(
+            item: const {
+              'descricao': 'Escola',
+              'tipo': 'pagar',
+              'status': 'Pago',
+              'contato': 'Escola Unificado',
+              'recorrente': true,
+              'vencimento': '10/11/2026',
+              'valorOriginal': 1680,
+              'valorConfirmado': 1380,
+              'valorRestante': 0,
+            },
+            formatarMoeda: (value) => value.toStringAsFixed(2),
+            onTap: () {},
+          ),
+        ),
+      );
+      final meta = tester
+          .widgetList<Text>(find.byType(Text))
+          .where((text) => text.textSpan != null)
+          .single
+          .textSpan!
+          .toPlainText();
+      expect(meta, startsWith('Pago'));
+      expect(meta, contains('Recorrente'));
+      expect(meta, isNot(contains('Escola Unificado')));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('editing payment name preserves selection in the mobile filter', (
     tester,
   ) async {
@@ -580,11 +689,15 @@ class _FakeAgendaService extends AgendaFinanceiraLancamentoService {
   final Map<String, dynamic> detailPayload;
   final Completer<Map<String, dynamic>>? agendaCompleter;
   final bool throwOnConsult;
+  int queries = 0;
+  AgendaFinanceiraConsultaRequest? lastQuery;
 
   @override
   Future<Map<String, dynamic>> consultarLancamentos(
     AgendaFinanceiraConsultaRequest request,
   ) {
+    queries++;
+    lastQuery = request;
     if (throwOnConsult) throw StateError('offline');
     return agendaCompleter?.future ??
         Future<Map<String, dynamic>>.value(agendaPayload);
