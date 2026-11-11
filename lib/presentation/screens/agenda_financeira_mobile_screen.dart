@@ -53,6 +53,9 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
     this.caixaApiClient,
     this.enablePeriodHint = true,
     this.contas,
+    this.espacoInicial,
+    this.periodoInicial,
+    this.statusInicial,
   });
 
   final AgendaFinanceiraLancamentoService? lancamentoService;
@@ -60,6 +63,9 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
   final CaixaApiClient? caixaApiClient;
   final bool enablePeriodHint;
   final AgendaContasMobile? contas;
+  final String? espacoInicial;
+  final AgendaFinanceiraPeriodoRequest? periodoInicial;
+  final String? statusInicial;
 
   @override
   State<AgendaFinanceiraMobileScreen> createState() =>
@@ -349,6 +355,17 @@ class _AgendaFinanceiraMobileScreenState
       _tipoSelecionado = _tipoContas;
       _periodoSelecionado = 'Este mês';
     }
+    if (widget.espacoInicial != null) {
+      _service.espacoFinanceiro = widget.espacoInicial!;
+      _acoesService.espacoFinanceiro = widget.espacoInicial!;
+    }
+    if (widget.periodoInicial != null) {
+      _periodoSelecionado = _periodoIntervaloPersonalizado;
+      _dataInicioPersonalizada = widget.periodoInicial!.dataInicio;
+      _dataFimPersonalizada = widget.periodoInicial!.dataFim;
+    }
+    if (widget.statusInicial != null)
+      _statusSelecionado = widget.statusInicial!;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _restaurarPreferenciasAgendaFinanceiraMobile();
       await _carregarTiposPagamentoConfigurados();
@@ -404,6 +421,7 @@ class _AgendaFinanceiraMobileScreenState
   void _aplicarPreferenciasAgendaFinanceiraMobile(
     AgendaFinanceiraFiltrosPreferencia filtros,
   ) {
+    if (widget.espacoInicial != null || widget.periodoInicial != null) return;
     if (_visaoContas) {
       if (!_usuarioAlterouFiltros) {
         setState(() {
@@ -458,7 +476,10 @@ class _AgendaFinanceiraMobileScreenState
   void _salvarPreferenciasAgendaFinanceiraMobile() {
     if (_aplicandoPreferencias) return;
     _usuarioAlterouFiltros = true;
-    if (_visaoContas) return;
+    if (_visaoContas ||
+        widget.periodoInicial != null ||
+        widget.espacoInicial != null)
+      return;
     final AgendaFinanceiraFiltrosPreferencia filtros =
         AgendaFinanceiraFiltrosPreferencia(
           espacoFinanceiro: _service.espacoFinanceiro,

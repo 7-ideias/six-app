@@ -155,30 +155,41 @@ class ManagementOverviewProvider extends ChangeNotifier {
   }
 
   Future<ManagementSectionLoadState<ManagementFinanceOverview>>
-  _loadFinanceOverview() async {
+  _loadFinanceOverview() => consultarFinanceiro();
+
+  Future<ManagementSectionLoadState<ManagementFinanceOverview>>
+  consultarFinanceiro({
+    String espaco = 'EMPRESA',
+    AgendaFinanceiraPeriodoRequest? periodo,
+  }) async {
     try {
-      final Map<String, dynamic> payload = await _agendaFinanceiraService
-          .consultarLancamentos(_financeRequest());
+      final service = espaco == _agendaFinanceiraService.espacoFinanceiro
+          ? _agendaFinanceiraService
+          : _agendaFinanceiraService.paraEspaco(espaco);
+      final Map<String, dynamic> payload = await service.consultarLancamentos(
+        _financeRequest(periodo),
+      );
       final ManagementFinanceOverview overview = _parseFinancePayload(payload);
-      if (overview.totalEvents == 0) {
-        return const ManagementSectionLoadState.empty();
-      }
       return ManagementSectionLoadState.data(overview);
     } catch (_) {
       return const ManagementSectionLoadState.error('gestao.finance.loadError');
     }
   }
 
-  AgendaFinanceiraConsultaRequest _financeRequest() {
+  AgendaFinanceiraConsultaRequest _financeRequest([
+    AgendaFinanceiraPeriodoRequest? periodo,
+  ]) {
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
 
     return AgendaFinanceiraConsultaRequest(
-      periodo: AgendaFinanceiraPeriodoRequest(
-        modo: 'PROXIMOS_7_DIAS',
-        dataInicio: today,
-        dataFim: today.add(const Duration(days: 7)),
-      ),
+      periodo:
+          periodo ??
+          AgendaFinanceiraPeriodoRequest(
+            modo: 'PROXIMOS_7_DIAS',
+            dataInicio: today,
+            dataFim: today.add(const Duration(days: 7)),
+          ),
       filtros: AgendaFinanceiraFiltrosRequest(
         tipo: 'TODOS',
         status: const <String>[],
@@ -199,6 +210,9 @@ class ManagementOverviewProvider extends ChangeNotifier {
     int receivable = 0;
     int payable = 0;
     int attention = 0;
+    int dueToday = 0;
+    double totalReceber = 0, totalPagar = 0;
+    final vistos = <String>{};
 
     final dynamic groups = payload['gruposAgenda'];
     if (groups is List) {
@@ -208,16 +222,39 @@ class ManagementOverviewProvider extends ChangeNotifier {
         if (items is! List) continue;
         for (final dynamic item in items) {
           if (item is! Map) continue;
-          total += 1;
+          final status = item['status']?.toString().toUpperCase().trim() ?? '';
+          if ([
+            'PAGO',
+            'RECEBIDO',
+            'CANCELADO',
+            'CANCELADA',
+            'FINALIZADA',
+          ].contains(status))
+            continue;
+          final id = item['idLancamento']?.toString();
+          if (id != null && !vistos.add(id)) continue;
+          double numero(dynamic v) => v is num
+              ? v.toDouble()
+              : double.tryParse(v?.toString() ?? '') ?? 0;
+          final restante = item['valorRestante'] != null
+              ? numero(item['valorRestante'])
+              : numero(item['valorOriginal'] ?? item['valor']) +
+                    numero(item['acrescimoTotal']) -
+                    numero(item['descontoTotal']) -
+                    numero(item['valorConfirmado']);
+          if (restante <= 0) continue;
           final String type = item['tipo']?.toString().toUpperCase() ?? '';
           if (type == 'PAGAR') {
             payable += 1;
-          } else {
+            totalPagar += restante;
+          } else if (type == 'RECEBER') {
             receivable += 1;
+            totalReceber += restante;
+          } else {
+            continue;
           }
-
-          final String status =
-              item['status']?.toString().toUpperCase().trim() ?? '';
+          total += 1;
+          if (status == 'VENCE_HOJE') dueToday += 1;
           if (status.contains('VENCID') || status == 'VENCE_HOJE') {
             attention += 1;
           }
@@ -230,6 +267,9 @@ class ManagementOverviewProvider extends ChangeNotifier {
       receivableEvents: receivable,
       payableEvents: payable,
       attentionEvents: attention,
+      dueTodayEvents: dueToday,
+      totalReceber: totalReceber,
+      totalPagar: totalPagar,
     );
   }
 }
@@ -326,10 +366,15 @@ class ManagementFinanceOverview {
     required this.receivableEvents,
     required this.payableEvents,
     required this.attentionEvents,
+    this.dueTodayEvents = 0,
+    this.totalReceber = 0,
+    this.totalPagar = 0,
   });
 
   final int totalEvents;
   final int receivableEvents;
   final int payableEvents;
   final int attentionEvents;
+  final int dueTodayEvents;
+  final double totalReceber, totalPagar;
 }

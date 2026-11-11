@@ -1,3 +1,4 @@
+import 'financeiro_resumo_mobile_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -238,6 +239,14 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final SixMobileColorScheme colors = context.sixMobileColors;
     final GestaoMobileArea? area = widget.area;
     final bool isHub = area == null;
+    if (area == GestaoMobileArea.financeiro) {
+      return FinanceiroResumoMobileScreen(
+        overviewProvider: widget.overviewProvider,
+        onNavigate: widget.onNavigate,
+        notificationIcon: _buildNotificationIcon(),
+        onNotifications: () => _openNotifications(context),
+      );
+    }
 
     final Widget shell = SixMobilePageShell(
       title:

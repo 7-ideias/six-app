@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/management_overview_provider.dart';
+import 'package:sixpos/presentation/screens/financeiro_resumo_mobile_screen.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -244,6 +246,44 @@ void main() {
       },
     );
   }
+  testWidgets(
+    'financial overview shows zeros, dark surfaces and forwards selected scope and dates',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final service = _Service();
+      final provider = ManagementOverviewProvider(
+        agendaFinanceiraService: service,
+      );
+      AgendaFinanceiraMobileScreen? destination;
+      await tester.pumpWidget(
+        _app(
+          FinanceiroResumoMobileScreen(
+            overviewProvider: provider,
+            onNavigate: (_, page) =>
+                destination = page as AgendaFinanceiraMobileScreen,
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('--'), findsNothing);
+      expect(
+        find.text('Nenhuma conta em aberto neste período.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Pessoal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Contas a receber'));
+      await tester.pumpAndSettle();
+      expect(destination!.contas, AgendaContasMobile.receber);
+      expect(destination!.espacoInicial, 'PESSOAL');
+      expect(destination!.periodoInicial, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('journey preserves details when navigating back', (tester) async {
     await tester.pumpWidget(
       _app(
