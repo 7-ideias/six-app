@@ -2187,6 +2187,26 @@ class _AgendaFinanceiraMobileScreenState
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 220);
+    final detalhes = _resumoExpandido
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Column(
+              children: [
+                Divider(color: _borderColor, height: 20),
+                ...items
+                    .take(items.length - 1)
+                    .map(
+                      (item) => _buildResumoItem(
+                        item,
+                        percent: maiorValor <= 0
+                            ? 0
+                            : item.value.abs() / maiorValor,
+                      ),
+                    ),
+              ],
+            ),
+          )
+        : const SizedBox(width: double.infinity);
     return Container(
       key: const ValueKey('agenda-mobile-summary'),
       decoration: BoxDecoration(
@@ -2291,31 +2311,15 @@ class _AgendaFinanceiraMobileScreenState
               ),
             ),
           ),
-          AnimatedSize(
-            duration: duration,
-            alignment: Alignment.topCenter,
-            curve: Curves.easeInOutCubic,
-            child: _resumoExpandido
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                    child: Column(
-                      children: [
-                        Divider(color: _borderColor, height: 20),
-                        ...items
-                            .take(items.length - 1)
-                            .map(
-                              (item) => _buildResumoItem(
-                                item,
-                                percent: maiorValor <= 0
-                                    ? 0
-                                    : item.value.abs() / maiorValor,
-                              ),
-                            ),
-                      ],
-                    ),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
+          if (duration == Duration.zero)
+            detalhes
+          else
+            AnimatedSize(
+              duration: duration,
+              alignment: Alignment.topCenter,
+              curve: Curves.easeInOutCubic,
+              child: detalhes,
+            ),
         ],
       ),
     );
