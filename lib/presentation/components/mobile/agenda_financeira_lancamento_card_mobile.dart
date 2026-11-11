@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/agenda_financeira_calendario_resumo.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
-import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
+import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 
 /// Mesmo card nas abas Agenda e Calendário: cores, valor e navegação coerentes.
 class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
@@ -60,22 +60,24 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
     final cor = cancelado ? cores.mutedText : corNatureza(context, entrada);
     final titulo = item['descricao']?.toString().trim() ?? '';
     final status = item['status']?.toString().trim() ?? '';
-    final contato = AgendaFinanceiraResumoVisual.contatoInformado(
-      item['contato'],
-    );
     final vencimento = item['vencimento']?.toString().trim() ?? '';
     final meta = <InlineSpan>[
-      if (item['recorrente'] == true) TextSpan(text: '$rotuloRecorrente • '),
-      if (contato != null) TextSpan(text: '$contato • '),
       TextSpan(
-        text: status.isEmpty ? 'Pendente' : status,
+        text: AgendaFinanceiraStatusLabels.rotulo(
+          context,
+          status.isEmpty ? 'Pendente' : status,
+        ),
         style: TextStyle(
           color: corStatus(context, status),
           fontWeight: FontWeight.w700,
         ),
       ),
       if (mostrarVencimento && vencimento.isNotEmpty && vencimento != '-')
-        TextSpan(text: ' • vence $vencimento'),
+        TextSpan(
+          text:
+              ' • ${context.t('agenda.mobile.due', params: {'date': vencimento})}',
+        ),
+      if (item['recorrente'] == true) TextSpan(text: ' • $rotuloRecorrente'),
     ];
     final valor = cancelado
         ? AgendaFinanceiraCalendarioResumo.numero(

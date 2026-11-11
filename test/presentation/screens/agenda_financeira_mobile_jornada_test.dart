@@ -196,6 +196,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(service.consultedSpace, 'PESSOAL');
     expect(service.lastQuery!.filtros.somenteImpostoRenda, isTrue);
+    await tester.tap(find.byKey(const ValueKey('agenda-mobile-open-filters')));
+    await tester.pumpAndSettle();
     expect(
       tester
           .widget<FilterChip>(
