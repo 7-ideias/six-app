@@ -1753,6 +1753,9 @@ class _AgendaFinanceiraMobileScreenState
                 child: Padding(
                   padding: EdgeInsets.only(right: 2),
                   child: SixPulsingBadge(
+                    enabled:
+                        widget.enablePeriodHint &&
+                        !MediaQuery.disableAnimationsOf(context),
                     child: Icon(
                       Icons.chevron_right_rounded,
                       color: _mutedTextColor,
@@ -2530,6 +2533,7 @@ class _AgendaFinanceiraMobileScreenState
       acoesInformadas.remove('Editar');
     }
     if ((item['serieRecorrenciaId']?.toString() ?? '').isEmpty &&
+        item['recorrente'] != true &&
         [
           'DESPESA_MANUAL',
           'RECEITA_MANUAL',

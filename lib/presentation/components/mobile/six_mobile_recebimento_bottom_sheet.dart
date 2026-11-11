@@ -525,10 +525,15 @@ class _SixMobileRecebimentoBottomSheetState
     }
 
     if (widget.destinosFinanceiros) {
-      final destinos = await selecionarDestinosMobile(context, recebimentos);
-      if (destinos == null || !mounted) return;
-      recebimentos.clear();
-      recebimentos.addAll(destinos);
+      setState(() => _salvando = true);
+      try {
+        final destinos = await selecionarDestinosMobile(context, recebimentos);
+        if (destinos == null || !mounted) return;
+        recebimentos.clear();
+        recebimentos.addAll(destinos);
+      } finally {
+        if (mounted) setState(() => _salvando = false);
+      }
     }
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     final resultado = SixMobileRecebimentoResultado(
