@@ -2152,9 +2152,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _cardLancamento(ThemeData theme, Map<String, dynamic> item) {
+  Widget _cardLancamento(
+    ThemeData theme,
+    Map<String, dynamic> item, {
+    bool exibirValorConfirmado = false,
+  }) {
     return AgendaFinanceiraLancamentoCardWeb(
       item: item,
+      exibirValorConfirmado: exibirValorConfirmado,
       formatarMoeda: _formatarMoeda,
       bloqueado: _executandoAcao,
       onDetalhes: () => _mostrarDetalhesLancamento(item),
@@ -2217,7 +2222,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: itens.map((item) => _cardLancamento(theme, item)).toList(),
+      children: itens
+          .map(
+            (item) => _cardLancamento(theme, item, exibirValorConfirmado: true),
+          )
+          .toList(),
     );
   }
 

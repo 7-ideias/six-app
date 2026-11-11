@@ -24,6 +24,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     required this.onCancelar,
     required this.onComprovante,
     this.bloqueado = false,
+    this.exibirValorConfirmado = false,
     this.onExcluir,
   });
 
@@ -36,6 +37,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
   final VoidCallback onCancelar;
   final VoidCallback onComprovante;
   final bool bloqueado;
+  final bool exibirValorConfirmado;
   final VoidCallback? onExcluir;
 
   static double _numero(dynamic valor) {
@@ -80,7 +82,12 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     final original = _numero(item['valorOriginal'] ?? item['valor']);
     final restante = _numero(item['valorRestante'] ?? original);
     final confirmado = _numero(item['valorConfirmado']);
-    final valorPrincipal = !finalizado && restante > 0 ? restante : original;
+    final quitado = const {'pago', 'recebido'}.contains(status.toLowerCase());
+    final valorPrincipal = cancelado
+        ? original
+        : exibirValorConfirmado || quitado
+        ? confirmado
+        : restante;
     final naturezaCor = cancelado
         ? tokens.statusNeutral
         : entrada

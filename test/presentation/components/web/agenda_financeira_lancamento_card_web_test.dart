@@ -38,6 +38,7 @@ void main() {
     WidgetTester tester, {
     required Map<String, dynamic> item,
     double width = 1350,
+    bool exibirValorConfirmado = false,
     void Function(String acao)? onAcao,
   }) async {
     tester.view.physicalSize = Size(width, 800);
@@ -53,6 +54,7 @@ void main() {
           body: SingleChildScrollView(
             child: AgendaFinanceiraLancamentoCardWeb(
               item: item,
+              exibirValorConfirmado: exibirValorConfirmado,
               formatarMoeda: (n) => 'R\$ ${n.toStringAsFixed(2)}',
               onDetalhes: () => onAcao?.call('detalhes'),
               onEditar: () => onAcao?.call('editar'),
@@ -395,4 +397,42 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Quitado destaca dinheiro efetivo com desconto ou acréscimo', (
+    tester,
+  ) async {
+    for (final tipo in ['pagar', 'receber']) {
+      for (final valor in [1352.57, 1700.0]) {
+        await montar(
+          tester,
+          item: lancamento(
+            tipo: tipo,
+            status: tipo == 'pagar' ? 'Pago' : 'Recebido',
+            original: 1680,
+            confirmado: valor,
+            restante: 0,
+          ),
+        );
+        expect(find.text('R\$ ${valor.toStringAsFixed(2)}'), findsOneWidget);
+        expect(find.text('Original: R\$ 1680.00'), findsOneWidget);
+        expect(find.byKey(const Key('agenda-card-liquidar')), findsNothing);
+      }
+    }
+  });
+
+  testWidgets('Confirmados destaca a baixa parcial, agenda destaca o saldo', (
+    tester,
+  ) async {
+    final item = lancamento(
+      status: 'Parcial',
+      original: 1680,
+      confirmado: 1000,
+      restante: 352.57,
+    );
+    await montar(tester, item: item, exibirValorConfirmado: true);
+    expect(find.text('R\$ 1000.00'), findsOneWidget);
+    expect(find.text('Original: R\$ 1680.00'), findsOneWidget);
+    await montar(tester, item: item);
+    expect(find.text('R\$ 352.57'), findsOneWidget);
+  });
 }
