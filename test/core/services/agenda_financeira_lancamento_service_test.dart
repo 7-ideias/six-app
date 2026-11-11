@@ -1,10 +1,131 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'edição cadastral envia PATCH no espaço correto sem campos financeiros',
+    () async {
+      final payload = base64Url
+          .encode(
+            utf8.encode(
+              jsonEncode({
+                'exp':
+                    DateTime.now()
+                        .add(const Duration(hours: 1))
+                        .millisecondsSinceEpoch ~/
+                    1000,
+              }),
+            ),
+          )
+          .replaceAll('=', '');
+      final token = 'eyJhbGciOiJub25lIn0.$payload.assinatura';
+      SharedPreferences.setMockInitialValues({
+        'accessToken': token,
+        'idUnicoDaEmpresa': 'empresa',
+      });
+      final client = MockClient((request) async {
+        expect(request.method, 'PATCH');
+        expect(
+          request.url.path,
+          '/private/api/agenda-financeira/lancamentos/entry/cadastro',
+        );
+        expect(request.headers['espacoFinanceiro'], 'PESSOAL');
+        expect(request.headers['idUnicoDaEmpresa'], 'empresa');
+        expect(request.headers['Authorization'], 'Bearer $token');
+        final data = jsonDecode(request.body) as Map;
+        expect(data['categoria'], '');
+        expect(data['alterarCentroCusto'], true);
+        expect(data.containsKey('centroCustoId'), true);
+        expect(data['centroCustoId'], isNull);
+        expect(data.containsKey('nomeContato'), false);
+        expect(
+          data.keys,
+          unorderedEquals([
+            'descricao',
+            'categoria',
+            'alterarCentroCusto',
+            'centroCustoId',
+            'nomeColaborador',
+            'referenciaExterna',
+            'documentoFiscal',
+            'observacoes',
+            'impostoRenda',
+          ]),
+        );
+        return http.Response('', 204);
+      });
+      final service = AgendaFinanceiraLancamentoService(
+        httpClient: client,
+      ).paraEspaco('PESSOAL');
+      await service.editarCadastroLancamento(
+        'entry',
+        const AgendaFinanceiraEdicaoCadastroRequest(
+          descricao: 'Escola',
+          categoria: '',
+          alterarCentroCusto: true,
+          nomeColaborador: '',
+          referenciaExterna: '',
+          documentoFiscal: '',
+          observacoes: '',
+          impostoRenda: {
+            'separarImpostoRenda': false,
+            'comprovantesImpostoRenda': [],
+          },
+        ),
+      );
+    },
+  );
+
+  test('detalhe atual substitui status antigo e preserva IDs de edição', () {
+    final detalhe = AgendaFinanceiraLancamentoDetalhe.fromJson({
+      'status': 'PAGO',
+      'tipo': 'PAGAR',
+      'valorOriginal': 1680,
+      'valorPagoRecebido': 1380,
+      'valorAberto': 0,
+      'contato': null,
+      'dadosEdicao': {'somenteCadastro': true, 'centroCustoId': 'centro'},
+    });
+    final item = detalhe.paraEdicao({
+      'status': 'Pendente',
+      'idContato': 'antigo',
+      'contato': 'Antigo',
+    });
+    expect(item['status'], 'PAGO');
+    expect(item['somenteCadastro'], true);
+    expect(item['valorOriginal'], 1680);
+    expect(item['valorConfirmado'], 1380);
+    expect(item['centroCustoId'], 'centro');
+    expect(item['idContato'], isNull);
+    expect(item['contato'], '');
+  });
+
+  test('conflito e falta de permissão de edição têm códigos localizáveis', () {
+    expect(
+      AgendaFinanceiraLancamentoApiException(
+        statusCode: 409,
+        body: '{"reason":"AGF_EDICAO_SOMENTE_CADASTRO"}',
+      ).codigoEdicao,
+      'AGF_EDICAO_SOMENTE_CADASTRO',
+    );
+    expect(
+      AgendaFinanceiraLancamentoApiException(
+        statusCode: 403,
+        body: '',
+      ).codigoEdicao,
+      'AGF_EDICAO_SEM_PERMISSAO',
+    );
+  });
+
   test('consulta agenda e valores confirmados em paralelo', () async {
     final service = _AgendaServiceControlado();
 

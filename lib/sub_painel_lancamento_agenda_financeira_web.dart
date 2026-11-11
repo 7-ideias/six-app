@@ -278,6 +278,57 @@ class _LancamentoAgendaFinanceiraWebBodyState
   bool get _bloquearTipoStatus =>
       widget.modoEdicao && _bloquearTipoStatusPorConfirmacao;
 
+  bool get _somenteCadastro =>
+      widget.modoEdicao &&
+      AgendaFinanceiraLancamentoDetalhe.fromJson(
+        widget.lancamentoInicial ?? {},
+      ).somenteCadastro;
+
+  Future<void> _salvarCadastro() async {
+    setState(() => _isLoading = true);
+    try {
+      await _service.editarCadastroLancamento(
+        _idLancamentoEdicao!,
+        AgendaFinanceiraEdicaoCadastroRequest(
+          descricao: _descricaoController.text.trim(),
+          categoria: _categoriaController.text.trim(),
+          alterarCentroCusto:
+              _centroCustoId != widget.lancamentoInicial?['centroCustoId'] ||
+              _centroCustoController.text !=
+                  (widget.lancamentoInicial?['centroDeCusto']?.toString() ??
+                      ''),
+          centroCustoId: _centroCustoId,
+          nomeContato: _idContatoController.text.trim().isEmpty
+              ? _contatoController.text.trim()
+              : null,
+          nomeColaborador: _responsavelController.text.trim(),
+          referenciaExterna: _referenciaController.text.trim(),
+          documentoFiscal: _documentoFiscalController.text.trim(),
+          observacoes: _observacoesController.text.trim(),
+          impostoRenda: _ir.toPayload(),
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.t('agenda.edit.saved'))));
+      Navigator.of(context).pop({'id': _idLancamentoEdicao});
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'agenda.edit.${error is AgendaFinanceiraLancamentoApiException ? error.codigoEdicao ?? 'error' : 'error'}',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -745,6 +796,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       if (!widget.modoEdicao) _irParaEtapa(2);
       return;
     }
+    if (_somenteCadastro) {
+      await _salvarCadastro();
+      return;
+    }
     if (!widget.modoEdicao &&
         _recorrencia.ativa &&
         !(_recorrenciaFormKey.currentState?.validate() ?? false))
@@ -823,12 +878,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            recorrenciaLabel(
-              context,
-              error is AgendaFinanceiraLancamentoApiException
-                  ? error.codigoRecorrencia ?? 'saveError'
-                  : 'saveError',
-            ),
+            error is AgendaFinanceiraLancamentoApiException &&
+                    error.codigoEdicao != null
+                ? context.t('agenda.edit.${error.codigoEdicao}')
+                : recorrenciaLabel(
+                    context,
+                    error is AgendaFinanceiraLancamentoApiException
+                        ? error.codigoRecorrencia ?? 'saveError'
+                        : 'saveError',
+                  ),
           ),
         ),
       );
@@ -1385,7 +1443,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 controller: _valorController,
                 label: _label('amount'),
                 requiredField: true,
-                enabled: !_bloquearTipoStatus,
+                enabled: !_bloquearTipoStatus && !_somenteCadastro,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -1414,77 +1472,86 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     ? null
                     : (value) => setState(() => _statusSelecionado = value!),
               ),
-              _buildCompetenciaField(),
+              if (!_somenteCadastro) _buildCompetenciaField(),
             ], columns: 3),
-            _helper('competenceHint'),
+            if (!_somenteCadastro) _helper('competenceHint'),
             if (_bloquearTipoStatus)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: _notice(_label('locked')),
+                child: _notice(context.t('agenda.edit.protected')),
               ),
           ]),
-          separator(),
-          _section('dates', [
-            _fields([
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDateField(
-                    label: _label('due'),
-                    controller: _dataVencimentoController,
-                    initialDate: _dataVencimento,
-                    requiredField: true,
-                    onChanged: (date) => _dataVencimento = date,
+          if (!_somenteCadastro) ...[
+            separator(),
+            _section('dates', [
+              _fields([
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDateField(
+                      label: _label('due'),
+                      controller: _dataVencimentoController,
+                      initialDate: _dataVencimento,
+                      requiredField: true,
+                      onChanged: (date) => _dataVencimento = date,
+                    ),
+                    _helper('dueHint'),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDateField(
+                      label: _label(
+                        receber ? 'forecastReceive' : 'forecastPay',
+                      ),
+                      controller: _dataPrevisaoController,
+                      initialDate: _dataPrevisaoPagamento ?? DateTime.now(),
+                      clearable: true,
+                      onChanged: (date) => _dataPrevisaoPagamento = date,
+                    ),
+                    _helper(
+                      receber ? 'forecastReceiveHint' : 'forecastPayHint',
+                    ),
+                  ],
+                ),
+              ]),
+              Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: _notice(
+                  _label('forecastHint'),
+                  warning: _diasAtraso > 0,
+                ),
+              ),
+              if (!_bloquearTipoStatus) ...[
+                const SizedBox(height: 14),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _registrarPagamento,
+                  title: Text(
+                    _label(receber ? 'alreadyReceived' : 'alreadyPaid'),
                   ),
-                  _helper('dueHint'),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDateField(
-                    label: _label(receber ? 'forecastReceive' : 'forecastPay'),
-                    controller: _dataPrevisaoController,
-                    initialDate: _dataPrevisaoPagamento ?? DateTime.now(),
-                    clearable: true,
-                    onChanged: (date) => _dataPrevisaoPagamento = date,
+                  subtitle: Text(
+                    _label('settleAfterSave'),
+                    style: TextStyle(fontSize: 12, color: tokens.secondaryText),
                   ),
-                  _helper(receber ? 'forecastReceiveHint' : 'forecastPayHint'),
+                  onChanged: (value) =>
+                      setState(() => _registrarPagamento = value ?? false),
+                ),
+                if (_registrarPagamento) ...[
+                  const SizedBox(height: 16),
+                  _buildDateField(
+                    label: _label('actualDate'),
+                    controller: _dataPagamentoController,
+                    initialDate: _dataPagamentoRealizado,
+                    lastDate: DateTime.now(),
+                    onChanged: (date) => _dataPagamentoRealizado = date,
+                  ),
                 ],
-              ),
-            ]),
-            Padding(
-              padding: const EdgeInsets.only(top: 14),
-              child: _notice(_label('forecastHint'), warning: _diasAtraso > 0),
-            ),
-            if (!_bloquearTipoStatus) ...[
-              const SizedBox(height: 14),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _registrarPagamento,
-                title: Text(
-                  _label(receber ? 'alreadyReceived' : 'alreadyPaid'),
-                ),
-                subtitle: Text(
-                  _label('settleAfterSave'),
-                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
-                ),
-                onChanged: (value) =>
-                    setState(() => _registrarPagamento = value ?? false),
-              ),
-              if (_registrarPagamento) ...[
-                const SizedBox(height: 16),
-                _buildDateField(
-                  label: _label('actualDate'),
-                  controller: _dataPagamentoController,
-                  initialDate: _dataPagamentoRealizado,
-                  lastDate: DateTime.now(),
-                  onChanged: (date) => _dataPagamentoRealizado = date,
-                ),
               ],
-            ],
-          ]),
+            ]),
+          ],
           separator(),
           if (widget.modoEdicao) ...[
             AgendaImpostoRendaWebFields(
@@ -1499,6 +1566,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
               _buildTextField(
                 controller: _contatoController,
                 label: _label(receber ? 'customer' : 'supplier'),
+                enabled:
+                    !_somenteCadastro ||
+                    _idContatoController.text.trim().isEmpty,
               ),
               TextFormField(
                 key: const ValueKey('agenda-category-field'),
@@ -1549,11 +1619,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     if (widget.modoEdicao) Text(context.t('space.editLocked')),
                   ],
                 ),
-              ContaFinanceiraWebField(
-                espaco: _service.espacoFinanceiro,
-                value: _contaFinanceiraId,
-                onChanged: (id) => setState(() => _contaFinanceiraId = id),
-              ),
+              if (!_somenteCadastro)
+                ContaFinanceiraWebField(
+                  espaco: _service.espacoFinanceiro,
+                  value: _contaFinanceiraId,
+                  onChanged: (id) => setState(() => _contaFinanceiraId = id),
+                ),
               AgendaCentroCustoWebField(
                 key: ValueKey(_service.espacoFinanceiro),
                 service: _service,
@@ -1565,14 +1636,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   _centroCustoController.text = centro?.nome ?? '';
                 }),
               ),
-              _buildDropdownField(
-                label: _label('paymentMethod'),
-                value: _formaPagamentoSelecionada,
-                items: _formasPagamento,
-                enabled: !_carregandoTiposRecebimento,
-                onChanged: (value) =>
-                    setState(() => _formaPagamentoSelecionada = value!),
-              ),
+              if (!_somenteCadastro)
+                _buildDropdownField(
+                  label: _label('paymentMethod'),
+                  value: _formaPagamentoSelecionada,
+                  items: _formasPagamento,
+                  enabled: !_carregandoTiposRecebimento,
+                  onChanged: (value) =>
+                      setState(() => _formaPagamentoSelecionada = value!),
+                ),
             ]),
           ]),
           if (widget.modoEdicao) ...[
@@ -1583,14 +1655,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
               requiredField: false,
             ),
             const SizedBox(height: 20),
-            AgendaRecorrenciaWebFields(
-              compact: true,
-              config: _recorrencia,
-              vencimento: _dataVencimento,
-              enabled: !_isLoading,
-              onChanged: () => setState(() {}),
-            ),
-            if (_recorrencia.ativa && _dataPrevisaoPagamento != null)
+            if (!_somenteCadastro)
+              AgendaRecorrenciaWebFields(
+                compact: true,
+                config: _recorrencia,
+                vencimento: _dataVencimento,
+                enabled: !_isLoading,
+                onChanged: () => setState(() {}),
+              ),
+            if (_somenteCadastro && _recorrencia.ativa)
+              _notice(context.t('agenda.edit.onlyOccurrence')),
+            if (!_somenteCadastro &&
+                _recorrencia.ativa &&
+                _dataPrevisaoPagamento != null)
               _helper('forecastRecurrenceHint'),
           ],
           const SizedBox(height: 16),
@@ -1617,7 +1694,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 const SizedBox(height: 16),
               ],
               _fields([
-                if (widget.modoEdicao && _service.espacoFinanceiro == 'EMPRESA')
+                if (widget.modoEdicao &&
+                    !_somenteCadastro &&
+                    _service.espacoFinanceiro == 'EMPRESA')
                   _buildDropdownField(
                     label: _label('company'),
                     value: _empresaSelecionada,
@@ -1627,12 +1706,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     onChanged: (value) =>
                         setState(() => _empresaSelecionada = value!),
                   ),
-                _buildDateField(
-                  label: _label('transactionDate'),
-                  controller: _dataOperacaoController,
-                  initialDate: _dataOperacao,
-                  onChanged: (date) => _dataOperacao = date,
-                ),
+                if (!_somenteCadastro)
+                  _buildDateField(
+                    label: _label('transactionDate'),
+                    controller: _dataOperacaoController,
+                    initialDate: _dataOperacao,
+                    onChanged: (date) => _dataOperacao = date,
+                  ),
 
                 _buildTextField(
                   controller: _documentoFiscalController,
@@ -2338,7 +2418,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         spacing: 12,
         runSpacing: 8,
         children: [
-          if (widget.modoEdicao)
+          if (widget.modoEdicao && !_somenteCadastro)
             TextButton.icon(
               onPressed: (_isLoading || _ir.carregando)
                   ? null

@@ -118,6 +118,52 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   final Map<String, String> _descricaoPorCodigoTipoFormaPagamento =
       <String, String>{};
 
+  bool get _somenteCadastro => AgendaFinanceiraLancamentoDetalhe.fromJson(
+    _detalheDisponivel ? _detalhe : widget.lancamento,
+  ).somenteCadastro;
+
+  Future<void> _salvarCadastro() async {
+    setState(() => _salvando = true);
+    try {
+      final original = AgendaFinanceiraLancamentoDetalhe.fromJson(
+        _detalhe,
+      ).paraEdicao(widget.lancamento);
+      await _service.editarCadastroLancamento(
+        _idLancamento,
+        AgendaFinanceiraEdicaoCadastroRequest(
+          descricao: _descricaoController.text.trim(),
+          categoria: _categoriaController.text.trim(),
+          alterarCentroCusto:
+              _centroCustoId != original['centroCustoId'] ||
+              _centroCustoController.text !=
+                  (original['centroDeCusto']?.toString() ?? ''),
+          centroCustoId: _centroCustoId,
+          nomeContato: (_idContato ?? '').trim().isEmpty
+              ? _contatoController.text.trim()
+              : null,
+          nomeColaborador: _responsavelController.text.trim(),
+          referenciaExterna:
+              _referenciaTecnicaPersistida ?? _referenciaController.text.trim(),
+          documentoFiscal: _documentoFiscalController.text.trim(),
+          observacoes: _observacoesController.text.trim(),
+          impostoRenda: _ir.toPayload(),
+        ),
+      );
+      if (!mounted) return;
+      _mostrarSnack(context.t('agenda.edit.saved'));
+      Navigator.of(context).pop({'id': _idLancamento});
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarSnack(
+        context.t(
+          'agenda.edit.${error is AgendaFinanceiraLancamentoApiException ? error.codigoEdicao ?? 'error' : 'error'}',
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -204,6 +250,12 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
           .buscarDetalheLancamento(_idLancamento);
       if (!mounted) return;
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      if (detalhe['dadosEdicao'] is Map &&
+          detalhe['dadosEdicao']['podeEditar'] == false) {
+        _mostrarSnack(context.t('agenda.edit.AGF_EDICAO_INDISPONIVEL'));
+        setState(() => _detalheDisponivel = false);
+        return;
+      }
       setState(() {
         _detalheDisponivel = true;
         _detalhe = detalhe;
@@ -235,8 +287,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       detalhe['uuidOperacaoApp'],
       fallback: _uuidOperacaoApp,
     );
-    _uuidOperacaoApp =
-        _uuidOperacaoApp.trim().isNotEmpty ? _uuidOperacaoApp : _idLancamento;
+    _uuidOperacaoApp = _uuidOperacaoApp.trim().isNotEmpty
+        ? _uuidOperacaoApp
+        : _idLancamento;
     _codigoOperacaoController.text = _texto(
       detalhe['codigoOperacao'],
       fallback: _codigoOperacaoController.text,
@@ -268,10 +321,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     );
     _valorRestante = _toDouble(detalhe['valorAberto'] ?? _valorRestante);
     if (_valorConfirmado > 0 && _status.contains(_statusSelecionado)) {
-      _statusSelecionado =
-          _valorRestante > 0
-              ? 'Parcial'
-              : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
+      _statusSelecionado = _valorRestante > 0
+          ? 'Parcial'
+          : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
     }
 
     _dataCompetencia = _parseData(
@@ -326,7 +378,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
 
     final Map<String, dynamic> origem = _mapa(detalhe['origem']);
     _origemCodigoPersistida = _texto(
-      origem['tipo'], fallback: _origemCodigoPersistida,
+      origem['tipo'],
+      fallback: _origemCodigoPersistida,
     );
     _aplicarReferenciaParaExibicao(
       _texto(origem['id'], fallback: _referenciaController.text),
@@ -346,8 +399,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   Future<void> _carregarTiposRecebimentoAtivos() async {
     setState(() => _carregandoTiposRecebimento = true);
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
+          .getInformacoesBasicasDoCaixa();
       final List<String> formas = _montarFormasPagamentoAtivas(
         informacoes.tiposRecebimento,
       );
@@ -387,10 +440,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     for (final TiposRecebimento tipo in ativos) {
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       if (!_codigoTipoValido(codigo)) continue;
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : codigo;
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : codigo;
       if (descricao.trim().isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
       codigosPorDescricao[descricao] = codigo;
@@ -415,7 +467,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         recorrencia: _recorrencia,
         descricao: _descricaoController.text,
         valorFormatado: _valorController.text,
-        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        vencimentoFormatado:
+            '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
         cancelar: true,
         permitirTrocarEscopo: true,
       );
@@ -427,15 +480,17 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
           escopo: confirmado.escopo,
           motivo: confirmado.motivo,
         );
-        if (mounted) Navigator.pop(context, <String, dynamic>{
-          'deleted': true,
-          'id': _idLancamento,
-          'status': 'CANCELADO',
-        });
+        if (mounted)
+          Navigator.pop(context, <String, dynamic>{
+            'deleted': true,
+            'id': _idLancamento,
+            'status': 'CANCELADO',
+          });
       } on AgendaFinanceiraLancamentoApiException catch (error) {
-        if (mounted) _mostrarSnack(
-          recorrenciaLabel(context, error.codigoRecorrencia ?? 'saveError'),
-        );
+        if (mounted)
+          _mostrarSnack(
+            recorrenciaLabel(context, error.codigoRecorrencia ?? 'saveError'),
+          );
       } finally {
         if (mounted) setState(() => _salvando = false);
       }
@@ -446,41 +501,36 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       context: context,
       useSafeArea: true,
       backgroundColor: colors.surface,
-      builder:
-          (sheetContext) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    recorrenciaLabel(context, 'deleteConfirm'),
-                    style: TextStyle(color: colors.titleText),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(recorrenciaLabel(context, _recorrencia.escopo)),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(sheetContext, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colors.error,
-                      foregroundColor: colors.surface,
-                    ),
-                    child: Text(
-                      context.t('common.confirm', fallback: 'Confirmar'),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(sheetContext, false),
-                    child: Text(
-                      context.t('common.cancel', fallback: 'Cancelar'),
-                    ),
-                  ),
-                ],
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                recorrenciaLabel(context, 'deleteConfirm'),
+                style: TextStyle(color: colors.titleText),
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(recorrenciaLabel(context, _recorrencia.escopo)),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => Navigator.pop(sheetContext, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.error,
+                  foregroundColor: colors.surface,
+                ),
+                child: Text(context.t('common.confirm', fallback: 'Confirmar')),
+              ),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(sheetContext, false),
+                child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+              ),
+            ],
           ),
+        ),
+      ),
     );
     if (confirmar != true || !mounted) return;
     setState(() => _salvando = true);
@@ -520,18 +570,22 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     enabled: !_salvando && !_carregandoDetalhe && _detalheDisponivel,
     permitirLiquidacao: _permitirLiquidacao,
     liquidacaoPersistida: _dataQuitacao,
-    onPrevisaoChanged:
-        (value) => setState(() => _dataPrevisaoPagamento = value),
+    onPrevisaoChanged: (value) =>
+        setState(() => _dataPrevisaoPagamento = value),
     onRegistrarChanged: (value) => setState(() => _registrarPagamento = value),
-    onDataEfetivaChanged:
-        (value) => setState(() => _dataPagamentoRealizado = value),
+    onDataEfetivaChanged: (value) =>
+        setState(() => _dataPagamentoRealizado = value),
   );
 
   Future<void> _salvar() async {
-    if (_ir.carregando) return;
+    if (_ir.carregando || _salvando) return;
     if (_carregandoDetalhe || !_detalheDisponivel) return;
     final FormState? formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
+    if (_somenteCadastro) {
+      await _salvarCadastro();
+      return;
+    }
     final double valorTotal = _toDouble(_valorController.text);
     if (valorTotal <= 0) {
       _mostrarSnack('Informe um valor maior que zero.');
@@ -563,7 +617,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         recorrencia: _recorrencia,
         descricao: _descricaoController.text,
         valorFormatado: _valorController.text,
-        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        vencimentoFormatado:
+            '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
         cancelar: false,
       );
       if (confirmado == null || !mounted) return;
@@ -591,7 +646,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
       _mostrarSnack(
-        recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
+        e.codigoEdicao != null
+            ? context.t('agenda.edit.${e.codigoEdicao}')
+            : recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
       );
     } catch (_) {
       if (!mounted) return;
@@ -605,7 +662,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     final bool isReceber = _tipoSelecionado == 'Receber';
     final String tipoOperacao = isReceber ? 'RECEBER' : 'PAGAR';
     final String origem = AgendaFinanceiraOrigem.preservada(
-      _origemCodigoPersistida, _tipoSelecionado,
+      _origemCodigoPersistida,
+      _tipoSelecionado,
     );
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoNome = _contatoController.text.trim();
@@ -629,8 +687,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       'formaPrevistaPagamento': formaPagamento,
       ..._ir.toPayload(),
       'atualizarPrevisaoPagamento': true,
-      'dataPrevisaoPagamento':
-          _dataPrevisaoPagamento?.toIso8601String().split('T').first,
+      'dataPrevisaoPagamento': _dataPrevisaoPagamento
+          ?.toIso8601String()
+          .split('T')
+          .first,
     };
     payload['contato'] = <String, dynamic>{
       'id': contatoId,
@@ -638,8 +698,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     };
 
     return LancamentoAgendaFinanceiraRequest(
-      uuidOperacaoApp:
-          _uuidOperacaoApp.trim().isEmpty ? _idLancamento : _uuidOperacaoApp,
+      uuidOperacaoApp: _uuidOperacaoApp.trim().isEmpty
+          ? _idLancamento
+          : _uuidOperacaoApp,
       descricao: _descricaoController.text.trim(),
       tipoOperacao: tipoOperacao,
       statusOperacao: statusBackend,
@@ -658,32 +719,31 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       idColaborador: 'mobile-user',
       nomeColaborador: _responsavelController.text.trim(),
       idCliente: isReceber && contatoId.isNotEmpty ? contatoId : _idCliente,
-      nomeCliente:
-          isReceber && contatoNome.isNotEmpty ? contatoNome : _nomeCliente,
-      idFornecedor:
-          !isReceber && contatoId.isNotEmpty ? contatoId : _idFornecedor,
-      nomeFornecedor:
-          !isReceber && contatoNome.isNotEmpty ? contatoNome : _nomeFornecedor,
-      referenciaExterna:
-          _referenciaController.text.trim().isEmpty
-              ? _referenciaTecnicaPersistida
-              : _referenciaController.text.trim(),
-      documentoFiscal:
-          _documentoFiscalController.text.trim().isEmpty
-              ? null
-              : _documentoFiscalController.text.trim(),
-      centroDeCusto:
-          _centroCustoController.text.trim().isEmpty
-              ? null
-              : _centroCustoController.text.trim(),
+      nomeCliente: isReceber && contatoNome.isNotEmpty
+          ? contatoNome
+          : _nomeCliente,
+      idFornecedor: !isReceber && contatoId.isNotEmpty
+          ? contatoId
+          : _idFornecedor,
+      nomeFornecedor: !isReceber && contatoNome.isNotEmpty
+          ? contatoNome
+          : _nomeFornecedor,
+      referenciaExterna: _referenciaController.text.trim().isEmpty
+          ? _referenciaTecnicaPersistida
+          : _referenciaController.text.trim(),
+      documentoFiscal: _documentoFiscalController.text.trim().isEmpty
+          ? null
+          : _documentoFiscalController.text.trim(),
+      centroDeCusto: _centroCustoController.text.trim().isEmpty
+          ? null
+          : _centroCustoController.text.trim(),
       centroCustoId: _centroCustoId,
       valorTotalProdutos: 0,
       valorTotalServicos: 0,
       valorTotalOperacao: valorTotal,
-      observacoes:
-          _observacoesController.text.trim().isEmpty
-              ? null
-              : _observacoesController.text.trim(),
+      observacoes: _observacoesController.text.trim().isEmpty
+          ? null
+          : _observacoesController.text.trim(),
       configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
@@ -699,12 +759,11 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (BuildContext context) => _MobilePickerSheet(
-            title: titulo,
-            values: opcoes,
-            selected: selecionado,
-          ),
+      builder: (BuildContext context) => _MobilePickerSheet(
+        title: titulo,
+        values: opcoes,
+        selected: selecionado,
+      ),
     );
     if (result == null || !mounted) return;
     setState(() => onSelected(result));
@@ -717,8 +776,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       mobile: true,
     );
     if (selecionada == null || !mounted) return;
-    setState(() =>
-        _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada));
+    setState(
+      () => _dataCompetencia = CompetenciaFinanceira.normalizar(selecionada),
+    );
   }
 
   Future<void> _selecionarData({
@@ -757,13 +817,18 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
               onPressed: _carregarDetalhe,
               icon: const Icon(Icons.refresh),
             ),
-          IconButton(
-            tooltip: _recorrencia.serieId != null
-                ? 'Cancelar ocorrência' : recorrenciaLabel(context, 'delete'),
-            onPressed: _salvando || _carregandoDetalhe ? null : _excluir,
-            icon: Icon(_recorrencia.serieId != null
-                ? Icons.event_busy_outlined : Icons.delete_outline),
-          ),
+          if (!_somenteCadastro)
+            IconButton(
+              tooltip: _recorrencia.serieId != null
+                  ? 'Cancelar ocorrência'
+                  : recorrenciaLabel(context, 'delete'),
+              onPressed: _salvando || _carregandoDetalhe ? null : _excluir,
+              icon: Icon(
+                _recorrencia.serieId != null
+                    ? Icons.event_busy_outlined
+                    : Icons.delete_outline,
+              ),
+            ),
         ],
         elevation: 0,
         centerTitle: true,
@@ -783,6 +848,22 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                 children: <Widget>[
                   _buildHeaderCard(),
+                  if (_somenteCadastro)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        context.t('agenda.edit.protected'),
+                        style: TextStyle(color: _mutedTextColor),
+                      ),
+                    ),
+                  if (_somenteCadastro && _recorrencia.ativa)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        context.t('agenda.edit.onlyOccurrence'),
+                        style: TextStyle(color: _mutedTextColor),
+                      ),
+                    ),
                   const SizedBox(height: 14),
                   _buildSection(
                     title: 'Dados principais',
@@ -792,11 +873,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                         controller: _descricaoController,
                         label: 'Descrição',
                         icon: Icons.notes_outlined,
-                        validator:
-                            (String? value) =>
-                                (value ?? '').trim().isEmpty
-                                    ? 'Informe a descrição.'
-                                    : null,
+                        validator: (String? value) =>
+                            (value ?? '').trim().isEmpty
+                            ? 'Informe a descrição.'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -813,58 +893,75 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                           Expanded(
                             child: _selectorTile(
                               label: context.t('agenda.form.situation'),
-                              value: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
+                              value: AgendaFinanceiraStatusLabels.rotulo(
+                                context,
+                                _statusSelecionado,
+                              ),
                               icon: Icons.flag_outlined,
                               onTap:
                                   !_status.contains(_statusSelecionado) ||
-                                          _valorConfirmado > 0
-                                      ? null
-                                      : () => _selecionarValor(
-                                        titulo: context.t('agenda.form.situation'),
-                                        opcoes: _status.map((s) =>
-                                            AgendaFinanceiraStatusLabels.rotulo(context, s)).toList(),
-                                        selecionado: AgendaFinanceiraStatusLabels.rotulo(context, _statusSelecionado),
-                                        onSelected: (String value) => _statusSelecionado =
-                                            AgendaFinanceiraStatusLabels.codigoDaEscolha(context, value),
+                                      _valorConfirmado > 0
+                                  ? null
+                                  : () => _selecionarValor(
+                                      titulo: context.t(
+                                        'agenda.form.situation',
                                       ),
+                                      opcoes: _status
+                                          .map(
+                                            (s) =>
+                                                AgendaFinanceiraStatusLabels.rotulo(
+                                                  context,
+                                                  s,
+                                                ),
+                                          )
+                                          .toList(),
+                                      selecionado:
+                                          AgendaFinanceiraStatusLabels.rotulo(
+                                            context,
+                                            _statusSelecionado,
+                                          ),
+                                      onSelected: (String value) =>
+                                          _statusSelecionado =
+                                              AgendaFinanceiraStatusLabels.codigoDaEscolha(
+                                                context,
+                                                value,
+                                              ),
+                                    ),
                             ),
                           ),
                         ],
                       ),
-
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _buildSection(
-                    title: 'Valores e pagamento',
-                    icon: Icons.account_balance_wallet_outlined,
-                    children: <Widget>[
-                      _textField(
-                        controller: _valorController,
-                        label: 'Valor original',
-                        icon: Icons.attach_money_rounded,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                  if (!_somenteCadastro) ...[
+                    _buildSection(
+                      title: 'Valores e pagamento',
+                      icon: Icons.account_balance_wallet_outlined,
+                      children: <Widget>[
+                        _textField(
+                          controller: _valorController,
+                          label: 'Valor original',
+                          icon: Icons.attach_money_rounded,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (String? value) => _toDouble(value) <= 0
+                              ? 'Informe um valor maior que zero.'
+                              : null,
                         ),
-                        validator:
-                            (String? value) =>
-                                _toDouble(value) <= 0
-                                    ? 'Informe um valor maior que zero.'
-                                    : null,
-                      ),
-                      const SizedBox(height: 12),
-                      _selectorTile(
-                        label:
-                            _carregandoTiposRecebimento
-                                ? 'Forma prevista carregando...'
-                                : 'Forma prevista de pagamento',
-                        value: _formaPagamentoSelecionadaLabel(),
-                        icon: Icons.payments_outlined,
-                        onTap:
-                            _carregandoTiposRecebimento ||
-                                    _formasPagamento.isEmpty
-                                ? null
-                                : () => _selecionarValor(
+                        const SizedBox(height: 12),
+                        _selectorTile(
+                          label: _carregandoTiposRecebimento
+                              ? 'Forma prevista carregando...'
+                              : 'Forma prevista de pagamento',
+                          value: _formaPagamentoSelecionadaLabel(),
+                          icon: Icons.payments_outlined,
+                          onTap:
+                              _carregandoTiposRecebimento ||
+                                  _formasPagamento.isEmpty
+                              ? null
+                              : () => _selecionarValor(
                                   titulo: 'Forma prevista de pagamento',
                                   opcoes: _formasPagamento,
                                   selecionado:
@@ -875,68 +972,68 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                                         _codigoTipoRecebimentoSelecionado;
                                   },
                                 ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: _metricTile(
-                              'Confirmado',
-                              _formatarMoeda(_valorConfirmado),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: _metricTile(
+                                'Confirmado',
+                                _formatarMoeda(_valorConfirmado),
+                              ),
                             ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _metricTile(
+                                'Em aberto',
+                                _formatarMoeda(_valorRestante),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _buildSection(
+                      title: 'Datas',
+                      icon: Icons.calendar_month_outlined,
+                      children: <Widget>[
+                        _selectorTile(
+                          label: 'Competência',
+                          value: CompetenciaFinanceira.formatar(
+                            _dataCompetencia,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _metricTile(
-                              'Em aberto',
-                              _formatarMoeda(_valorRestante),
-                            ),
+                          icon: Icons.event_note_outlined,
+                          onTap: () => _selecionarCompetencia(),
+                        ),
+                        const SizedBox(height: 12),
+                        _selectorTile(
+                          label: context.t('agenda.form.due'),
+                          value: _formatarDataBr(_dataVencimento),
+                          icon: Icons.event_available_outlined,
+                          onTap: () => _selecionarData(
+                            titulo: context.t('agenda.form.due'),
+                            atual: _dataVencimento,
+                            onSelected: (DateTime value) =>
+                                _dataVencimento = value,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  _buildSection(
-                    title: 'Datas',
-                    icon: Icons.calendar_month_outlined,
-                    children: <Widget>[
-                      _selectorTile(
-                        label: 'Competência',
-                        value: CompetenciaFinanceira.formatar(_dataCompetencia),
-                        icon: Icons.event_note_outlined,
-                        onTap:
-                            () => _selecionarCompetencia(),
-                      ),
-                      const SizedBox(height: 12),
-                      _selectorTile(
-                        label: context.t('agenda.form.due'),
-                        value: _formatarDataBr(_dataVencimento),
-                        icon: Icons.event_available_outlined,
-                        onTap:
-                            () => _selecionarData(
-                              titulo: context.t('agenda.form.due'),
-                              atual: _dataVencimento,
-                              onSelected:
-                                  (DateTime value) => _dataVencimento = value,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      _selectorTile(
-                        label: 'Operação',
-                        value: _formatarDataBr(_dataOperacao),
-                        icon: Icons.today_outlined,
-                        onTap:
-                            () => _selecionarData(
-                              titulo: 'Data da operação',
-                              atual: _dataOperacao,
-                              onSelected:
-                                  (DateTime value) => _dataOperacao = value,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                        ),
+                        const SizedBox(height: 12),
+                        _selectorTile(
+                          label: 'Operação',
+                          value: _formatarDataBr(_dataOperacao),
+                          icon: Icons.today_outlined,
+                          onTap: () => _selecionarData(
+                            titulo: 'Data da operação',
+                            atual: _dataOperacao,
+                            onSelected: (DateTime value) =>
+                                _dataOperacao = value,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   AgendaImpostoRendaMobileFields(
                     draft: _ir,
                     enabled:
@@ -944,14 +1041,15 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     onChanged: () => setState(() {}),
                   ),
                   const SizedBox(height: 16),
-                  _buildPagamentoFields(),
+                  if (!_somenteCadastro) _buildPagamentoFields(),
                   const SizedBox(height: 14),
-                  AgendaRecorrenciaMobileFields(
-                    config: _recorrencia,
-                    vencimento: _dataVencimento,
-                    enabled: !_salvando && !_carregandoDetalhe,
-                    onChanged: () => setState(() {}),
-                  ),
+                  if (!_somenteCadastro)
+                    AgendaRecorrenciaMobileFields(
+                      config: _recorrencia,
+                      vencimento: _dataVencimento,
+                      enabled: !_salvando && !_carregandoDetalhe,
+                      onChanged: () => setState(() {}),
+                    ),
                   const SizedBox(height: 14),
                   _buildSection(
                     title: 'Contato e classificação',
@@ -959,10 +1057,12 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     children: <Widget>[
                       _textField(
                         controller: _contatoController,
-                        label:
-                            _tipoSelecionado == 'Receber'
-                                ? 'Cliente'
-                                : 'Fornecedor',
+                        label: _tipoSelecionado == 'Receber'
+                            ? 'Cliente'
+                            : 'Fornecedor',
+                        readOnly:
+                            _somenteCadastro &&
+                            (_idContato ?? '').trim().isNotEmpty,
                         icon: Icons.person_outline,
                       ),
                       const SizedBox(height: 12),
@@ -992,13 +1092,14 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                         onSelectionChanged: null,
                       ),
                       Text(context.t('space.editLocked')),
-                      ContaFinanceiraMobileField(
-                        espaco: _service.espacoFinanceiro,
-                        value: _contaFinanceiraId,
-                        enabled: !_salvando,
-                        onChanged:
-                            (id) => setState(() => _contaFinanceiraId = id),
-                      ),
+                      if (!_somenteCadastro)
+                        ContaFinanceiraMobileField(
+                          espaco: _service.espacoFinanceiro,
+                          value: _contaFinanceiraId,
+                          enabled: !_salvando,
+                          onChanged: (id) =>
+                              setState(() => _contaFinanceiraId = id),
+                        ),
                       TextButton.icon(
                         onPressed: () async {
                           final nome = await selecionarContaMobile(
@@ -1094,8 +1195,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed:
-                      _salvando ? null : () => Navigator.of(context).pop(),
+                  onPressed: _salvando
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('Cancelar'),
                 ),
@@ -1106,30 +1208,29 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 child: FilledButton.icon(
                   onPressed:
                       _salvando ||
-                              _ir.carregando ||
-                              _carregandoDetalhe ||
-                              !_detalheDisponivel
-                          ? null
-                          : _salvar,
-                  icon:
-                      _salvando
-                          ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: SixMobilePalette.onPrimary,
-                            ),
-                          )
-                          : const Icon(Icons.check_rounded),
+                          _ir.carregando ||
+                          _carregandoDetalhe ||
+                          !_detalheDisponivel
+                      ? null
+                      : _salvar,
+                  icon: _salvando
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: SixMobilePalette.onPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.check_rounded),
                   label: Text(
                     context.t(
                       _salvando
                           ? 'agenda.form.saving'
                           : _registrarPagamento && _permitirLiquidacao
                           ? (_tipoSelecionado == 'Receber'
-                              ? 'agenda.form.saveReceive'
-                              : 'agenda.form.saveContinue')
+                                ? 'agenda.form.saveReceive'
+                                : 'agenda.form.saveContinue')
                           : 'agenda.form.update',
                     ),
                   ),
@@ -1561,8 +1662,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     if (value is String) {
       final String normalizado =
           value.trim().contains(',') && value.trim().contains('.')
-              ? value.trim().replaceAll('.', '').replaceAll(',', '.')
-              : value.trim().replaceAll(',', '.');
+          ? value.trim().replaceAll('.', '').replaceAll(',', '.')
+          : value.trim().replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;
@@ -1678,10 +1779,9 @@ class _MobilePickerSheet extends StatelessWidget {
                             isSelected
                                 ? Icons.check_circle_rounded
                                 : Icons.circle_outlined,
-                            color:
-                                isSelected
-                                    ? SixMobilePalette.onPrimary
-                                    : _accentColor,
+                            color: isSelected
+                                ? SixMobilePalette.onPrimary
+                                : _accentColor,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
@@ -1689,10 +1789,9 @@ class _MobilePickerSheet extends StatelessWidget {
                             child: Text(
                               value,
                               style: TextStyle(
-                                color:
-                                    isSelected
-                                        ? SixMobilePalette.onPrimary
-                                        : _titleTextColor,
+                                color: isSelected
+                                    ? SixMobilePalette.onPrimary
+                                    : _titleTextColor,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),

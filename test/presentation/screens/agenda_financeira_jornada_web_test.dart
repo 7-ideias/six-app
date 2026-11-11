@@ -25,6 +25,7 @@ class _RegionalApi implements RegionalizacaoApiClient {
 class _Calls {
   final requests = <LancamentoAgendaFinanceiraRequest>[];
   final spaces = <String>[];
+  final metadata = <AgendaFinanceiraEdicaoCadastroRequest>[];
   Completer<LancamentoAgendaFinanceiraResponse>? pending;
   bool fail = false;
 }
@@ -33,6 +34,15 @@ class _Service extends AgendaFinanceiraLancamentoService {
   _Service(this.calls)
     : super(httpClient: MockClient((_) async => http.Response('[]', 200)));
   final _Calls calls;
+  @override
+  Future<void> editarCadastroLancamento(
+    String id,
+    AgendaFinanceiraEdicaoCadastroRequest request,
+  ) async {
+    if (calls.fail) throw StateError('offline');
+    calls.metadata.add(request);
+  }
+
   @override
   AgendaFinanceiraLancamentoService paraEspaco(String espaco) =>
       _Service(calls)..espacoFinanceiro = espaco;
@@ -75,6 +85,7 @@ Future<void> _open(
   bool dark = false,
   String language = 'pt',
   bool edit = false,
+  Map<String, dynamic>? initial,
   ValueChanged<Map<String, dynamic>?>? onResult,
 }) async {
   SharedPreferences.setMockInitialValues({});
@@ -108,13 +119,14 @@ Future<void> _open(
                   service: _Service(calls),
                   modoEdicao: edit,
                   lancamentoInicial: edit
-                      ? {
-                          'id': 'existing',
-                          'tipo': 'pagar',
-                          'descricao': 'Aluguel',
-                          'valor': 100,
-                          'status': 'PENDENTE',
-                        }
+                      ? initial ??
+                            {
+                              'id': 'existing',
+                              'tipo': 'pagar',
+                              'descricao': 'Aluguel',
+                              'valor': 100,
+                              'status': 'PENDENTE',
+                            }
                       : null,
                 );
                 onResult?.call(result);
@@ -143,6 +155,90 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  for (final status in ['PAGO', 'RECEBIDO', 'PARCIAL']) {
+    testWidgets('edição web $status preserva baixa e recorrência no contrato', (
+      tester,
+    ) async {
+      final calls = _Calls();
+      await _open(
+        tester,
+        calls,
+        edit: true,
+        dark: status == 'PAGO',
+        initial: {
+          'id': 'existing',
+          'tipo': status == 'RECEBIDO' ? 'receber' : 'pagar',
+          'descricao': 'Escola',
+          'status': status,
+          'valorOriginal': 1680,
+          'valorConfirmado': 1380,
+          'valorRestante': status == 'PARCIAL' ? 300 : 0,
+          'somenteCadastro': true,
+          'serieRecorrenciaId': 'serie',
+          'recorrente': true,
+          'dataLiquidacao': '2026-11-11',
+          'categoria': 'Educação',
+          'observacoes': 'Preservar',
+        },
+      );
+      expect(
+        tester.widget<TextField>(_field(tester, 'agenda.form.amount')).enabled,
+        false,
+      );
+      expect(_field(tester, 'agenda.form.due'), findsNothing);
+      expect(find.text('Cancelar ocorrência'), findsNothing);
+      await tester.enterText(
+        _field(tester, 'agenda.form.description'),
+        'Escola atualizada',
+      );
+      await _tap(tester, find.text('Atualizar lançamento'));
+      expect(calls.requests, isEmpty);
+      final data = calls.metadata.single.toJson();
+      expect(data['descricao'], 'Escola atualizada');
+      expect(data['observacoes'], 'Preservar');
+      for (final key in [
+        'valorTotalOperacao',
+        'dataQuitacao',
+        'statusOperacao',
+        'recorrente',
+        'formaPagamento',
+        'contaFinanceiraId',
+      ]) {
+        expect(data.containsKey(key), false, reason: key);
+      }
+    });
+  }
+
+  testWidgets('erro de edição cadastral mantém os dados para nova tentativa', (
+    tester,
+  ) async {
+    final calls = _Calls()..fail = true;
+    await _open(
+      tester,
+      calls,
+      edit: true,
+      initial: {
+        'id': 'existing',
+        'tipo': 'pagar',
+        'descricao': 'Escola',
+        'status': 'PAGO',
+        'valorOriginal': 1680,
+        'valorConfirmado': 1380,
+        'valorRestante': 0,
+      },
+    );
+    await tester.enterText(
+      _field(tester, 'agenda.form.description'),
+      'Correção',
+    );
+    await _tap(tester, find.text('Atualizar lançamento'));
+    expect(find.text('Correção'), findsOneWidget);
+    expect(calls.metadata, isEmpty);
+    calls.fail = false;
+    await _tap(tester, find.text('Atualizar lançamento'));
+    expect(calls.metadata.single.descricao, 'Correção');
+  });
+
   testWidgets(
     'exige escolhas e detalhes; voltar preserva dados e trocar espaço limpa categoria',
     (tester) async {

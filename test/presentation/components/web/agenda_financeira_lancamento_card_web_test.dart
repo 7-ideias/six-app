@@ -78,14 +78,18 @@ void main() {
     expect(find.text('Venda'), findsOneWidget);
     expect(find.text('Vencido'), findsOneWidget);
     expect(find.text('Original: R\$ 150.00'), findsOneWidget);
-    expect(find.byKey(const Key('agenda-card-editar')), findsOneWidget);
+    expect(find.byKey(const Key('agenda-card-editar')), findsNothing);
     expect(find.byKey(const Key('agenda-card-liquidar')), findsOneWidget);
     expect(find.text('Receber'), findsOneWidget);
     expect(find.text('Não informado'), findsNothing);
 
     await tester.tap(find.text('Receber'));
     expect(eventos, ['liquidar']);
-    await tester.tap(find.text('Editar'));
+    await tester.tap(find.byKey(const Key('agenda-card-menu')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('agenda-card-editar')), findsOneWidget);
+    await tester.tap(find.text('Editar lançamento'));
+    await tester.pumpAndSettle();
     expect(eventos, ['liquidar', 'editar']);
 
     final liquidarY = tester
@@ -93,11 +97,6 @@ void main() {
         .dy;
     final originalY = tester.getTopLeft(find.text('Original: R\$ 150.00')).dy;
     expect((liquidarY - originalY).abs(), lessThan(48));
-    final valorX = tester.getTopLeft(find.text('Original: R\$ 150.00')).dx;
-    final editarX = tester
-        .getTopLeft(find.byKey(const Key('agenda-card-editar')))
-        .dx;
-    expect(editarX, greaterThan(valorX));
   });
 
   testWidgets(
@@ -295,6 +294,30 @@ void main() {
       const Size(152, 48),
     );
   });
+
+  for (final status in ['Pago', 'Recebido', 'Parcial']) {
+    testWidgets('$status permite edição cadastral quando autorizada pela API', (
+      tester,
+    ) async {
+      final eventos = <String>[];
+      await montar(
+        tester,
+        item: lancamento(
+          status: status,
+          origem: 'DESPESA_MANUAL',
+          confirmado: 100,
+          restante: 0,
+          acoes: ['Detalhes', 'Editar'],
+        ),
+        onAcao: eventos.add,
+      );
+      await tester.tap(find.byKey(const Key('agenda-card-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar lançamento'));
+      expect(eventos, ['editar']);
+      expect(find.byKey(const Key('agenda-card-liquidar')), findsNothing);
+    });
+  }
 
   testWidgets('Venda recebida exibe somente comprovante e detalhes', (
     tester,

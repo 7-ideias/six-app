@@ -78,6 +78,16 @@ class _Service extends AgendaFinanceiraLancamentoService {
     'formaPagamento': 'tipo1',
   };
   final saved = <LancamentoAgendaFinanceiraRequest>[];
+  final metadata = <AgendaFinanceiraEdicaoCadastroRequest>[];
+  @override
+  Future<void> editarCadastroLancamento(
+    String id,
+    AgendaFinanceiraEdicaoCadastroRequest request,
+  ) async {
+    if (failSave) throw StateError('offline');
+    metadata.add(request);
+  }
+
   bool failSave = false;
   bool failDetail = false;
   @override
@@ -163,6 +173,7 @@ Widget _app(
 Future<void> _pump(
   WidgetTester tester,
   Widget child, {
+  bool scrollToPayment = true,
   String language = 'pt',
   Brightness brightness = Brightness.light,
 }) async {
@@ -174,7 +185,7 @@ Future<void> _pump(
     _app(child, language: language, brightness: brightness),
   );
   await tester.pumpAndSettle();
-  if (child is AgendaFinanceiraLancamentoMobileEditScreen) {
+  if (child is AgendaFinanceiraLancamentoMobileEditScreen && scrollToPayment) {
     await tester.scrollUntilVisible(
       find.byType(AgendaPagamentoMobileFields),
       250,
@@ -513,16 +524,22 @@ void main() {
     },
   );
 
-  for (final status in ['PAGO', 'RECEBIDO', 'PARCIAL', 'CANCELADO']) {
-    testWidgets('$status hides new settlement and preserves historical date', (
+  for (final status in ['PAGO', 'RECEBIDO', 'PARCIAL']) {
+    testWidgets('$status edita cadastro sem enviar valores ou baixa', (
       tester,
     ) async {
       final service = _Service();
       service.detail.addAll({
         'status': status,
         'dataLiquidacao': '2026-09-03T14:20:00',
-        'valorPagoRecebido': status == 'CANCELADO' ? 0 : 50,
+        'valorPagoRecebido': 50,
         'valorAberto': status == 'PARCIAL' ? 50 : 0,
+        'dadosEdicao': {
+          'podeEditar': true,
+          'somenteCadastro': true,
+          'serieRecorrenciaId': 'serie',
+          'recorrente': true,
+        },
       });
       await _pump(
         tester,
@@ -531,20 +548,26 @@ void main() {
           service: service,
           caixaApiClient: _Caixa(),
         ),
+        scrollToPayment: false,
       );
-      expect(_fields(tester).permitirLiquidacao, false);
-      expect(
-        _fields(tester).liquidacaoPersistida,
-        DateTime(2026, 9, 3, 14, 20),
-      );
+      expect(find.byType(AgendaPagamentoMobileFields), findsNothing);
+      expect(find.byType(ContaFinanceiraMobileField), findsNothing);
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
       expect(_key('agenda-registrar-pagamento'), findsNothing);
       await _tap(
         tester,
         find.widgetWithText(FilledButton, 'Atualizar lançamento'),
       );
-      if (status == 'PAGO' || status == 'RECEBIDO') {
-        expect(service.saved.single.dataQuitacao, DateTime(2026, 9, 3, 14, 20));
-      }
+      expect(service.saved, isEmpty);
+      expect(service.metadata.single.descricao, 'Conta de teste');
+      expect(
+        service.metadata.single.toJson().containsKey('dataQuitacao'),
+        false,
+      );
+      expect(
+        service.metadata.single.toJson().containsKey('valorTotalOperacao'),
+        false,
+      );
     });
   }
 
