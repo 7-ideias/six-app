@@ -13,7 +13,7 @@ void main() {
     ('', 'RECEBIDO', 'Recebido'),
   ]) {
     testWidgets('quitacao ${caso.$1}/${caso.$2}: ${caso.$3}', (tester) async {
-      await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) =>
+      await tester.pumpWidget(MaterialApp(locale: const Locale('pt'), supportedLocales: const [Locale('pt'), Locale('en')], home: Builder(builder: (context) =>
         Text(AgendaFinanceiraStatusLabels.rotuloQuitacao(context, tipo: caso.$1, status: caso.$2)))));
       expect(find.text(caso.$3), findsOneWidget);
     });
