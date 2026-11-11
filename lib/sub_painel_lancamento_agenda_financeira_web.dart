@@ -293,7 +293,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
           descricao: _descricaoController.text.trim(),
           categoria: _categoriaController.text.trim(),
           alterarCentroCusto:
-              _centroCustoId != widget.lancamentoInicial?['centroCustoId'],
+              _centroCustoId != widget.lancamentoInicial?['centroCustoId'] ||
+              _centroCustoController.text !=
+                  (widget.lancamentoInicial?['centroDeCusto']?.toString() ??
+                      ''),
           centroCustoId: _centroCustoId,
           nomeContato: _idContatoController.text.trim().isEmpty
               ? _contatoController.text.trim()

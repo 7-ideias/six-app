@@ -133,7 +133,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         AgendaFinanceiraEdicaoCadastroRequest(
           descricao: _descricaoController.text.trim(),
           categoria: _categoriaController.text.trim(),
-          alterarCentroCusto: _centroCustoId != original['centroCustoId'],
+          alterarCentroCusto:
+              _centroCustoId != original['centroCustoId'] ||
+              _centroCustoController.text !=
+                  (original['centroDeCusto']?.toString() ?? ''),
           centroCustoId: _centroCustoId,
           nomeContato: (_idContato ?? '').trim().isEmpty
               ? _contatoController.text.trim()
