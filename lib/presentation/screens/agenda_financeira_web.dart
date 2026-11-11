@@ -1279,6 +1279,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
+    bool editar = false;
     final alterado = await showSixWebAnimatedDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -1295,6 +1296,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         fallback: fallback,
         formatarMoeda: _formatarMoeda,
         formatarData: _formatarDataFlexivel,
+        onEditarLancamento: () {
+          editar = true;
+          Navigator.of(dialogContext).pop(false);
+        },
         onBaixarComprovante: (formato) => _baixarComprovanteVenda(
           detalhe['idOperacaoComprovante']?.toString() ?? '',
           formato,
@@ -1304,7 +1309,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             _confirmarExcluirLiquidacaoDetalhe(item, liquidacao),
       ),
     );
-    if (alterado == true && mounted) await _consultar(mostrarFeedback: true);
+    if (editar && mounted) {
+      await _editarLancamento(item);
+    } else if (alterado == true && mounted) {
+      await _consultar(mostrarFeedback: true);
+    }
   }
 
   Future<void> _baixarComprovanteVenda(
@@ -1615,6 +1624,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
+    if (_executandoAcao) return;
+    setState(() => _executandoAcao = true);
     try {
       final detalhe = await _service.buscarDetalheLancamento(
         item['id'].toString(),
@@ -1640,8 +1651,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         );
       }
       return;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
     }
 
+    if (!mounted) return;
     final empresaAtual = _empresaNome(item['empresa']).trim();
     final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
     final atualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
@@ -3145,6 +3159,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     required this.onExcluirLancamento,
     required this.onExcluirLiquidacao,
     required this.onBaixarComprovante,
+    required this.onEditarLancamento,
   });
 
   final Map<String, dynamic> item;
@@ -3153,6 +3168,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   final String Function(double) formatarMoeda;
   final String Function(dynamic) formatarData;
   final Future<bool> Function() onExcluirLancamento;
+  final VoidCallback onEditarLancamento;
   final Future<void> Function(FormatoImpressaoOperacao) onBaixarComprovante;
   final Future<bool> Function(Map<String, dynamic> liquidacao)
   onExcluirLiquidacao;
@@ -3256,6 +3272,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                             child: Text(context.t('agenda.saleItems.pdfCupom')),
                           ),
                         ],
+                      ),
+                    if (!fallback && acoes.contains('EDITAR'))
+                      IconButton(
+                        key: const ValueKey('agenda-detail-edit'),
+                        tooltip: context.t('agenda.edit.action'),
+                        onPressed: onEditarLancamento,
+                        icon: const Icon(Icons.edit_outlined),
                       ),
                     if (![
                       'Cancelado',
@@ -3576,7 +3599,17 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                     spacing: 8,
                                     runSpacing: 8,
                                     children: acoes
-                                        .map((a) => Chip(label: Text(a)))
+                                        .map(
+                                          (a) => Chip(
+                                            label: Text(
+                                              a == 'EDITAR'
+                                                  ? context.t(
+                                                      'agenda.edit.action',
+                                                    )
+                                                  : a,
+                                            ),
+                                          ),
+                                        )
                                         .toList(),
                                   ),
                                 ],
