@@ -75,7 +75,7 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
       if (mostrarVencimento && vencimento.isNotEmpty && vencimento != '-')
         TextSpan(
           text:
-              ' • ${context.t('agenda.mobile.due', params: {'date': vencimento})}',
+              ' • ${context.t('agenda.mobile.due').replaceAll('{date}', vencimento)}',
         ),
       if (item['recorrente'] == true) TextSpan(text: ' • $rotuloRecorrente'),
     ];

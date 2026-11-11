@@ -1614,14 +1614,14 @@ class _AgendaFinanceiraMobileScreenState
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                context.t(
-                  'agenda.mobile.updated',
-                  params: {
-                    'time': context.read<LocaleSettingsProvider>().formatTime(
-                      _ultimaConsultaEm!,
+                context
+                    .t('agenda.mobile.updated')
+                    .replaceAll(
+                      '{time}',
+                      context.read<LocaleSettingsProvider>().formatTime(
+                        _ultimaConsultaEm!,
+                      ),
                     ),
-                  },
-                ),
                 style: TextStyle(color: _mutedTextColor, fontSize: 11),
               ),
             ),

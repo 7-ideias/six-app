@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 124034)
-Total output lines: 8710
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -4259,7 +4256,282 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.services.subtitle':
         'Distribution of service calls assigned to you.',
     'collaboratorHome.services.open': 'Open service calls',
-    'c…4034 tokens truncated…tus',
+    'collaboratorHome.services.loadError': 'We could not load your services.',
+    'collaboratorHome.services.empty':
+        'No service call is currently assigned to you.',
+    'collaboratorHome.services.total': 'Total assigned',
+    'collaboratorHome.services.inProgress': 'In progress',
+    'collaboratorHome.services.dueToday': 'Due today',
+    'collaboratorHome.services.overdue': 'Overdue',
+    'collaboratorHome.services.moreStatuses':
+        '{count} more statuses with activity',
+    'collaboratorHome.services.unknownStatus': 'No status',
+    'collaboratorHome.reservations.title': 'Reservation queue',
+    'collaboratorHome.reservations.subtitle':
+        'Catalog requests that can become sales.',
+    'collaboratorHome.reservations.open': 'Open reservations',
+    'collaboratorHome.reservations.loadError':
+        'We could not load reservations.',
+    'collaboratorHome.reservations.pending': 'Pending',
+    'collaboratorHome.reservations.received': 'Received',
+    'collaboratorHome.reservations.analysis': 'Under review',
+    'collaboratorHome.reservations.confirmed': 'Confirmed',
+    'collaboratorHome.reservations.converted': 'Converted',
+    'performance.home.title': 'My goals',
+    'performance.home.subtitle':
+        'Track your goals and results updated by SixoApp.',
+    'performance.home.dashboardTitle': 'Goal vs. result',
+    'performance.home.period': 'Results from {start} to {end}',
+    'performance.home.accessibilityLabel': 'My goals dashboard',
+    'performance.home.loading': 'Loading your goals',
+    'performance.home.loadError': 'Could not update your goals.',
+    'performance.home.emptyTitle': 'No active goal this month',
+    'performance.home.emptySubtitle':
+        'When a goal is assigned to you, its result will appear here.',
+    'performance.home.result': 'Result',
+    'performance.home.target': 'Goal',
+    'workspaceHome.viewSelector': 'Select the home view',
+    'workspaceHome.view.operational': 'Operations',
+    'workspaceHome.view.performance': 'Performance',
+    'performance.dashboard.teamTitle': 'Team performance',
+    'performance.dashboard.myTitle': 'My performance',
+    'performance.dashboard.subtitle':
+        'Active goals, sales, service calls, and cash status in one place.',
+    'performance.dashboard.mobileSubtitle':
+        'Goals, sales, service calls, and cash status with near-live updates.',
+    'performance.dashboard.staleData':
+        'The latest data remains visible. It could not be refreshed now.',
+    'performance.dashboard.live': 'Automatic updates',
+    'performance.dashboard.liveShort': 'Live',
+    'performance.dashboard.allCollaborators': 'All collaborators',
+    'performance.dashboard.selectedCollaborators': '{count} collaborators',
+    'performance.dashboard.filterTitle': 'Filter collaborators',
+    'performance.dashboard.filterHint': 'Select one or more collaborators.',
+    'performance.dashboard.searchCollaborators': 'Search collaborators',
+    'performance.dashboard.noCollaboratorsFound': 'No collaborators found.',
+    'performance.dashboard.periodFilter': 'Select period',
+    'performance.dashboard.periodToday': 'Today',
+    'performance.dashboard.period7Days': 'Last 7 days',
+    'performance.dashboard.period30Days': 'Last 30 days',
+    'performance.dashboard.periodMonth': 'Current month',
+    'performance.dashboard.score': 'Performance',
+    'performance.dashboard.activeGoals': '{count} active goals',
+    'performance.dashboard.sales': 'Sales',
+    'performance.dashboard.salesCount': '{count} sales',
+    'performance.dashboard.assistance': 'Service calls',
+    'performance.dashboard.finishedCount': '{count} completed',
+    'performance.dashboard.assistanceCaption': '{count} completed • {amount}',
+    'performance.dashboard.cash': 'Cash register',
+    'performance.dashboard.cashUnavailable': 'Unavailable',
+    'performance.dashboard.cashOpen': 'Open',
+    'performance.dashboard.cashClosed': 'Closed',
+    'performance.dashboard.cashCaption': 'Current business status',
+    'performance.dashboard.cashCaptionMine': 'My current cash register',
+    'performance.dashboard.teamComparison': 'Team comparison',
+    'performance.dashboard.goalProgress': 'Goal progress',
+    'performance.dashboard.chartCaption':
+        'Percentage completed against the period target.',
+    'performance.dashboard.chartEmpty': 'There is no goal data for the chart.',
+    'performance.dashboard.goalsTitle': 'Active goals',
+    'performance.indicator.salesValue': 'Sales amount',
+    'performance.indicator.salesQuantity': 'Number of sales',
+    'performance.indicator.servicesValue': 'Services amount',
+    'performance.indicator.serviceCalls': 'Technical services',
+    'performance.indicator.finishedServiceCalls': 'Completed services',
+    'performance.indicator.serviceCallsValue': 'Service calls amount',
+    'workspaceHome.section.today': 'Today status',
+    'workspaceHome.section.attention': 'Needs your attention',
+    'workspaceHome.section.quickActions': 'Quick actions',
+    'workspaceHome.empty.today':
+        'No summary block is available for your permissions.',
+    'dashboardInicio.mobileGreetingSubtitle':
+        'See the main activity for {empresa} today.',
+    'workspaceHome.empty.attention': 'No important pending items right now.',
+    'workspaceHome.empty.quickActions':
+        'No quick action is available for your permissions.',
+    'workspaceHome.cash.title': 'Cash register',
+    'workspaceHome.cash.open': 'Open',
+    'workspaceHome.cash.closed': 'Closed',
+    'workspaceHome.cash.openedAt': 'since {time}',
+    'workspaceHome.cash.openedAtWithDate': 'since {date} at {time}',
+    'workspaceHome.cash.responsible': 'Opened by {name}',
+    'workspaceHome.technical.title': 'Services',
+    'workspaceHome.technical.active.one': '1 in progress',
+    'workspaceHome.technical.active.other': '{count} in progress',
+    'workspaceHome.financial.receivableToday': 'Receivable today',
+    'workspaceHome.financial.payableToday': 'Payable today',
+    'workspaceHome.financial.count.one': '1 account',
+    'workspaceHome.financial.count.other': '{count} accounts',
+    'workspaceHome.stock.title': 'Stock',
+    'workspaceHome.stock.noCritical': 'No critical alerts',
+    'workspaceHome.stock.belowMinimum.one': '1 below minimum',
+    'workspaceHome.stock.belowMinimum.other': '{count} below minimum',
+    'workspaceHome.stock.withoutStock.one': '1 out of stock',
+    'workspaceHome.stock.withoutStock.other': '{count} out of stock',
+    'workspaceHome.stock.negative.one': '1 negative',
+    'workspaceHome.stock.negative.other': '{count} negative',
+    'workspaceHome.attention.lateServices.one': '1 late service',
+    'workspaceHome.attention.lateServices.other': '{count} late services',
+    'workspaceHome.attention.waitingApproval.one':
+        '1 quote waiting for approval',
+    'workspaceHome.attention.waitingApproval.other':
+        '{count} quotes waiting for approval',
+    'workspaceHome.attention.readyForPickup.one': '1 device ready for pickup',
+    'workspaceHome.attention.readyForPickup.other':
+        '{count} devices ready for pickup',
+    'workspaceHome.attention.overdueReceivable.one': '1 overdue receivable',
+    'workspaceHome.attention.overdueReceivable.other':
+        '{count} overdue receivables',
+    'workspaceHome.attention.overduePayable.one': '1 overdue payable',
+    'workspaceHome.attention.overduePayable.other': '{count} overdue payables',
+    'workspaceHome.attention.stockNegative.one':
+        '1 product with negative stock',
+    'workspaceHome.attention.stockNegative.other':
+        '{count} products with negative stock',
+    'workspaceHome.attention.stockWithout.one': '1 product out of stock',
+    'workspaceHome.attention.stockWithout.other':
+        '{count} products out of stock',
+    'workspaceHome.attention.stockBelow.one': '1 product below minimum stock',
+    'workspaceHome.attention.stockBelow.other':
+        '{count} products below minimum stock',
+    'workspaceHome.action.openTechnicalServices': 'Open services',
+    'workspaceHome.action.openFinancial': 'Open financial',
+    'workspaceHome.action.openStock': 'Open stock',
+    'workspaceHome.quickAction.newSale': 'Sales',
+    'workspaceHome.quickAction.newTechnicalService': 'Services',
+    'workspaceHome.quickAction.cash': 'Cash register',
+    'workspaceHome.quickAction.financialAgenda': 'Financial agenda',
+    'streak.title': 'Streak',
+    'streak.mobile': 'Mobile',
+    'streak.web': 'Web',
+    'streak.shared': 'Overall',
+    'streak.longest': 'Best',
+    'streak.oneDay': '1 day',
+    'streak.days': '{count} days',
+    'streak.daysOfStreak': '{count} day streak',
+    'streak.keepUsing': 'Use SixoApp every day to keep your streak.',
+    'streak.startedToday': 'Your streak started today.',
+    'streak.loading': 'Loading your streak days.',
+    'streak.loadError': 'Could not load your streak.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filter businesses: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filter businesses',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Choose a business to view on the dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'All',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Search business',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle': 'No business available',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'We could not find active links for this user.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'Could not load the available businesses right now.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'Could not switch the business right now. Try again.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filter dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Choose the business and, if needed, refine by collaborator.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Business',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Defines which business feeds the displayed indicators.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Collaborator',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'All collaborators',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Shows the dashboard indicators for the selected collaborator.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Choose a specific business before filtering collaborators.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Loading collaborators for the current business.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filter collaborator',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Choose a collaborator to refine the indicators.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Search collaborator',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'No collaborator available',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'We could not find active collaborators for this business.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'Could not load the collaborators for this business right now.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Selected collaborator',
+    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Backend requests',
+    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
+        'Responses monitored in the selected backend time window.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
+        'Filter backend requests',
+    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
+        'Enter the time window used to count status 200, 400 and 500 responses.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel': 'Amount',
+    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unit',
+    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutes',
+    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Hours',
+    'dashboardInicio.mobileInfrastructureRequestsFilterApply': 'Apply window',
+    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minute',
+    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutes',
+    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hour',
+    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'hours',
+    'mobile.nav.dash': 'dash',
+    'mobile.nav.home': 'Home',
+    'mobile.nav.management': 'Management',
+    'mobile.nav.service': 'Service',
+    'empresa.configuracao.title': 'Company',
+    'empresa.configuracao.loadError': 'Could not load company data.',
+    'empresa.configuracao.saveSuccess': 'Company data updated successfully.',
+    'empresa.configuracao.saveError': 'Could not save company data.',
+    'empresa.configuracao.summaryTitle': 'Business data',
+    'empresa.configuracao.summarySubtitle':
+        'Update the information used in documents and service.',
+    'empresa.configuracao.identityTitle': 'Company identity',
+    'empresa.configuracao.identitySubtitle':
+        'Review the main data before saving changes.',
+    'empresa.configuracao.legalName': 'Legal name',
+    'empresa.configuracao.legalNameHint': 'Company legal name',
+    'empresa.configuracao.tradeName': 'Trade name',
+    'empresa.configuracao.tradeNameHint': 'Commercial name used during service',
+    'empresa.configuracao.document': 'Company document',
+    'empresa.configuracao.documentHint': 'Tax ID or equivalent fiscal document',
+    'empresa.configuracao.requiredField': 'Fill in this field.',
+    'empresa.configuracao.readyToEdit': 'Data ready for editing.',
+    'empresa.configuracao.waitingData': 'Waiting for company data.',
+    'empresa.configuracao.statusSubtitle':
+        'Saved information appears in business documents and receipts.',
+    'empresa.configuracao.saveChanges': 'Save changes',
+    'empresa.configuracao.logoTitle': 'Company logo',
+    'empresa.configuracao.logoSubtitle':
+        'Add a clear image, preferably square.',
+    'empresa.configuracao.logoRegistered':
+        'Image ready to save in the business profile.',
+    'empresa.configuracao.logoSelect': 'Select logo',
+    'empresa.configuracao.logoChange': 'Change logo',
+    'empresa.configuracao.logoRemove': 'Remove',
+    'empresa.configuracao.logoSheetTitle': 'Add logo',
+    'empresa.configuracao.logoSheetSubtitle':
+        'Choose an image from the gallery or take a photo.',
+    'empresa.configuracao.logoFromGallery': 'Choose from gallery',
+    'empresa.configuracao.logoFromCamera': 'Use camera',
+    'empresa.configuracao.logoLoadError': 'Could not load the logo.',
+    'empresa.configuracao.logoTooLarge': 'Choose an image up to 1 MB.',
+    'empresa.configuracao.logoSemantics': 'Company logo registered.',
+    'empresa.configuracao.logoEmptySemantics': 'No logo registered.',
+    'atendimentoTecnico.status': 'Status',
+    'atendimentoTecnico.filters.paymentStatus.label': 'Payment status',
+    'atendimentoTecnico.filters.paymentStatus.tooltip':
+        'Filter by payment status',
+    'atendimentoTecnico.filters.paymentStatus.helper':
+        'Filter service records by open balance or paid status.',
+    'atendimentoTecnico.filters.paymentStatus.all': 'All payments',
+    'atendimentoTecnico.filters.paymentStatus.open': 'Open',
+    'atendimentoTecnico.filters.paymentStatus.paid': 'Paid',
+    'atendimentoTecnico.filters.multiSelected': '{count} selected',
+    'atendimentoTecnico.filters.technician.label': 'Responsible technician',
+    'atendimentoTecnico.filters.technician.tooltip': 'Filter by technician',
+    'atendimentoTecnico.filters.technician.all': 'All technicians',
+    'atendimentoTecnico.filters.technician.none': 'No responsible technician',
+    'atendimentoTecnico.filters.technician.selectedFallback':
+        'Selected technician',
+    'atendimentoTecnico.filters.status.tooltip': 'Filter by status',
+    'atendimentoTecnico.filters.status.all': 'All statuses',
+    'atendimentoTecnico.filters.status.allWithCount': 'All statuses ({count})',
+    'atendimentoTecnico.filters.status.selectedFallback': 'Selected status',
     'atendimentoTecnico.lista.openDetails': 'View details',
     'atendimentoTecnico.lista.detailsDialog.title': 'Service details',
     'atendimentoTecnico.lista.detailsDialog.subtitle':
