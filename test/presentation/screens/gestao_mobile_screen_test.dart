@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,26 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/presentation/controllers/gestao_mobile_assets_context_controller.dart';
 import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
+
+class _Overview extends ManagementOverviewProvider {
+  _Overview(ManagementOverviewSnapshot state) : super(initialSnapshot: state);
+  @override
+  Future<ManagementSectionLoadState<ManagementFinanceOverview>>
+  consultarFinanceiro({
+    String espaco = 'EMPRESA',
+    AgendaFinanceiraPeriodoRequest? periodo,
+  }) async => snapshot.finance.hasError
+      ? snapshot.finance
+      : ManagementSectionLoadState.data(
+          snapshot.finance.data ??
+              const ManagementFinanceOverview(
+                totalEvents: 0,
+                receivableEvents: 0,
+                payableEvents: 0,
+                attentionEvents: 0,
+              ),
+        );
+}
 
 void main() {
   setUp(() {
@@ -264,9 +285,7 @@ void main() {
     ]);
   });
 
-  testWidgets('preserva avisos em Configurações', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('preserva avisos em Configurações', (WidgetTester tester) async {
     await _pumpGestao(tester, area: GestaoMobileArea.configuracoes);
 
     expect(find.text('Usuários e permissões'), findsOneWidget);
@@ -333,9 +352,13 @@ void main() {
         navigations: navigations,
         area: GestaoMobileArea.financeiro,
       );
-      expect(find.text('Agenda sem lançamentos próximos'), findsOneWidget);
+      expect(
+        find.text('Nenhuma conta em aberto neste período.'),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.text('Abrir agenda'));
+      await tester.ensureVisible(find.text('Agenda financeira'));
+      await tester.tap(find.text('Agenda financeira'));
       await tester.pump(const Duration(milliseconds: 80));
       expect(navigations, contains('AgendaFinanceiraMobileScreen'));
     },
@@ -406,8 +429,7 @@ Future<void> _pumpGestao(
     tester.view.resetDevicePixelRatio();
   });
 
-  final ManagementOverviewProvider overviewProvider =
-      ManagementOverviewProvider(initialSnapshot: snapshot);
+  final ManagementOverviewProvider overviewProvider = _Overview(snapshot);
 
   await tester.pumpWidget(
     MultiProvider(
@@ -426,29 +448,29 @@ Future<void> _pumpGestao(
       ],
       child: MaterialApp(
         home: MediaQuery(
-          data: (mediaQueryData ??
-                  const MediaQueryData(
-                    disableAnimations: true,
-                    accessibleNavigation: true,
-                  ))
-              .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
+          data:
+              (mediaQueryData ??
+                      const MediaQueryData(
+                        disableAnimations: true,
+                        accessibleNavigation: true,
+                      ))
+                  .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
             assetsContextController: _NoopGestaoAssetsController(),
             area: area,
             showBottomNavigationBar: showBottomNavigationBar,
-            onNavigate:
-                navigations == null
-                    ? null
-                    : (_, Widget page) {
-                      if (page case GestaoMobileScreen(:final area)) {
-                        navigations.add(
-                          'GestaoMobileScreen:${area?.name ?? 'hub'}',
-                        );
-                        return;
-                      }
-                      navigations.add(page.runtimeType.toString());
-                    },
+            onNavigate: navigations == null
+                ? null
+                : (_, Widget page) {
+                    if (page case GestaoMobileScreen(:final area)) {
+                      navigations.add(
+                        'GestaoMobileScreen:${area?.name ?? 'hub'}',
+                      );
+                      return;
+                    }
+                    navigations.add(page.runtimeType.toString());
+                  },
           ),
         ),
       ),

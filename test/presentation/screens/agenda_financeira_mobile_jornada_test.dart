@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/management_overview_provider.dart';
+import 'package:sixpos/presentation/screens/financeiro_resumo_mobile_screen.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -74,6 +76,7 @@ class _Service extends AgendaFinanceiraLancamentoService {
   final saved = <LancamentoAgendaFinanceiraRequest>[];
   String? consultedSpace;
   AgendaFinanceiraConsultaRequest? lastQuery;
+  Map<String, dynamic> agenda = {};
   bool failSave = false;
   bool failDetail = false;
   @override
@@ -103,7 +106,7 @@ class _Service extends AgendaFinanceiraLancamentoService {
   ) async {
     consultedSpace = espacoFinanceiro;
     lastQuery = request;
-    return {};
+    return agenda;
   }
 
   @override
@@ -144,6 +147,143 @@ void main() {
         );
   });
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  for (final natureza in AgendaContasMobile.values) {
+    testWidgets(
+      'focused accounts ${natureza.name} isolate filters and show open balances',
+      (tester) async {
+        tester.view.physicalSize = const Size(430, 1800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final preference = jsonEncode({
+          'agendaFinanceiraFiltrosMobile': {
+            'espacoFinanceiro': 'PESSOAL',
+            'tipo': 'PAGAR',
+            'somenteImpostoRenda': true,
+            'visaoSelecionada': 'FLUXO_PREVISTO',
+          },
+        });
+        SharedPreferences.setMockInitialValues({
+          'sixapp.preferenciasIndividuaisDoUsuario': preference,
+        });
+        final receber = natureza == AgendaContasMobile.receber;
+        final tipo = receber ? 'RECEBER' : 'PAGAR';
+        final service = _Service()
+          ..agenda = {
+            'gruposAgenda': [
+              {
+                'codigo': 'ATRASADOS',
+                'itens': [
+                  {
+                    'idLancamento': 'open',
+                    'tipo': tipo,
+                    'descricao': 'Conta pendente',
+                    'status': 'VENCIDO',
+                    'valorOriginal': 120,
+                    'valorRestante': 80,
+                    'valorConfirmado': 40,
+                    'dataVencimento': '2020-01-01',
+                    'acoesDisponiveis': ['DETALHAR'],
+                  },
+                  {
+                    'idLancamento': 'paid',
+                    'tipo': tipo,
+                    'descricao': 'Conta quitada',
+                    'status': receber ? 'RECEBIDO' : 'PAGO',
+                    'valorOriginal': 50,
+                    'valorRestante': 0,
+                    'valorConfirmado': 50,
+                    'dataVencimento': '2020-01-02',
+                    'acoesDisponiveis': ['DETALHAR'],
+                  },
+                  {
+                    'idLancamento': 'other',
+                    'tipo': receber ? 'PAGAR' : 'RECEBER',
+                    'descricao': 'Outro tipo',
+                    'status': 'PENDENTE',
+                    'valor': 999,
+                  },
+                ],
+              },
+            ],
+          };
+        await tester.pumpWidget(
+          _app(
+            AgendaFinanceiraMobileScreen(
+              contas: natureza,
+              lancamentoService: service,
+              caixaApiClient: _Caixa(),
+              enablePeriodHint: false,
+            ),
+            brightness: Brightness.dark,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(service.lastQuery!.filtros.tipo, tipo);
+        expect(service.lastQuery!.filtros.somenteImpostoRenda, isFalse);
+        expect(service.consultedSpace, 'PESSOAL');
+        expect(find.text('Conta pendente'), findsOneWidget);
+        expect(find.text('Conta quitada'), findsNothing);
+        expect(find.text('Outro tipo'), findsNothing);
+        expect(find.text('Fluxo previsto'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('contas-mobile-filter-2')));
+        await tester.pumpAndSettle();
+        expect(find.text('Conta quitada'), findsOneWidget);
+        expect(find.text('Conta pendente'), findsNothing);
+        await tester.enterText(
+          find.byKey(const ValueKey('contas-mobile-search')),
+          'inexistente',
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Conta quitada'), findsNothing);
+        expect(
+          (await SharedPreferences.getInstance()).getString(
+            'sixapp.preferenciasIndividuaisDoUsuario',
+          ),
+          preference,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  testWidgets(
+    'financial overview shows zeros, dark surfaces and forwards selected scope and dates',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final service = _Service();
+      final provider = ManagementOverviewProvider(
+        agendaFinanceiraService: service,
+      );
+      AgendaFinanceiraMobileScreen? destination;
+      await tester.pumpWidget(
+        _app(
+          FinanceiroResumoMobileScreen(
+            overviewProvider: provider,
+            onNavigate: (_, page) =>
+                destination = page as AgendaFinanceiraMobileScreen,
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('--'), findsNothing);
+      expect(
+        find.text('Nenhuma conta em aberto neste período.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Pessoal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Contas a receber'));
+      await tester.pumpAndSettle();
+      expect(destination!.contas, AgendaContasMobile.receber);
+      expect(destination!.espacoInicial, 'PESSOAL');
+      expect(destination!.periodoInicial, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('journey preserves details when navigating back', (tester) async {
     await tester.pumpWidget(
       _app(

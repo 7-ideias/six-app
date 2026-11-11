@@ -28,10 +28,12 @@ class AgendaFinanceiraLancamentoMobileCreateScreen extends StatefulWidget {
     super.key,
     this.service,
     this.caixaApiClient,
+    this.tipoInicial,
   });
 
   final AgendaFinanceiraLancamentoService? service;
   final CaixaApiClient? caixaApiClient;
+  final String? tipoInicial;
 
   @override
   State<AgendaFinanceiraLancamentoMobileCreateScreen> createState() =>
@@ -103,6 +105,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   @override
   void initState() {
     super.initState();
+    if (_tipos.contains(widget.tipoInicial))
+      _tipoSelecionado = widget.tipoInicial!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarTiposRecebimentoAtivos();
     });

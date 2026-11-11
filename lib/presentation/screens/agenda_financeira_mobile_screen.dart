@@ -43,6 +43,8 @@ import 'package:sixpos/providers/usuario_provider.dart';
 import 'agenda_financeira_lancamento_mobile_create_screen.dart';
 import 'agenda_financeira_lancamento_mobile_edit_screen.dart';
 
+enum AgendaContasMobile { receber, pagar }
+
 class AgendaFinanceiraMobileScreen extends StatefulWidget {
   const AgendaFinanceiraMobileScreen({
     super.key,
@@ -50,12 +52,20 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
     this.acoesFinanceiras,
     this.caixaApiClient,
     this.enablePeriodHint = true,
+    this.contas,
+    this.espacoInicial,
+    this.periodoInicial,
+    this.statusInicial,
   });
 
   final AgendaFinanceiraLancamentoService? lancamentoService;
   final AgendaFinanceiraAcoesFinanceiras? acoesFinanceiras;
   final CaixaApiClient? caixaApiClient;
   final bool enablePeriodHint;
+  final AgendaContasMobile? contas;
+  final String? espacoInicial;
+  final AgendaFinanceiraPeriodoRequest? periodoInicial;
+  final String? statusInicial;
 
   @override
   State<AgendaFinanceiraMobileScreen> createState() =>
@@ -123,6 +133,12 @@ class _AgendaFinanceiraMobileScreenState
       _editandoTipoPagamento = false;
     }
   }
+
+  bool get _visaoContas => widget.contas != null;
+  String get _tipoContas =>
+      widget.contas == AgendaContasMobile.receber ? 'Receber' : 'Pagar';
+  int _filtroContas = 0;
+  String _buscaContas = '';
 
   bool _trocandoEspaco = false;
   Future<void> _trocarEspaco(String espaco) async {
@@ -335,6 +351,21 @@ class _AgendaFinanceiraMobileScreenState
     final DateTime hoje = _hojeNormalizado();
     _dataInicioPersonalizada = DateTime(hoje.year, hoje.month, 1);
     _dataFimPersonalizada = hoje;
+    if (_visaoContas) {
+      _tipoSelecionado = _tipoContas;
+      _periodoSelecionado = 'Este mês';
+    }
+    if (widget.espacoInicial != null) {
+      _service.espacoFinanceiro = widget.espacoInicial!;
+      _acoesService.espacoFinanceiro = widget.espacoInicial!;
+    }
+    if (widget.periodoInicial != null) {
+      _periodoSelecionado = _periodoIntervaloPersonalizado;
+      _dataInicioPersonalizada = widget.periodoInicial!.dataInicio;
+      _dataFimPersonalizada = widget.periodoInicial!.dataFim;
+    }
+    if (widget.statusInicial != null)
+      _statusSelecionado = widget.statusInicial!;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _restaurarPreferenciasAgendaFinanceiraMobile();
       await _carregarTiposPagamentoConfigurados();
@@ -390,6 +421,16 @@ class _AgendaFinanceiraMobileScreenState
   void _aplicarPreferenciasAgendaFinanceiraMobile(
     AgendaFinanceiraFiltrosPreferencia filtros,
   ) {
+    if (widget.espacoInicial != null || widget.periodoInicial != null) return;
+    if (_visaoContas) {
+      if (!_usuarioAlterouFiltros) {
+        setState(() {
+          _service.espacoFinanceiro = filtros.espacoFinanceiro;
+          _acoesService.espacoFinanceiro = filtros.espacoFinanceiro;
+        });
+      }
+      return;
+    }
     final String periodo = _periodoLabelPreferencia(filtros.periodo);
     final String tipo = _tipoLabelPreferencia(filtros.tipo);
     final String status = _statusLabelPreferencia(filtros.status);
@@ -435,6 +476,10 @@ class _AgendaFinanceiraMobileScreenState
   void _salvarPreferenciasAgendaFinanceiraMobile() {
     if (_aplicandoPreferencias) return;
     _usuarioAlterouFiltros = true;
+    if (_visaoContas ||
+        widget.periodoInicial != null ||
+        widget.espacoInicial != null)
+      return;
     final AgendaFinanceiraFiltrosPreferencia filtros =
         AgendaFinanceiraFiltrosPreferencia(
           espacoFinanceiro: _service.espacoFinanceiro,
@@ -1115,6 +1160,7 @@ class _AgendaFinanceiraMobileScreenState
         builder: (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
           service: _service,
           caixaApiClient: _caixaApiClient,
+          tipoInicial: _visaoContas ? _tipoContas : null,
         ),
       ),
     );
@@ -1441,7 +1487,13 @@ class _AgendaFinanceiraMobileScreenState
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: context.t('agenda.mobile.title'),
+      title: context.t(
+        _visaoContas
+            ? (widget.contas == AgendaContasMobile.receber
+                  ? 'gestao.finance.receivable'
+                  : 'gestao.finance.payable')
+            : 'agenda.mobile.title',
+      ),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -1497,17 +1549,17 @@ class _AgendaFinanceiraMobileScreenState
             SizedBox(height: 14),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 110),
-              child: _buildResumo(),
+              child: _visaoContas ? _buildResumoContas() : _buildResumo(),
             ),
             SizedBox(height: 16),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 160),
-              child: _buildTabs(),
+              child: _visaoContas ? _buildFiltrosContas() : _buildTabs(),
             ),
             SizedBox(height: 12),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 210),
-              child: _buildConteudoAba(),
+              child: _visaoContas ? _buildListaContas() : _buildConteudoAba(),
             ),
           ],
         ),
@@ -1516,7 +1568,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   List<String> get _filtrosAtivos => [
-    if (_tipoSelecionado != 'Todos') _tipoSelecionado,
+    if (!_visaoContas && _tipoSelecionado != 'Todos') _tipoSelecionado,
     if (_statusSelecionado != 'Todos') _statusSelecionado,
     ..._formasPagamentoSelecionadas,
     ..._centrosCustoSelecionados,
@@ -1528,6 +1580,151 @@ class _AgendaFinanceiraMobileScreenState
     'agenda.mobile.period.${_periodos.indexOf(periodo)}',
     fallback: periodo,
   );
+
+  bool _contaAberta(Map<String, dynamic> item) =>
+      !['Cancelado', 'Pago', 'Recebido'].contains(item['status']) &&
+      _toDouble(item['valorRestante']) > 0;
+
+  Widget _buildResumoContas() {
+    if (_carregando || _erroConsulta != null) return const SizedBox.shrink();
+    final abertas = _itensAgenda.where(_contaAberta).toList();
+    final total = abertas.fold<double>(
+      0,
+      (s, i) => s + _toDouble(i['valorRestante']),
+    );
+    final cor = AgendaFinanceiraLancamentoCardMobile.corNatureza(
+      context,
+      widget.contas == AgendaContasMobile.receber,
+    );
+    return Container(
+      key: const ValueKey('contas-mobile-summary'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('accounts.mobile.openPeriod'),
+            style: TextStyle(color: _mutedTextColor),
+          ),
+          const SizedBox(height: 6),
+          TweenAnimationBuilder<double>(
+            key: ValueKey('contas-total-$total'),
+            tween: Tween(begin: 0, end: total),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 350),
+            builder: (_, value, __) => Text(
+              _formatarMoeda(value),
+              style: TextStyle(
+                color: cor,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context
+                .t('accounts.mobile.count')
+                .replaceAll('{count}', '${abertas.length}'),
+            style: TextStyle(color: _mutedTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFiltrosContas() => Column(
+    children: [
+      TextField(
+        key: const ValueKey('contas-mobile-search'),
+        onChanged: (v) => setState(() => _buscaContas = v.trim().toLowerCase()),
+        decoration: InputDecoration(
+          hintText: context.t('accounts.mobile.search'),
+          prefixIcon: const Icon(Icons.search_rounded),
+          filled: true,
+          fillColor: _surfaceColor,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      const SizedBox(height: 10),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (int i = 0; i < 4; i++)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  key: ValueKey('contas-mobile-filter-$i'),
+                  label: Text(
+                    context.t(
+                      [
+                        'accounts.mobile.open',
+                        'accounts.mobile.overdue',
+                        widget.contas == AgendaContasMobile.receber
+                            ? 'accounts.mobile.received'
+                            : 'accounts.mobile.paid',
+                        'accounts.mobile.all',
+                      ][i],
+                    ),
+                  ),
+                  selected: _filtroContas == i,
+                  onSelected: _ocupado
+                      ? null
+                      : (_) => setState(() => _filtroContas = i),
+                  selectedColor: _softBlueColor,
+                  backgroundColor: _surfaceColor,
+                ),
+              ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildListaContas() {
+    if (_erroConsulta != null) return _buildErrorState(_erroConsulta!);
+    if (_carregando) return const SizedBox.shrink();
+    final itens =
+        _itensAgenda.where((item) {
+          final texto = '${item['descricao'] ?? ''} ${item['contato'] ?? ''}'
+              .toLowerCase();
+          if (!texto.contains(_buscaContas)) return false;
+          switch (_filtroContas) {
+            case 0:
+              return _contaAberta(item);
+            case 1:
+              final data = _parseDataBr(item['vencimento']?.toString());
+              return _contaAberta(item) &&
+                  data != null &&
+                  data.isBefore(_hojeNormalizado());
+            case 2:
+              return ['Pago', 'Recebido'].contains(item['status']);
+            default:
+              return true;
+          }
+        }).toList()..sort(
+          (a, b) =>
+              (_parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999))
+                  .compareTo(
+                    _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999),
+                  ),
+        );
+    if (itens.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.task_alt_rounded,
+        title: context.t('accounts.mobile.empty'),
+        subtitle: context.t('accounts.mobile.emptyHelp'),
+      );
+    }
+    return Column(children: itens.map(_buildLancamentoCard).toList());
+  }
 
   Widget _buildFilterCard() {
     final filtros = _filtrosAtivos;
@@ -1839,21 +2036,23 @@ class _AgendaFinanceiraMobileScreenState
                               ),
                             ],
                             SizedBox(height: 16),
-                            _buildFilterOptions(
-                              title: 'Tipo',
-                              values: _tipos,
-                              selected: tipoTemp,
-                              onSelected: (value) =>
-                                  setModalState(() => tipoTemp = value),
-                            ),
+                            if (!_visaoContas)
+                              _buildFilterOptions(
+                                title: 'Tipo',
+                                values: _tipos,
+                                selected: tipoTemp,
+                                onSelected: (value) =>
+                                    setModalState(() => tipoTemp = value),
+                              ),
                             SizedBox(height: 16),
-                            _buildFilterOptions(
-                              title: 'Status',
-                              values: _status,
-                              selected: statusTemp,
-                              onSelected: (value) =>
-                                  setModalState(() => statusTemp = value),
-                            ),
+                            if (!_visaoContas)
+                              _buildFilterOptions(
+                                title: 'Status',
+                                values: _status,
+                                selected: statusTemp,
+                                onSelected: (value) =>
+                                    setModalState(() => statusTemp = value),
+                              ),
                             SizedBox(height: 16),
                             _buildFilterOptions(
                               title: 'Tipo de pagamento',
