@@ -10,11 +10,13 @@ class ConfiguracaoFinanceiraWebEditor extends StatefulWidget {
     required this.grupo,
     this.item,
     this.selecionarAoCriar = false,
+    this.onSaved,
   }) : assert(!selecionarAoCriar || (grupo == 'CONTAS' && item == null));
   final ConfiguracaoFinanceiraService service;
   final String grupo;
   final ConfiguracaoFinanceira? item;
   final bool selecionarAoCriar;
+  final ValueChanged<String>? onSaved;
   @override
   State<ConfiguracaoFinanceiraWebEditor> createState() =>
       _ConfiguracaoFinanceiraWebEditorState();
@@ -65,7 +67,10 @@ class _ConfiguracaoFinanceiraWebEditorState
         instituicao: _instituicao.text,
         ativo: _ativo,
       );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        widget.onSaved?.call(_ativo ? _nome.text.trim() : '');
+        Navigator.of(context).pop();
+      }
     } catch (_) {
       if (mounted)
         setState(() {
@@ -110,11 +115,9 @@ class _ConfiguracaoFinanceiraWebEditorState
                 enabled: !_saving,
                 maxLength: 120,
                 decoration: InputDecoration(labelText: context.t('space.name')),
-                validator:
-                    (s) =>
-                        s == null || s.trim().isEmpty
-                            ? context.t('space.required')
-                            : null,
+                validator: (s) => s == null || s.trim().isEmpty
+                    ? context.t('space.required')
+                    : null,
               ),
               if (widget.grupo == 'CONTAS' || widget.grupo == 'MAQUININHAS')
                 TextField(
@@ -150,10 +153,9 @@ class _ConfiguracaoFinanceiraWebEditorState
                       ChoiceChip(
                         label: Text(context.t('space.' + tipo)),
                         selected: tipo == _tipo,
-                        onSelected:
-                            _saving
-                                ? null
-                                : (_) => setState(() => _tipo = tipo),
+                        onSelected: _saving
+                            ? null
+                            : (_) => setState(() => _tipo = tipo),
                       ),
                   ],
                 ),

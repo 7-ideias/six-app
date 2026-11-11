@@ -71,6 +71,98 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.adjustments.title': 'Desconto e acréscimo',
+    'agenda.settlementEdit.date': 'Data efetiva do pagamento/recebimento',
+    'agenda.settlementEdit.classification': 'Editar classificação',
+    'agenda.settlementEdit.noCategory': 'Sem categoria',
+    'agenda.settlementEdit.category': 'Categoria',
+    'agenda.settlementEdit.supplier': 'Fornecedor',
+    'agenda.settlementEdit.customer': 'Cliente',
+    'agenda.settlementEdit.originContact':
+        'Contato vinculado: altere no registro de origem.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'As alterações valem apenas para este lançamento e serão salvas ao confirmar a baixa.',
+    'agenda.settlementEdit.moreInfo': 'Mais informações',
+    'agenda.settlementEdit.note': 'Observação desta baixa',
+    'agenda.settlementEdit.launchNote': 'Observação do lançamento',
+    'agenda.settlementEdit.original': 'Valor original',
+    'agenda.settlementEdit.due': 'Vencimento',
+    'agenda.settlementEdit.competence': 'Competência',
+    'agenda.settlementEdit.originalHint':
+        'Valor original e datas previstas são preservados. Para alterá-los, edite o lançamento.',
+    'agenda.settlementEdit.excess': 'Valor excedente',
+    'agenda.settlementEdit.distribute': 'Falta distribuir',
+    'agenda.settlementEdit.saveError':
+        'Não foi possível confirmar a baixa. Revise os dados e tente novamente.',
+    'agenda.settlementEdit.success': 'Baixa confirmada',
+    'agenda.adjustments.reversed': 'Baixas estornadas',
+    'agenda.adjustments.reversedSuccess': 'Baixa estornada com sucesso.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Estorne primeiro as baixas posteriores para manter o saldo consistente.',
+    'agenda.adjustments.reverse': 'Estornar baixa',
+    'agenda.adjustments.discount': 'Desconto',
+    'agenda.adjustments.surcharge': 'Acréscimo',
+    'agenda.adjustments.adjusted': 'Total para quitar',
+    'agenda.adjustments.balanceAfter': 'Saldo após esta baixa',
+    'agenda.adjustments.useAdjusted': 'Usar total ajustado',
+    'agenda.adjustments.invalid':
+        'Informe ajustes positivos com até duas casas decimais. O total deve ser maior que zero.',
+    'agenda.adjustments.partialInvalid':
+        'A baixa parcial deve reduzir a dívida e deixar saldo em aberto. Para quitar, selecione Total.',
+    'agenda.adjustments.reverseGroup':
+        'Esta ação desfaz todas as formas de pagamento desta baixa, incluindo seu desconto e acréscimo, e recalcula o saldo.',
+    'agenda.category.search': 'Buscar categoria',
+    'agenda.category.create': 'Nova categoria',
+    'agenda.category.edit': 'Editar categoria',
+    'agenda.category.empty':
+        'Nenhuma categoria cadastrada. Crie a primeira aqui.',
+    'agenda.category.choose': 'Escolher ou cadastrar categoria',
+    'agenda.list.showCanceled': 'Mostrar cancelados',
+    'agenda.list.originalValue': 'Valor original',
+    'agenda.list.noBalance': 'Sem efeito no saldo',
+    'agenda.list.cancelOccurrence': 'Cancelar ocorrência',
+    'agenda.list.deleteLaunch': 'Excluir lançamento',
+    'agenda.journey.currentCompany': 'Empresa atual',
+    'agenda.journey.type': 'Tipo',
+    'agenda.journey.space': 'Espaço',
+    'agenda.journey.details': 'Detalhes',
+    'agenda.journey.recurrence': 'Recorrência',
+    'agenda.journey.step': 'Etapa {step} de 4',
+    'agenda.journey.typeTitle': 'Você vai pagar ou receber?',
+    'agenda.journey.typeHint': 'Comece escolhendo o tipo de lançamento.',
+    'agenda.journey.payHint': 'Uma conta ou despesa que você precisa pagar.',
+    'agenda.journey.receiveHint': 'Um valor que você tem a receber.',
+    'agenda.journey.spaceTitle': 'Esse lançamento é pessoal ou da empresa?',
+    'agenda.journey.spaceHint': 'Escolha onde organizar essa conta.',
+    'agenda.journey.personalHint':
+        'Suas contas pessoais, separadas das finanças da empresa.',
+    'agenda.journey.companyHint': 'Finanças da empresa selecionada:',
+    'agenda.journey.detailsTitle': 'Quais são os dados do lançamento?',
+    'agenda.journey.detailsHint':
+        'Informe a descrição, o valor e o vencimento. Complete os demais dados conforme precisar.',
+    'agenda.journey.recurrenceTitle': 'Esse lançamento se repete?',
+    'agenda.journey.recurrenceHint':
+        'Defina a repetição e confira o resumo antes de salvar.',
+    'agenda.journey.once': 'Uma única vez',
+    'agenda.journey.onceHint': 'Criar apenas este lançamento.',
+    'agenda.journey.repeat': 'Repetir',
+    'agenda.journey.repeatHint': 'Repetir o valor em novos vencimentos.',
+    'agenda.journey.back': 'Voltar',
+    'agenda.journey.continue': 'Continuar',
+    'agenda.journey.perOccurrence': 'Valor por ocorrência',
+    'agenda.journey.perOccurrenceHint':
+        'O valor informado será repetido em cada ocorrência; não será dividido em parcelas.',
+    'agenda.journey.firstDue': 'Primeiro vencimento',
+    'agenda.journey.settlementFirst':
+        'Após salvar, confirme a baixa deste lançamento. Se houver repetição, os próximos vencimentos continuarão em aberto.',
+    'agenda.journey.spaceResetHint':
+        'Ao trocar o espaço, conta, categoria, centro de custo, contato e responsável serão limpos, e a forma prevista será recarregada. Descrição, valor e datas serão mantidos.',
+    'agenda.journey.discardTitle': 'Descartar este lançamento?',
+    'agenda.journey.discardHint':
+        'Os dados preenchidos ainda não foram salvos.',
+    'agenda.journey.keepEditing': 'Continuar preenchendo',
+    'agenda.journey.discard': 'Descartar',
+    'agenda.journey.invalidAmount': 'Informe um valor maior que zero.',
     'suppliers.web.title': 'Fornecedores',
     'suppliers.web.subtitle':
         'Gestão de fornecedores, parceiros e contatos comerciais.',
@@ -113,11 +205,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'purchases.permission.edit': 'Editar compras',
     'purchases.permission.editDescription': 'Alterar compras em rascunho.',
     'purchases.permission.confirm': 'Confirmar compras',
-    'purchases.permission.confirmDescription': 'Confirmar e gerar contas a pagar.',
+    'purchases.permission.confirmDescription':
+        'Confirmar e gerar contas a pagar.',
     'purchases.permission.cancel': 'Cancelar compras',
-    'purchases.permission.cancelDescription': 'Cancelar pedidos conforme regras financeiras.',
+    'purchases.permission.cancelDescription':
+        'Cancelar pedidos conforme regras financeiras.',
     'purchases.permission.receive': 'Receber mercadorias',
-    'purchases.permission.receiveDescription': 'Registrar a entrada efetiva dos produtos.',
+    'purchases.permission.receiveDescription':
+        'Registrar a entrada efetiva dos produtos.',
     'suppliers.permission.read': 'Consultar fornecedores',
     'suppliers.permission.readDescription': 'Consultar fornecedores da conta.',
     'suppliers.permission.create': 'Cadastrar fornecedores',
@@ -125,7 +220,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'suppliers.permission.edit': 'Editar fornecedores',
     'suppliers.permission.editDescription': 'Alterar cadastros existentes.',
     'suppliers.permission.disable': 'Ativar / inativar fornecedores',
-    'suppliers.permission.disableDescription': 'Alterar status dos fornecedores.',
+    'suppliers.permission.disableDescription':
+        'Alterar status dos fornecedores.',
     'space.createAccount': 'Cadastrar conta',
     'space.emptyAccountHint': 'Cadastre uma conta aqui para continuar.',
     'dateSelector.applyDate': 'Aplicar data',
@@ -252,7 +348,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.competence.nextYear': 'Próximo ano',
     'agenda.competence.apply': 'Aplicar',
     'agenda.saleItems.title': 'Produtos e serviços',
-    'agenda.saleItems.empty': 'Os itens dessa venda antiga não estão disponíveis no histórico.',
+    'agenda.saleItems.empty':
+        'Os itens dessa venda antiga não estão disponíveis no histórico.',
     'agenda.saleItems.product': 'Produto',
     'agenda.saleItems.service': 'Serviço',
     'agenda.saleItems.quantity': 'Qtd.',
@@ -2950,6 +3047,96 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.adjustments.title': 'Discount and surcharge',
+    'agenda.settlementEdit.date': 'Actual payment/receipt date',
+    'agenda.settlementEdit.classification': 'Edit classification',
+    'agenda.settlementEdit.noCategory': 'No category',
+    'agenda.settlementEdit.category': 'Category',
+    'agenda.settlementEdit.supplier': 'Supplier',
+    'agenda.settlementEdit.customer': 'Customer',
+    'agenda.settlementEdit.originContact':
+        'Linked contact: edit in the source record.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'Changes apply only to this entry and are saved when confirming the settlement.',
+    'agenda.settlementEdit.moreInfo': 'More information',
+    'agenda.settlementEdit.note': 'Settlement note',
+    'agenda.settlementEdit.launchNote': 'Entry note',
+    'agenda.settlementEdit.original': 'Original amount',
+    'agenda.settlementEdit.due': 'Due date',
+    'agenda.settlementEdit.competence': 'Accrual date',
+    'agenda.settlementEdit.originalHint':
+        'Original amount and planned dates are preserved. Edit the entry to change them.',
+    'agenda.settlementEdit.excess': 'Excess amount',
+    'agenda.settlementEdit.distribute': 'Left to allocate',
+    'agenda.settlementEdit.saveError':
+        'Could not confirm the settlement. Review the details and try again.',
+    'agenda.settlementEdit.success': 'Settlement confirmed',
+    'agenda.adjustments.reversed': 'Reversed settlements',
+    'agenda.adjustments.reversedSuccess': 'Settlement reversed successfully.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Reverse later settlements first to keep the balance consistent.',
+    'agenda.adjustments.reverse': 'Reverse settlement',
+    'agenda.adjustments.discount': 'Discount',
+    'agenda.adjustments.surcharge': 'Surcharge',
+    'agenda.adjustments.adjusted': 'Total to settle',
+    'agenda.adjustments.balanceAfter': 'Balance after settlement',
+    'agenda.adjustments.useAdjusted': 'Use adjusted total',
+    'agenda.adjustments.invalid':
+        'Enter non-negative adjustments with up to two decimal places. The total must exceed zero.',
+    'agenda.adjustments.partialInvalid':
+        'A partial settlement must reduce the debt and leave a positive balance. To settle in full, select Total.',
+    'agenda.adjustments.reverseGroup':
+        'This reverses all payment methods in this settlement, including its discount and surcharge, and recalculates the balance.',
+    'agenda.category.search': 'Search categories',
+    'agenda.category.create': 'New category',
+    'agenda.category.edit': 'Edit category',
+    'agenda.category.empty': 'No categories yet. Create the first one here.',
+    'agenda.category.choose': 'Choose or create a category',
+    'agenda.list.showCanceled': 'Show canceled',
+    'agenda.list.originalValue': 'Original amount',
+    'agenda.list.noBalance': 'No effect on balance',
+    'agenda.list.cancelOccurrence': 'Cancel occurrence',
+    'agenda.list.deleteLaunch': 'Delete entry',
+    'agenda.journey.currentCompany': 'Current business',
+    'agenda.journey.type': 'Type',
+    'agenda.journey.space': 'Space',
+    'agenda.journey.details': 'Details',
+    'agenda.journey.recurrence': 'Recurrence',
+    'agenda.journey.step': 'Step {step} of 4',
+    'agenda.journey.typeTitle': 'Will you pay or receive?',
+    'agenda.journey.typeHint': 'Start by choosing the entry type.',
+    'agenda.journey.payHint': 'A bill or expense you need to pay.',
+    'agenda.journey.receiveHint': 'An amount you expect to receive.',
+    'agenda.journey.spaceTitle': 'Is this a personal or business entry?',
+    'agenda.journey.spaceHint': 'Choose where to organize this entry.',
+    'agenda.journey.personalHint':
+        'Your personal accounts, separate from business finances.',
+    'agenda.journey.companyHint': 'Finances of the selected business:',
+    'agenda.journey.detailsTitle': 'What are the entry details?',
+    'agenda.journey.detailsHint':
+        'Enter the description, amount and due date. Add other details as needed.',
+    'agenda.journey.recurrenceTitle': 'Does this entry repeat?',
+    'agenda.journey.recurrenceHint':
+        'Set the recurrence and review the summary before saving.',
+    'agenda.journey.once': 'One time only',
+    'agenda.journey.onceHint': 'Create only this entry.',
+    'agenda.journey.repeat': 'Repeat',
+    'agenda.journey.repeatHint': 'Repeat the amount on future due dates.',
+    'agenda.journey.back': 'Back',
+    'agenda.journey.continue': 'Continue',
+    'agenda.journey.perOccurrence': 'Amount per occurrence',
+    'agenda.journey.perOccurrenceHint':
+        'The amount will repeat for each occurrence; it will not be split into installments.',
+    'agenda.journey.firstDue': 'First due date',
+    'agenda.journey.settlementFirst':
+        'After saving, confirm settlement of this entry. If it repeats, future occurrences will remain open.',
+    'agenda.journey.spaceResetHint':
+        'Changing the space clears the account, category, cost center, contact and owner, and reloads the planned payment method. Description, amount and dates are kept.',
+    'agenda.journey.discardTitle': 'Discard this entry?',
+    'agenda.journey.discardHint': 'Your entries have not been saved yet.',
+    'agenda.journey.keepEditing': 'Keep editing',
+    'agenda.journey.discard': 'Discard',
+    'agenda.journey.invalidAmount': 'Enter an amount greater than zero.',
     'suppliers.web.title': 'Suppliers',
     'suppliers.web.subtitle':
         'Manage suppliers, partners and business contacts.',
@@ -2993,11 +3180,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'purchases.permission.confirm': 'Confirm purchases',
     'purchases.permission.confirmDescription': 'Confirm and create payables.',
     'purchases.permission.cancel': 'Cancel purchases',
-    'purchases.permission.cancelDescription': 'Cancel according to financial rules.',
+    'purchases.permission.cancelDescription':
+        'Cancel according to financial rules.',
     'purchases.permission.receive': 'Receive goods',
-    'purchases.permission.receiveDescription': 'Register physically received products.',
+    'purchases.permission.receiveDescription':
+        'Register physically received products.',
     'suppliers.permission.read': 'View suppliers',
-    'suppliers.permission.readDescription': 'View suppliers across the account.',
+    'suppliers.permission.readDescription':
+        'View suppliers across the account.',
     'suppliers.permission.create': 'Create suppliers',
     'suppliers.permission.createDescription': 'Register new suppliers.',
     'suppliers.permission.edit': 'Edit suppliers',
@@ -3128,7 +3318,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.competence.nextYear': 'Next year',
     'agenda.competence.apply': 'Apply',
     'agenda.saleItems.title': 'Products and services',
-    'agenda.saleItems.empty': 'Items for this older sale are not available in the history.',
+    'agenda.saleItems.empty':
+        'Items for this older sale are not available in the history.',
     'agenda.saleItems.product': 'Product',
     'agenda.saleItems.service': 'Service',
     'agenda.saleItems.quantity': 'Qty.',
@@ -5611,6 +5802,99 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.adjustments.title': 'Descuento y recargo',
+    'agenda.settlementEdit.date': 'Fecha efectiva del pago/cobro',
+    'agenda.settlementEdit.classification': 'Editar clasificación',
+    'agenda.settlementEdit.noCategory': 'Sin categoría',
+    'agenda.settlementEdit.category': 'Categoría',
+    'agenda.settlementEdit.supplier': 'Proveedor',
+    'agenda.settlementEdit.customer': 'Cliente',
+    'agenda.settlementEdit.originContact':
+        'Contacto vinculado: edítelo en el registro de origen.',
+    'agenda.settlementEdit.onlyOccurrence':
+        'Los cambios se aplican solo a este registro y se guardan al confirmar la liquidación.',
+    'agenda.settlementEdit.moreInfo': 'Más información',
+    'agenda.settlementEdit.note': 'Nota de esta liquidación',
+    'agenda.settlementEdit.launchNote': 'Nota del registro',
+    'agenda.settlementEdit.original': 'Importe original',
+    'agenda.settlementEdit.due': 'Vencimiento',
+    'agenda.settlementEdit.competence': 'Fecha de devengo',
+    'agenda.settlementEdit.originalHint':
+        'Se conservan el importe original y las fechas previstas. Edite el registro para cambiarlos.',
+    'agenda.settlementEdit.excess': 'Importe excedente',
+    'agenda.settlementEdit.distribute': 'Falta distribuir',
+    'agenda.settlementEdit.saveError':
+        'No se pudo confirmar la liquidación. Revise los datos e inténtelo de nuevo.',
+    'agenda.settlementEdit.success': 'Liquidación confirmada',
+    'agenda.adjustments.reversed': 'Liquidaciones revertidas',
+    'agenda.adjustments.reversedSuccess':
+        'Liquidación revertida correctamente.',
+    'agenda.adjustments.reverseLaterFirst':
+        'Revierta primero las liquidaciones posteriores para mantener el saldo consistente.',
+    'agenda.adjustments.reverse': 'Revertir liquidación',
+    'agenda.adjustments.discount': 'Descuento',
+    'agenda.adjustments.surcharge': 'Recargo',
+    'agenda.adjustments.adjusted': 'Total para liquidar',
+    'agenda.adjustments.balanceAfter': 'Saldo después de esta liquidación',
+    'agenda.adjustments.useAdjusted': 'Usar total ajustado',
+    'agenda.adjustments.invalid':
+        'Introduce ajustes no negativos con hasta dos decimales. El total debe ser mayor que cero.',
+    'agenda.adjustments.partialInvalid':
+        'La liquidación parcial debe reducir la deuda y dejar saldo pendiente. Para liquidar, selecciona Total.',
+    'agenda.adjustments.reverseGroup':
+        'Esta acción revierte todas las formas de pago de esta liquidación, incluidos su descuento y recargo, y recalcula el saldo.',
+    'agenda.category.search': 'Buscar categoría',
+    'agenda.category.create': 'Nueva categoría',
+    'agenda.category.edit': 'Editar categoría',
+    'agenda.category.empty': 'No hay categorías. Crea la primera aquí.',
+    'agenda.category.choose': 'Elegir o crear una categoría',
+    'agenda.list.showCanceled': 'Mostrar cancelados',
+    'agenda.list.originalValue': 'Importe original',
+    'agenda.list.noBalance': 'Sin efecto en el saldo',
+    'agenda.list.cancelOccurrence': 'Cancelar ocurrencia',
+    'agenda.list.deleteLaunch': 'Eliminar movimiento',
+    'agenda.journey.currentCompany': 'Empresa actual',
+    'agenda.journey.type': 'Tipo',
+    'agenda.journey.space': 'Espacio',
+    'agenda.journey.details': 'Detalles',
+    'agenda.journey.recurrence': 'Recurrencia',
+    'agenda.journey.step': 'Paso {step} de 4',
+    'agenda.journey.typeTitle': '¿Vas a pagar o recibir?',
+    'agenda.journey.typeHint': 'Comienza eligiendo el tipo de movimiento.',
+    'agenda.journey.payHint': 'Una cuenta o gasto que necesitas pagar.',
+    'agenda.journey.receiveHint': 'Un importe que tienes por recibir.',
+    'agenda.journey.spaceTitle':
+        '¿Este movimiento es personal o de la empresa?',
+    'agenda.journey.spaceHint': 'Elige dónde organizar esta cuenta.',
+    'agenda.journey.personalHint':
+        'Tus cuentas personales, separadas de las finanzas de la empresa.',
+    'agenda.journey.companyHint': 'Finanzas de la empresa seleccionada:',
+    'agenda.journey.detailsTitle': '¿Cuáles son los datos del movimiento?',
+    'agenda.journey.detailsHint':
+        'Introduce la descripción, el importe y el vencimiento. Completa los demás datos según necesites.',
+    'agenda.journey.recurrenceTitle': '¿Este movimiento se repite?',
+    'agenda.journey.recurrenceHint':
+        'Define la repetición y revisa el resumen antes de guardar.',
+    'agenda.journey.once': 'Una sola vez',
+    'agenda.journey.onceHint': 'Crear solo este movimiento.',
+    'agenda.journey.repeat': 'Repetir',
+    'agenda.journey.repeatHint': 'Repetir el importe en nuevos vencimientos.',
+    'agenda.journey.back': 'Volver',
+    'agenda.journey.continue': 'Continuar',
+    'agenda.journey.perOccurrence': 'Importe por ocurrencia',
+    'agenda.journey.perOccurrenceHint':
+        'El importe se repetirá en cada ocurrencia; no se dividirá en cuotas.',
+    'agenda.journey.firstDue': 'Primer vencimiento',
+    'agenda.journey.settlementFirst':
+        'Después de guardar, confirma el pago o cobro de este movimiento. Si se repite, los próximos vencimientos seguirán pendientes.',
+    'agenda.journey.spaceResetHint':
+        'Al cambiar el espacio, se borrarán la cuenta, categoría, centro de coste, contacto y responsable, y se recargará la forma prevista. Se conservarán la descripción, el importe y las fechas.',
+    'agenda.journey.discardTitle': '¿Descartar este movimiento?',
+    'agenda.journey.discardHint':
+        'Los datos introducidos aún no se han guardado.',
+    'agenda.journey.keepEditing': 'Seguir editando',
+    'agenda.journey.discard': 'Descartar',
+    'agenda.journey.invalidAmount': 'Introduce un importe mayor que cero.',
     'suppliers.web.title': 'Proveedores',
     'suppliers.web.subtitle':
         'Gestión de proveedores, socios y contactos comerciales.',
@@ -5647,25 +5931,31 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.lastLogin.hint':
         'Inicio de sesión completado. La renovación automática de la sesión no cuenta como un nuevo acceso.',
     'purchases.permission.read': 'Consultar compras',
-    'purchases.permission.readDescription': 'Consultar compras de este comercio.',
+    'purchases.permission.readDescription':
+        'Consultar compras de este comercio.',
     'purchases.permission.create': 'Crear compras',
     'purchases.permission.createDescription': 'Registrar borradores de compra.',
     'purchases.permission.edit': 'Editar compras',
     'purchases.permission.editDescription': 'Modificar borradores de compra.',
     'purchases.permission.confirm': 'Confirmar compras',
-    'purchases.permission.confirmDescription': 'Confirmar y generar cuentas por pagar.',
+    'purchases.permission.confirmDescription':
+        'Confirmar y generar cuentas por pagar.',
     'purchases.permission.cancel': 'Cancelar compras',
-    'purchases.permission.cancelDescription': 'Cancelar respetando las reglas financieras.',
+    'purchases.permission.cancelDescription':
+        'Cancelar respetando las reglas financieras.',
     'purchases.permission.receive': 'Recibir mercancías',
-    'purchases.permission.receiveDescription': 'Registrar productos físicamente recibidos.',
+    'purchases.permission.receiveDescription':
+        'Registrar productos físicamente recibidos.',
     'suppliers.permission.read': 'Consultar proveedores',
-    'suppliers.permission.readDescription': 'Consultar proveedores de la cuenta.',
+    'suppliers.permission.readDescription':
+        'Consultar proveedores de la cuenta.',
     'suppliers.permission.create': 'Registrar proveedores',
     'suppliers.permission.createDescription': 'Crear nuevos proveedores.',
     'suppliers.permission.edit': 'Editar proveedores',
     'suppliers.permission.editDescription': 'Actualizar registros existentes.',
     'suppliers.permission.disable': 'Activar / desactivar proveedores',
-    'suppliers.permission.disableDescription': 'Cambiar el estado de los proveedores.',
+    'suppliers.permission.disableDescription':
+        'Cambiar el estado de los proveedores.',
     'space.createAccount': 'Crear cuenta',
     'space.emptyAccountHint': 'Crea una cuenta aquí para continuar.',
     'dateSelector.applyDate': 'Aplicar fecha',
@@ -5787,12 +6077,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'agenda.form.cancelled': 'Cancelado',
     'agenda.form.competence': 'Competencia',
     'agenda.competence.monthYearTitle': 'Competencia · mes/año',
-    'agenda.competence.selectMonthYear': 'Seleccione solamente el mes y el año.',
+    'agenda.competence.selectMonthYear':
+        'Seleccione solamente el mes y el año.',
     'agenda.competence.previousYear': 'Año anterior',
     'agenda.competence.nextYear': 'Año siguiente',
     'agenda.competence.apply': 'Aplicar',
     'agenda.saleItems.title': 'Productos y servicios',
-    'agenda.saleItems.empty': 'Los artículos de esta venta antigua no están disponibles en el historial.',
+    'agenda.saleItems.empty':
+        'Los artículos de esta venta antigua no están disponibles en el historial.',
     'agenda.saleItems.product': 'Producto',
     'agenda.saleItems.service': 'Servicio',
     'agenda.saleItems.quantity': 'Cant.',

@@ -20,6 +20,18 @@ abstract final class AgendaFinanceiraStatusLabels {
         : context.t('agenda.form.$chave');
   }
 
+  /// A natureza do lançamento define a linguagem, sem mudar o status da API.
+  static String rotuloQuitacao(
+    BuildContext context, {
+    required String tipo,
+    String status = '',
+  }) {
+    final natureza = tipo.trim().toUpperCase();
+    final recebido = natureza == 'RECEBER' ||
+        (natureza != 'PAGAR' && status.trim().toUpperCase() == 'RECEBIDO');
+    return rotulo(context, recebido ? 'RECEBIDO' : 'PAGO');
+  }
+
   static String codigoDaEscolha(BuildContext context, String rotulo) {
     for (final codigo in opcoesEditaveis) {
       if (rotulo == AgendaFinanceiraStatusLabels.rotulo(context, codigo)) {

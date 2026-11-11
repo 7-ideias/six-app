@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
@@ -23,6 +24,8 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     required this.onCancelar,
     required this.onComprovante,
     this.bloqueado = false,
+    this.exibirValorConfirmado = false,
+    this.onExcluir,
   });
 
   final Map<String, dynamic> item;
@@ -34,6 +37,8 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
   final VoidCallback onCancelar;
   final VoidCallback onComprovante;
   final bool bloqueado;
+  final bool exibirValorConfirmado;
+  final VoidCallback? onExcluir;
 
   static double _numero(dynamic valor) {
     if (valor is num) return valor.toDouble();
@@ -46,14 +51,20 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
 
   static String _texto(dynamic valor) => valor?.toString().trim() ?? '';
 
-  static bool _finalizado(String status) =>
-      const {'recebido', 'pago', 'cancelado', 'cancelada'}
-          .contains(status.toLowerCase());
+  static bool _finalizado(String status) => const {
+    'recebido',
+    'pago',
+    'cancelado',
+    'cancelada',
+  }.contains(status.toLowerCase());
 
   static bool _ehVenda(Map<String, dynamic> item) {
     final origem = _texto(item['origem']).toUpperCase();
-    return const {'VENDA', 'VENDA_NAO_LIQUIDADA', 'RECEBIMENTO_VENDA'}
-        .contains(origem);
+    return const {
+      'VENDA',
+      'VENDA_NAO_LIQUIDADA',
+      'RECEBIMENTO_VENDA',
+    }.contains(origem);
   }
 
   @override
@@ -64,21 +75,43 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     final status = _texto(item['status']);
     final parcial = status.toLowerCase() == 'parcial';
     final finalizado = _finalizado(status);
+    final cancelado = const {
+      'cancelado',
+      'cancelada',
+    }.contains(status.toLowerCase());
     final original = _numero(item['valorOriginal'] ?? item['valor']);
     final restante = _numero(item['valorRestante'] ?? original);
     final confirmado = _numero(item['valorConfirmado']);
-    final valorPrincipal = !finalizado && restante > 0 ? restante : original;
-    final naturezaCor =
-        entrada ? tokens.financialPositive : tokens.financialNegative;
+    final quitado = const {'pago', 'recebido'}.contains(status.toLowerCase());
+    final valorPrincipal = cancelado
+        ? original
+        : exibirValorConfirmado || quitado
+        ? confirmado
+        : restante;
+    final naturezaCor = cancelado
+        ? tokens.statusNeutral
+        : entrada
+        ? tokens.financialPositive
+        : tokens.financialNegative;
     final acoes = ((item['acoes'] as List?) ?? const <dynamic>[])
         .map((e) => e.toString().toLowerCase())
         .toSet();
-    final podeLiquidar = !finalizado && restante > 0 &&
+    final podeLiquidar =
+        !finalizado &&
+        restante > 0 &&
         acoes.any((a) => const {'liquidar', 'receber', 'pagar'}.contains(a));
     final podeEditar = !finalizado && !parcial && acoes.contains('editar');
     final podeParcial = podeLiquidar && acoes.contains('registrar parcial');
-    final podeCancelar = !finalizado && acoes.contains('cancelar');
-    final podeComprovante = _ehVenda(item) &&
+    final podeCancelar = !finalizado && !parcial && acoes.contains('cancelar');
+    final podeExcluir =
+        onExcluir != null &&
+        !finalizado &&
+        !parcial &&
+        confirmado == 0 &&
+        item['serieRecorrenciaId'] == null &&
+        item['recorrente'] != true;
+    final podeComprovante =
+        _ehVenda(item) &&
         const {'recebido', 'pago'}.contains(status.toLowerCase());
 
     final corStatus = switch (status.toLowerCase()) {
@@ -97,13 +130,16 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       _ => Icons.schedule_outlined,
     };
 
-    final contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
+    final contato = AgendaFinanceiraResumoVisual.contatoInformado(
+      item['contato'],
+    );
     final codigo = _texto(item['codigoOperacao']);
     final vencimento = _texto(item['vencimento']);
-    final competencia = CompetenciaFinanceira.formatarValor(item['dataCompetencia']);
+    final competencia = CompetenciaFinanceira.formatarValor(
+      item['dataCompetencia'],
+    );
     final metadados = <String>[
-      if (vencimento.isNotEmpty && vencimento != '-')
-        'Vencimento: $vencimento',
+      if (vencimento.isNotEmpty && vencimento != '-') 'Vencimento: $vencimento',
       if (competencia != '-') 'Competência: $competencia',
     ];
     final informacoes = <String>[
@@ -116,12 +152,19 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: Color.alphaBlend(
-            naturezaCor.withValues(alpha: .12), tokens.cardBackground),
+          naturezaCor.withValues(alpha: .12),
+          tokens.cardBackground,
+        ),
         borderRadius: BorderRadius.circular(13),
       ),
       child: Icon(
-        entrada ? Icons.south_west_rounded : Icons.north_east_rounded,
-        color: naturezaCor, size: 26,
+        cancelado
+            ? Icons.block_outlined
+            : entrada
+            ? Icons.south_west_rounded
+            : Icons.north_east_rounded,
+        color: naturezaCor,
+        size: 26,
       ),
     );
     final identificacao = Column(
@@ -130,11 +173,12 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       children: [
         Text(
           _texto(item['descricao']).isEmpty
-              ? 'Lançamento financeiro' : _texto(item['descricao']),
+              ? 'Lançamento financeiro'
+              : _texto(item['descricao']),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall?.copyWith(
-            color: tokens.primaryText,
+            color: cancelado ? tokens.secondaryText : tokens.primaryText,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -143,14 +187,18 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
             informacoes.join('  ·  '),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
-            style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.secondaryText,
+            ),
           ),
         if (metadados.isNotEmpty)
           Text(
             metadados.join('  ·  '),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
-            style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.secondaryText,
+            ),
           ),
         if (item['recorrente'] == true || item['ocorrenciaAjustada'] == true)
           Text(
@@ -158,7 +206,9 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
               if (item['recorrente'] == true) 'Recorrente',
               if (item['ocorrenciaAjustada'] == true) 'Ajustado',
             ].join('  ·  '),
-            style: theme.textTheme.labelSmall?.copyWith(color: tokens.mutedText),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: tokens.mutedText,
+            ),
           ),
       ],
     );
@@ -172,7 +222,9 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Color.alphaBlend(
-          corStatus.withValues(alpha: .11), tokens.cardBackground),
+          corStatus.withValues(alpha: .11),
+          tokens.cardBackground,
+        ),
         border: Border.all(color: corStatus.withValues(alpha: .23)),
         borderRadius: BorderRadius.circular(11),
       ),
@@ -180,14 +232,21 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-        Icon(iconeStatus, size: 16, color: corStatus),
-        const SizedBox(width: 5),
-        Text(
-          status.isEmpty ? 'Pendente' : status,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: corStatus, fontWeight: FontWeight.w800),
-        ),
-      ]),
+          Icon(iconeStatus, size: 16, color: corStatus),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              status.isEmpty ? 'Pendente' : status,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: corStatus,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
     final valores = SizedBox(
       width: 174,
@@ -199,13 +258,26 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
             formatarMoeda(valorPrincipal),
             maxLines: 1,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: naturezaCor, fontWeight: FontWeight.w900),
+              color: naturezaCor,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           Text(
-            'Original: ${formatarMoeda(original)}',
+            cancelado
+                ? context.t('agenda.list.originalValue')
+                : 'Original: ${formatarMoeda(original)}',
             maxLines: 1,
-            style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.secondaryText,
+            ),
           ),
+          if (cancelado)
+            Text(
+              context.t('agenda.list.noBalance'),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: tokens.secondaryText,
+              ),
+            ),
           if (parcial && original > 0) ...[
             const SizedBox(height: 5),
             ClipRRect(
@@ -283,12 +355,28 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'detalhes', child: Text('Detalhes')),
             if (podeParcial)
-              const PopupMenuItem(value: 'parcial', child: Text('Registrar parcial')),
+              const PopupMenuItem(
+                value: 'parcial',
+                child: Text('Registrar parcial'),
+              ),
             if (podeCancelar)
-              const PopupMenuItem(value: 'cancelar', child: Text('Cancelar ocorrência')),
+              PopupMenuItem(
+                value: 'cancelar',
+                child: Text(context.t('agenda.list.cancelOccurrence')),
+              ),
+            if (podeExcluir)
+              PopupMenuItem(
+                value: 'excluir',
+                child: Text(
+                  context.t('agenda.list.deleteLaunch'),
+                  style: TextStyle(color: tokens.danger),
+                ),
+              ),
           ],
           onSelected: (acao) {
-            if (acao == 'parcial') {
+            if (acao == 'excluir') {
+              onExcluir?.call();
+            } else if (acao == 'parcial') {
               onRegistrarParcial();
             } else if (acao == 'cancelar') {
               onCancelar();
@@ -312,53 +400,57 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
         onTap: bloqueado ? null : onDetalhes,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: LayoutBuilder(builder: (context, constraints) {
-            final umaLinha = constraints.maxWidth >= 1040;
-            final faixa = Row(children: [
-              iconBox,
-              const SizedBox(width: 12),
-              Expanded(child: identificacao),
-              const SizedBox(width: 14),
-              indicador,
-              const SizedBox(width: 20),
-              valores,
-            ]);
-            if (umaLinha) {
-              return Row(children: [
-                Expanded(child: faixa),
-                const SizedBox(width: 12),
-                botoes,
-              ]);
-            }
-            if (constraints.maxWidth < 690) {
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final umaLinha = constraints.maxWidth >= 1040;
+              final faixa = Row(
+                children: [
+                  iconBox,
+                  const SizedBox(width: 12),
+                  Expanded(child: identificacao),
+                  const SizedBox(width: 14),
+                  indicador,
+                  const SizedBox(width: 20),
+                  valores,
+                ],
+              );
+              if (umaLinha) {
+                return Row(
+                  children: [
+                    Expanded(child: faixa),
+                    const SizedBox(width: 12),
+                    botoes,
+                  ],
+                );
+              }
+              if (constraints.maxWidth < 690) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        iconBox,
+                        const SizedBox(width: 12),
+                        Expanded(child: identificacao),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(children: [indicador, const Spacer(), valores]),
+                    const SizedBox(height: 10),
+                    Align(alignment: Alignment.centerRight, child: botoes),
+                  ],
+                );
+              }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    iconBox,
-                    const SizedBox(width: 12),
-                    Expanded(child: identificacao),
-                  ]),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    indicador,
-                    const Spacer(),
-                    valores,
-                  ]),
+                  faixa,
                   const SizedBox(height: 10),
                   Align(alignment: Alignment.centerRight, child: botoes),
                 ],
               );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                faixa,
-                const SizedBox(height: 10),
-                Align(alignment: Alignment.centerRight, child: botoes),
-              ],
-            );
-          }),
+            },
+          ),
         ),
       ),
     );

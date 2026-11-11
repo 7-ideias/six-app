@@ -1,0 +1,61 @@
+name: Agenda Web e Mobile - jornada
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/presentation/components/mobile/**'
+      - 'lib/presentation/screens/agenda_financeira*mobile*'
+      - 'test/presentation/screens/agenda_financeira_mobile_jornada_test.dart'
+      - 'lib/data/models/usuario_model.dart'
+      - 'test/data/models/usuario_model_preferences_test.dart'
+      - 'lib/data/models/agenda_financeira_baixa_model.dart'
+      - 'test/presentation/components/web/six_web_recebimento_dialog_test.dart'
+      - 'lib/presentation/components/web/six_web_recebimento_dialog.dart'
+      - 'lib/data/models/agenda_financeira_lancamento_model.dart'
+      - 'lib/sub_painel_lancamento_agenda_financeira_web.dart'
+      - 'lib/l10n/six_i18n.dart'
+      - 'lib/presentation/components/web/conta_financeira_web_field.dart'
+      - 'lib/presentation/components/web/configuracao_financeira_web_editor.dart'
+      - 'test/presentation/components/web/agenda_categoria_web_test.dart'
+      - 'lib/presentation/screens/agenda_financeira_web.dart'
+      - 'lib/presentation/components/web/agenda_financeira_lancamento_card_web.dart'
+      - 'test/presentation/components/web/agenda_financeira_lancamento_card_web_test.dart'
+      - 'lib/presentation/components/agenda_recorrencia_web_fields.dart'
+      - 'test/presentation/screens/agenda_financeira_jornada_web_test.dart'
+      - '.github/workflows/agenda-web-journey-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  agenda-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze changed Dart files
+        run: dart analyze lib/presentation/components/agenda_financeira_status_labels.dart test/presentation/screens/agenda_financeira_status_labels_test.dart lib/presentation/screens/agenda_financeira_mobile_screen.dart lib/presentation/screens/agenda_financeira_lancamento_mobile_create_screen.dart lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart lib/presentation/components/mobile/conta_financeira_mobile_field.dart lib/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart test/presentation/screens/agenda_financeira_mobile_jornada_test.dart lib/data/models/usuario_model.dart test/data/models/usuario_model_preferences_test.dart lib/data/models/agenda_financeira_baixa_model.dart lib/data/models/agenda_financeira_lancamento_model.dart lib/presentation/components/web/six_web_recebimento_dialog.dart test/presentation/components/web/six_web_recebimento_dialog_test.dart lib/presentation/components/web/conta_financeira_web_field.dart lib/presentation/components/web/configuracao_financeira_web_editor.dart lib/presentation/screens/agenda_financeira_web.dart lib/presentation/components/web/agenda_financeira_lancamento_card_web.dart lib/presentation/components/agenda_recorrencia_web_fields.dart lib/sub_painel_lancamento_agenda_financeira_web.dart lib/l10n/six_i18n.dart test/presentation/screens/agenda_financeira_jornada_web_test.dart
+      - name: Validate journey and financial regressions
+        run: flutter test --reporter expanded test/presentation/screens/agenda_financeira_status_labels_test.dart test/presentation/screens/agenda_financeira_mobile_jornada_test.dart test/presentation/screens/agenda_financeira_mobile_dark_mode_test.dart test/presentation/screens/agenda_pagamento_mobile_test.dart test/data/models/usuario_model_preferences_test.dart test/presentation/components/web/six_web_recebimento_dialog_test.dart test/presentation/components/web/agenda_categoria_web_test.dart test/presentation/components/web/agenda_financeira_lancamento_card_web_test.dart test/domain/agenda_financeira_calendario_resumo_test.dart test/presentation/screens/agenda_financeira_jornada_web_test.dart test/presentation/screens/agenda_recorrencia_fields_test.dart test/presentation/screens/agenda_imposto_renda_test.dart
+      - name: Build Web
+        run: flutter build web --release
+      - name: Setup Java for Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build Android debug
+        run: flutter build apk --debug
+      - name: Keep Android APK for validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenda-mobile-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 5

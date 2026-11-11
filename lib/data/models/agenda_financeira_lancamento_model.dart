@@ -1,3 +1,4 @@
+import 'agenda_financeira_baixa_model.dart';
 import 'competencia_financeira.dart';
 import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
@@ -88,8 +89,8 @@ class LancamentoAgendaFinanceiraRequest {
       {
         'recorrente': recorrente,
         'frequenciaRecorrencia': frequenciaRecorrencia,
-        'recorrenciaInicio':
-            (recorrenciaInicio ?? dataVencimento).toIso8601String(),
+        'recorrenciaInicio': (recorrenciaInicio ?? dataVencimento)
+            .toIso8601String(),
         'recorrenciaFim': recorrenciaFim?.toIso8601String(),
         'quantidadeParcelas': quantidadeParcelas,
         'diaVencimentoRecorrencia':
@@ -119,7 +120,9 @@ class LancamentoAgendaFinanceiraRequest {
       'clientePediuParaApagar': clientePediuParaApagar,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataVencimento': dataVencimento.toIso8601String(),
-      'dataCompetencia': CompetenciaFinanceira.normalizar(dataCompetencia).toIso8601String(),
+      'dataCompetencia': CompetenciaFinanceira.normalizar(
+        dataCompetencia,
+      ).toIso8601String(),
       'dataQuitacao': dataQuitacao?.toIso8601String(),
       'origem': origem,
       'formaPagamento': formaPagamento,
@@ -183,16 +186,17 @@ class LancamentoAgendaFinanceiraRequest {
       'centroDeCusto': centroDeCusto,
       'centroCustoId': centroCustoId,
       'dataOperacao': dataOperacao.toIso8601String(),
-      'dataCompetencia': CompetenciaFinanceira.normalizar(dataCompetencia).toIso8601String(),
+      'dataCompetencia': CompetenciaFinanceira.normalizar(
+        dataCompetencia,
+      ).toIso8601String(),
       ...dadosRecorrencia,
       'serieRecorrenciaId': configuracaoRecorrencia?.serieId,
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
       ],
-      'acoes':
-          tipoRecebimento
-              ? ['Receber', 'Enviar cobrança', 'Detalhes']
-              : ['Pagar', 'Reagendar', 'Detalhes'],
+      'acoes': tipoRecebimento
+          ? ['Receber', 'Enviar cobrança', 'Detalhes']
+          : ['Pagar', 'Reagendar', 'Detalhes'],
     };
   }
 
@@ -261,14 +265,13 @@ class AgendaFinanceiraLancamentoDetalhe {
   DateTime? _dataPersistida(String key, {String? alias}) {
     final edicao = dados['dadosEdicao'];
     final campos = edicao is Map ? edicao : const <String, dynamic>{};
-    final value =
-        dados.containsKey(key)
-            ? dados[key]
-            : campos.containsKey(key)
-            ? campos[key]
-            : alias == null
-            ? null
-            : dados[alias] ?? campos[alias];
+    final value = dados.containsKey(key)
+        ? dados[key]
+        : campos.containsKey(key)
+        ? campos[key]
+        : alias == null
+        ? null
+        : dados[alias] ?? campos[alias];
     return value is DateTime
         ? value
         : DateTime.tryParse(value?.toString() ?? '');
@@ -335,6 +338,9 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String? contaFinanceiraId;
   AgendaFinanceiraLiquidacaoRequest({
     this.contaFinanceiraId,
+    this.classificacao,
+    this.desconto = 0,
+    this.acrescimo = 0,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -349,6 +355,9 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String tipoLiquidacao;
   final DateTime dataLiquidacao;
   final double valorLiquidado;
+  final AgendaClassificacaoBaixa? classificacao;
+  final double desconto;
+  final double acrescimo;
   final String formaPagamentoRealizada;
   final String? observacoes;
   final String? referenciaExterna;
@@ -362,6 +371,9 @@ class AgendaFinanceiraLiquidacaoRequest {
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
+      if (classificacao != null) 'classificacao': classificacao!.toJson(),
+      'desconto': desconto,
+      'acrescimo': acrescimo,
       'formaPagamentoRealizada': formaPagamentoRealizada,
       'observacoes': observacoes,
       'referenciaExterna': referenciaExterna,
@@ -379,6 +391,9 @@ class AgendaFinanceiraParcialRequest {
   final String? contaFinanceiraId;
   AgendaFinanceiraParcialRequest({
     this.contaFinanceiraId,
+    this.classificacao,
+    this.desconto = 0,
+    this.acrescimo = 0,
     required this.tipoLiquidacao,
     required this.dataLiquidacao,
     required this.valorLiquidado,
@@ -391,6 +406,9 @@ class AgendaFinanceiraParcialRequest {
   final String tipoLiquidacao;
   final DateTime dataLiquidacao;
   final double valorLiquidado;
+  final AgendaClassificacaoBaixa? classificacao;
+  final double desconto;
+  final double acrescimo;
   final String formaPagamentoRealizada;
   final String? observacoes;
   final String? idSessaoCaixa;
@@ -402,6 +420,9 @@ class AgendaFinanceiraParcialRequest {
       'tipoLiquidacao': tipoLiquidacao,
       'dataLiquidacao': _toIsoDate(dataLiquidacao),
       'valorLiquidado': valorLiquidado,
+      if (classificacao != null) 'classificacao': classificacao!.toJson(),
+      'desconto': desconto,
+      'acrescimo': acrescimo,
       'formaPagamentoRealizada': formaPagamentoRealizada,
       'observacoes': observacoes,
       'idSessaoCaixa': idSessaoCaixa,

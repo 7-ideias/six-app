@@ -26,15 +26,17 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
     super.key,
     required this.body,
     required this.textoDaAppBar,
+    this.maxWidth,
   });
 
   final Widget body;
   final String textoDaAppBar;
+  final double? maxWidth;
 
   void _fecharSubPainel(BuildContext context) {
     final NavigatorState navigator = Navigator.of(context);
     if (navigator.canPop()) {
-      navigator.pop();
+      navigator.maybePop();
     }
   }
 
@@ -46,8 +48,8 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
       data: theme,
       child: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.escape):
-              () => _fecharSubPainel(context),
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              _fecharSubPainel(context),
         },
         child: Focus(
           autofocus: true,
@@ -58,7 +60,9 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
               child: AnimatedContainer(
                 duration: WebThemeTokens.transitionDuration,
                 curve: WebThemeTokens.transitionCurve,
-                width: MediaQuery.of(context).size.width * 0.97,
+                width: (MediaQuery.of(context).size.width * 0.97)
+                    .clamp(0.0, maxWidth ?? double.infinity)
+                    .toDouble(),
                 height: MediaQuery.of(context).size.height * 0.96,
                 decoration: BoxDecoration(
                   color: tokens.surfaceElevated,
@@ -121,13 +125,12 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 }) {
   return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
-    barrierDismissible: true,
+    barrierDismissible: modoEdicao,
     barrierLabel: context.t(
       'agenda.launch.dialogBarrier',
-      fallback:
-          modoEdicao
-              ? 'Editar lançamento financeiro'
-              : 'Novo lançamento financeiro',
+      fallback: modoEdicao
+          ? 'Editar lançamento financeiro'
+          : 'Novo lançamento financeiro',
     ),
     overlayColor: const Color(0xC20B1324),
     overlayBlurSigma: 12,
@@ -135,10 +138,10 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
     padding: const EdgeInsets.all(12),
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
-        textoDaAppBar:
-            modoEdicao
-                ? context.t('agenda.form.edit')
-                : context.t('agenda.form.create'),
+        maxWidth: modoEdicao ? null : 1120,
+        textoDaAppBar: modoEdicao
+            ? context.t('agenda.form.edit')
+            : context.t('agenda.form.create'),
         body: _LancamentoAgendaFinanceiraWebBody(
           service: service,
           empresaSelecionada: empresaSelecionada,
@@ -177,6 +180,22 @@ class _LancamentoAgendaFinanceiraWebBodyState
   AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
   AgendaImpostoRenda _ir = AgendaImpostoRenda();
+
+  String? _erroJornada;
+  int _etapa = 0;
+  bool _tipoEscolhido = false;
+  bool _espacoEscolhido = false;
+  bool _alterado = false;
+  bool _confirmandoSaida = false;
+  bool _detalhesVisitados = false;
+  final ScrollController _journeyScroll = ScrollController();
+  final GlobalKey<FormState> _recorrenciaFormKey = GlobalKey<FormState>();
+
+  String _journey(String key) => context.t('agenda.journey.$key');
+  String get _empresaExibicao =>
+      _empresaSelecionada == 'Empresa' || _empresaSelecionada.trim().isEmpty
+      ? _journey('currentCompany')
+      : _empresaSelecionada;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late AgendaFinanceiraLancamentoService _service =
@@ -262,12 +281,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
   @override
   void initState() {
     super.initState();
-    final List<String> empresas =
-        widget.empresas.isEmpty ? <String>['Empresa'] : widget.empresas;
-    _empresaSelecionada =
-        empresas.contains(widget.empresaSelecionada)
-            ? widget.empresaSelecionada
-            : empresas.first;
+    final List<String> empresas = widget.empresas.isEmpty
+        ? <String>['Empresa']
+        : widget.empresas;
+    _empresaSelecionada = empresas.contains(widget.empresaSelecionada)
+        ? widget.empresaSelecionada
+        : empresas.first;
 
     if (widget.modoEdicao && widget.lancamentoInicial != null) {
       _preencherCamposEdicao(widget.lancamentoInicial!);
@@ -288,6 +307,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   @override
   void dispose() {
+    _journeyScroll.dispose();
     _valorController.removeListener(_atualizarResumo);
     _dataPrevisaoController.dispose();
     _dataPagamentoController.dispose();
@@ -344,18 +364,20 @@ class _LancamentoAgendaFinanceiraWebBodyState
         statusNormalizado == 'RECEBIDO' ||
         (valorConfirmado > 0 && valorRestante <= 0);
     if (valorConfirmado > 0 && _status.contains(_statusSelecionado)) {
-      _statusSelecionado =
-          valorRestante > 0
-              ? 'Parcial'
-              : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
+      _statusSelecionado = valorRestante > 0
+          ? 'Parcial'
+          : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
     }
     _bloquearTipoStatusPorConfirmacao =
         _statusQuitada || valorConfirmado > 0 || !_status.contains(status);
 
     final origemRaw = item['origem'];
-    _origemPersistida = (origemRaw is Map
-        ? origemRaw['tipo']?.toString()
-        : origemRaw?.toString())?.trim() ?? '';
+    _origemPersistida =
+        (origemRaw is Map
+                ? origemRaw['tipo']?.toString()
+                : origemRaw?.toString())
+            ?.trim() ??
+        '';
 
     final String formaPagamento = item['formaPagamento']?.toString() ?? '';
     if (formaPagamento.trim().isNotEmpty) {
@@ -425,8 +447,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final espaco = _service.espacoFinanceiro;
     setState(() => _carregandoTiposRecebimento = true);
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
+          .getInformacoesBasicasDoCaixa();
       if (!mounted || espaco != _service.espacoFinanceiro) return;
       final List<String> formas = _montarFormasPagamentoAtivas(
         informacoes.tiposRecebimento,
@@ -462,10 +484,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
       final String backend =
           _backendFormaPagamentoPorCodigoTipo(tipo.codigoTipo) ??
           _backendFormaPagamentoPorDescricao(tipo.descricaoExibicao);
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : _formaPagamentoLabel(backend);
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : _formaPagamentoLabel(backend);
 
       if (descricao.trim().isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
@@ -553,19 +574,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   String _formatarValorParaCampo(dynamic valor) {
-    final numero =
-        valor is num ? valor : double.tryParse(valor?.toString() ?? '') ?? 0;
+    final numero = valor is num
+        ? valor
+        : double.tryParse(valor?.toString() ?? '') ?? 0;
     return context.read<LocaleSettingsProvider>().formatDecimal(numero);
   }
 
   double _toDouble(String text) {
     final regional = context.read<LocaleSettingsProvider>();
-    final limpo =
-        regional
-            .stripCurrencyMarkers(text)
-            .replaceAll(regional.thousandSeparator, '')
-            .replaceAll(regional.decimalSeparator, '.')
-            .trim();
+    final limpo = regional
+        .stripCurrencyMarkers(text)
+        .replaceAll(regional.thousandSeparator, '')
+        .replaceAll(regional.decimalSeparator, '.')
+        .trim();
     final valor = double.tryParse(limpo);
     return valor != null && valor.isFinite ? valor : 0;
   }
@@ -600,13 +621,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   void _sincronizarTextosData() {
     _dataPagamentoController.text = _formatarDataBr(_dataPagamentoRealizado);
-    _dataPrevisaoController.text =
-        _dataPrevisaoPagamento == null
-            ? ''
-            : _formatarDataBr(_dataPrevisaoPagamento!);
+    _dataPrevisaoController.text = _dataPrevisaoPagamento == null
+        ? ''
+        : _formatarDataBr(_dataPrevisaoPagamento!);
     _dataOperacaoController.text = _formatarDataBr(_dataOperacao);
     _dataVencimentoController.text = _formatarDataBr(_dataVencimento);
-    _dataCompetenciaController.text = CompetenciaFinanceira.formatar(_dataCompetencia);
+    _dataCompetenciaController.text = CompetenciaFinanceira.formatar(
+      _dataCompetencia,
+    );
   }
 
   String _formatarDataBr(DateTime data) =>
@@ -657,8 +679,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
         'formaPrevistaPagamento': formaPagamento,
         ..._ir.toPayload(),
         'atualizarPrevisaoPagamento': true,
-        'dataPrevisaoPagamento':
-            _dataPrevisaoPagamento?.toIso8601String().split('T').first,
+        'dataPrevisaoPagamento': _dataPrevisaoPagamento
+            ?.toIso8601String()
+            .split('T')
+            .first,
       },
       'contato': <String, dynamic>{
         'id': contatoIdDigitado,
@@ -685,40 +709,46 @@ class _LancamentoAgendaFinanceiraWebBodyState
       contaFinanceiraId: _contaFinanceiraId,
       idColaborador: 'web-user',
       nomeColaborador: _responsavelController.text.trim(),
-      idCliente:
-          isReceber && contatoIdDigitado.isNotEmpty ? contatoIdDigitado : null,
+      idCliente: isReceber && contatoIdDigitado.isNotEmpty
+          ? contatoIdDigitado
+          : null,
       nomeCliente: isReceber && contatoNome.isNotEmpty ? contatoNome : null,
-      idFornecedor:
-          !isReceber && contatoIdDigitado.isNotEmpty ? contatoIdDigitado : null,
+      idFornecedor: !isReceber && contatoIdDigitado.isNotEmpty
+          ? contatoIdDigitado
+          : null,
       nomeFornecedor: !isReceber && contatoNome.isNotEmpty ? contatoNome : null,
-      referenciaExterna:
-          _referenciaController.text.trim().isEmpty
-              ? null
-              : _referenciaController.text.trim(),
-      documentoFiscal:
-          _documentoFiscalController.text.trim().isEmpty
-              ? null
-              : _documentoFiscalController.text.trim(),
-      centroDeCusto:
-          _centroCustoController.text.trim().isEmpty
-              ? null
-              : _centroCustoController.text.trim(),
+      referenciaExterna: _referenciaController.text.trim().isEmpty
+          ? null
+          : _referenciaController.text.trim(),
+      documentoFiscal: _documentoFiscalController.text.trim().isEmpty
+          ? null
+          : _documentoFiscalController.text.trim(),
+      centroDeCusto: _centroCustoController.text.trim().isEmpty
+          ? null
+          : _centroCustoController.text.trim(),
       centroCustoId: _centroCustoId,
       valorTotalProdutos: 0,
       valorTotalServicos: 0,
       valorTotalOperacao: valorTotal,
-      observacoes:
-          _observacoesController.text.trim().isEmpty
-              ? null
-              : _observacoesController.text.trim(),
+      observacoes: _observacoesController.text.trim().isEmpty
+          ? null
+          : _observacoesController.text.trim(),
       configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
   }
 
   Future<void> _salvar() async {
-    if (_ir.carregando) return;
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading || _ir.carregando) return;
+    if (!widget.modoEdicao) setState(() => _erroJornada = null);
+    if (!_formKey.currentState!.validate()) {
+      if (!widget.modoEdicao) _irParaEtapa(2);
+      return;
+    }
+    if (!widget.modoEdicao &&
+        _recorrencia.ativa &&
+        !(_recorrenciaFormKey.currentState?.validate() ?? false))
+      return;
     if (_toDouble(_valorController.text) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Informe um valor maior que zero.')),
@@ -730,6 +760,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (erroRecorrencia != null ||
         (_recorrencia.ativa &&
             !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      if (!widget.modoEdicao) {
+        setState(
+          () => _erroJornada = recorrenciaLabel(
+            context,
+            erroRecorrencia ?? 'pendingError',
+          ),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -747,7 +786,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
         recorrencia: _recorrencia,
         descricao: _descricaoController.text,
         valorFormatado: _valorController.text,
-        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        vencimentoFormatado:
+            '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
         cancelar: false,
       );
       if (confirmado == null || !mounted) return;
@@ -758,18 +798,28 @@ class _LancamentoAgendaFinanceiraWebBodyState
     late final String idGerado;
 
     try {
-      final LancamentoAgendaFinanceiraResponse response =
-          widget.modoEdicao
-              ? await _service.editarLancamento(
-                _idLancamentoEdicao ?? request.uuidOperacaoApp,
-                request,
-                escopo: _recorrencia.escopo,
-              )
-              : await _service.cadastrarLancamento(request);
+      final LancamentoAgendaFinanceiraResponse response = widget.modoEdicao
+          ? await _service.editarLancamento(
+              _idLancamentoEdicao ?? request.uuidOperacaoApp,
+              request,
+              escopo: _recorrencia.escopo,
+            )
+          : await _service.cadastrarLancamento(request);
       idGerado = response.id;
     } catch (error) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+      if (!widget.modoEdicao) {
+        setState(
+          () => _erroJornada = recorrenciaLabel(
+            context,
+            error is AgendaFinanceiraLancamentoApiException
+                ? error.codigoRecorrencia ?? 'saveError'
+                : 'saveError',
+          ),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -813,7 +863,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
         recorrencia: _recorrencia,
         descricao: _descricaoController.text,
         valorFormatado: _valorController.text,
-        vencimentoFormatado: '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
+        vencimentoFormatado:
+            '${_dataVencimento.day}/${_dataVencimento.month}/${_dataVencimento.year}',
         cancelar: true,
         permitirTrocarEscopo: true,
       );
@@ -834,9 +885,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
       } on AgendaFinanceiraLancamentoApiException catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(recorrenciaLabel(
-              context, e.codigoRecorrencia ?? 'saveError',
-            ))),
+            SnackBar(
+              content: Text(
+                recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
+              ),
+            ),
           );
         }
       } finally {
@@ -879,8 +932,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   label: const Text('Excluir/apagar'),
                   style: FilledButton.styleFrom(
                     backgroundColor: tokens.danger,
-                    foregroundColor:
-                        Theme.of(dialogContext).colorScheme.onError,
+                    foregroundColor: Theme.of(
+                      dialogContext,
+                    ).colorScheme.onError,
                   ),
                 ),
               ],
@@ -934,10 +988,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
       labelText: label,
       floatingLabelBehavior: FloatingLabelBehavior.always,
       hintText: hintText,
-      prefixIcon:
-          icon == null
-              ? null
-              : Icon(icon, size: 18, color: tokens.secondaryText),
+      prefixIcon: icon == null
+          ? null
+          : Icon(icon, size: 18, color: tokens.secondaryText),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: tokens.inputBackground,
@@ -978,13 +1031,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
       maxLines: maxLines,
       enabled: enabled,
       decoration: _inputDecoration(label, hintText: hintText, icon: icon),
-      validator:
-          requiredField
-              ? (String? value) =>
-                  value == null || value.trim().isEmpty
-                      ? context.t('agenda.form.required')
-                      : null
-              : null,
+      validator: !widget.modoEdicao && controller == _valorController
+          ? (value) =>
+                _toDouble(value ?? '') <= 0 || !_toDouble(value ?? '').isFinite
+                ? _journey('invalidAmount')
+                : null
+          : requiredField
+          ? (String? value) => value == null || value.trim().isEmpty
+                ? context.t('agenda.form.required')
+                : null
+          : null,
     );
   }
 
@@ -1006,41 +1062,36 @@ class _LancamentoAgendaFinanceiraWebBodyState
       decoration: _inputDecoration(
         label,
         icon: icon,
-        suffixIcon:
-            clearable && controller.text.isNotEmpty
-                ? IconButton(
-                  tooltip: context.t('agenda.form.clearForecast'),
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed:
-                      () => setState(() {
-                        _dataPrevisaoPagamento = null;
-                        _sincronizarTextosData();
-                      }),
-                )
-                : const Icon(Icons.keyboard_arrow_down_rounded),
+        suffixIcon: clearable && controller.text.isNotEmpty
+            ? IconButton(
+                tooltip: context.t('agenda.form.clearForecast'),
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => setState(() {
+                  _dataPrevisaoPagamento = null;
+                  _sincronizarTextosData();
+                }),
+              )
+            : const Icon(Icons.keyboard_arrow_down_rounded),
       ),
-      validator:
-          requiredField
-              ? (String? v) =>
-                  v == null || v.trim().isEmpty
-                      ? context.t('agenda.form.required')
-                      : null
-              : null,
-      onTap:
-          !enabled
-              ? null
-              : () async {
-                final DateTime? selecionada = await showDatePicker(
-                  context: context,
-                  initialDate: initialDate,
-                  firstDate: DateTime(2000),
-                  lastDate: lastDate ?? DateTime(2100),
-                );
-                if (!mounted || selecionada == null) return;
-                onChanged(_normalizarData(selecionada));
-                _sincronizarTextosData();
-                setState(() {});
-              },
+      validator: requiredField
+          ? (String? v) => v == null || v.trim().isEmpty
+                ? context.t('agenda.form.required')
+                : null
+          : null,
+      onTap: !enabled
+          ? null
+          : () async {
+              final DateTime? selecionada = await showDatePicker(
+                context: context,
+                initialDate: initialDate,
+                firstDate: DateTime(2000),
+                lastDate: lastDate ?? DateTime(2100),
+              );
+              if (!mounted || selecionada == null) return;
+              onChanged(_normalizarData(selecionada));
+              _sincronizarTextosData();
+              setState(() {});
+            },
     );
   }
 
@@ -1078,8 +1129,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     Widget? trailing,
   }) {
     final List<String> safeItems = items.isEmpty ? <String>['Pix'] : items;
-    final String safeValue =
-        safeItems.contains(value) ? value : safeItems.first;
+    final String safeValue = safeItems.contains(value)
+        ? value
+        : safeItems.first;
     return _SixWebSelectField(
       label: label,
       value: safeValue,
@@ -1218,6 +1270,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
             _label('summary'),
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
+          if (!widget.modoEdicao) ...[
+            const SizedBox(height: 12),
+            Text(
+              _descricaoController.text,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _service.espacoFinanceiro == 'PESSOAL'
+                  ? context.t('space.PESSOAL')
+                  : '${context.t('space.EMPRESA')} · $_empresaExibicao',
+            ),
+          ],
           const SizedBox(height: 24),
           Text(
             _label(_tipoSelecionado == 'Receber' ? 'receivable' : 'payable'),
@@ -1228,6 +1293,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
             regional.formatCurrency(_toDouble(_valorController.text)),
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
           ),
+          if (!widget.modoEdicao && _recorrencia.ativa)
+            Text(
+              _journey('perOccurrence'),
+              style: TextStyle(color: tokens.secondaryText),
+            ),
           const SizedBox(height: 16),
           const Divider(),
           row('situation', _situacaoLabel),
@@ -1280,26 +1350,29 @@ class _LancamentoAgendaFinanceiraWebBodyState
         children: [
           _section('main', [
             _fields([
-              SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: 'Pagar', label: Text(_label('payable'))),
-                  ButtonSegment(
-                    value: 'Receber',
-                    label: Text(_label('receivable')),
-                  ),
-                ],
-                selected: {_tipoSelecionado},
-                onSelectionChanged:
-                    (_bloquearTipoStatus || widget.modoEdicao)
-                        ? null
-                        : (value) => setState(
+              if (widget.modoEdicao)
+                SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                      value: 'Pagar',
+                      label: Text(_label('payable')),
+                    ),
+                    ButtonSegment(
+                      value: 'Receber',
+                      label: Text(_label('receivable')),
+                    ),
+                  ],
+                  selected: {_tipoSelecionado},
+                  onSelectionChanged: (_bloquearTipoStatus || widget.modoEdicao)
+                      ? null
+                      : (value) => setState(
                           () => _aplicarTipoSelecionado(value.first),
                         ),
-                style: SegmentedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  style: SegmentedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                  ),
                 ),
-              ),
               _buildTextField(
                 controller: _descricaoController,
                 label: _label('description'),
@@ -1337,11 +1410,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                       ),
                     ),
                 ],
-                onChanged:
-                    _bloquearTipoStatus
-                        ? null
-                        : (value) =>
-                            setState(() => _statusSelecionado = value!),
+                onChanged: _bloquearTipoStatus
+                    ? null
+                    : (value) => setState(() => _statusSelecionado = value!),
               ),
               _buildCompetenciaField(),
             ], columns: 3),
@@ -1399,9 +1470,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   _label('settleAfterSave'),
                   style: TextStyle(fontSize: 12, color: tokens.secondaryText),
                 ),
-                onChanged:
-                    (value) =>
-                        setState(() => _registrarPagamento = value ?? false),
+                onChanged: (value) =>
+                    setState(() => _registrarPagamento = value ?? false),
               ),
               if (_registrarPagamento) ...[
                 const SizedBox(height: 16),
@@ -1416,63 +1486,73 @@ class _LancamentoAgendaFinanceiraWebBodyState
             ],
           ]),
           separator(),
-          AgendaImpostoRendaWebFields(
-            draft: _ir,
-            enabled: !_isLoading,
-            onChanged: () => setState(() {}),
-          ),
-          const SizedBox(height: 16),
+          if (widget.modoEdicao) ...[
+            AgendaImpostoRendaWebFields(
+              draft: _ir,
+              enabled: !_isLoading,
+              onChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 16),
+          ],
           _section('classification', [
             _fields([
               _buildTextField(
                 controller: _contatoController,
                 label: _label(receber ? 'customer' : 'supplier'),
               ),
-              _buildTextField(
+              TextFormField(
+                key: const ValueKey('agenda-category-field'),
                 controller: _categoriaController,
-                label: _label('category'),
-                requiredField: false,
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.t('space.formSpace')),
-                  const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    key: const ValueKey('lancamento-espaco'),
-                    segments: [
-                      for (final espaco in ['EMPRESA', 'PESSOAL'])
-                        ButtonSegment(
-                          value: espaco,
-                          label: Text(context.t('space.' + espaco)),
-                        ),
-                    ],
-                    selected: {_service.espacoFinanceiro},
-                    onSelectionChanged:
-                        _isLoading || widget.modoEdicao
-                            ? null
-                            : (values) => _selecionarEspaco(values.single),
-                  ),
-                  if (widget.modoEdicao) Text(context.t('space.editLocked')),
-                ],
-              ),
-              ContaFinanceiraWebField(
-                espaco: _service.espacoFinanceiro,
-                value: _contaFinanceiraId,
-                onChanged: (id) => setState(() => _contaFinanceiraId = id),
-              ),
-              TextButton.icon(
-                onPressed: () async {
+                readOnly: true,
+                enabled: !_isLoading,
+                decoration: InputDecoration(
+                  labelText: _label('category'),
+                  hintText: context.t('agenda.category.choose'),
+                  prefixIcon: const Icon(Icons.category_outlined),
+                  suffixIcon: const Icon(Icons.expand_more_rounded),
+                ),
+                onTap: () async {
                   final nome = await selecionarContaWeb(
                     context,
                     _service.espacoFinanceiro,
                     grupo: 'CATEGORIAS',
+                    permitirLimpar: true,
                   );
-                  if (nome != null && mounted)
-                    setState(() => _categoriaController.text = nome);
+                  if (nome != null && mounted) {
+                    setState(() {
+                      _categoriaController.text = nome;
+                      _alterado = true;
+                    });
+                  }
                 },
-                icon: const Icon(Icons.category_outlined),
-                label: Text(context.t('space.CATEGORIAS')),
+              ),
+              if (widget.modoEdicao)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(context.t('space.formSpace')),
+                    const SizedBox(height: 8),
+                    SegmentedButton<String>(
+                      key: const ValueKey('lancamento-espaco'),
+                      segments: [
+                        for (final espaco in ['EMPRESA', 'PESSOAL'])
+                          ButtonSegment(
+                            value: espaco,
+                            label: Text(context.t('space.' + espaco)),
+                          ),
+                      ],
+                      selected: {_service.espacoFinanceiro},
+                      onSelectionChanged: _isLoading || widget.modoEdicao
+                          ? null
+                          : (values) => _selecionarEspaco(values.single),
+                    ),
+                    if (widget.modoEdicao) Text(context.t('space.editLocked')),
+                  ],
+                ),
+              ContaFinanceiraWebField(
+                espaco: _service.espacoFinanceiro,
+                value: _contaFinanceiraId,
+                onChanged: (id) => setState(() => _contaFinanceiraId = id),
               ),
               AgendaCentroCustoWebField(
                 key: ValueKey(_service.espacoFinanceiro),
@@ -1480,39 +1560,39 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 initialId: _centroCustoId,
                 initialName: _centroCustoController.text,
                 enabled: !_isLoading,
-                onChanged:
-                    (centro) => setState(() {
-                      _centroCustoId = centro?.id;
-                      _centroCustoController.text = centro?.nome ?? '';
-                    }),
+                onChanged: (centro) => setState(() {
+                  _centroCustoId = centro?.id;
+                  _centroCustoController.text = centro?.nome ?? '';
+                }),
               ),
               _buildDropdownField(
                 label: _label('paymentMethod'),
                 value: _formaPagamentoSelecionada,
                 items: _formasPagamento,
                 enabled: !_carregandoTiposRecebimento,
-                onChanged:
-                    (value) =>
-                        setState(() => _formaPagamentoSelecionada = value!),
+                onChanged: (value) =>
+                    setState(() => _formaPagamentoSelecionada = value!),
               ),
             ]),
           ]),
-          const SizedBox(height: 20),
-          _buildTextField(
-            controller: _responsavelController,
-            label: _label('responsible'),
-            requiredField: false,
-          ),
-          const SizedBox(height: 20),
-          AgendaRecorrenciaWebFields(
-            compact: true,
-            config: _recorrencia,
-            vencimento: _dataVencimento,
-            enabled: !_isLoading,
-            onChanged: () => setState(() {}),
-          ),
-          if (_recorrencia.ativa && _dataPrevisaoPagamento != null)
-            _helper('forecastRecurrenceHint'),
+          if (widget.modoEdicao) ...[
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _responsavelController,
+              label: _label('responsible'),
+              requiredField: false,
+            ),
+            const SizedBox(height: 20),
+            AgendaRecorrenciaWebFields(
+              compact: true,
+              config: _recorrencia,
+              vencimento: _dataVencimento,
+              enabled: !_isLoading,
+              onChanged: () => setState(() {}),
+            ),
+            if (_recorrencia.ativa && _dataPrevisaoPagamento != null)
+              _helper('forecastRecurrenceHint'),
+          ],
           const SizedBox(height: 16),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
@@ -1521,16 +1601,31 @@ class _LancamentoAgendaFinanceiraWebBodyState
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             childrenPadding: const EdgeInsets.only(top: 12, bottom: 20),
+            maintainState: true,
             children: [
+              if (!widget.modoEdicao) ...[
+                AgendaImpostoRendaWebFields(
+                  draft: _ir,
+                  enabled: !_isLoading,
+                  onChanged: () => setState(() => _alterado = true),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _responsavelController,
+                  label: _label('responsible'),
+                ),
+                const SizedBox(height: 16),
+              ],
               _fields([
-                if (_service.espacoFinanceiro == 'EMPRESA')
+                if (widget.modoEdicao && _service.espacoFinanceiro == 'EMPRESA')
                   _buildDropdownField(
                     label: _label('company'),
                     value: _empresaSelecionada,
-                    items:
-                        widget.empresas.isEmpty ? ['Empresa'] : widget.empresas,
-                    onChanged:
-                        (value) => setState(() => _empresaSelecionada = value!),
+                    items: widget.empresas.isEmpty
+                        ? ['Empresa']
+                        : widget.empresas,
+                    onChanged: (value) =>
+                        setState(() => _empresaSelecionada = value!),
                   ),
                 _buildDateField(
                   label: _label('transactionDate'),
@@ -1566,7 +1661,670 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  void _irParaEtapa(int etapa) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _etapa = etapa;
+      _erroJornada = null;
+      if (etapa == 2) _detalhesVisitados = true;
+    });
+    if (_journeyScroll.hasClients) _journeyScroll.jumpTo(0);
+  }
+
+  void _continuarJornada() {
+    if (_isLoading || _ir.carregando) return;
+    if (_etapa == 0 && !_tipoEscolhido) return;
+    if (_etapa == 1 && !_espacoEscolhido) return;
+    if (_etapa == 2 && !(_formKey.currentState?.validate() ?? false)) return;
+    _irParaEtapa(_etapa + 1);
+  }
+
+  Future<void> _solicitarSaida() async {
+    if (_isLoading || _ir.carregando || _confirmandoSaida) return;
+    if (!_alterado) {
+      Navigator.of(context).pop();
+      return;
+    }
+    _confirmandoSaida = true;
+    final descartar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_journey('discardTitle')),
+        content: Text(_journey('discardHint')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(_journey('keepEditing')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(_journey('discard')),
+          ),
+        ],
+      ),
+    );
+    _confirmandoSaida = false;
+    if (descartar == true && mounted) Navigator.of(context).pop();
+  }
+
+  Widget _choice({
+    required String id,
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool selected,
+    required VoidCallback onTap,
+    Color? accent,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    final highlight = accent ?? tokens.info;
+    return Semantics(
+      selected: selected,
+      child: Material(
+        color: selected
+            ? accent == null
+                  ? tokens.selectedBackground
+                  : Color.alphaBlend(
+                      highlight.withValues(alpha: .12),
+                      tokens.cardBackground,
+                    )
+            : tokens.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: selected
+                ? (accent ?? tokens.selectedBorder)
+                : tokens.cardBorder,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: ValueKey('journey-$id'),
+          onTap: _isLoading ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 30, color: highlight),
+                    const Spacer(),
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked,
+                      color: selected ? highlight : tokens.secondaryText,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: tokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: TextStyle(color: tokens.secondaryText, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _journeyProgress() {
+    final tokens = WebThemeTokens.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 320);
+    final labels = ['type', 'space', 'details', 'recurrence'];
+    final icons = [
+      Icons.swap_vert_rounded,
+      Icons.account_balance_wallet_outlined,
+      Icons.edit_note_rounded,
+      Icons.event_repeat_outlined,
+    ];
+    final stepLabel = _journey('step').replaceAll('{step}', '${_etapa + 1}');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        border: Border(bottom: BorderSide(color: tokens.divider)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              stepLabel,
+              style: TextStyle(
+                color: tokens.secondaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Positioned(
+                    top: 21,
+                    left: constraints.maxWidth / 8,
+                    right: constraints.maxWidth / 8,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: ColoredBox(
+                        color: tokens.divider,
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: _etapa / 3),
+                            duration: duration,
+                            curve: Curves.easeInOutCubic,
+                            builder: (context, value, _) =>
+                                FractionallySizedBox(
+                                  widthFactor: value,
+                                  child: Container(
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          colors.primary.withValues(
+                                            alpha: 0.65,
+                                          ),
+                                          colors.primary,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int index = 0; index < labels.length; index++)
+                        Expanded(
+                          child: Semantics(
+                            selected: index == _etapa,
+                            label: '${index + 1}. ${_journey(labels[index])}',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap:
+                                    index < _etapa &&
+                                        !_isLoading &&
+                                        !_ir.carregando
+                                    ? () => _irParaEtapa(index)
+                                    : null,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: duration,
+                                        curve: Curves.easeOutCubic,
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: index <= _etapa
+                                              ? colors.primary
+                                              : tokens.cardBackground,
+                                          border: Border.all(
+                                            color: index == _etapa
+                                                ? colors.primary.withValues(
+                                                    alpha: 0.3,
+                                                  )
+                                                : tokens.cardBackground,
+                                            width: 4,
+                                            strokeAlign:
+                                                BorderSide.strokeAlignOutside,
+                                          ),
+                                          boxShadow:
+                                              index == _etapa && !reduceMotion
+                                              ? [
+                                                  BoxShadow(
+                                                    color: colors.primary
+                                                        .withValues(alpha: 0.2),
+                                                    blurRadius: 14,
+                                                    spreadRadius: 2,
+                                                  ),
+                                                ]
+                                              : [],
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: duration,
+                                          child: Icon(
+                                            index < _etapa
+                                                ? Icons.check_rounded
+                                                : icons[index],
+                                            key: ValueKey(
+                                              '$index-${index < _etapa}',
+                                            ),
+                                            size: 23,
+                                            color: index <= _etapa
+                                                ? colors.onPrimary
+                                                : tokens.mutedText,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      AnimatedDefaultTextStyle(
+                                        duration: duration,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium!
+                                            .copyWith(
+                                              color: index == _etapa
+                                                  ? tokens.primaryText
+                                                  : tokens.secondaryText,
+                                              fontWeight: index == _etapa
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w500,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        child: Text(
+                                          _journey(labels[index]),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      AnimatedContainer(
+                                        duration: duration,
+                                        height: 3,
+                                        width: index == _etapa ? 28 : 0,
+                                        decoration: BoxDecoration(
+                                          color: colors.primary,
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyActions() {
+    final tokens = WebThemeTokens.of(context);
+    final blocked = _isLoading || _ir.carregando;
+    final canContinue =
+        !blocked &&
+        (_etapa != 0 || _tipoEscolhido) &&
+        (_etapa != 1 || _espacoEscolhido);
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    );
+    final cancel = TextButton(
+      onPressed: blocked ? null : _solicitarSaida,
+      style: TextButton.styleFrom(
+        foregroundColor: tokens.secondaryText,
+        minimumSize: const Size(96, 48),
+        shape: buttonShape,
+      ),
+      child: Text(_label('cancel')),
+    );
+    final back = OutlinedButton.icon(
+      onPressed: blocked ? null : () => _irParaEtapa(_etapa - 1),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(112, 48),
+        shape: buttonShape,
+      ),
+      icon: const Icon(Icons.arrow_back_rounded, size: 18),
+      label: Text(_journey('back')),
+    );
+    final next = FilledButton.icon(
+      key: const ValueKey('journey-next'),
+      onPressed: !canContinue
+          ? null
+          : _etapa < 3
+          ? _continuarJornada
+          : _salvar,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(160, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: buttonShape,
+      ),
+      iconAlignment: IconAlignment.end,
+      icon: Icon(
+        _etapa < 3 ? Icons.arrow_forward_rounded : Icons.check_rounded,
+        size: 18,
+      ),
+      label: Text(
+        _etapa < 3
+            ? _journey('continue')
+            : _label(
+                _isLoading
+                    ? 'saving'
+                    : _registrarPagamento
+                    ? (_tipoSelecionado == 'Receber'
+                          ? 'saveReceive'
+                          : 'saveContinue')
+                    : 'save',
+              ),
+        textAlign: TextAlign.center,
+      ),
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        border: Border(top: BorderSide(color: tokens.divider)),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 560) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [cancel, const Spacer(), if (_etapa > 0) back],
+                    ),
+                    const SizedBox(height: 12),
+                    next,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  cancel,
+                  const Spacer(),
+                  if (_etapa > 0) ...[back, const SizedBox(width: 12)],
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: next,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _journeyRecurrence() {
+    final regional = context.watch<LocaleSettingsProvider>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _fields([
+          _choice(
+            id: 'once',
+            icon: Icons.event_outlined,
+            title: _journey('once'),
+            description: _journey('onceHint'),
+            selected: !_recorrencia.ativa,
+            onTap: () => setState(() {
+              _recorrencia.ativa = false;
+              _alterado = true;
+            }),
+          ),
+          _choice(
+            id: 'repeat',
+            icon: Icons.event_repeat_outlined,
+            title: _journey('repeat'),
+            description: _journey('repeatHint'),
+            selected: _recorrencia.ativa,
+            onTap: () => setState(() {
+              _recorrencia.ativa = true;
+              _alterado = true;
+            }),
+          ),
+        ]),
+        if (_recorrencia.ativa) ...[
+          const SizedBox(height: 20),
+          _panel(
+            Form(
+              key: _recorrenciaFormKey,
+              child: AgendaRecorrenciaWebFields(
+                config: _recorrencia,
+                vencimento: _dataVencimento,
+                enabled: !_isLoading,
+                onChanged: () => setState(() => _alterado = true),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _notice(
+            '${_journey('firstDue')}: ${regional.formatDate(_dataVencimento)}. ${_journey('perOccurrenceHint')}',
+          ),
+          if (_dataPrevisaoPagamento != null) _helper('forecastRecurrenceHint'),
+        ],
+        if (_registrarPagamento) ...[
+          const SizedBox(height: 12),
+          _notice(_journey('settlementFirst')),
+        ],
+        const SizedBox(height: 24),
+        _summary(),
+      ],
+    );
+  }
+
+  Widget _buildJourney() {
+    final tokens = WebThemeTokens.of(context);
+    final titles = [
+      'typeTitle',
+      'spaceTitle',
+      'detailsTitle',
+      'recurrenceTitle',
+    ];
+    final hints = ['typeHint', 'spaceHint', 'detailsHint', 'recurrenceHint'];
+    return PopScope(
+      canPop: !_isLoading && !_ir.carregando && !_alterado,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _solicitarSaida();
+      },
+      child: Column(
+        children: [
+          _journeyProgress(),
+          if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: AbsorbPointer(
+              absorbing: _isLoading,
+              child: SingleChildScrollView(
+                controller: _journeyScroll,
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 960),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _journey(
+                            'step',
+                          ).replaceAll('{step}', '${_etapa + 1}'),
+                          style: TextStyle(
+                            color: tokens.info,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _journey(titles[_etapa]),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: tokens.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _journey(hints[_etapa]),
+                          style: TextStyle(
+                            color: tokens.secondaryText,
+                            height: 1.5,
+                          ),
+                        ),
+                        if (_etapa > 0) ...[
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Chip(
+                                label: Text(
+                                  _label(
+                                    _tipoSelecionado == 'Receber'
+                                        ? 'receivable'
+                                        : 'payable',
+                                  ),
+                                ),
+                              ),
+                              if (_espacoEscolhido)
+                                Chip(
+                                  label: Text(
+                                    _service.espacoFinanceiro == 'PESSOAL'
+                                        ? context.t('space.PESSOAL')
+                                        : '${context.t('space.EMPRESA')} · $_empresaExibicao',
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 28),
+                        if (_etapa == 0)
+                          _fields([
+                            for (final receber in [false, true])
+                              _choice(
+                                id: receber ? 'receive' : 'pay',
+                                accent: receber
+                                    ? tokens.financialPositive
+                                    : tokens.financialNegative,
+                                icon: receber
+                                    ? Icons.south_west_rounded
+                                    : Icons.north_east_rounded,
+                                title: _label(
+                                  receber ? 'receivable' : 'payable',
+                                ),
+                                description: _journey(
+                                  receber ? 'receiveHint' : 'payHint',
+                                ),
+                                selected:
+                                    _tipoEscolhido &&
+                                    _tipoSelecionado ==
+                                        (receber ? 'Receber' : 'Pagar'),
+                                onTap: () => setState(() {
+                                  _aplicarTipoSelecionado(
+                                    receber ? 'Receber' : 'Pagar',
+                                  );
+                                  _tipoEscolhido = true;
+                                  _alterado = true;
+                                }),
+                              ),
+                          ]),
+                        if (_etapa == 1) ...[
+                          _fields([
+                            for (final pessoal in [true, false])
+                              _choice(
+                                id: pessoal ? 'personal' : 'company',
+                                icon: pessoal
+                                    ? Icons.person_outline_rounded
+                                    : Icons.business_outlined,
+                                title: context.t(
+                                  pessoal ? 'space.PESSOAL' : 'space.EMPRESA',
+                                ),
+                                description: pessoal
+                                    ? _journey('personalHint')
+                                    : '${_journey('companyHint')}\n$_empresaExibicao',
+                                selected:
+                                    _espacoEscolhido &&
+                                    _service.espacoFinanceiro ==
+                                        (pessoal ? 'PESSOAL' : 'EMPRESA'),
+                                onTap: () {
+                                  _selecionarEspaco(
+                                    pessoal ? 'PESSOAL' : 'EMPRESA',
+                                  );
+                                  setState(() {
+                                    _espacoEscolhido = true;
+                                    _alterado = true;
+                                  });
+                                },
+                              ),
+                          ]),
+                          if (_detalhesVisitados) ...[
+                            const SizedBox(height: 16),
+                            _notice(_journey('spaceResetHint')),
+                          ],
+                        ],
+                        // Keep controllers, validators and optional fields alive when returning.
+                        if (_detalhesVisitados)
+                          Offstage(
+                            offstage: _etapa != 2,
+                            child: ExcludeFocus(
+                              excluding: _etapa != 2,
+                              child: Form(
+                                key: _formKey,
+                                onChanged: () => _alterado = true,
+                                child: _formContent(),
+                              ),
+                            ),
+                          ),
+                        if (_etapa == 3) _journeyRecurrence(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (_erroJornada != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+              child: Semantics(
+                liveRegion: true,
+                child: _notice(_erroJornada!, warning: true),
+              ),
+            ),
+          _journeyActions(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionsBar() {
+    if (!widget.modoEdicao) return _journeyActions();
     final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
@@ -1582,21 +2340,26 @@ class _LancamentoAgendaFinanceiraWebBodyState
         children: [
           if (widget.modoEdicao)
             TextButton.icon(
-              onPressed:
-                  (_isLoading || _ir.carregando)
-                      ? null
-                      : _confirmarExcluirLancamento,
-              icon: Icon(_recorrencia.serieId != null
-                  ? Icons.event_busy_outlined : Icons.delete_outline, size: 18),
-              label: Text(_recorrencia.serieId != null
-                  ? 'Cancelar ocorrência' : _label('delete')),
+              onPressed: (_isLoading || _ir.carregando)
+                  ? null
+                  : _confirmarExcluirLancamento,
+              icon: Icon(
+                _recorrencia.serieId != null
+                    ? Icons.event_busy_outlined
+                    : Icons.delete_outline,
+                size: 18,
+              ),
+              label: Text(
+                _recorrencia.serieId != null
+                    ? 'Cancelar ocorrência'
+                    : _label('delete'),
+              ),
               style: TextButton.styleFrom(foregroundColor: tokens.danger),
             ),
           OutlinedButton(
-            onPressed:
-                (_isLoading || _ir.carregando)
-                    ? null
-                    : () => Navigator.of(context).pop(),
+            onPressed: (_isLoading || _ir.carregando)
+                ? null
+                : () => Navigator.of(context).pop(),
             child: Text(_label('cancel')),
           ),
           FilledButton(
@@ -1607,8 +2370,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     ? 'saving'
                     : _registrarPagamento
                     ? (_tipoSelecionado == 'Receber'
-                        ? 'saveReceive'
-                        : 'saveContinue')
+                          ? 'saveReceive'
+                          : 'saveContinue')
                     : widget.modoEdicao
                     ? 'update'
                     : 'save',
@@ -1622,6 +2385,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.modoEdicao) return _buildJourney();
     return Form(
       key: _formKey,
       child: Column(
@@ -1736,23 +2500,19 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
       elevation: 12,
       color: tokens.menuBackground,
       constraints: BoxConstraints.tightFor(width: box.size.width),
-      items:
-          widget.items
-              .map(
-                (String item) => PopupMenuItem<String>(
-                  value: item,
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  child: _SixWebSelectMenuItem(
-                    label: _agendaOptionLabel(context, item),
-                    selected: item == safeValue,
-                  ),
-                ),
-              )
-              .toList(),
+      items: widget.items
+          .map(
+            (String item) => PopupMenuItem<String>(
+              value: item,
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: _SixWebSelectMenuItem(
+                label: _agendaOptionLabel(context, item),
+                selected: item == safeValue,
+              ),
+            ),
+          )
+          .toList(),
     );
 
     if (!mounted) return;
@@ -1767,14 +2527,12 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = widget.enabled && (_open || _hover);
-    final Color borderColor =
-        active
-            ? tokens.selectedBorder
-            : tokens.secondaryText.withValues(alpha: 0.22);
-    final Color backgroundColor =
-        widget.enabled
-            ? (active ? tokens.selectedBackground : tokens.inputBackground)
-            : tokens.disabledBackground;
+    final Color borderColor = active
+        ? tokens.selectedBorder
+        : tokens.secondaryText.withValues(alpha: 0.22);
+    final Color backgroundColor = widget.enabled
+        ? (active ? tokens.selectedBackground : tokens.inputBackground)
+        : tokens.disabledBackground;
 
     return Semantics(
       button: true,
@@ -1784,10 +2542,9 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
         message: widget.enabled ? 'Selecionar ${widget.label}' : widget.label,
         waitDuration: const Duration(milliseconds: 450),
         child: MouseRegion(
-          cursor:
-              widget.enabled
-                  ? SystemMouseCursors.click
-                  : SystemMouseCursors.basic,
+          cursor: widget.enabled
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
           onEnter: (_) => setState(() => _hover = true),
           onExit: (_) => setState(() => _hover = false),
           child: Material(
@@ -1808,26 +2565,24 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                   color: backgroundColor,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: borderColor),
-                  boxShadow:
-                      active
-                          ? <BoxShadow>[
-                            BoxShadow(
-                              color: tokens.info.withValues(alpha: 0.10),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ]
-                          : null,
+                  boxShadow: active
+                      ? <BoxShadow>[
+                          BoxShadow(
+                            color: tokens.info.withValues(alpha: 0.10),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   children: <Widget>[
                     Icon(
                       widget.icon,
                       size: 20,
-                      color:
-                          widget.enabled
-                              ? tokens.secondaryText
-                              : tokens.disabledForeground,
+                      color: widget.enabled
+                          ? tokens.secondaryText
+                          : tokens.disabledForeground,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1850,10 +2605,9 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color:
-                                  widget.enabled
-                                      ? tokens.primaryText
-                                      : tokens.disabledForeground,
+                              color: widget.enabled
+                                  ? tokens.primaryText
+                                  : tokens.disabledForeground,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

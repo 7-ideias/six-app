@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
@@ -21,6 +23,14 @@ import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart
 import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 
 void main() {
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   tearDown(() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
   });
@@ -75,21 +85,26 @@ void main() {
     await _pumpAgenda(
       tester,
       brightness: Brightness.light,
-      service: _FakeAgendaService(agendaPayload: <String, dynamic>{
-        'gruposAgenda': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'titulo': 'A receber',
-            'itens': <Map<String, dynamic>>[vendaSemContato],
-          },
-        ],
-      }),
+      service: _FakeAgendaService(
+        agendaPayload: <String, dynamic>{
+          'gruposAgenda': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'titulo': 'A receber',
+              'itens': <Map<String, dynamic>>[vendaSemContato],
+            },
+          ],
+        },
+      ),
     );
     expect(find.text('Venda'), findsOneWidget);
     expect(find.textContaining('Não informado'), findsNothing);
     expect(find.textContaining('BUFUNFA'), findsNothing);
-    final card = find.ancestor(of: find.text('Venda'), matching: find.byType(InkWell)).first;
+    final card = find
+        .ancestor(of: find.text('Venda'), matching: find.byType(InkWell))
+        .first;
     final seta = find.descendant(
-      of: card, matching: find.byIcon(Icons.south_west_rounded),
+      of: card,
+      matching: find.byIcon(Icons.south_west_rounded),
     );
     expect(tester.widget<Icon>(seta).color, const Color(0xFF047857));
 
@@ -101,111 +116,155 @@ void main() {
     expect(find.text('BUFUNFA'), findsNothing);
   });
 
-  testWidgets('calendario agrupa por vencimento e reutiliza cards com valores corretos',
-      (tester) async {
-    final pendente = {
-      ..._agendaItem('v1', 'RECEBER', 'Venda pendente', 'VENCIDO', 150),
-      'nomeContato': 'Não informado',
-      'valorConfirmado': 0,
-      'valorRestante': 150,
-    };
-    final recebida = _agendaItem('v2', 'RECEBER', 'Venda recebida', 'RECEBIDO', 100);
-    final parcial = {
-      ..._agendaItem('v3', 'RECEBER', 'Venda parcial', 'PARCIAL', 150),
-      'valorOriginal': 150,
-      'valor': 55,
-      'valorConfirmado': 95,
-      'valorRestante': 55,
-    };
-    final aPagar = _agendaItem('p1', 'PAGAR', 'Conta a pagar', 'PENDENTE', 70);
-    final proximoDia = {
-      ..._agendaItem('p2', 'PAGAR', 'Conta seguinte', 'PENDENTE', 40),
-      'dataVencimento': '2026-08-09',
-    };
+  testWidgets(
+    'calendario agrupa por vencimento e reutiliza cards com valores corretos',
+    (tester) async {
+      final pendente = {
+        ..._agendaItem('v1', 'RECEBER', 'Venda pendente', 'VENCIDO', 150),
+        'nomeContato': 'Não informado',
+        'valorConfirmado': 0,
+        'valorRestante': 150,
+      };
+      final recebida = _agendaItem(
+        'v2',
+        'RECEBER',
+        'Venda recebida',
+        'RECEBIDO',
+        100,
+      );
+      final parcial = {
+        ..._agendaItem('v3', 'RECEBER', 'Venda parcial', 'PARCIAL', 150),
+        'valorOriginal': 150,
+        'valor': 55,
+        'valorConfirmado': 95,
+        'valorRestante': 55,
+      };
+      final aPagar = _agendaItem(
+        'p1',
+        'PAGAR',
+        'Conta a pagar',
+        'PENDENTE',
+        70,
+      );
+      final proximoDia = {
+        ..._agendaItem('p2', 'PAGAR', 'Conta seguinte', 'PENDENTE', 40),
+        'dataVencimento': '2026-08-09',
+      };
+      await _pumpAgenda(
+        tester,
+        brightness: Brightness.light,
+        service: _FakeAgendaService(
+          agendaPayload: {
+            'gruposAgenda': [
+              {
+                'titulo': 'Vencidos',
+                'itens': [pendente, recebida, parcial, aPagar, proximoDia],
+              },
+            ],
+          },
+        ),
+      );
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Calendário'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('agenda-calendario-dia-08/08/2026')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('agenda-calendario-dia-09/08/2026')),
+        findsOneWidget,
+      );
+      expect(find.text('A receber '), findsOneWidget);
+      expect(find.text('Recebido '), findsWidgets);
+      expect(find.text('A pagar '), findsWidgets);
+      expect(find.textContaining('Diferença'), findsNothing);
+      expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
+      expect(find.byTooltip('Expandir lançamentos'), findsNWidgets(2));
+
+      await tester.tap(
+        find.byKey(const Key('agenda-calendario-toggle-08/08/2026')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(AgendaFinanceiraLancamentoCardMobile),
+        findsNWidgets(4),
+      );
+      expect(find.byTooltip('Recolher lançamentos'), findsOneWidget);
+      expect(find.byTooltip('Expandir lançamentos'), findsOneWidget);
+
+      await tester.ensureVisible(
+        find.byKey(const Key('agenda-calendario-toggle-09/08/2026')),
+      );
+      await tester.tap(
+        find.byKey(const Key('agenda-calendario-toggle-09/08/2026')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(AgendaFinanceiraLancamentoCardMobile),
+        findsNWidgets(5),
+      );
+      expect(find.textContaining('Não informado'), findsNothing);
+
+      final card = find.ancestor(
+        of: find.text('Venda pendente'),
+        matching: find.byType(AgendaFinanceiraLancamentoCardMobile),
+      );
+      expect(card, findsOneWidget);
+      final setaEntrada = find.descendant(
+        of: card,
+        matching: find.byIcon(Icons.south_west_rounded),
+      );
+      expect(tester.widget<Icon>(setaEntrada).color, const Color(0xFF047857));
+
+      await tester.ensureVisible(find.text('Venda pendente'));
+      await tester.tap(find.text('Venda pendente'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('Ações'), findsOneWidget);
+      expect(find.text('Detalhes'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('calendario recolhe um dia sem afetar os outros ou o resumo', (
+    tester,
+  ) async {
     await _pumpAgenda(
       tester,
       brightness: Brightness.light,
-      service: _FakeAgendaService(agendaPayload: {
-        'gruposAgenda': [
-          {'titulo': 'Vencidos', 'itens': [
-            pendente, recebida, parcial, aPagar, proximoDia,
-          ]},
-        ],
-      }),
-    );
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Calendário'));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('agenda-calendario-dia-08/08/2026')),
-        findsOneWidget);
-    expect(find.byKey(const Key('agenda-calendario-dia-09/08/2026')),
-        findsOneWidget);
-    expect(find.text('A receber'), findsOneWidget);
-    expect(find.text('Recebido'), findsWidgets);
-    expect(find.text('A pagar'), findsWidgets);
-    expect(find.textContaining('Diferença'), findsNothing);
-    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
-    expect(find.byTooltip('Expandir lançamentos'), findsNWidgets(2));
-
-    await tester.tap(
-      find.byKey(const Key('agenda-calendario-toggle-08/08/2026')));
-    await tester.pumpAndSettle();
-    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNWidgets(4));
-    expect(find.byTooltip('Recolher lançamentos'), findsOneWidget);
-    expect(find.byTooltip('Expandir lançamentos'), findsOneWidget);
-
-    await tester.ensureVisible(
-      find.byKey(const Key('agenda-calendario-toggle-09/08/2026')));
-    await tester.tap(
-      find.byKey(const Key('agenda-calendario-toggle-09/08/2026')));
-    await tester.pumpAndSettle();
-    expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNWidgets(5));
-    expect(find.textContaining('Não informado'), findsNothing);
-
-    final card = find.ancestor(
-      of: find.text('Venda pendente'),
-      matching: find.byType(AgendaFinanceiraLancamentoCardMobile),
-    );
-    expect(card, findsOneWidget);
-    final setaEntrada = find.descendant(
-      of: card,
-      matching: find.byIcon(Icons.south_west_rounded),
-    );
-    expect(tester.widget<Icon>(setaEntrada).color, const Color(0xFF047857));
-
-    await tester.ensureVisible(find.text('Venda pendente'));
-    await tester.tap(find.text('Venda pendente'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(find.text('Ações'), findsOneWidget);
-    expect(find.text('Detalhes'), findsWidgets);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('calendario recolhe um dia sem afetar os outros ou o resumo',
-      (tester) async {
-    await _pumpAgenda(
-      tester,
-      brightness: Brightness.light,
-      service: _FakeAgendaService(agendaPayload: {
-        'gruposAgenda': [
-          {'titulo': 'Previstos', 'itens': [
-            _agendaItem('v1', 'RECEBER', 'Venda dia um', 'PENDENTE', 150),
+      service: _FakeAgendaService(
+        agendaPayload: {
+          'gruposAgenda': [
             {
-              ..._agendaItem('v2', 'RECEBER', 'Venda dia dois', 'PENDENTE', 55),
-              'dataVencimento': '2026-08-09',
+              'titulo': 'Previstos',
+              'itens': [
+                _agendaItem('v1', 'RECEBER', 'Venda dia um', 'PENDENTE', 150),
+                {
+                  ..._agendaItem(
+                    'v2',
+                    'RECEBER',
+                    'Venda dia dois',
+                    'PENDENTE',
+                    55,
+                  ),
+                  'dataVencimento': '2026-08-09',
+                },
+              ],
             },
-          ]},
-        ],
-      }),
+          ],
+        },
+      ),
     );
     await tester.tap(find.widgetWithText(ChoiceChip, 'Calendário'));
     await tester.pumpAndSettle();
 
     final diaUm = find.byKey(const Key('agenda-calendario-toggle-08/08/2026'));
-    final diaDois = find.byKey(const Key('agenda-calendario-toggle-09/08/2026'));
-    expect(find.text('A receber'), findsNWidgets(2));
+    final diaDois = find.byKey(
+      const Key('agenda-calendario-toggle-09/08/2026'),
+    );
+    expect(find.text('A receber '), findsNWidgets(2));
     expect(find.byType(AgendaFinanceiraLancamentoCardMobile), findsNothing);
     expect(tester.getSize(diaUm).height, greaterThanOrEqualTo(40));
 
@@ -217,7 +276,7 @@ void main() {
     await tester.tap(diaUm);
     await tester.pumpAndSettle();
     expect(find.text('Venda dia um'), findsNothing);
-    expect(find.text('A receber'), findsNWidgets(2));
+    expect(find.text('A receber '), findsNWidgets(2));
 
     await tester.ensureVisible(diaDois);
     await tester.tap(diaDois);
@@ -257,13 +316,12 @@ void main() {
     );
 
     await tester.ensureVisible(find.text('Conta pendente'));
-    final Finder lancamentoCompacto =
-        find
-            .ancestor(
-              of: find.text('Conta pendente'),
-              matching: find.byType(InkWell),
-            )
-            .first;
+    final Finder lancamentoCompacto = find
+        .ancestor(
+          of: find.text('Conta pendente'),
+          matching: find.byType(InkWell),
+        )
+        .first;
     expect(tester.getSize(lancamentoCompacto).height, lessThan(90));
     await tester.tap(find.text('Conta pendente'));
     await tester.pump();
@@ -351,6 +409,8 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsWidgets);
     completer.complete(_agendaPayload);
     await tester.pump(const Duration(milliseconds: 1800));
+    await tester.pump();
+    await tester.pump();
   });
 
   testWidgets('agenda exposes themed error state in light mode', (
@@ -466,7 +526,7 @@ Future<void> _pumpScreen(
   bool settleInitialLoad = true,
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(390, 900);
+  tester.view.physicalSize = const Size(390, 1600);
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -479,6 +539,10 @@ Future<void> _pumpScreen(
 
   await tester.pumpWidget(
     MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child!,
+      ),
       locale: const Locale('pt'),
       supportedLocales: _testSupportedLocales,
       localizationsDelegates: _testLocalizationsDelegates,
@@ -486,12 +550,11 @@ Future<void> _pumpScreen(
       darkTheme: ThemeData.dark(),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: ChangeNotifierProvider(
-        create:
-            (_) => LocaleSettingsProvider(
-              regionalizacaoService: RegionalizacaoService(
-                apiClient: _RegionalApi(),
-              ),
-            ),
+        create: (_) => LocaleSettingsProvider(
+          regionalizacaoService: RegionalizacaoService(
+            apiClient: _RegionalApi(),
+          ),
+        ),
         child: child,
       ),
     ),
@@ -509,6 +572,9 @@ class _FakeAgendaService extends AgendaFinanceiraLancamentoService {
     this.agendaCompleter,
     this.throwOnConsult = false,
   }) : super();
+
+  @override
+  Future<List<CentroCustoModel>> listarCentrosCusto() async => [];
 
   final Map<String, dynamic> agendaPayload;
   final Map<String, dynamic> detailPayload;
@@ -674,15 +740,14 @@ Map<String, dynamic> _agendaItem(
     'codigoTipoRecebimento': 'tipo2',
     'categoria': 'Operacional',
     'responsavel': 'Mobile',
-    'acoesDisponiveis':
-        status == 'PENDENTE' || status == 'VENCIDO'
-            ? <String>[
-              'EDITAR',
-              'REGISTRAR_RECEBIMENTO',
-              'REGISTRAR_PARCIAL',
-              'DETALHES',
-            ]
-            : <String>['DETALHES', 'EDITAR'],
+    'acoesDisponiveis': status == 'PENDENTE' || status == 'VENCIDO'
+        ? <String>[
+            'EDITAR',
+            'REGISTRAR_RECEBIMENTO',
+            'REGISTRAR_PARCIAL',
+            'DETALHES',
+          ]
+        : <String>['DETALHES', 'EDITAR'],
   };
 }
 

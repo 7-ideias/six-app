@@ -56,10 +56,13 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cores = context.sixMobileColors;
     final entrada = item['tipo']?.toString().toLowerCase() == 'receber';
-    final cor = corNatureza(context, entrada);
+    final cancelado = item['status']?.toString().toLowerCase() == 'cancelado';
+    final cor = cancelado ? cores.mutedText : corNatureza(context, entrada);
     final titulo = item['descricao']?.toString().trim() ?? '';
     final status = item['status']?.toString().trim() ?? '';
-    final contato = AgendaFinanceiraResumoVisual.contatoInformado(item['contato']);
+    final contato = AgendaFinanceiraResumoVisual.contatoInformado(
+      item['contato'],
+    );
     final vencimento = item['vencimento']?.toString().trim() ?? '';
     final meta = <InlineSpan>[
       if (item['recorrente'] == true) TextSpan(text: '$rotuloRecorrente • '),
@@ -67,16 +70,25 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
       TextSpan(
         text: status.isEmpty ? 'Pendente' : status,
         style: TextStyle(
-          color: corStatus(context, status), fontWeight: FontWeight.w700,
+          color: corStatus(context, status),
+          fontWeight: FontWeight.w700,
         ),
       ),
       if (mostrarVencimento && vencimento.isNotEmpty && vencimento != '-')
         TextSpan(text: ' • vence $vencimento'),
     ];
-    final valor = AgendaFinanceiraCalendarioResumo.valorPrincipal(item);
-    final valorRotulo = AgendaFinanceiraCalendarioResumo.aberto(item) > 0
+    final valor = cancelado
+        ? AgendaFinanceiraCalendarioResumo.numero(
+            item['valorOriginal'] ?? item['valor'],
+          )
+        : AgendaFinanceiraCalendarioResumo.valorPrincipal(item);
+    final valorRotulo = cancelado
+        ? context.t('agenda.list.noBalance')
+        : AgendaFinanceiraCalendarioResumo.aberto(item) > 0
         ? context.t('agenda.calendar.outstanding')
-        : context.t(entrada ? 'agenda.calendar.received' : 'agenda.calendar.paid');
+        : context.t(
+            entrada ? 'agenda.calendar.received' : 'agenda.calendar.paid',
+          );
 
     return Semantics(
       button: true,
@@ -111,8 +123,11 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    entrada ? Icons.south_west_rounded : Icons.north_east_rounded,
-                    color: cor, size: 20,
+                    entrada
+                        ? Icons.south_west_rounded
+                        : Icons.north_east_rounded,
+                    color: cor,
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 11),
@@ -126,7 +141,8 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: cores.titleText, fontSize: 14.5,
+                          color: cores.titleText,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -136,7 +152,9 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: cores.mutedText, fontSize: 11.5, height: 1.25,
+                          color: cores.mutedText,
+                          fontSize: 11.5,
+                          height: 1.25,
                         ),
                       ),
                     ],
@@ -150,10 +168,12 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                     Text(
                       formatarMoeda(valor),
                       style: TextStyle(
-                        color: cor, fontSize: 12, fontWeight: FontWeight.w900,
+                        color: cor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    if (mostrarRotuloValor)
+                    if (mostrarRotuloValor || cancelado)
                       Text(
                         valorRotulo,
                         style: TextStyle(color: cores.mutedText, fontSize: 10),
@@ -161,7 +181,8 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Icon(
                       Icons.chevron_right_rounded,
-                      color: cores.mutedText, size: 20,
+                      color: cores.mutedText,
+                      size: 20,
                     ),
                   ],
                 ),
