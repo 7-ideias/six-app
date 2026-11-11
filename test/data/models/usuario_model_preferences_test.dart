@@ -133,6 +133,67 @@ void main() {
       );
     });
 
+    test('preserva visão completa da agenda no cache e no contrato', () {
+      final filtros = AgendaFinanceiraFiltrosPreferencia(
+        espacoFinanceiro: 'PESSOAL',
+        somenteImpostoRenda: true,
+        mostrarCancelados: true,
+        visaoSelecionada: 'VALORES_CONFIRMADOS',
+        calendarioDataDecrescente: false,
+        centrosCustoIds: ['centro-1', 'centro-2'],
+        tipo: AgendaFinanceiraTipoWebPreferencia.pagar,
+        tiposDePagamento: ['tipo2'],
+      );
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson({
+        'agendaFinanceiraFiltrosWeb': filtros.toJson(),
+      });
+      final restauradas = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        preferencias.toJson(),
+      ).agendaFinanceiraFiltrosWeb;
+      expect(restauradas.toJson(), filtros.toJson());
+      // Atualizações dos campos legados não podem apagar os novos campos.
+      final alteradas = preferencias
+          .copyWith(
+            agendaFinanceiraPeriodoWeb:
+                AgendaFinanceiraPeriodoWebPreferencia.hoje,
+          )
+          .agendaFinanceiraFiltrosWeb;
+      expect(alteradas.espacoFinanceiro, 'PESSOAL');
+      expect(alteradas.centrosCustoIds, ['centro-1', 'centro-2']);
+      expect(alteradas.visaoSelecionada, 'VALORES_CONFIRMADOS');
+      expect(alteradas.mostrarCancelados, isTrue);
+      expect(alteradas.somenteImpostoRenda, isTrue);
+      expect(alteradas.calendarioDataDecrescente, isFalse);
+    });
+
+    test('restaura padrões e permite desmarcar todas as preferências', () {
+      final filtros = AgendaFinanceiraFiltrosPreferencia.fromJson({
+        'espacoFinanceiro': 'INVALIDO',
+        'visaoSelecionada': 'INVALIDA',
+      });
+      expect(filtros.espacoFinanceiro, 'EMPRESA');
+      expect(filtros.visaoSelecionada, 'AGENDA');
+      expect(filtros.calendarioDataDecrescente, isTrue);
+      expect(filtros.somenteImpostoRenda, isFalse);
+      expect(filtros.mostrarCancelados, isFalse);
+      expect(filtros.centrosCustoIds, isEmpty);
+      final ativos = filtros.copyWith(
+        somenteImpostoRenda: true,
+        mostrarCancelados: true,
+        centrosCustoIds: ['centro-1'],
+      );
+      final limpos = AgendaFinanceiraFiltrosPreferencia.fromJson(
+        ativos
+            .copyWith(
+              somenteImpostoRenda: false,
+              mostrarCancelados: false,
+              centrosCustoIds: [],
+            )
+            .toJson(),
+      );
+      expect(limpos.toJson(), filtros.toJson());
+    });
+
     test('mantem filtros web e mobile da agenda independentes', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{

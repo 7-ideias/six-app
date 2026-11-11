@@ -397,7 +397,14 @@ class AgendaFinanceiraFiltrosPreferencia {
     this.tipo = AgendaFinanceiraTipoWebPreferencia.todos,
     this.status = AgendaFinanceiraStatusWebPreferencia.todos,
     List<String>? tiposDePagamento,
-  }) : tiposDePagamento = List<String>.unmodifiable(
+    this.espacoFinanceiro = 'EMPRESA',
+    this.somenteImpostoRenda = false,
+    this.mostrarCancelados = false,
+    this.visaoSelecionada = 'AGENDA',
+    this.calendarioDataDecrescente = true,
+    List<String> centrosCustoIds = const [],
+  }) : centrosCustoIds = List<String>.unmodifiable(centrosCustoIds),
+       tiposDePagamento = List<String>.unmodifiable(
          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
            tiposDePagamento,
          ),
@@ -409,6 +416,19 @@ class AgendaFinanceiraFiltrosPreferencia {
   final AgendaFinanceiraTipoWebPreferencia tipo;
   final AgendaFinanceiraStatusWebPreferencia status;
   final List<String> tiposDePagamento;
+  final String espacoFinanceiro;
+  final bool somenteImpostoRenda;
+  final bool mostrarCancelados;
+  final String visaoSelecionada;
+  final bool calendarioDataDecrescente;
+  final List<String> centrosCustoIds;
+
+  static const visoes = [
+    'AGENDA',
+    'CALENDARIO',
+    'FLUXO_PREVISTO',
+    'VALORES_CONFIRMADOS',
+  ];
 
   factory AgendaFinanceiraFiltrosPreferencia.vazia() {
     return AgendaFinanceiraFiltrosPreferencia();
@@ -420,6 +440,19 @@ class AgendaFinanceiraFiltrosPreferencia {
     }
 
     return AgendaFinanceiraFiltrosPreferencia(
+      espacoFinanceiro: json['espacoFinanceiro'] == 'PESSOAL'
+          ? 'PESSOAL'
+          : 'EMPRESA',
+      somenteImpostoRenda: json['somenteImpostoRenda'] == true,
+      mostrarCancelados: json['mostrarCancelados'] == true,
+      visaoSelecionada: visoes.contains(json['visaoSelecionada'])
+          ? json['visaoSelecionada'] as String
+          : 'AGENDA',
+      calendarioDataDecrescente: json['calendarioDataDecrescente'] != false,
+      centrosCustoIds:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['centrosCustoIds'],
+          ),
       periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
         json['periodo'],
         AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
@@ -443,6 +476,12 @@ class AgendaFinanceiraFiltrosPreferencia {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      if (espacoFinanceiro != 'EMPRESA') 'espacoFinanceiro': espacoFinanceiro,
+      if (somenteImpostoRenda) 'somenteImpostoRenda': true,
+      if (mostrarCancelados) 'mostrarCancelados': true,
+      if (visaoSelecionada != 'AGENDA') 'visaoSelecionada': visaoSelecionada,
+      if (!calendarioDataDecrescente) 'calendarioDataDecrescente': false,
+      if (centrosCustoIds.isNotEmpty) 'centrosCustoIds': centrosCustoIds,
       if (periodo != AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias)
         'periodo': periodo.codigo,
       if (periodo == AgendaFinanceiraPeriodoWebPreferencia.personalizado &&
@@ -465,8 +504,21 @@ class AgendaFinanceiraFiltrosPreferencia {
     AgendaFinanceiraTipoWebPreferencia? tipo,
     AgendaFinanceiraStatusWebPreferencia? status,
     List<String>? tiposDePagamento,
+    String? espacoFinanceiro,
+    bool? somenteImpostoRenda,
+    bool? mostrarCancelados,
+    String? visaoSelecionada,
+    bool? calendarioDataDecrescente,
+    List<String>? centrosCustoIds,
   }) {
     return AgendaFinanceiraFiltrosPreferencia(
+      espacoFinanceiro: espacoFinanceiro ?? this.espacoFinanceiro,
+      somenteImpostoRenda: somenteImpostoRenda ?? this.somenteImpostoRenda,
+      mostrarCancelados: mostrarCancelados ?? this.mostrarCancelados,
+      visaoSelecionada: visaoSelecionada ?? this.visaoSelecionada,
+      calendarioDataDecrescente:
+          calendarioDataDecrescente ?? this.calendarioDataDecrescente,
+      centrosCustoIds: centrosCustoIds ?? this.centrosCustoIds,
       periodo: periodo ?? this.periodo,
       dataInicio: dataInicio ?? this.dataInicio,
       dataFim: dataFim ?? this.dataFim,

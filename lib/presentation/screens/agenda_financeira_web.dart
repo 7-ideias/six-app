@@ -131,6 +131,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _acoesService.espacoFinanceiro = espaco;
       _centrosCusto = [];
     });
+    _salvarPreferenciasAgendaFinanceira();
     await _carregarTiposPagamentoConfigurados();
     await _carregarCentrosCusto();
     if (mounted) await _consultar(mostrarFeedback: true);
@@ -162,6 +163,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ? null
             : (value) async {
                 setState(() => _somenteImpostoRenda = value);
+                _salvarPreferenciasAgendaFinanceira();
                 await _consultar(mostrarFeedback: true);
               },
       ),
@@ -282,6 +284,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   bool _mostrarCancelados = false;
   bool _overlayInicialAberto = false;
   bool _usuarioAlterouFiltros = false;
+  PreferenciasIndividuaisDoUsuarioModel? _preferenciasAgendaRestauradas;
+  Future<void> _salvamentoPreferencias = Future<void>.value();
   DateTime? _ultimaConsultaEm;
 
   List<Map<String, dynamic>> get _itensAgenda => _gruposAgenda
@@ -316,10 +320,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       final bool abriuOverlay = await _abrirComoOverlayInicialSeNecessario();
       if (abriuOverlay || !mounted) return;
       await _restaurarPreferenciasAgendaFinanceira();
+      await _restaurarPreferenciasAgendaFinanceiraBackend();
+      if (!mounted) return;
       await _carregarTiposPagamentoConfigurados();
       await _carregarCentrosCusto();
-      await _restaurarPreferenciasAgendaFinanceira();
-      await _restaurarPreferenciasAgendaFinanceiraBackend();
+      final preferencias = _preferenciasAgendaRestauradas;
+      if (!mounted) return;
+      if (preferencias != null && !_usuarioAlterouFiltros) {
+        _aplicarPreferenciasAgendaFinanceira(preferencias);
+      }
       await _consultar();
     });
   }
@@ -354,6 +363,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void _aplicarPreferenciasAgendaFinanceira(
     PreferenciasIndividuaisDoUsuarioModel preferencias,
   ) {
+    _preferenciasAgendaRestauradas = preferencias;
     final AgendaFinanceiraFiltrosPreferencia filtros =
         preferencias.agendaFinanceiraFiltrosWeb;
     final String periodo = _periodoLabelPreferencia(filtros.periodo);
@@ -366,6 +376,24 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         .toSet();
 
     setState(() {
+      _service.espacoFinanceiro = filtros.espacoFinanceiro;
+      _acoesService.espacoFinanceiro = filtros.espacoFinanceiro;
+      _somenteImpostoRenda = filtros.somenteImpostoRenda;
+      _mostrarCancelados = filtros.mostrarCancelados;
+      _abaSelecionada = AgendaFinanceiraFiltrosPreferencia.visoes.indexOf(
+        filtros.visaoSelecionada,
+      );
+      _calendarioDataDecrescente = filtros.calendarioDataDecrescente;
+      _centrosCustoSelecionados
+        ..clear()
+        ..addAll(
+          _centrosCusto
+              .where(
+                (centro) =>
+                    centro.ativo && filtros.centrosCustoIds.contains(centro.id),
+              )
+              .map((centro) => centro.nome),
+        );
       if (_periodos.contains(periodo)) {
         _periodoSelecionado = periodo;
       }
@@ -767,6 +795,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     _usuarioAlterouFiltros = true;
     final AgendaFinanceiraFiltrosPreferencia filtros =
         AgendaFinanceiraFiltrosPreferencia(
+          espacoFinanceiro: _service.espacoFinanceiro,
+          somenteImpostoRenda: _somenteImpostoRenda,
+          mostrarCancelados: _mostrarCancelados,
+          visaoSelecionada:
+              AgendaFinanceiraFiltrosPreferencia.visoes[_abaSelecionada],
+          calendarioDataDecrescente: _calendarioDataDecrescente,
+          centrosCustoIds: _centrosCusto
+              .where(
+                (centro) =>
+                    centro.ativo &&
+                    _centrosCustoSelecionados.contains(centro.nome),
+              )
+              .map((centro) => centro.id)
+              .toList(),
           periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
             _periodoCodigoPreferencia(_periodoSelecionado),
             AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
@@ -787,21 +829,23 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             _formasPagamentoSelecionadas,
           ),
         );
-    unawaited(
-      _usuarioService
-          .atualizarPreferenciasIndividuais(
+    // Serializa alterações rápidas para a última seleção prevalecer no backend.
+    _salvamentoPreferencias = _salvamentoPreferencias
+        .then(
+          (_) => _usuarioService.atualizarPreferenciasIndividuais(
             agendaFinanceiraFiltrosWeb: filtros.toJson(),
             agendaFinanceiraPeriodoWeb: filtros.periodo.codigo,
             agendaFinanceiraTipoWeb: filtros.tipo.codigo,
             agendaFinanceiraStatusWeb: filtros.status.codigo,
             agendaFinanceiraTipoDePagamentoWeb: filtros.tiposDePagamento,
-          )
-          .catchError((Object error, StackTrace stackTrace) {
-            debugPrint(
-              'Erro ao salvar preferencias da agenda financeira: $error\n$stackTrace',
-            );
-          }),
-    );
+          ),
+        )
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint(
+            'Erro ao salvar preferencias da agenda financeira: $error\n$stackTrace',
+          );
+        });
+    unawaited(_salvamentoPreferencias);
   }
 
   String _periodoCodigoPreferencia(String periodo) {
@@ -1886,6 +1930,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 ? null
                 : (value) {
                     setState(() => _mostrarCancelados = value);
+                    _salvarPreferenciasAgendaFinanceira();
                   },
           ),
           _multiSelectTipoPagamento(theme),
@@ -1943,6 +1988,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ..addAll(selecionados);
           _usuarioAlterouFiltros = true;
         });
+        _salvarPreferenciasAgendaFinanceira();
       },
     );
   }
@@ -2119,8 +2165,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildAbas(ThemeData theme) => SegmentedButton<int>(
     selected: <int>{_abaSelecionada},
-    onSelectionChanged: (value) =>
-        setState(() => _abaSelecionada = value.first),
+    onSelectionChanged: (value) {
+      setState(() => _abaSelecionada = value.first);
+      _salvarPreferenciasAgendaFinanceira();
+    },
     segments: const <ButtonSegment<int>>[
       ButtonSegment<int>(value: 0, label: Text('Agenda')),
       ButtonSegment<int>(value: 1, label: Text('Calendário')),
@@ -2252,10 +2300,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 message: 'Alternar ordenação por data de vencimento',
                 child: TextButton.icon(
                   key: const Key('agenda-calendario-ordenar-data'),
-                  onPressed: () => setState(
-                    () => _calendarioDataDecrescente =
-                        !_calendarioDataDecrescente,
-                  ),
+                  onPressed: () {
+                    setState(
+                      () => _calendarioDataDecrescente =
+                          !_calendarioDataDecrescente,
+                    );
+                    _salvarPreferenciasAgendaFinanceira();
+                  },
                   icon: const Icon(Icons.swap_vert_rounded, size: 20),
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
