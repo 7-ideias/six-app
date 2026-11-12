@@ -34,6 +34,10 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   String? _cartao,_categoria,_erro;
   List<ConfiguracaoFinanceira> _categorias=[];
   DateTime _data=DateTime.now();
+  bool _mensal=false,_proximas=false;
+  DateTime? _fim;
+  bool get _recorrente=>widget.compraInicial?.serieRecorrenciaId!=null;
+  bool get _configuraSerie=>widget.compraInicial==null?_mensal:_recorrente&&_proximas;
   PreviaFaturaCartao? _previa;
   CompraCartaoRequest? _tentativa;
   bool _carregando=true,_prevendo=false,_salvando=false;
@@ -42,7 +46,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   bool get _bloqueado=>_salvando||_tentativa!=null;
   @override void initState(){super.initState();_cartao=widget.cartaoInicial;
     if(widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
-    final compra=widget.compraInicial;if(compra!=null){_descricao.text=compra.descricao;_data=compra.dataCompra;_categoria=compra.categoriaId;}
+    final compra=widget.compraInicial;if(compra!=null){_descricao.text=compra.descricao;_data=compra.dataCompra;_categoria=compra.categoriaId;_mensal=compra.serieRecorrenciaId!=null;_fim=compra.recorrenciaFim;}
     _carregar();}
   @override void didChangeDependencies(){super.didChangeDependencies();
     if(!_preenchido&&widget.compraInicial!=null){_preenchido=true;_valor.text=widget.compraInicial!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}
@@ -65,7 +69,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     final seq=++_seq;
     setState((){_previa=null;_prevendo=_cartao!=null;_erro=null;});
     if(_cartao==null)return;
-    try{final result=await widget.client.previa(_cartao!,_data);
+    try{final result=await ((_mensal||_recorrente)?widget.client.previaRecorrencia(_cartao!,_data):widget.client.previa(_cartao!,_data));
       if(mounted&&seq==_seq)setState(()=>_previa=result);
     }catch(e){if(mounted&&seq==_seq)setState(()=>_erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server');}
     finally{if(mounted&&seq==_seq)setState(()=>_prevendo=false);}
@@ -79,7 +83,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   bool validate(){
     syncCategory();
     final valid=_form.currentState?.validate()??false;
-    return valid&&!_carregando&&!_prevendo&&_permitido&&_previa!=null&&!_previa!.paga;
+    return valid&&(!_configuraSerie||_fim==null||!_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))&&!_carregando&&!_prevendo&&_permitido&&_previa!=null&&!_previa!.paga;
   }
   Widget review(){
     final r=context.read<LocaleSettingsProvider>();
@@ -90,7 +94,8 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}'),
       if(_previa!=null)Text('${context.t('invoices.invoiceDue')}: ${r.formatDate(_previa!.vencimento)}'),
       Text(widget.categoriaController?.text??''),
-      const SizedBox(height:16),Text(context.t('invoices.noRecurrence')),
+      const SizedBox(height:16),Text(context.t(_mensal?'invoices.recurring.review':'invoices.noRecurrence')),
+      if(_mensal)Text(_fim==null?context.t('invoices.recurring.noEnd'):'${context.t('invoices.recurring.until')}: ${r.formatDate(_fim!)}'),
     ]);
   }
   double? _valorNumerico(){
@@ -109,7 +114,9 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     }
     setState((){_salvando=true;_erro=null;});
     widget.onBusy?.call(true);widget.onLocked?.call(true);widget.onError?.call(null);
-    try{final compra=widget.compraInicial;final f=compra==null?await widget.client.comprar(_tentativa!):await widget.client.editarCompra(compra.id,compra.versao,_tentativa!);if(mounted){if(widget.onSaved!=null){widget.onSaved!(f);}else{Navigator.of(context).pop(f);}}}
+    try{final compra=widget.compraInicial;final FaturaCartao f;
+      if(compra==null){f=_mensal?await widget.client.criarRecorrencia(_tentativa!,_fim):await widget.client.comprar(_tentativa!);}
+      else{f=_proximas?await widget.client.editarProximas(compra.id,compra.versao,_tentativa!,_fim):await widget.client.editarCompra(compra.id,compra.versao,_tentativa!);}if(mounted){if(widget.onSaved!=null){widget.onSaved!(f);}else{Navigator.of(context).pop(f);}}}
     catch(e){if(mounted)setState((){
       _erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server';
       if(e is CartaoCreditoApiException&&e.statusCode!=null&&e.statusCode!>=400&&e.statusCode!<500){
@@ -125,6 +132,30 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if(!widget.embedded)Text(context.t(widget.compraInicial==null?'invoices.newPurchase':'invoices.editPurchase'),style:Theme.of(context).textTheme.titleLarge),
       const SizedBox(height:8),Text(context.t('invoices.purchaseHint')),
       const SizedBox(height:20),
+      if(widget.compraInicial==null)...[
+        SegmentedButton<bool>(segments:[ButtonSegment(value:false,label:Text(context.t('invoices.recurring.once')),icon:const Icon(Icons.shopping_bag_outlined)),ButtonSegment(value:true,label:Text(context.t('invoices.recurring.monthly')),icon:const Icon(Icons.repeat))],
+          selected:{_mensal},onSelectionChanged:_bloqueado?null:(v){setState((){_mensal=v.first;if(!_mensal&&_data.isAfter(DateTime.now()))_data=DateTime.now();});_prever();}),
+        const SizedBox(height:16),
+      ],
+      if(_recorrente&&widget.compraInicial!.recorrenciaAtiva)...[
+        DropdownButtonFormField<bool>(initialValue:false,isExpanded:true,
+          decoration:InputDecoration(labelText:context.t('invoices.recurring.editScope')),
+          items:[DropdownMenuItem(value:false,child:Text(context.t('invoices.recurring.onlyThis'))),DropdownMenuItem(value:true,child:Text(context.t('invoices.recurring.thisAndNext')))],
+          onChanged:_bloqueado?null:(v)=>setState(()=>_proximas=v??false)),
+        const SizedBox(height:16),
+      ],
+      if(_configuraSerie)...[
+        Text(context.t('invoices.recurring.hint')),
+        const SizedBox(height:8),
+        OutlinedButton.icon(onPressed:_bloqueado?null:()async{
+          final start=DateTime(_data.year,_data.month,_data.day);
+          final d=await showDatePicker(context:context,initialDate:_fim!=null&&!_fim!.isBefore(start)?_fim!:start,firstDate:start,lastDate:DateTime(start.year+10,12,31));
+          if(d!=null&&mounted)setState(()=>_fim=d);},icon:const Icon(Icons.event_outlined),
+          label:Text(_fim==null?context.t('invoices.recurring.noEnd'):'${context.t('invoices.recurring.until')}: ${r.formatDate(_fim!)}')),
+        if(_fim!=null)TextButton(onPressed:_bloqueado?null:()=>setState(()=>_fim=null),child:Text(context.t('invoices.recurring.removeEnd'))),
+        if(_fim!=null&&_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))Text(context.t('invoices.recurring.invalidEnd'),style:TextStyle(color:Theme.of(context).colorScheme.error)),
+        const SizedBox(height:16),
+      ],
       if(!_carregando&&!_permitido)Text(context.t('cards.error.permission')),
       if(!_carregando&&_cartoes.where((c)=>c.ativo).isEmpty)Text(context.t('invoices.noCards')),
       if(_carregando) SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.title')) else ...[
@@ -141,7 +172,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           decoration:InputDecoration(labelText:context.t('invoices.value'),helperText:context.t('invoices.valueHint')),
           validator:(_){final v=_valorNumerico();return v==null||v<=0||!v.isFinite||v>=1e13?context.t('invoices.invalidValue'):null;}),
         const SizedBox(height:16),OutlinedButton.icon(onPressed:_bloqueado?null:()async{
-          final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:DateTime.now());
+          final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:(_mensal||_recorrente)?(widget.compraInicial!=null?DateTime(2100):DateTime(DateTime.now().year+1,DateTime.now().month,DateTime.now().day)):DateTime.now());
           if(d!=null&&mounted){setState(()=>_data=d);_prever();}},
           icon:const Icon(Icons.calendar_today_outlined),label:Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}')),
         const SizedBox(height:16),DropdownButtonFormField<String>(key:ValueKey(_categoria),initialValue:_categoria,isExpanded:true,

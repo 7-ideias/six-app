@@ -5,9 +5,15 @@ class CompraCartao {
     : id = j['id'] as String, descricao = j['descricao'] as String,
       dataCompra = DateTime.parse(j['dataCompra'] as String),
       valor = (j['valor'] as num).toDouble(), categoria = j['categoria'] as String?,
-      categoriaId=j['categoriaId'] as String?,versao=(j['versao'] as num?)?.toInt()??0;
+      categoriaId=j['categoriaId'] as String?,versao=(j['versao'] as num?)?.toInt()??0,
+      serieRecorrenciaId=j['serieRecorrenciaId'] as String?,numeroOcorrencia=(j['numeroOcorrencia'] as num?)?.toInt(),
+      prevista=j['prevista']==true,recorrenciaAtiva=j['recorrenciaAtiva']==true,
+      recorrenciaFim=j['recorrenciaFim']==null?null:DateTime.parse(j['recorrenciaFim'] as String);
   final String id, descricao;
-  final String? categoria,categoriaId;
+  final String? categoria,categoriaId,serieRecorrenciaId;
+  final int? numeroOcorrencia;
+  final bool prevista,recorrenciaAtiva;
+  final DateTime? recorrenciaFim;
   final int versao;
   final DateTime dataCompra;
   final double valor;

@@ -71,6 +71,17 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
   if(!mounted)return;
   setState(()=>_acting=false);await _load();
  }
+ Future<void> _encerrar(FaturaCartao f,CompraCartao c)async{
+  if(_acting||_loading)return;
+  setState(()=>_acting=true);
+  final comando=gerarUuidV4();final regional=context.read<LocaleSettingsProvider>();
+  await showSixWebFinancialLaunchDeleteDialog(context:context,textPrefix:'invoices.stop',actionIcon:Icons.event_busy_outlined,
+    description:c.descricao,amountLabel:regional.formatCurrency(c.valor),
+    statusLabel:'${f.nomeCartao} · ${regional.formatDate(c.dataCompra)}',
+    onConfirm:()=>_client.encerrarRecorrencia(c.id,c.versao,comando),
+    errorMessageBuilder:(e)=>context.t(e is CartaoCreditoApiException&&e.statusCode==409?'invoices.editConflict':e is CartaoCreditoApiException?e.messageKey:'cards.error.server'));
+  if(!mounted)return;setState(()=>_acting=false);await _load();
+ }
  Future<void> _pagar(FaturaCartao f)async{
   setState(()=>_acting=true);
   final result=await showDialog<FaturaCartao>(context:context,barrierDismissible:false,builder:(_)=>Dialog(
@@ -90,21 +101,25 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
      ]),
      Text(r.formatCurrency(f.total),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800)),
      Chip(avatar:Icon(f.paga?Icons.check_circle_outline:Icons.schedule,size:18),label:Text(context.t(f.paga?'invoices.paid':f.total==0?'invoices.emptyInvoice':'invoices.open'))),
-     if(!f.paga&&f.total>0&&_canEdit&&_erro==null)FilledButton.icon(onPressed:_acting||_loading?null:()=>_pagar(f),
+     if(!f.paga&&f.total>0&&_canEdit&&_erro==null)FilledButton.icon(onPressed:_acting||_loading||f.compras.any((c)=>c.prevista)?null:()=>_pagar(f),
       icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.pay'))),
     ]),
+    if(!f.paga&&f.compras.any((c)=>c.prevista))Padding(padding:const EdgeInsets.only(top:12),child:Text(context.t('invoices.recurring.paymentHint'))),
     if(f.dataPagamento!=null)Padding(padding:const EdgeInsets.only(top:8),child:Text('${context.t('invoices.paymentDate')}: ${r.formatDate(f.dataPagamento!)}')),
     const SizedBox(height:12),ExpansionTile(key:ValueKey('${f.id}-${f.versao}'),initiallyExpanded:widget.faturaId!=null,
      tilePadding:EdgeInsets.zero,title:Text('${context.t('invoices.purchases')} (${f.compras.length})'),
      children:[...f.compras.map((c)=>Padding(padding:const EdgeInsets.symmetric(vertical:10),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(c.descricao,style:const TextStyle(fontWeight:FontWeight.w600)),
-       Text('${r.formatDate(c.dataCompra)} · ${c.categoria??context.t('invoices.noCategory')}',style:Theme.of(context).textTheme.bodySmall)])),
+       Text('${r.formatDate(c.dataCompra)} · ${c.categoria??context.t('invoices.noCategory')}',style:Theme.of(context).textTheme.bodySmall),
+       if(c.serieRecorrenciaId!=null)Padding(padding:const EdgeInsets.only(top:4),child:Text('${context.t('invoices.recurring.monthly')} · ${context.t(c.prevista?'invoices.recurring.forecast':'invoices.recurring.recorded')}${c.recorrenciaAtiva?'':' · ${context.t('invoices.recurring.ended')}'}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.primary)))])),
       const SizedBox(width:16),Flexible(child:Text(r.formatCurrency(c.valor),textAlign:TextAlign.end)),
-      if(!f.paga&&_canEdit&&_erro==null)PopupMenuButton<String>(
+      if((!f.paga||c.recorrenciaAtiva)&&_canEdit&&_erro==null)PopupMenuButton<String>(
        tooltip:context.t('invoices.purchaseActions'),enabled:!_acting&&!_loading,
-       onSelected:(v){if(v=='edit'){_editar(f,c);}else{_excluir(f,c);}},
-       itemBuilder:(_)=>[PopupMenuItem(value:'edit',child:Text(context.t('invoices.editPurchase'))),
-         PopupMenuItem(value:'delete',child:Text(context.t('invoices.delete.confirm')))]),
+       onSelected:(v){if(v=='edit'){_editar(f,c);}else if(v=='stop'){_encerrar(f,c);}else{_excluir(f,c);}},
+       itemBuilder:(_)=>[
+         if(!f.paga)PopupMenuItem(value:'edit',child:Text(context.t('invoices.editPurchase'))),
+         if(!f.paga)PopupMenuItem(value:'delete',child:Text(context.t(c.serieRecorrenciaId==null?'invoices.delete.confirm':'invoices.recurring.deleteThis'))),
+         if(c.recorrenciaAtiva)PopupMenuItem(value:'stop',child:Text(context.t('invoices.stop.confirm')))]),
      ]))),const Divider(),
      Align(alignment:Alignment.centerLeft,child:Text(context.t('invoices.byCategory'),style:const TextStyle(fontWeight:FontWeight.w700))),
      ...f.porCategoria.entries.map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Row(children:[

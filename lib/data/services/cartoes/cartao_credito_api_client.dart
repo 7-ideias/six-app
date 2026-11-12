@@ -121,6 +121,16 @@ class CartaoCreditoApiClient {
     _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/previa?dataCompra=${dataCartaoIso(data)}'),PreviaFaturaCartao.fromJson);
   Future<FaturaCartao> comprar(CompraCartaoRequest input) => _decode(
     _request('POST',path:'/${Uri.encodeComponent(input.cartaoId)}/compras',input:input.toJson()),FaturaCartao.fromJson);
+  Future<PreviaFaturaCartao> previaRecorrencia(String cartaoId,DateTime data) => _decode(
+    _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/previa-recorrencia?dataCompra=${dataCartaoIso(data)}'),PreviaFaturaCartao.fromJson);
+  Future<FaturaCartao> criarRecorrencia(CompraCartaoRequest input,DateTime? fim) => _decode(
+    _request('POST',path:'/${Uri.encodeComponent(input.cartaoId)}/recorrencias',input:{'compra':input.toJson(),'fim':fim==null?null:dataCartaoIso(fim)}),FaturaCartao.fromJson);
+  Future<FaturaCartao> editarProximas(String id,int versao,CompraCartaoRequest compra,DateTime? fim) => _decode(
+    _request('PUT',path:'/compras/$id',input:{'cartaoId':compra.cartaoId,'versao':versao,'compra':compra.toJson(),'escopo':'ESTE_E_PROXIMOS','recorrenciaFim':fim==null?null:dataCartaoIso(fim)}),FaturaCartao.fromJson);
+  Future<void> encerrarRecorrencia(String id,int versao,String comandoId) async {
+    final result=await _request('POST',path:'/compras/$id/encerrar-recorrencia',input:{'versao':versao,'comandoId':comandoId});
+    if(result['encerrada']!=true)throw const CartaoCreditoApiException('invalidResponse');
+  }
   Future<FaturaCartao> pagar(PagarFaturaCartaoRequest input) => _decode(
     _request('POST',path:'/faturas/${Uri.encodeComponent(input.faturaId)}/pagamento',input:input.toJson()),FaturaCartao.fromJson);
   Future<List<FormaPagamentoFatura>> formasFatura() => _decode(

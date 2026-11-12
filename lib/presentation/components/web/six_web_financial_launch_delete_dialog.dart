@@ -9,6 +9,7 @@ import '../../theme/web_theme_tokens.dart';
 Future<bool> showSixWebFinancialLaunchDeleteDialog({
   required BuildContext context,
   String textPrefix = 'agenda.launchDelete',
+  IconData actionIcon = Icons.delete_forever_outlined,
   required String description,
   required String amountLabel,
   required String statusLabel,
@@ -36,6 +37,7 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
         reduceMotion: reduceMotion,
         child: SixWebFinancialLaunchDeleteDialog(
           textPrefix: textPrefix,
+          actionIcon: actionIcon,
           description: description,
           amountLabel: amountLabel,
           statusLabel: statusLabel,
@@ -60,6 +62,7 @@ class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
   const SixWebFinancialLaunchDeleteDialog({
     super.key,
     this.textPrefix = 'agenda.launchDelete',
+    this.actionIcon = Icons.delete_forever_outlined,
     required this.description,
     required this.amountLabel,
     required this.statusLabel,
@@ -68,6 +71,7 @@ class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
   });
 
   final String textPrefix;
+  final IconData actionIcon;
   final String description;
   final String amountLabel;
   final String statusLabel;
@@ -250,6 +254,7 @@ class _SixWebFinancialLaunchDeleteDialogState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _FinancialLaunchDeleteIcon(
+                icon: widget.actionIcon,
                 animation: _iconController,
                 accent: attention,
                 surfaceColor: tokens.surfaceElevated,
@@ -328,9 +333,9 @@ class _SixWebFinancialLaunchDeleteDialogState
                               color: Colors.white,
                             ),
                           )
-                          : const Icon(
-                            Icons.delete_forever_outlined,
-                            key: ValueKey<String>(
+                          : Icon(
+                            widget.actionIcon,
+                            key: const ValueKey<String>(
                               'financial-launch-delete-action-icon',
                             ),
                             size: 18,
@@ -562,11 +567,13 @@ class _FinancialLaunchDeleteRouteSurface extends StatelessWidget {
 
 class _FinancialLaunchDeleteIcon extends StatelessWidget {
   const _FinancialLaunchDeleteIcon({
+    required this.icon,
     required this.animation,
     required this.accent,
     required this.surfaceColor,
   });
 
+  final IconData icon;
   final Animation<double> animation;
   final Color accent;
   final Color surfaceColor;
@@ -611,7 +618,7 @@ class _FinancialLaunchDeleteIcon extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.delete_forever_outlined,
+                  icon,
                   color: accent,
                   size: 30,
                 ),

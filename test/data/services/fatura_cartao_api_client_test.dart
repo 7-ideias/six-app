@@ -10,6 +10,27 @@ Map<String,dynamic> invoiceJson()=>{'id':'fatura','cartaoId':'cartao','nomeCarta
  'compras':[{'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoria':'Assinaturas'}],
  'porCategoria':{'Assinaturas':80.0}};
 void main(){
+ test('recorrencia usa contratos proprios, escopo e termino inclusivo',()async{
+  final calls=<http.Request>[];
+  final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{
+   calls.add(r);
+   if(r.url.path.endsWith('/previa-recorrencia'))return http.Response(jsonEncode({'fechamento':'2027-02-03','vencimento':'2027-02-10','versaoCartao':0,'paga':false}),200);
+   if(r.url.path.endsWith('/encerrar-recorrencia'))return http.Response('{"encerrada":true}',200);
+   return http.Response(jsonEncode(invoiceJson()),200);
+  }));addTearDown(api.dispose);
+  final p=await api.previaRecorrencia('cartao',DateTime(2027,1,31));
+  final r=CompraCartaoRequest(id:'comando',cartaoId:'cartao',descricao:'Mensal',dataCompra:DateTime(2027,1,31),valor:80,previa:p);
+  await api.criarRecorrencia(r,DateTime(2027,3,31));
+  expect(calls[1].url.path.endsWith('/cartao/recorrencias'),isTrue);
+  expect(jsonDecode(calls[1].body)['fim'],'2027-03-31');
+  await api.editarProximas('compra',5,r,null);
+  expect(jsonDecode(calls[2].body)['escopo'],'ESTE_E_PROXIMOS');
+  expect(jsonDecode(calls[2].body)['versao'],5);
+  await api.encerrarRecorrencia('compra',5,'parar');
+  expect(jsonDecode(calls[3].body)['comandoId'],'parar');
+  final c=CompraCartao.fromJson({'id':'x','descricao':'Mensal','dataCompra':'2027-01-31','valor':80,'serieRecorrenciaId':'serie','numeroOcorrencia':2,'prevista':true,'recorrenciaAtiva':true,'recorrenciaFim':'2027-03-31'});
+  expect(c.prevista,isTrue);expect(c.recorrenciaAtiva,isTrue);expect(c.numeroOcorrencia,2);expect(c.recorrenciaFim,DateTime(2027,3,31));
+ });
  test('editar e excluir enviam versao e comando e propagam conflitos',()async{
   final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{
    final j=jsonDecode(r.body);expect(j['versao'],5);
