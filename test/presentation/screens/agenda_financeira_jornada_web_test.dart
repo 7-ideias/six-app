@@ -162,8 +162,9 @@ void main() {
     await _tap(tester, _next);
     await _tap(tester, _choice('personal'));
     await _tap(tester, _next);
-    final selector=find.byKey(const ValueKey('journey-payment-destination'));
-    expect(tester.widget<SegmentedButton<bool>>(selector).selected,isEmpty);
+    final selector = find.ancestor(of: _choice('direct-payment'),
+        matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.selected != null)).first;
+    expect(tester.widget<Semantics>(selector).properties.selected, false);
     expect(_field(tester,'agenda.form.description'),findsNothing);
     expect(tester.widget<FilledButton>(_next).onPressed,isNull);
     await _tap(tester,find.text('Pagamento direto'));
@@ -171,7 +172,7 @@ void main() {
     await _fill(tester);
     await _tap(tester,find.text('Voltar'));
     await _tap(tester,_next);
-    expect(tester.widget<SegmentedButton<bool>>(selector).selected,{false});
+    expect(tester.widget<Semantics>(selector).properties.selected, true);
     expect(tester.widget<TextField>(_field(tester,'agenda.form.description')).controller!.text,'Aluguel');
     expect(tester.takeException(),isNull);
   });
