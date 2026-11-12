@@ -2370,8 +2370,10 @@ class _AgendaFinanceiraMobileScreenState
             : ListView(children: itens.map((item) => ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(item['descricao']?.toString() ?? ''),
-                subtitle: Text('${item['data'] ?? ''}
-${_formatarMoeda(_toDouble(item['valorConfirmado']))}'),
+                subtitle: Text(
+                  '${item['data'] ?? ''}\n'
+                  '${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
+                ),
                 isThreeLine: true, trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.pop(sheetContext);
