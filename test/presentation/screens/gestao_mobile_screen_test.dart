@@ -353,6 +353,13 @@ void main() {
         navigations: navigations,
         area: GestaoMobileArea.financeiro,
       );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('0'),
+        findsWidgets,
+        reason: tester.widgetList<Text>(find.byType(Text))
+            .map((text) => text.data).join(' | '),
+      );
       await tester.scrollUntilVisible(
         find.text('Nenhuma conta em aberto neste período.'),
         200,

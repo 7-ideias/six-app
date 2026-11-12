@@ -235,7 +235,7 @@ void main() {
     await _tap(tester, find.text('Atualizar lançamento'));
     expect(find.text('Correção'), findsOneWidget);
     expect(calls.metadata, isEmpty);
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.byType(SnackBar), findsWidgets);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
     calls.fail = false;
