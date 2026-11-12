@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/components/web/compra_cartao_web_editor.dart';
+import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
@@ -27,11 +29,13 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
     required this.body,
     required this.textoDaAppBar,
     this.maxWidth,
+    this.compact = false,
   });
 
   final Widget body;
   final String textoDaAppBar;
   final double? maxWidth;
+  final bool compact;
 
   void _fecharSubPainel(BuildContext context) {
     final NavigatorState navigator = Navigator.of(context);
@@ -58,12 +62,16 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
               namesRoute: true,
               label: textoDaAppBar,
               child: AnimatedContainer(
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
+                duration: MediaQuery.of(context).disableAnimations
+                    ? Duration.zero : const Duration(milliseconds: 600),
+                curve: Curves.easeInOutCubic,
                 width: (MediaQuery.of(context).size.width * 0.97)
                     .clamp(0.0, maxWidth ?? double.infinity)
                     .toDouble(),
-                height: MediaQuery.of(context).size.height * 0.96,
+                height: compact
+                    ? (MediaQuery.of(context).size.height * 0.96).clamp(0.0,
+                        MediaQuery.of(context).size.width < 640 ? 720.0 : 540.0)
+                    : MediaQuery.of(context).size.height * 0.96,
                 decoration: BoxDecoration(
                   color: tokens.surfaceElevated,
                   borderRadius: BorderRadius.circular(24),
@@ -123,6 +131,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
   Map<String, dynamic>? lancamentoInicial,
   AgendaFinanceiraLancamentoService? service,
 }) {
+  bool compact = !modoEdicao;
   return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: modoEdicao,
@@ -137,7 +146,16 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
     transitionDuration: const Duration(milliseconds: 320),
     padding: const EdgeInsets.all(12),
     builder: (BuildContext dialogContext) {
-      return SubPainelLancamentoAgendaFinanceiraWeb(
+      return StatefulBuilder(builder: (context, setDialogState) =>
+        NotificationListener<_JourneyLayoutNotification>(
+          onNotification: (notification) {
+            if (compact != notification.compact) {
+              setDialogState(() => compact = notification.compact);
+            }
+            return true;
+          },
+          child: SubPainelLancamentoAgendaFinanceiraWeb(
+        compact: compact,
         maxWidth: modoEdicao ? null : 1120,
         textoDaAppBar: modoEdicao
             ? context.t('agenda.form.edit')
@@ -149,9 +167,14 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
           modoEdicao: modoEdicao,
           lancamentoInicial: lancamentoInicial,
         ),
-      );
+      )));
     },
   );
+}
+
+class _JourneyLayoutNotification extends Notification {
+  _JourneyLayoutNotification(this.compact);
+  final bool compact;
 }
 
 class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
@@ -181,6 +204,45 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
+  bool _pagamentoEscolhido=false;
+  bool get _aguardandoPagamento => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&!_pagamentoEscolhido;
+  bool _noCartao=false,_cartaoVisitado=false,_cartaoPendente=false;
+  bool get _compraCartao => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&_noCartao;
+  final _compraKey=GlobalKey<CompraCartaoWebEditorState>();
+  CartaoCreditoApiClient? _cartaoClient;
+  Widget _paymentDestination() => Padding(
+    padding: const EdgeInsets.only(bottom: 20),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (!_aguardandoPagamento) ...[
+        Text(context.t('invoices.paymentDestination'),
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+      ],
+      _choiceGrid([
+        for (final card in [false, true])
+          _choice(
+            id: card ? 'credit-card' : 'direct-payment',
+            icon: card ? Icons.credit_card_outlined : Icons.account_balance_outlined,
+            title: card ? _journey('creditCard') : context.t('invoices.directPayment'),
+            description: _journey(card ? 'creditCardHint' : 'directPaymentHint'),
+            selected: _pagamentoEscolhido && _noCartao == card,
+            onTap: () {
+              if (_cartaoPendente) return;
+              setState(() {
+                _pagamentoEscolhido = true;
+                _noCartao = card;
+                _alterado = true;
+                if (card) {
+                  _cartaoVisitado = true;
+                  _cartaoClient ??= CartaoCreditoApiClient(espaco: _service.espacoFinanceiro);
+                  _compraKey.currentState?.syncCategory();
+                }
+              });
+            },
+          ),
+      ]),
+    ]),
+  );
   String? _erroJornada;
   int _etapa = 0;
   bool _tipoEscolhido = false;
@@ -365,6 +427,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _descricaoController.dispose();
     _contatoController.dispose();
     _idContatoController.dispose();
+    _cartaoClient?.dispose();
     _categoriaController.dispose();
     _valorController.dispose();
     _valorConfirmadoController.dispose();
@@ -480,6 +543,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
       return;
     setState(() {
+      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_noCartao=false;_pagamentoEscolhido=false;
       _service = _service.paraEspaco(espaco);
       _contaFinanceiraId = null;
       _centroCustoId = null;
@@ -791,6 +855,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Future<void> _salvar() async {
     if (_isLoading || _ir.carregando) return;
+    if(_compraCartao){await _compraKey.currentState?.submit();return;}
     if (!widget.modoEdicao) setState(() => _erroJornada = null);
     if (!_formKey.currentState!.validate()) {
       if (!widget.modoEdicao) _irParaEtapa(2);
@@ -1225,17 +1290,84 @@ class _LancamentoAgendaFinanceiraWebBodyState
     return hoje.difference(vencimento).inDays.clamp(0, 100000);
   }
 
-  Widget _section(String title, List<Widget> children) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        _label(title),
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  Widget _animateDetailBlock({required Widget child}) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return AnimatedSize(duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOutCubic, alignment: Alignment.topCenter, child: child);
+  }
+
+  final Map<String, bool> _openSections = {'main': true};
+
+  void _openDetailSection(String section) {
+    if (section != 'main' &&
+        (_descricaoController.text.trim().isEmpty ||
+         !_toDouble(_valorController.text).isFinite ||
+         _toDouble(_valorController.text) <= 0)) {
+      setState(() => _openSections['main'] = true);
+      _formKey.currentState?.validate();
+      return;
+    }
+    setState(() => _openSections[section] = true);
+  }
+
+  Widget _section(String title, List<Widget> children) {
+    if (widget.modoEdicao) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(_label(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 20),
+        ...children,
+      ]);
+    }
+    final tokens = WebThemeTokens.of(context);
+    final open = _openSections[title] ?? false;
+    final index = ['main', 'dates', 'classification'].indexOf(title);
+    final next = title == 'main' ? 'dates' : 'classification';
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: open ? tokens.info.withValues(alpha: .5) : tokens.cardBorder),
       ),
-      const SizedBox(height: 20),
-      ...children,
-    ],
-  );
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Semantics(expanded: open, child: InkWell(
+          key: ValueKey('detail-section-$title'),
+          onTap: () {
+            if (open) { setState(() => _openSections[title] = false); }
+            else { _openDetailSection(title); }
+          },
+          child: Padding(padding: const EdgeInsets.all(20), child: Row(children: [
+            CircleAvatar(radius: 16, backgroundColor: tokens.info.withValues(alpha: .12),
+                child: Text('${index + 1}', style: TextStyle(color: tokens.info, fontSize: 14))),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_label(title), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: tokens.primaryText)),
+              const SizedBox(height: 4),
+              Text(_journey('blockHint.$title'), style: TextStyle(fontSize: 12, color: tokens.secondaryText)),
+            ])),
+            Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.secondaryText),
+          ])),
+        )),
+        _animateDetailBlock(
+          child: Offstage(offstage: !open, child: ExcludeFocus(excluding: !open,
+            child: Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                ...children,
+                if (title != 'classification') ...[
+                  const SizedBox(height: 20),
+                  Align(alignment: Alignment.centerRight, child: TextButton.icon(
+                    onPressed: () => _openDetailSection(next),
+                    icon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                    label: Text(_journey('blockNext.$title')),
+                  )),
+                ],
+              ]),
+            ),
+          )),
+        ),
+      ]),
+    );
+  }
 
   Widget _fields(List<Widget> fields, {int columns = 2}) => LayoutBuilder(
     builder: (context, constraints) {
@@ -1398,12 +1530,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
   Widget _formContent() {
     final tokens = WebThemeTokens.of(context);
     final receber = _tipoSelecionado == 'Receber';
-    Widget separator() => const Padding(
-      padding: EdgeInsets.symmetric(vertical: 22),
-      child: Divider(height: 1),
-    );
-    return _panel(
-      Column(
+    Widget separator() => widget.modoEdicao
+        ? const Padding(padding: EdgeInsets.symmetric(vertical: 22), child: Divider(height: 1))
+        : const SizedBox(height: 16);
+    final content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _section('main', [
@@ -1737,11 +1867,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
             maxLines: 2,
           ),
         ],
-      ),
-    );
+      );
+    return widget.modoEdicao ? _panel(content) : content;
   }
 
   void _irParaEtapa(int etapa) {
+    if(_cartaoPendente)return;
     FocusScope.of(context).unfocus();
     setState(() {
       _etapa = etapa;
@@ -1755,7 +1886,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || _ir.carregando) return;
     if (_etapa == 0 && !_tipoEscolhido) return;
     if (_etapa == 1 && !_espacoEscolhido) return;
-    if (_etapa == 2 && !(_formKey.currentState?.validate() ?? false)) return;
+    if (_etapa == 2) {
+      if(_aguardandoPagamento)return;
+      if(_compraCartao){if(!(_compraKey.currentState?.validate()??false))return;}
+      else if(!(_formKey.currentState?.validate()??false)) {
+        setState(() { _openSections['main'] = true; _openSections['dates'] = true; });
+        return;
+      }
+    }
     _irParaEtapa(_etapa + 1);
   }
 
@@ -1787,6 +1925,29 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (descartar == true && mounted) Navigator.of(context).pop();
   }
 
+  // Equalize each desktop pair by its content, including longer translations.
+  Widget _choiceGrid(List<Widget> choices) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxWidth < 640) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (var i = 0; i < choices.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            choices[i],
+          ],
+        ]);
+      }
+      return IntrinsicHeight(child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < choices.length; i++) ...[
+            if (i > 0) const SizedBox(width: 16),
+            Expanded(child: choices[i]),
+          ],
+        ],
+      ));
+    },
+  );
+
   Widget _choice({
     required String id,
     required IconData icon,
@@ -1802,59 +1963,45 @@ class _LancamentoAgendaFinanceiraWebBodyState
       selected: selected,
       child: Material(
         color: selected
-            ? accent == null
-                  ? tokens.selectedBackground
-                  : Color.alphaBlend(
-                      highlight.withValues(alpha: .12),
-                      tokens.cardBackground,
-                    )
+            ? Color.alphaBlend(highlight.withValues(alpha: .10), tokens.cardBackground)
             : tokens.cardBackground,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: selected
-                ? (accent ?? tokens.selectedBorder)
-                : tokens.cardBorder,
-            width: selected ? 2 : 1,
-          ),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: selected ? highlight : tokens.cardBorder,
+              width: selected ? 2 : 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: ValueKey('journey-$id'),
           onTap: _isLoading ? null : onTap,
+          hoverColor: highlight.withValues(alpha: .06),
           child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(icon, size: 30, color: highlight),
-                    const Spacer(),
-                    Icon(
-                      selected
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked,
-                      color: selected ? highlight : tokens.secondaryText,
-                    ),
-                  ],
+            padding: const EdgeInsets.all(20),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: highlight.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: tokens.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: TextStyle(color: tokens.secondaryText, height: 1.5),
-                ),
-              ],
-            ),
+                child: Icon(icon, size: 28, color: highlight),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 19,
+                      fontWeight: FontWeight.w800, color: tokens.primaryText)),
+                  const SizedBox(height: 8),
+                  Text(description, style: TextStyle(
+                      color: tokens.secondaryText, height: 1.5)),
+                ],
+              )),
+              const SizedBox(width: 12),
+              Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                  size: 22, color: selected ? highlight : tokens.secondaryText),
+            ]),
           ),
         ),
       ),
@@ -1863,200 +2010,61 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Widget _journeyProgress() {
     final tokens = WebThemeTokens.of(context);
-    final colors = Theme.of(context).colorScheme;
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final duration = reduceMotion
-        ? Duration.zero
-        : const Duration(milliseconds: 320);
-    final labels = ['type', 'space', 'details', 'recurrence'];
-    final icons = [
-      Icons.swap_vert_rounded,
-      Icons.account_balance_wallet_outlined,
-      Icons.edit_note_rounded,
-      Icons.event_repeat_outlined,
-    ];
-    final stepLabel = _journey('step').replaceAll('{step}', '${_etapa + 1}');
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        border: Border(bottom: BorderSide(color: tokens.divider)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              stepLabel,
-              style: TextStyle(
-                color: tokens.secondaryText,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                children: [
-                  Positioned(
-                    top: 21,
-                    left: constraints.maxWidth / 8,
-                    right: constraints.maxWidth / 8,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: ColoredBox(
-                        color: tokens.divider,
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: _etapa / 3),
-                            duration: duration,
-                            curve: Curves.easeInOutCubic,
-                            builder: (context, value, _) =>
-                                FractionallySizedBox(
-                                  widthFactor: value,
-                                  child: Container(
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          colors.primary.withValues(
-                                            alpha: 0.65,
-                                          ),
-                                          colors.primary,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          ),
-                        ),
-                      ),
+    final labels = ['type', 'context', 'details', _compraCartao ? 'cardReview' : 'recurrence'];
+    return Semantics(
+      liveRegion: true,
+      label: _journey('step').replaceAll('{step}', '${_etapa + 1}'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(color: tokens.cardBackground,
+            border: Border(bottom: BorderSide(color: tokens.divider))),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 640;
+          return Row(children: [
+            for (var index = 0; index < labels.length; index++) ...[
+              if (index > 0) Expanded(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Divider(color: index <= _etapa ? tokens.info : tokens.divider),
+              )),
+              Flexible(flex: 3, child: Semantics(
+                selected: index == _etapa,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: index < _etapa && !_isLoading && !_ir.carregando && !_cartaoPendente
+                      ? () => _irParaEtapa(index) : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: index == _etapa ? tokens.info.withValues(alpha: .12) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (int index = 0; index < labels.length; index++)
-                        Expanded(
-                          child: Semantics(
-                            selected: index == _etapa,
-                            label: '${index + 1}. ${_journey(labels[index])}',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap:
-                                    index < _etapa &&
-                                        !_isLoading &&
-                                        !_ir.carregando
-                                    ? () => _irParaEtapa(index)
-                                    : null,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      AnimatedContainer(
-                                        duration: duration,
-                                        curve: Curves.easeOutCubic,
-                                        width: 46,
-                                        height: 46,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: index <= _etapa
-                                              ? colors.primary
-                                              : tokens.cardBackground,
-                                          border: Border.all(
-                                            color: index == _etapa
-                                                ? colors.primary.withValues(
-                                                    alpha: 0.3,
-                                                  )
-                                                : tokens.cardBackground,
-                                            width: 4,
-                                            strokeAlign:
-                                                BorderSide.strokeAlignOutside,
-                                          ),
-                                          boxShadow:
-                                              index == _etapa && !reduceMotion
-                                              ? [
-                                                  BoxShadow(
-                                                    color: colors.primary
-                                                        .withValues(alpha: 0.2),
-                                                    blurRadius: 14,
-                                                    spreadRadius: 2,
-                                                  ),
-                                                ]
-                                              : [],
-                                        ),
-                                        child: AnimatedSwitcher(
-                                          duration: duration,
-                                          child: Icon(
-                                            index < _etapa
-                                                ? Icons.check_rounded
-                                                : icons[index],
-                                            key: ValueKey(
-                                              '$index-${index < _etapa}',
-                                            ),
-                                            size: 23,
-                                            color: index <= _etapa
-                                                ? colors.onPrimary
-                                                : tokens.mutedText,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      AnimatedDefaultTextStyle(
-                                        duration: duration,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium!
-                                            .copyWith(
-                                              color: index == _etapa
-                                                  ? tokens.primaryText
-                                                  : tokens.secondaryText,
-                                              fontWeight: index == _etapa
-                                                  ? FontWeight.w800
-                                                  : FontWeight.w500,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                        child: Text(
-                                          _journey(labels[index]),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      AnimatedContainer(
-                                        duration: duration,
-                                        height: 3,
-                                        width: index == _etapa ? 28 : 0,
-                                        decoration: BoxDecoration(
-                                          color: colors.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            3,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        CircleAvatar(radius: 14,
+                          backgroundColor: index <= _etapa ? tokens.info : tokens.surfaceMuted,
+                          foregroundColor: index <= _etapa ? tokens.workspaceBackground : tokens.secondaryText,
+                          child: index < _etapa ? const Icon(Icons.check_rounded, size: 17)
+                              : Text('${index + 1}', style: const TextStyle(fontSize: 13)),
                         ),
-                    ],
+                        if (!narrow) ...[
+                          const SizedBox(width: 8),
+                          Flexible(child: Text(_journey(labels[index]),
+                              style: TextStyle(color: index == _etapa ? tokens.primaryText : tokens.secondaryText,
+                                  fontWeight: index == _etapa ? FontWeight.w700 : FontWeight.w400))),
+                        ],
+                      ]),
+                      if (narrow) ...[
+                        const SizedBox(height: 4),
+                        Text(_journey(labels[index]), textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, color: tokens.secondaryText)),
+                      ],
+                    ]),
                   ),
-                ],
-              );
-            },
-          ),
-        ],
+                ),
+              )),
+            ],
+          ]);
+        }),
       ),
     );
   }
@@ -2067,7 +2075,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final canContinue =
         !blocked &&
         (_etapa != 0 || _tipoEscolhido) &&
-        (_etapa != 1 || _espacoEscolhido);
+        (_etapa != 1 || _espacoEscolhido) &&
+        (_etapa != 2 || !_aguardandoPagamento);
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     );
@@ -2081,7 +2090,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       child: Text(_label('cancel')),
     );
     final back = OutlinedButton.icon(
-      onPressed: blocked ? null : () => _irParaEtapa(_etapa - 1),
+      onPressed: blocked || _cartaoPendente ? null : () => _irParaEtapa(_etapa - 1),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(112, 48),
         shape: buttonShape,
@@ -2112,7 +2121,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             : _label(
                 _isLoading
                     ? 'saving'
-                    : _registrarPagamento
+                    : _registrarPagamento && !_compraCartao
                     ? (_tipoSelecionado == 'Receber'
                           ? 'saveReceive'
                           : 'saveContinue')
@@ -2221,15 +2230,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  bool? _lastCompact;
   Widget _buildJourney() {
+    final compact = _etapa < 2 || (_etapa == 2 && _aguardandoPagamento);
+    if (_lastCompact != compact) {
+      _lastCompact = compact;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _JourneyLayoutNotification(compact).dispatch(context);
+      });
+    }
     final tokens = WebThemeTokens.of(context);
     final titles = [
       'typeTitle',
       'spaceTitle',
-      'detailsTitle',
-      'recurrenceTitle',
+      _aguardandoPagamento ? 'paymentTitle' : 'detailsTitle',
+      _compraCartao?'cardReviewTitle':'recurrenceTitle',
     ];
-    final hints = ['typeHint', 'spaceHint', 'detailsHint', 'recurrenceHint'];
+    final hints = ['typeHint', 'spaceHint', _aguardandoPagamento ? 'paymentHint' : 'detailsHint', _compraCartao?'cardReviewHint':'recurrenceHint'];
     return PopScope(
       canPop: !_isLoading && !_ir.carregando && !_alterado,
       onPopInvokedWithResult: (didPop, result) {
@@ -2241,7 +2258,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           if (_isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: AbsorbPointer(
-              absorbing: _isLoading,
+              absorbing: _isLoading || _cartaoPendente,
               child: SingleChildScrollView(
                 controller: _journeyScroll,
                 padding: const EdgeInsets.all(24),
@@ -2252,19 +2269,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          _journey(
-                            'step',
-                          ).replaceAll('{step}', '${_etapa + 1}'),
-                          style: TextStyle(
-                            color: tokens.info,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
                           _journey(titles[_etapa]),
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: tokens.primaryText,
                           ),
@@ -2305,7 +2312,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         ],
                         const SizedBox(height: 28),
                         if (_etapa == 0)
-                          _fields([
+                          _choiceGrid([
                             for (final receber in [false, true])
                               _choice(
                                 id: receber ? 'receive' : 'pay',
@@ -2335,7 +2342,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                               ),
                           ]),
                         if (_etapa == 1) ...[
-                          _fields([
+                          _choiceGrid([
                             for (final pessoal in [true, false])
                               _choice(
                                 id: pessoal ? 'personal' : 'company',
@@ -2368,20 +2375,22 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             _notice(_journey('spaceResetHint')),
                           ],
                         ],
-                        // Keep controllers, validators and optional fields alive when returning.
+                        if(_etapa==2&&_tipoSelecionado=='Pagar')_paymentDestination(),
                         if (_detalhesVisitados)
-                          Offstage(
-                            offstage: _etapa != 2,
-                            child: ExcludeFocus(
-                              excluding: _etapa != 2,
-                              child: Form(
-                                key: _formKey,
-                                onChanged: () => _alterado = true,
-                                child: _formContent(),
-                              ),
-                            ),
-                          ),
-                        if (_etapa == 3) _journeyRecurrence(),
+                          Offstage(offstage:_etapa!=2||_compraCartao||_aguardandoPagamento,
+                            child:ExcludeFocus(excluding:_etapa!=2||_compraCartao||_aguardandoPagamento,
+                              child:Form(key:_formKey,onChanged:()=>_alterado=true,child:_formContent()))),
+                        if(_cartaoVisitado&&_cartaoClient!=null)
+                          Offstage(offstage:_etapa!=2||!_compraCartao,
+                            child:ExcludeFocus(excluding:_etapa!=2||!_compraCartao,
+                              child:CompraCartaoWebEditor(key:_compraKey,client:_cartaoClient!,embedded:true,
+                                descricaoController:_descricaoController,valorController:_valorController,categoriaController:_categoriaController,
+                                onBusy:(v){if(mounted)setState(()=>_isLoading=v);},
+                                onLocked:(v){if(mounted)setState(()=>_cartaoPendente=v);},
+                                onError:(v){if(mounted)setState(()=>_erroJornada=v);},
+                                onSaved:(f)=>Navigator.of(context).pop(<String,dynamic>{'espacoFinanceiro':_service.espacoFinanceiro,'faturaCartaoId':f.id}),
+                              ))),
+                        if (_etapa == 3) _compraCartao?_panel(_compraKey.currentState?.review()??const SizedBox.shrink()):_journeyRecurrence(),
                       ],
                     ),
                   ),
@@ -2448,7 +2457,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
               _label(
                 _isLoading
                     ? 'saving'
-                    : _registrarPagamento
+                    : _registrarPagamento && !_compraCartao
                     ? (_tipoSelecionado == 'Receber'
                           ? 'saveReceive'
                           : 'saveContinue')
@@ -2473,7 +2482,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           if (_isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: AbsorbPointer(
-              absorbing: _isLoading,
+              absorbing: _isLoading || _cartaoPendente,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -2779,3 +2788,4 @@ String _agendaOptionLabel(BuildContext context, String value) {
   final key = keys[value];
   return key == null ? value : context.t('agenda.form.option.$key');
 }
+

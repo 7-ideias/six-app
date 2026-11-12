@@ -1,4 +1,4 @@
-import 'dart:math';
+import '../core/utils/uuid_v4.dart';
 import 'package:flutter/foundation.dart';
 import '../core/services/admin_portal_service.dart';
 import '../data/models/agenda_email_models.dart';
@@ -82,14 +82,7 @@ class AgendaEmailReenvioController extends ChangeNotifier {
           }
           : 'error';
 
-  static String _uuid() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-    bytes[6] = (bytes[6] & 15) | 64;
-    bytes[8] = (bytes[8] & 63) | 128;
-    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
-  }
+  static String _uuid() => gerarUuidV4();
 
   @override
   void dispose() {

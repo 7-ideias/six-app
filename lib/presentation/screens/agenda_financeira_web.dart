@@ -1,3 +1,6 @@
+import 'package:sixpos/presentation/screens/gastos_categorias_web.dart';
+import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
+import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
@@ -141,11 +144,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _configurarEspaco() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            ConfiguracoesEspacoWeb(espaco: _service.espacoFinanceiro),
-      ),
+    await showFinanceiroConfiguracaoWebDialog<void>(
+      context: context,
+      title: context.t('space.settings'),
+      child: ConfiguracoesEspacoWeb(espaco: _service.espacoFinanceiro),
     );
     if (mounted) await _carregarCentrosCusto();
   }
@@ -1180,7 +1182,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
-      'descricao': item['descricao']?.toString() ?? 'Sem descrição',
+      'descricao': item['faturaCartaoId'] != null ? '${context.t('invoices.invoice')} ${item['descricao'] ?? ''}' : item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
       'valorOriginal': valorOriginal,
       'valorConfirmado': valorConfirmado,
@@ -1217,7 +1219,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'id': item['idLancamento']?.toString() ?? '',
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'tipo': tipo,
-      'descricao': item['descricao']?.toString() ?? 'Sem descrição',
+      'descricao': item['faturaCartaoId'] != null ? '${context.t('invoices.invoice')} ${item['descricao'] ?? ''}' : item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
       'valorOriginal': _toDouble(item['valorOriginal']),
       'valorConfirmado': _toDouble(item['valorConfirmado']),
@@ -1336,6 +1338,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
+    final faturaId=detalhe['faturaCartaoId']?.toString()??item['faturaCartaoId']?.toString();
+    if(faturaId!=null&&faturaId.isNotEmpty){await _abrirCartoes(faturaId:faturaId);return;}
     bool editar = false;
     final alterado = await showSixWebAnimatedDialog<bool>(
       context: context,
@@ -1658,6 +1662,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return codigo;
   }
 
+  Future<void> _abrirCartoes({String? faturaId}) async {
+    await abrirFaturasCartaoWeb(context,espaco:_service.espacoFinanceiro,faturaId:faturaId);
+    if(mounted) await _consultar(mostrarFeedback:true);
+  }
+
   Future<void> _novoLancamento() async {
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
@@ -1977,6 +1986,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         icon: const Icon(Icons.add_rounded),
         label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
       ),
+      OutlinedButton.icon(onPressed:_trocandoEspaco?null:()async{final periodo=_periodoRequest();await abrirGastosCategoriasWeb(context,espaco:_service.espacoFinanceiro,inicio:periodo.dataInicio,fim:periodo.dataFim);if(mounted)await _consultar(mostrarFeedback:true);},icon:const Icon(Icons.category_outlined),label:Text(context.t('gastos.title'))),
+      OutlinedButton.icon(onPressed:()=>_abrirCartoes(),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.title'))),
       if (showCloseButton)
         IconButton.filled(
           onPressed: _fechar,
@@ -2237,7 +2248,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       onLiquidar: () => _confirmarTotal(item, 'Liquidar'),
       onRegistrarParcial: () => _registrarParcial(item),
       onCancelar: () => _cancelarRecorrencia(item),
-      onExcluir: () async {
+      onExcluir: item['faturaCartaoId'] != null ? null : () async {
         if (_executandoAcao) return;
         final excluido = await _confirmarExcluirLancamentoDetalhe(item);
         if (excluido && mounted) await _consultar(mostrarFeedback: true);
@@ -3935,3 +3946,4 @@ class _DetalheStatusStampData {
   final String label;
   final Color color;
 }
+

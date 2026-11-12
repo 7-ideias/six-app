@@ -237,6 +237,10 @@ Future<void> _fillCreate(WidgetTester tester) async {
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
   }
+  if (find.text('Pagamento direto').evaluate().isNotEmpty) {
+    await tester.tap(find.text('Pagamento direto'));
+    await tester.pumpAndSettle();
+  }
   final description = find.widgetWithText(TextFormField, 'Descrição');
   await tester.ensureVisible(description);
   await tester.enterText(description, 'Conta de teste');
@@ -317,6 +321,20 @@ void main() {
         await _tap(tester, find.text('Continuar'));
         if (web) await _tap(tester, find.byKey(const Key('journey-company')));
         await _tap(tester, find.text('Continuar'));
+        if (find.text('Pagamento direto').evaluate().isNotEmpty) await _tap(tester, find.text('Pagamento direto'));
+        if (web) {
+          final description = find.widgetWithText(TextFormField, 'Descrição');
+          final amount = find.widgetWithText(TextFormField, 'Valor total');
+          if (description.evaluate().isNotEmpty) {
+            await tester.ensureVisible(description);
+            await tester.enterText(description, 'Conta de teste');
+            await tester.ensureVisible(amount);
+            await tester.enterText(amount, '100');
+          }
+          if (find.byType(ContaFinanceiraWebField).evaluate().isEmpty) {
+            await _tap(tester, find.byKey(const ValueKey('detail-section-classification')));
+          }
+        }
         final accountFinder = web
             ? find.byType(ContaFinanceiraWebField)
             : find.byType(ContaFinanceiraMobileField);
@@ -339,6 +357,20 @@ void main() {
         await _tap(tester, find.widgetWithText(OutlinedButton, 'Voltar'));
         await _tap(tester, find.text('Pessoal').last);
         await _tap(tester, find.text('Continuar'));
+        if (find.text('Pagamento direto').evaluate().isNotEmpty) await _tap(tester, find.text('Pagamento direto'));
+        if (web) {
+          final description = find.widgetWithText(TextFormField, 'Descrição');
+          final amount = find.widgetWithText(TextFormField, 'Valor total');
+          if (description.evaluate().isNotEmpty) {
+            await tester.ensureVisible(description);
+            await tester.enterText(description, 'Conta de teste');
+            await tester.ensureVisible(amount);
+            await tester.enterText(amount, '100');
+          }
+          if (find.byType(ContaFinanceiraWebField).evaluate().isEmpty) {
+            await _tap(tester, find.byKey(const ValueKey('detail-section-classification')));
+          }
+        }
         if (accountFinder.evaluate().isEmpty)
           await tester.scrollUntilVisible(
             accountFinder,

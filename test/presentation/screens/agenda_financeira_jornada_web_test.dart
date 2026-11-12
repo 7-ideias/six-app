@@ -156,6 +156,27 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('pagar exige escolha antes de mostrar campos e preserva ao voltar', (tester) async {
+    await _open(tester, _Calls());
+    await _tap(tester, _choice('pay'));
+    await _tap(tester, _next);
+    await _tap(tester, _choice('personal'));
+    await _tap(tester, _next);
+    final selector = find.ancestor(of: _choice('direct-payment'),
+        matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.selected != null)).first;
+    expect(tester.widget<Semantics>(selector).properties.selected, false);
+    expect(_field(tester,'agenda.form.description'),findsNothing);
+    expect(tester.widget<FilledButton>(_next).onPressed,isNull);
+    await _tap(tester,find.text('Pagamento direto'));
+    expect(_field(tester,'agenda.form.description'),findsOneWidget);
+    await _fill(tester);
+    await _tap(tester,find.text('Voltar'));
+    await _tap(tester,_next);
+    expect(tester.widget<Semantics>(selector).properties.selected, true);
+    expect(tester.widget<TextField>(_field(tester,'agenda.form.description')).controller!.text,'Aluguel');
+    expect(tester.takeException(),isNull);
+  });
+
   for (final width in [390.0, 900.0, 1500.0]) {
     for (final language in ['pt', 'en', 'es']) {
       testWidgets('resumo do período em $language com largura $width', (tester) async {
@@ -327,6 +348,7 @@ void main() {
       expect(find.text('Quais são os dados do lançamento?'), findsOneWidget);
       expect(calls.requests, isEmpty);
       await _fill(tester);
+      await _tap(tester, find.byKey(const ValueKey('detail-section-classification')));
       final category = _field(tester, 'agenda.form.category');
       await tester.ensureVisible(category);
       await tester.enterText(category, 'Moradia');
@@ -455,3 +477,4 @@ void main() {
     });
   }
 }
+

@@ -305,6 +305,8 @@ void main() {
     expect(find.text('Etapa 2 de 4'), findsOneWidget);
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Pagamento direto'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Descrição'),
       'Escola',
@@ -527,3 +529,4 @@ void main() {
     });
   }
 }
+

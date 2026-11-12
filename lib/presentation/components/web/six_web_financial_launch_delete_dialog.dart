@@ -8,6 +8,8 @@ import '../../theme/web_theme_tokens.dart';
 
 Future<bool> showSixWebFinancialLaunchDeleteDialog({
   required BuildContext context,
+  String textPrefix = 'agenda.launchDelete',
+  IconData actionIcon = Icons.delete_forever_outlined,
   required String description,
   required String amountLabel,
   required String statusLabel,
@@ -21,8 +23,8 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
     barrierDismissible: false,
     barrierColor: Colors.transparent,
     barrierLabel: context.t(
-      'agenda.launchDelete.dialogBarrier',
-      fallback: 'Confirmar exclusão do lançamento financeiro',
+      '$textPrefix.dialogBarrier',
+      fallback: textPrefix == 'agenda.launchDelete' ? 'Confirmar exclusão do lançamento financeiro' : null,
     ),
     transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
     pageBuilder: (
@@ -34,6 +36,8 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
         animation: animation,
         reduceMotion: reduceMotion,
         child: SixWebFinancialLaunchDeleteDialog(
+          textPrefix: textPrefix,
+          actionIcon: actionIcon,
           description: description,
           amountLabel: amountLabel,
           statusLabel: statusLabel,
@@ -57,6 +61,8 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
 class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
   const SixWebFinancialLaunchDeleteDialog({
     super.key,
+    this.textPrefix = 'agenda.launchDelete',
+    this.actionIcon = Icons.delete_forever_outlined,
     required this.description,
     required this.amountLabel,
     required this.statusLabel,
@@ -64,6 +70,8 @@ class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
     required this.errorMessageBuilder,
   });
 
+  final String textPrefix;
+  final IconData actionIcon;
   final String description;
   final String amountLabel;
   final String statusLabel;
@@ -145,7 +153,7 @@ class _SixWebFinancialLaunchDeleteDialogState
   }
 
   String _txt(String key, String fallback) =>
-      context.t(key, fallback: fallback);
+      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: widget.textPrefix == 'agenda.launchDelete' ? fallback : null);
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +254,7 @@ class _SixWebFinancialLaunchDeleteDialogState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _FinancialLaunchDeleteIcon(
+                icon: widget.actionIcon,
                 animation: _iconController,
                 accent: attention,
                 surfaceColor: tokens.surfaceElevated,
@@ -324,9 +333,9 @@ class _SixWebFinancialLaunchDeleteDialogState
                               color: Colors.white,
                             ),
                           )
-                          : const Icon(
-                            Icons.delete_forever_outlined,
-                            key: ValueKey<String>(
+                          : Icon(
+                            widget.actionIcon,
+                            key: const ValueKey<String>(
                               'financial-launch-delete-action-icon',
                             ),
                             size: 18,
@@ -558,11 +567,13 @@ class _FinancialLaunchDeleteRouteSurface extends StatelessWidget {
 
 class _FinancialLaunchDeleteIcon extends StatelessWidget {
   const _FinancialLaunchDeleteIcon({
+    required this.icon,
     required this.animation,
     required this.accent,
     required this.surfaceColor,
   });
 
+  final IconData icon;
   final Animation<double> animation;
   final Color accent;
   final Color surfaceColor;
@@ -607,7 +618,7 @@ class _FinancialLaunchDeleteIcon extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.delete_forever_outlined,
+                  icon,
                   color: accent,
                   size: 30,
                 ),
@@ -714,3 +725,4 @@ class _FinancialLaunchDeleteSummaryTile extends StatelessWidget {
     );
   }
 }
+
