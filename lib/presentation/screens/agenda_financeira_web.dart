@@ -1986,7 +1986,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         icon: const Icon(Icons.add_rounded),
         label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
       ),
-      OutlinedButton.icon(onPressed:_trocandoEspaco?null:()async{final periodo=_periodoRequest();await abrirGastosCategoriasWeb(context,espaco:_service.espacoFinanceiro,inicio:periodo.dataInicio??_hojeNormalizado(),fim:periodo.dataFim??_hojeNormalizado());if(mounted)await _consultar(mostrarFeedback:true);},icon:const Icon(Icons.category_outlined),label:Text(context.t('gastos.title'))),
+      OutlinedButton.icon(onPressed:_trocandoEspaco?null:()async{final periodo=_periodoRequest();await abrirGastosCategoriasWeb(context,espaco:_service.espacoFinanceiro,inicio:periodo.dataInicio,fim:periodo.dataFim);if(mounted)await _consultar(mostrarFeedback:true);},icon:const Icon(Icons.category_outlined),label:Text(context.t('gastos.title'))),
       OutlinedButton.icon(onPressed:()=>_abrirCartoes(),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.title'))),
       if (showCloseButton)
         IconButton.filled(

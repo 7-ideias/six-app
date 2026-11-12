@@ -10,6 +10,13 @@ Map<String,dynamic> invoiceJson()=>{'id':'fatura','cartaoId':'cartao','nomeCarta
  'compras':[{'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoria':'Assinaturas'}],
  'porCategoria':{'Assinaturas':80.0}};
 void main(){
+ test('gastos envia espaco e periodo e nao mascara resposta invalida',()async{
+  final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{
+   expect(r.url.path.endsWith('/agenda-financeira/gastos-categorias'),isTrue);expect(r.headers['espacoFinanceiro'],'PESSOAL');expect(r.url.queryParameters,{'inicio':'2026-11-01','fim':'2026-11-30'});
+   return http.Response('{}',200);
+  }));addTearDown(api.dispose);
+  await expectLater(api.gastosCategorias(DateTime(2026,11,1),DateTime(2026,11,30)),throwsA(isA<CartaoCreditoApiException>().having((e)=>e.kind,'kind','invalidResponse')));
+ });
  test('previa parcelada rejeita total inconsistente',()async{
   final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((_)async=>http.Response(jsonEncode({'parcelas':[{'numero':1,'valor':40,'vencimento':'2026-12-10','paga':false},{'numero':2,'valor':40,'vencimento':'2027-01-10','paga':false}]}),200)));
   addTearDown(api.dispose);
