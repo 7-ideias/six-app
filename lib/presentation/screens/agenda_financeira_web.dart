@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/screens/gastos_categorias_web.dart';
 import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
@@ -1985,6 +1986,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         icon: const Icon(Icons.add_rounded),
         label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
       ),
+      OutlinedButton.icon(onPressed:_trocandoEspaco?null:()async{final periodo=_periodoRequest();await abrirGastosCategoriasWeb(context,espaco:_service.espacoFinanceiro,inicio:periodo.dataInicio??_hojeNormalizado(),fim:periodo.dataFim??_hojeNormalizado());if(mounted)await _consultar(mostrarFeedback:true);},icon:const Icon(Icons.category_outlined),label:Text(context.t('gastos.title'))),
       OutlinedButton.icon(onPressed:()=>_abrirCartoes(),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.title'))),
       if (showCloseButton)
         IconButton.filled(

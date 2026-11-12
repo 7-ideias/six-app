@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/gastos_categoria_model.dart';
 import 'package:sixpos/data/models/fatura_cartao_model.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -143,6 +144,8 @@ class CartaoCreditoApiClient {
     });
   Future<FaturaCartao> parcelar(CompraCartaoRequest compra,int parcelas) => _decode(
     _request('POST',path:'/${Uri.encodeComponent(compra.cartaoId)}/parcelamentos',input:{'compra':compra.toJson(),'parcelas':parcelas}),FaturaCartao.fromJson);
+  Future<GastosCategorias> gastosCategorias(DateTime inicio,DateTime fim)=>_decode(
+    _request('GET',resource:'gastos-categorias',path:'?inicio=${dataCartaoIso(inicio)}&fim=${dataCartaoIso(fim)}'),GastosCategorias.fromJson);
   Future<FaturaCartao> pagar(PagarFaturaCartaoRequest input) => _decode(
     _request('POST',path:'/faturas/${Uri.encodeComponent(input.faturaId)}/pagamento',input:input.toJson()),FaturaCartao.fromJson);
   Future<List<FormaPagamentoFatura>> formasFatura() => _decode(
