@@ -10,6 +10,17 @@ Map<String,dynamic> invoiceJson()=>{'id':'fatura','cartaoId':'cartao','nomeCarta
  'compras':[{'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoria':'Assinaturas'}],
  'porCategoria':{'Assinaturas':80.0}};
 void main(){
+ test('parcelamento envia total, quantidade e reutiliza comando apos erro',()async{
+  final bodies=<String>[];
+  final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{
+   expect(r.url.path.endsWith('/cartao/parcelamentos'),isTrue);bodies.add(r.body);
+   if(bodies.length==1)throw http.ClientException('offline');return http.Response(jsonEncode(invoiceJson()),200);
+  }));addTearDown(api.dispose);
+  final r=CompraCartaoRequest(id:'parcelamento',cartaoId:'cartao',descricao:'Compra',dataCompra:DateTime(2026,11,11),valor:100,
+    previa:PreviaFaturaCartao.fromJson({'fechamento':'2026-12-03','vencimento':'2026-12-10','versaoCartao':0,'paga':false}));
+  await expectLater(api.parcelar(r,3),throwsA(isA<CartaoCreditoApiException>()));await api.parcelar(r,3);
+  expect(bodies.first,bodies.last);expect(jsonDecode(bodies.last)['parcelas'],3);expect(jsonDecode(bodies.last)['compra']['valor'],100);
+ });
  test('recorrencia usa contratos proprios, escopo e termino inclusivo',()async{
   final calls=<http.Request>[];
   final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{

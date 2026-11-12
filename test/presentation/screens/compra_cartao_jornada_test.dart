@@ -12,7 +12,9 @@ import 'faturas_cartao_web_test.dart' show Api,RegionalClient;
 import '../../data/services/fatura_cartao_api_client_test.dart' show invoiceJson;
 class Cards extends Api {
  final requests=<CompraCartaoRequest>[];
- int edits=0,series=0;
+ int edits=0,series=0,installments=0;
+ @override Future<List<ParcelaCartao>> previaParcelamento(CompraCartaoRequest r,int n)async=>List.generate(n,(i)=>ParcelaCartao.fromJson({'numero':i+1,'valor':r.valor/n,'vencimento':'2026-12-10','paga':false}));
+ @override Future<FaturaCartao> parcelar(CompraCartaoRequest r,int n){installments++;expect(n,2);return comprar(r);}
  @override Future<PreviaFaturaCartao> previaRecorrencia(String id,DateTime data)=>previa(id,data);
  @override Future<FaturaCartao> criarRecorrencia(CompraCartaoRequest r,DateTime? fim){series++;expect(fim,isNull);return comprar(r);}
  @override Future<FaturaCartao> editarCompra(String id,int versao,CompraCartaoRequest r){
@@ -28,7 +30,7 @@ class Config extends ConfiguracaoFinanceiraService {
  Config():super('PESSOAL');
  @override Future<List<ConfiguracaoFinanceira>> listar(String grupo)async=>const[ConfiguracaoFinanceira(id:'category',nome:'Assinaturas',tipo:'DESPESA')];
 }
-void main(){for(final mode in ['new','edit','monthly']){final editing=mode=='edit';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
+void main(){for(final mode in ['new','edit','monthly','installments']){final editing=mode=='edit';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
  tester.view.physicalSize=const Size(1100,1600);tester.view.devicePixelRatio=1;
  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
  final api=Cards(),config=Config();addTearDown(api.dispose);addTearDown(config.dispose);
@@ -41,6 +43,7 @@ void main(){for(final mode in ['new','edit','monthly']){final editing=mode=='edi
    onSaved:(f)=>saved=f,onLocked:(v)=>locked=v)))));
  await tester.pumpAndSettle();expect(find.byType(FilledButton),findsNothing);
  if(mode=='monthly'){await tester.tap(find.text('Mensal'));await tester.pumpAndSettle();}
+ if(mode=='installments'){await tester.tap(find.text('Parcelada'));await tester.pumpAndSettle();expect(key.currentState!.validate(),isFalse);await tester.ensureVisible(find.text('Calcular parcelas'));await tester.tap(find.text('Calcular parcelas'));await tester.pumpAndSettle();}
  expect(key.currentState!.validate(),isTrue);
  description.text='Netflix atualizado';
  await key.currentState!.submit();await tester.pumpAndSettle();
@@ -48,5 +51,5 @@ void main(){for(final mode in ['new','edit','monthly']){final editing=mode=='edi
  await key.currentState!.submit();await tester.pumpAndSettle();
  expect(saved,isNotNull);expect(api.requests.length,2);
  expect(api.requests[0].toJson(),api.requests[1].toJson());expect(api.requests[0].categoriaId,'category');
- expect(api.series,mode=='monthly'?2:0);expect(api.edits,editing?2:0);expect(api.requests[0].descricao,'Netflix atualizado');expect(tester.takeException(),isNull);
+ expect(api.installments,mode=='installments'?2:0);expect(api.series,mode=='monthly'?2:0);expect(api.edits,editing?2:0);expect(api.requests[0].descricao,'Netflix atualizado');expect(tester.takeException(),isNull);
  });}}

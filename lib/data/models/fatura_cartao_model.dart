@@ -6,11 +6,14 @@ class CompraCartao {
       dataCompra = DateTime.parse(j['dataCompra'] as String),
       valor = (j['valor'] as num).toDouble(), categoria = j['categoria'] as String?,
       categoriaId=j['categoriaId'] as String?,versao=(j['versao'] as num?)?.toInt()??0,
-      serieRecorrenciaId=j['serieRecorrenciaId'] as String?,numeroOcorrencia=(j['numeroOcorrencia'] as num?)?.toInt(),
+      parcelamentoId=j['parcelamentoId'] as String?,numeroParcela=(j['numeroParcela'] as num?)?.toInt(),quantidadeParcelas=(j['quantidadeParcelas'] as num?)?.toInt(),valorTotalCompra=(j['valorTotalCompra'] as num?)?.toDouble(),serieRecorrenciaId=j['serieRecorrenciaId'] as String?,numeroOcorrencia=(j['numeroOcorrencia'] as num?)?.toInt(),
       prevista=j['prevista']==true,recorrenciaAtiva=j['recorrenciaAtiva']==true,
       recorrenciaFim=j['recorrenciaFim']==null?null:DateTime.parse(j['recorrenciaFim'] as String);
   final String id, descricao;
   final String? categoria,categoriaId,serieRecorrenciaId;
+  final String? parcelamentoId;
+  final int? numeroParcela,quantidadeParcelas;
+  final double? valorTotalCompra;
   final int? numeroOcorrencia;
   final bool prevista,recorrenciaAtiva;
   final DateTime? recorrenciaFim;
@@ -74,4 +77,9 @@ class PagarFaturaCartaoRequest {
 class FormaPagamentoFatura {
   const FormaPagamentoFatura(this.codigo,this.nome);
   final String codigo,nome;
+}
+
+class ParcelaCartao {
+ ParcelaCartao.fromJson(Map<String,dynamic> j):numero=j['numero'] as int,valor=(j['valor'] as num).toDouble(),vencimento=DateTime.parse(j['vencimento'] as String),paga=j['paga'] as bool;
+ final int numero;final double valor;final DateTime vencimento;final bool paga;
 }

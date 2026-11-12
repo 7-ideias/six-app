@@ -131,6 +131,11 @@ class CartaoCreditoApiClient {
     final result=await _request('POST',path:'/compras/$id/encerrar-recorrencia',input:{'versao':versao,'comandoId':comandoId});
     if(result['encerrada']!=true)throw const CartaoCreditoApiException('invalidResponse');
   }
+  Future<List<ParcelaCartao>> previaParcelamento(CompraCartaoRequest compra,int parcelas) => _decode(
+    _request('POST',path:'/${Uri.encodeComponent(compra.cartaoId)}/previa-parcelamento',input:{'compra':compra.toJson(),'parcelas':parcelas}),
+    (j)=>(j['parcelas'] as List).map((e)=>ParcelaCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList());
+  Future<FaturaCartao> parcelar(CompraCartaoRequest compra,int parcelas) => _decode(
+    _request('POST',path:'/${Uri.encodeComponent(compra.cartaoId)}/parcelamentos',input:{'compra':compra.toJson(),'parcelas':parcelas}),FaturaCartao.fromJson);
   Future<FaturaCartao> pagar(PagarFaturaCartaoRequest input) => _decode(
     _request('POST',path:'/faturas/${Uri.encodeComponent(input.faturaId)}/pagamento',input:input.toJson()),FaturaCartao.fromJson);
   Future<List<FormaPagamentoFatura>> formasFatura() => _decode(

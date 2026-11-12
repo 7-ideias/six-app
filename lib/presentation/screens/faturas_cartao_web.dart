@@ -52,7 +52,7 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
   final result=await showSixWebAnimatedDialog<FaturaCartao>(context:context,barrierDismissible:false,
     barrierLabel:context.t('invoices.editPurchase'),builder:(_)=>Dialog(
       child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:660),child:CompraCartaoWebEditor(
-       client:_client,cartoes:_cartoes,cartaoInicial:f.cartaoId,compraInicial:c))));
+       client:_client,cartoes:_cartoes,cartaoInicial:f.cartaoId,compraInicial:c,faturaInicial:f))));
   if(!mounted)return;
   setState(()=>_acting=false);
   if(result!=null&&widget.faturaId==null)_cartao=result.cartaoId;
@@ -111,6 +111,7 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
      children:[...f.compras.map((c)=>Padding(padding:const EdgeInsets.symmetric(vertical:10),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(c.descricao,style:const TextStyle(fontWeight:FontWeight.w600)),
        Text('${r.formatDate(c.dataCompra)} · ${c.categoria??context.t('invoices.noCategory')}',style:Theme.of(context).textTheme.bodySmall),
+       if(c.parcelamentoId!=null)Text('${context.t('invoices.installments.part')} ${c.numeroParcela}/${c.quantidadeParcelas} · ${context.t('invoices.installments.total')}: ${r.formatCurrency(c.valorTotalCompra??0)}',style:Theme.of(context).textTheme.bodySmall),
        if(c.serieRecorrenciaId!=null)Padding(padding:const EdgeInsets.only(top:4),child:Text('${context.t('invoices.recurring.monthly')} · ${context.t(c.prevista?'invoices.recurring.forecast':'invoices.recurring.recorded')}${c.recorrenciaAtiva?'':' · ${context.t('invoices.recurring.ended')}'}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.primary)))])),
       const SizedBox(width:16),Flexible(child:Text(r.formatCurrency(c.valor),textAlign:TextAlign.end)),
       if((!f.paga||c.recorrenciaAtiva)&&_canEdit&&_erro==null)PopupMenuButton<String>(

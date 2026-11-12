@@ -10,11 +10,12 @@ import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class CompraCartaoWebEditor extends StatefulWidget {
-  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial});
+  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial,this.faturaInicial});
   final CartaoCreditoApiClient client;
   final List<CartaoCredito>? cartoes;
   final bool embedded;
   final CompraCartao? compraInicial;
+  final FaturaCartao? faturaInicial;
   final TextEditingController? descricaoController,valorController,categoriaController;
   final ValueChanged<bool>? onBusy,onLocked;
   final ValueChanged<String?>? onError;
@@ -34,7 +35,15 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   String? _cartao,_categoria,_erro;
   List<ConfiguracaoFinanceira> _categorias=[];
   DateTime _data=DateTime.now();
-  bool _mensal=false,_proximas=false;
+  bool _mensal=false,_proximas=false,_parcelada=false,_calculando=false;
+  final _quantidade=TextEditingController(text:'2');
+  List<ParcelaCartao>? _plano;
+  double? _planoValor;
+  int? _planoQuantidade;
+  int _planoSeq=0;
+  bool get _parcelaExistente=>widget.compraInicial?.parcelamentoId!=null;
+  void _invalidarPlano(){_planoSeq++;_plano=null;}
+
   DateTime? _fim;
   bool get _recorrente=>widget.compraInicial?.serieRecorrenciaId!=null;
   bool get _configuraSerie=>widget.compraInicial==null?_mensal:_recorrente&&_proximas;
@@ -43,15 +52,15 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   bool _carregando=true,_prevendo=false,_salvando=false;
   int _seq=0;
   bool _preenchido=false;
-  bool get _bloqueado=>_salvando||_tentativa!=null;
+  bool get _bloqueado=>_salvando||_tentativa!=null||_calculando;
   @override void initState(){super.initState();_cartao=widget.cartaoInicial;
-    if(widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
+    if(!_parcelaExistente&&widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
     final compra=widget.compraInicial;if(compra!=null){_descricao.text=compra.descricao;_data=compra.dataCompra;_categoria=compra.categoriaId;_mensal=compra.serieRecorrenciaId!=null;_fim=compra.recorrenciaFim;}
     _carregar();}
   @override void didChangeDependencies(){super.didChangeDependencies();
     if(!_preenchido&&widget.compraInicial!=null){_preenchido=true;_valor.text=widget.compraInicial!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}
   }
-  @override void dispose(){if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}
+  @override void dispose(){_quantidade.dispose();if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}
   Future<void> _carregar() async {
     setState((){_carregando=true;_erro=null;_previa=null;_permitido=false;});
     try {
@@ -67,6 +76,11 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   }
   Future<void> _prever() async {
     final seq=++_seq;
+    _invalidarPlano();
+    if(_parcelaExistente&&widget.faturaInicial!=null){
+      final f=widget.faturaInicial!;
+      setState(()=>_previa=PreviaFaturaCartao.fromJson({'fechamento':dataCartaoIso(f.fechamento),'vencimento':dataCartaoIso(f.vencimento),'versaoCartao':_cartoes.where((c)=>c.id==_cartao).first.versao,'paga':f.paga}));return;
+    }
     setState((){_previa=null;_prevendo=_cartao!=null;_erro=null;});
     if(_cartao==null)return;
     try{final result=await ((_mensal||_recorrente)?widget.client.previaRecorrencia(_cartao!,_data):widget.client.previa(_cartao!,_data));
@@ -83,7 +97,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   bool validate(){
     syncCategory();
     final valid=_form.currentState?.validate()??false;
-    return valid&&(!_configuraSerie||_fim==null||!_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))&&!_carregando&&!_prevendo&&_permitido&&_previa!=null&&!_previa!.paga;
+    return valid&&(!_parcelada||(_plano!=null&&_planoValor==_valorNumerico()&&_planoQuantidade==int.tryParse(_quantidade.text)&&!_plano!.any((p)=>p.paga)))&&(!_configuraSerie||_fim==null||!_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))&&!_carregando&&!_prevendo&&_permitido&&_previa!=null&&!_previa!.paga;
   }
   Widget review(){
     final r=context.read<LocaleSettingsProvider>();
@@ -94,7 +108,8 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}'),
       if(_previa!=null)Text('${context.t('invoices.invoiceDue')}: ${r.formatDate(_previa!.vencimento)}'),
       Text(widget.categoriaController?.text??''),
-      const SizedBox(height:16),Text(context.t(_mensal?'invoices.recurring.review':'invoices.noRecurrence')),
+      const SizedBox(height:16),Text(context.t(_parcelada?'invoices.installments.hint':_mensal?'invoices.recurring.review':'invoices.noRecurrence')),
+      if(_parcelada)..._resumoParcelas(),
       if(_mensal)Text(_fim==null?context.t('invoices.recurring.noEnd'):'${context.t('invoices.recurring.until')}: ${r.formatDate(_fim!)}'),
     ]);
   }
@@ -115,7 +130,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     setState((){_salvando=true;_erro=null;});
     widget.onBusy?.call(true);widget.onLocked?.call(true);widget.onError?.call(null);
     try{final compra=widget.compraInicial;final FaturaCartao f;
-      if(compra==null){f=_mensal?await widget.client.criarRecorrencia(_tentativa!,_fim):await widget.client.comprar(_tentativa!);}
+      if(compra==null){f=_parcelada?await widget.client.parcelar(_tentativa!,int.parse(_quantidade.text)):_mensal?await widget.client.criarRecorrencia(_tentativa!,_fim):await widget.client.comprar(_tentativa!);}
       else{f=_proximas?await widget.client.editarProximas(compra.id,compra.versao,_tentativa!,_fim):await widget.client.editarCompra(compra.id,compra.versao,_tentativa!);}if(mounted){if(widget.onSaved!=null){widget.onSaved!(f);}else{Navigator.of(context).pop(f);}}}
     catch(e){if(mounted)setState((){
       _erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server';
@@ -125,6 +140,25 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       }
     });}finally{if(mounted){setState(()=>_salvando=false);widget.onBusy?.call(false);widget.onLocked?.call(_tentativa!=null);widget.onError?.call(_erro==null?null:'${context.t(_erro!)}${_tentativa==null?'':' ${context.t('invoices.uncertain')}'}');}}
   }
+  Future<void> _calcularParcelas()async{
+    if(!(_form.currentState?.validate()??false)||_previa==null||_cartao==null)return;
+    final n=int.parse(_quantidade.text);final valor=_valorNumerico()!;
+    if((valor*100).round()<n){setState(()=>_erro='invoices.installments.invalid');return;}
+    final seq=++_planoSeq;setState((){_calculando=true;_erro=null;_plano=null;});
+    widget.onBusy?.call(true);
+    try{final items=await widget.client.previaParcelamento(CompraCartaoRequest(id:_id,cartaoId:_cartao!,descricao:_descricao.text,dataCompra:_data,valor:valor,previa:_previa!,categoriaId:_categoria),n);
+      if(mounted&&seq==_planoSeq)setState((){_plano=items;_planoValor=valor;_planoQuantidade=n;});
+    }catch(e){if(mounted&&seq==_planoSeq)setState(()=>_erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server');}
+    finally{if(mounted){setState(()=>_calculando=false);widget.onBusy?.call(false);}}
+  }
+  List<Widget> _resumoParcelas(){
+    final r=context.read<LocaleSettingsProvider>();
+    return [if(_plano!=null)...[
+      for(final p in _plano!)Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Wrap(alignment:WrapAlignment.spaceBetween,spacing:16,runSpacing:4,children:[
+        Text('${p.numero}/${_plano!.length} · ${r.formatDate(p.vencimento)}'),Text(r.formatCurrency(p.valor)),if(p.paga)Text(context.t('invoices.alreadyPaid')),
+      ])),
+    ]];
+  }
   @override Widget build(BuildContext context){
     final r=context.watch<LocaleSettingsProvider>();
     return PopScope(canPop:!_salvando,child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Form(key:_form,child:Column(
@@ -133,10 +167,20 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       const SizedBox(height:8),Text(context.t('invoices.purchaseHint')),
       const SizedBox(height:20),
       if(widget.compraInicial==null)...[
-        SegmentedButton<bool>(segments:[ButtonSegment(value:false,label:Text(context.t('invoices.recurring.once')),icon:const Icon(Icons.shopping_bag_outlined)),ButtonSegment(value:true,label:Text(context.t('invoices.recurring.monthly')),icon:const Icon(Icons.repeat))],
-          selected:{_mensal},onSelectionChanged:_bloqueado?null:(v){setState((){_mensal=v.first;if(!_mensal&&_data.isAfter(DateTime.now()))_data=DateTime.now();});_prever();}),
+        Wrap(spacing:8,runSpacing:8,children:[
+          for(final mode in ['once','monthly','installments'])ChoiceChip(label:Text(context.t(mode=='installments'?'invoices.installments.title':'invoices.recurring.$mode')),
+            selected:mode=='installments'?_parcelada:mode=='monthly'?_mensal:!_mensal&&!_parcelada,
+            onSelected:_bloqueado?null:(_){setState((){_mensal=mode=='monthly';_parcelada=mode=='installments';if(!_mensal&&_data.isAfter(DateTime.now()))_data=DateTime.now();});_prever();}),
+        ]),
+        if(_parcelada)...[
+          const SizedBox(height:12),Text(context.t('invoices.installments.hint')),
+          TextFormField(controller:_quantidade,enabled:!_bloqueado,keyboardType:TextInputType.number,
+            decoration:InputDecoration(labelText:context.t('invoices.installments.count')),
+            onChanged:(_)=>setState(_invalidarPlano),validator:(_){final n=int.tryParse(_quantidade.text);return n==null||n<2||n>48?context.t('invoices.installments.invalid'):null;}),
+        ],
         const SizedBox(height:16),
       ],
+      if(_parcelaExistente)Text(context.t('invoices.installments.editHint')),
       if(_recorrente&&widget.compraInicial!.recorrenciaAtiva)...[
         DropdownButtonFormField<bool>(initialValue:false,isExpanded:true,
           decoration:InputDecoration(labelText:context.t('invoices.recurring.editScope')),
@@ -161,17 +205,17 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if(_carregando) SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.title')) else ...[
         DropdownButtonFormField<String>(initialValue:_cartao,isExpanded:true,
           decoration:InputDecoration(labelText:context.t('cards.title')),
-          items:_cartoes.where((c)=>c.ativo).map((c)=>DropdownMenuItem(value:c.id,child:Text(c.nome,overflow:TextOverflow.ellipsis))).toList(),
-          onChanged:_bloqueado?null:(v){setState(()=>_cartao=v);_prever();},
+          items:_cartoes.where((c)=>c.ativo||(_parcelaExistente&&c.id==_cartao)).map((c)=>DropdownMenuItem(value:c.id,child:Text(c.nome,overflow:TextOverflow.ellipsis))).toList(),
+          onChanged:_bloqueado||_parcelaExistente?null:(v){setState(()=>_cartao=v);_prever();},
           validator:(v)=>v==null?context.t('invoices.required'):null),
         const SizedBox(height:16),TextFormField(controller:_descricao,enabled:!_bloqueado,maxLength:255,
           decoration:InputDecoration(labelText:context.t('invoices.description')),
           validator:(v)=>v==null||v.trim().isEmpty?context.t('invoices.required'):null),
-        const SizedBox(height:8),TextFormField(controller:_valor,enabled:!_bloqueado,
+        const SizedBox(height:8),TextFormField(controller:_valor,enabled:!_bloqueado&&!_parcelaExistente,onChanged:(_)=>setState(_invalidarPlano),
           keyboardType:const TextInputType.numberWithOptions(decimal:true),
-          decoration:InputDecoration(labelText:context.t('invoices.value'),helperText:context.t('invoices.valueHint')),
+          decoration:InputDecoration(labelText:context.t(_parcelada?'invoices.installments.total':'invoices.value'),helperText:context.t('invoices.valueHint')),
           validator:(_){final v=_valorNumerico();return v==null||v<=0||!v.isFinite||v>=1e13?context.t('invoices.invalidValue'):null;}),
-        const SizedBox(height:16),OutlinedButton.icon(onPressed:_bloqueado?null:()async{
+        const SizedBox(height:16),OutlinedButton.icon(onPressed:_bloqueado||_parcelaExistente?null:()async{
           final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:(_mensal||_recorrente)?(widget.compraInicial!=null?DateTime(2100):DateTime(DateTime.now().year+1,DateTime.now().month,DateTime.now().day)):DateTime.now());
           if(d!=null&&mounted){setState(()=>_data=d);_prever();}},
           icon:const Icon(Icons.calendar_today_outlined),label:Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}')),
@@ -189,6 +233,11 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           Text('${context.t('invoices.closingDate')}: ${r.formatDate(_previa!.fechamento)}'),
           if(_previa!.paga)Text(context.t('invoices.alreadyPaid'),style:TextStyle(color:Theme.of(context).colorScheme.error)),
         ]))),
+        if(_parcelada)...[
+          const SizedBox(height:12),OutlinedButton.icon(onPressed:_bloqueado||_previa==null?null:_calcularParcelas,icon:const Icon(Icons.calculate_outlined),label:Text(context.t('invoices.installments.preview'))),
+          if(_calculando)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.installments.preview')),
+          ..._resumoParcelas(),
+        ],
         Text(context.t('invoices.cycleRule'),style:Theme.of(context).textTheme.bodySmall),
       ],
       if(_erro!=null)...[const SizedBox(height:12),Text(context.t(_erro!),style:TextStyle(color:Theme.of(context).colorScheme.error)),
