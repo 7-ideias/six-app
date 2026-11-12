@@ -1,3 +1,4 @@
+import 'package:sixpos/data/models/fatura_cartao_model.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -34,7 +35,7 @@ class CartaoCreditoApiClient {
 
   void dispose() => _client.close();
 
-  Future<Map<String, dynamic>> _request(String method, [CartaoCreditoRequest? input]) async {
+  Future<Map<String, dynamic>> _request(String method, {Map<String,dynamic>? input, String path = '', String resource = 'cartoes'}) async {
     try {
       final token = await _tokenProvider().timeout(timeout);
       if (token == null || token.isEmpty) {
@@ -49,13 +50,12 @@ class CartaoCreditoApiClient {
         'espacoFinanceiro': espaco,
         if (empresa != null) 'idUnicoDaEmpresa': empresa,
       };
-      final suffix = method == 'PUT' ? '/${Uri.encodeComponent(input!.id)}' : '';
-      final uri = Uri.parse('${AppConfig.baseUrl}/private/api/agenda-financeira/cartoes$suffix');
+      final uri = Uri.parse('${AppConfig.baseUrl}/private/api/agenda-financeira/$resource$path');
       final http.Response response;
       if (method == 'GET') {
         response = await _client.get(uri, headers: headers).timeout(timeout);
       } else {
-        final body = jsonEncode(input!.toJson());
+        final body = jsonEncode(input!);
         response = await (method == 'POST'
             ? _client.post(uri, headers: headers, body: body)
             : _client.put(uri, headers: headers, body: body)).timeout(timeout);
@@ -95,11 +95,32 @@ class CartaoCreditoApiClient {
   }
 
   Future<CartaoCredito> salvar(CartaoCreditoRequest input) async {
-    final data = await _request(input.versao == null ? 'POST' : 'PUT', input);
+    final data = await _request(input.versao == null ? 'POST' : 'PUT', input: input.toJson(), path: input.versao == null ? '' : '/${Uri.encodeComponent(input.id)}');
     try {
       return CartaoCredito.fromJson(data);
     } catch (_) {
       throw const CartaoCreditoApiException('invalidResponse');
     }
   }
+
+  Future<T> _decode<T>(Future<Map<String,dynamic>> response,T Function(Map<String,dynamic>) parser) async {
+    final json = await response;
+    try { return parser(json); } catch (_) { throw const CartaoCreditoApiException('invalidResponse'); }
+  }
+  Future<List<FaturaCartao>> faturas(String cartaoId) => _decode(
+    _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/faturas'),
+    (j) => (j['faturas'] as List).map((e) => FaturaCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList());
+  Future<FaturaCartao> fatura(String id) => _decode(_request('GET',path:'/faturas/${Uri.encodeComponent(id)}'),FaturaCartao.fromJson);
+  Future<PreviaFaturaCartao> previa(String cartaoId,DateTime data) => _decode(
+    _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/previa?dataCompra=${dataCartaoIso(data)}'),PreviaFaturaCartao.fromJson);
+  Future<FaturaCartao> comprar(CompraCartaoRequest input) => _decode(
+    _request('POST',path:'/${Uri.encodeComponent(input.cartaoId)}/compras',input:input.toJson()),FaturaCartao.fromJson);
+  Future<FaturaCartao> pagar(PagarFaturaCartaoRequest input) => _decode(
+    _request('POST',path:'/faturas/${Uri.encodeComponent(input.faturaId)}/pagamento',input:input.toJson()),FaturaCartao.fromJson);
+  Future<List<FormaPagamentoFatura>> formasFatura() => _decode(
+    _request('GET',resource:'formas-recebimento'), (j) => (j['tiposRecebimento'] as List)
+      .map((e) => Map<String,dynamic>.from(e as Map))
+      .where((e) => e['ativo'] == true && const ['tipo1','tipo2','tipo4','tipo5','tipo10'].contains(e['codigoTipo']))
+      .map((e) => FormaPagamentoFatura(e['codigoTipo'] as String,e['descricaoExibicao'] as String)).toList());
 }
+

@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
@@ -1180,7 +1181,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
-      'descricao': item['descricao']?.toString() ?? 'Sem descrição',
+      'descricao': item['faturaCartaoId'] != null ? '${context.t('invoices.invoice')} ${item['descricao'] ?? ''}' : item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
       'valorOriginal': valorOriginal,
       'valorConfirmado': valorConfirmado,
@@ -1217,7 +1218,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'id': item['idLancamento']?.toString() ?? '',
       'contaFinanceiraId': item['contaFinanceiraId']?.toString(),
       'tipo': tipo,
-      'descricao': item['descricao']?.toString() ?? 'Sem descrição',
+      'descricao': item['faturaCartaoId'] != null ? '${context.t('invoices.invoice')} ${item['descricao'] ?? ''}' : item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
       'valorOriginal': _toDouble(item['valorOriginal']),
       'valorConfirmado': _toDouble(item['valorConfirmado']),
@@ -1336,6 +1337,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
+    final faturaId=detalhe['faturaCartaoId']?.toString()??item['faturaCartaoId']?.toString();
+    if(faturaId!=null&&faturaId.isNotEmpty){await _abrirCartoes(faturaId:faturaId);return;}
     bool editar = false;
     final alterado = await showSixWebAnimatedDialog<bool>(
       context: context,
@@ -1658,7 +1661,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return codigo;
   }
 
+  Future<void> _abrirCartoes({String? faturaId, bool novaCompra = false}) async {
+    await abrirFaturasCartaoWeb(context,espaco:_service.espacoFinanceiro,faturaId:faturaId,novaCompra:novaCompra);
+    if(mounted) await _consultar(mostrarFeedback:true);
+  }
+
   Future<void> _novoLancamento() async {
+    final cartao = await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      title:Text(context.t('agenda.newEntry')),
+      content:ConstrainedBox(constraints:const BoxConstraints(maxWidth:480),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        OutlinedButton.icon(onPressed:()=>Navigator.of(ctx).pop(false),icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.directEntry'))),
+        const SizedBox(height:12),
+        FilledButton.icon(onPressed:()=>Navigator.of(ctx).pop(true),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.newPurchase'))),
+      ])),actions:[TextButton(onPressed:()=>Navigator.of(ctx).pop(),child:Text(context.t('common.close')))]));
+    if(!mounted || cartao==null)return;
+    if(cartao){await _abrirCartoes(novaCompra:true);return;}
+
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
       service: _service,
@@ -1977,6 +1995,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         icon: const Icon(Icons.add_rounded),
         label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
       ),
+      OutlinedButton.icon(onPressed:()=>_abrirCartoes(),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.title'))),
       if (showCloseButton)
         IconButton.filled(
           onPressed: _fechar,
@@ -2237,7 +2256,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       onLiquidar: () => _confirmarTotal(item, 'Liquidar'),
       onRegistrarParcial: () => _registrarParcial(item),
       onCancelar: () => _cancelarRecorrencia(item),
-      onExcluir: () async {
+      onExcluir: item['faturaCartaoId'] != null ? null : () async {
         if (_executandoAcao) return;
         final excluido = await _confirmarExcluirLancamentoDetalhe(item);
         if (excluido && mounted) await _consultar(mostrarFeedback: true);
@@ -3935,3 +3954,4 @@ class _DetalheStatusStampData {
   final String label;
   final Color color;
 }
+

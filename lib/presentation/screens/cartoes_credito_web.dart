@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
@@ -121,6 +122,8 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
             Text('${context.t('cards.account')}: ${item.contaPrevistaId == null ? context.t('space.none') : (item.contaPrevistaNome?.isNotEmpty == true ? item.contaPrevistaNome! : context.t('cards.linkedAccount'))}',
               style: TextStyle(color: tokens.secondaryText)),
           ])),
+          IconButton(tooltip:context.t('invoices.title'),icon:const Icon(Icons.receipt_long_outlined),
+            onPressed:_loading||_editing||_error!=null?null:()=>abrirFaturasCartaoWeb(context,espaco:widget.espaco,cartaoId:item.id)),
           if (_canEdit && _error == null)
             IconButton(
               tooltip: context.t('space.edit'),
@@ -152,7 +155,7 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
           ],
         ),
         const SizedBox(height: 20),
-        Text(context.t('cards.stageHint')),
+        Text(context.t('invoices.listHint')),
         const SizedBox(height: 20),
         if (_loading)
           SixBackendLoading(title: context.t('space.loading'), subtitle: context.t('cards.title'))
@@ -175,3 +178,4 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
     ))),
   );
 }
+
