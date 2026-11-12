@@ -106,6 +106,7 @@ class AgendaResumoPeriodoWeb extends StatelessWidget {
   }) {
     final tokens = WebThemeTokens.of(context);
     return Material(
+      key: ValueKey('period-summary-panel-$title'),
       color: highlight
           ? Color.alphaBlend(tokens.info.withValues(alpha: .08), tokens.cardBackground)
           : tokens.cardBackground,
@@ -214,12 +215,34 @@ class AgendaResumoPeriodoWeb extends StatelessWidget {
           const gap = 16.0;
           final scaledWidth = constraints.maxWidth / MediaQuery.textScalerOf(context).scale(1);
           final columns = scaledWidth >= 1140 ? 3 : scaledWidth >= 760 ? 2 : 1;
-          final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
-          return Wrap(spacing: gap, runSpacing: gap, children: [
-            SizedBox(width: width, child: open),
-            SizedBox(width: width, child: actual),
-            SizedBox(width: columns == 2 ? constraints.maxWidth : width, child: forecast),
-          ]);
+          Widget equalHeightRow(List<Widget> panels) => IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < panels.length; index++) ...[
+                  if (index > 0) const SizedBox(width: gap),
+                  Expanded(child: panels[index]),
+                ],
+              ],
+            ),
+          );
+          if (columns == 3) {
+            return equalHeightRow([open, actual, forecast]);
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (columns == 2)
+                equalHeightRow([open, actual])
+              else ...[
+                open,
+                const SizedBox(height: gap),
+                actual,
+              ],
+              const SizedBox(height: gap),
+              forecast,
+            ],
+          );
         }),
         const SizedBox(height: 10),
         Text(_t(context, 'scopeHint'), style: TextStyle(color: tokens.secondaryText, fontSize: 12)),

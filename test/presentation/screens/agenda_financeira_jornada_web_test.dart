@@ -189,6 +189,23 @@ void main() {
           )),
         ));
         await tester.pumpAndSettle();
+        if (width >= 900) {
+          final openRect = tester.getRect(
+            find.byKey(const ValueKey('period-summary-panel-open')),
+          );
+          final actualRect = tester.getRect(
+            find.byKey(const ValueKey('period-summary-panel-actual')),
+          );
+          expect(actualRect.top, openRect.top);
+          expect(actualRect.height, openRect.height);
+          if (width >= 1500) {
+            final forecastRect = tester.getRect(
+              find.byKey(const ValueKey('period-summary-panel-forecast')),
+            );
+            expect(forecastRect.top, openRect.top);
+            expect(forecastRect.height, openRect.height);
+          }
+        }
         expect(find.text('31501.12'), findsOneWidget);
         expect(find.text('21600.00'), findsNWidgets(2));
         expect(find.text('9901.12'), findsNWidgets(2));

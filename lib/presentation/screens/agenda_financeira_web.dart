@@ -152,12 +152,57 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   bool _somenteImpostoRenda = false;
 
+  static const double _filterHeight = 58;
+
+  Widget _filterToggle({
+    Key? key,
+    required Widget label,
+    required bool selected,
+    required ValueChanged<bool>? onSelected,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    return Semantics(
+      selected: selected,
+      child: OutlinedButton(
+        key: key,
+        style: OutlinedButton.styleFrom(
+          fixedSize: const Size.fromHeight(_filterHeight),
+          minimumSize: const Size(0, _filterHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          visualDensity: VisualDensity.standard,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: selected
+              ? tokens.selectedBackground
+              : tokens.inputBackground,
+          foregroundColor: tokens.primaryText,
+          side: BorderSide(
+            color: selected ? tokens.selectedBorder : tokens.cardBorder,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        onPressed: onSelected == null ? null : () => onSelected(!selected),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              const Icon(Icons.check_rounded, size: 18),
+              const SizedBox(width: 8),
+            ],
+            label,
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _seletorEspaco() => Wrap(
     spacing: 8,
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      FilterChip(
+      _filterToggle(
         key: const ValueKey('ir-filter'),
         label: Text(context.t('ir.filter')),
         selected: _somenteImpostoRenda,
@@ -170,7 +215,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               },
       ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
-        ChoiceChip(
+        _filterToggle(
           label: Text(context.t('space.' + tipo)),
           selected: _service.espacoFinanceiro == tipo,
           onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
@@ -179,6 +224,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ),
       if (_service.espacoFinanceiro == 'EMPRESA')
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            fixedSize: const Size.fromHeight(_filterHeight),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           icon: const Icon(Icons.payments_outlined),
           label: Text(context.t('machine.receivables')),
           onPressed: () => Navigator.of(context).push(
@@ -188,6 +238,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
         ),
       IconButton(
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(_filterHeight),
+          visualDensity: VisualDensity.standard,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
         tooltip: context.t('space.settings'),
         onPressed: (_trocandoEspaco || _carregando || _executandoAcao)
             ? null
@@ -1955,7 +2010,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ],
           _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
           _drop('Status', _statusSelecionado, _status, _selecionarStatus),
-          FilterChip(
+          _filterToggle(
             label: Text(context.t('agenda.list.showCanceled')),
             selected: _mostrarCancelados || _statusSelecionado == 'Cancelado',
             onSelected: _statusSelecionado == 'Cancelado'
@@ -1968,7 +2023,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _multiSelectTipoPagamento(theme),
           if (_centrosCusto.isNotEmpty) _multiSelectCentroCusto(theme),
           FilledButton.icon(
-            style: _primaryCtaStyle(theme),
+            style: _primaryCtaStyle(theme).copyWith(
+              fixedSize: const WidgetStatePropertyAll(Size.fromHeight(_filterHeight)),
+              visualDensity: VisualDensity.standard,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: _carregando
                 ? null
                 : () => _consultar(mostrarFeedback: true),
