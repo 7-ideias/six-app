@@ -121,5 +121,5 @@ class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
   if(error!=null)CartaoMobileError(error!,retry:locked||conflict?null:load),
   if(attempt!=null&&!busy)Text(context.t('invoices.uncertain')),const SizedBox(height:20),
   FilledButton(onPressed:loading||busy||conflict||account==null||method==null||widget.fatura.paga||widget.fatura.total<=0||widget.fatura.compras.any((c)=>c.prevista)?null:pay,child:Text(context.t(busy?'invoices.saving':attempt!=null?'space.retry':'invoices.confirmPayment'))),
- ])))));}
+ ]))));}
 }
