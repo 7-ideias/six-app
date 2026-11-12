@@ -62,8 +62,9 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
               namesRoute: true,
               label: textoDaAppBar,
               child: AnimatedContainer(
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
+                duration: MediaQuery.of(context).disableAnimations
+                    ? Duration.zero : const Duration(milliseconds: 600),
+                curve: Curves.easeInOutCubic,
                 width: (MediaQuery.of(context).size.width * 0.97)
                     .clamp(0.0, maxWidth ?? double.infinity)
                     .toDouble(),
@@ -1289,17 +1290,81 @@ class _LancamentoAgendaFinanceiraWebBodyState
     return hoje.difference(vencimento).inDays.clamp(0, 100000);
   }
 
-  Widget _section(String title, List<Widget> children) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        _label(title),
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  final Map<String, bool> _openSections = {'main': true};
+
+  void _openDetailSection(String section) {
+    if (section != 'main' &&
+        (_descricaoController.text.trim().isEmpty ||
+         !_toDouble(_valorController.text).isFinite ||
+         _toDouble(_valorController.text) <= 0)) {
+      setState(() => _openSections['main'] = true);
+      _formKey.currentState?.validate();
+      return;
+    }
+    setState(() => _openSections[section] = true);
+  }
+
+  Widget _section(String title, List<Widget> children) {
+    if (widget.modoEdicao) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(_label(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 20),
+        ...children,
+      ]);
+    }
+    final tokens = WebThemeTokens.of(context);
+    final open = _openSections[title] ?? false;
+    final index = ['main', 'dates', 'classification'].indexOf(title);
+    final next = title == 'main' ? 'dates' : 'classification';
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: open ? tokens.info.withValues(alpha: .5) : tokens.cardBorder),
       ),
-      const SizedBox(height: 20),
-      ...children,
-    ],
-  );
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Semantics(expanded: open, child: InkWell(
+          key: ValueKey('detail-section-$title'),
+          onTap: () {
+            if (open) { setState(() => _openSections[title] = false); }
+            else { _openDetailSection(title); }
+          },
+          child: Padding(padding: const EdgeInsets.all(20), child: Row(children: [
+            CircleAvatar(radius: 16, backgroundColor: tokens.info.withValues(alpha: .12),
+                child: Text('${index + 1}', style: TextStyle(color: tokens.info, fontSize: 14))),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_label(title), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: tokens.primaryText)),
+              const SizedBox(height: 4),
+              Text(_journey('blockHint.$title'), style: TextStyle(fontSize: 12, color: tokens.secondaryText)),
+            ])),
+            Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.secondaryText),
+          ])),
+        )),
+        AnimatedSize(
+          duration: MediaQuery.of(context).disableAnimations ? Duration.zero : const Duration(milliseconds: 450),
+          curve: Curves.easeInOutCubic,
+          alignment: Alignment.topCenter,
+          child: Offstage(offstage: !open, child: ExcludeFocus(excluding: !open,
+            child: Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                ...children,
+                if (title != 'classification') ...[
+                  const SizedBox(height: 20),
+                  Align(alignment: Alignment.centerRight, child: TextButton.icon(
+                    onPressed: () => _openDetailSection(next),
+                    icon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                    label: Text(_journey('blockNext.$title')),
+                  )),
+                ],
+              ]),
+            ),
+          )),
+        ),
+      ]),
+    );
+  }
 
   Widget _fields(List<Widget> fields, {int columns = 2}) => LayoutBuilder(
     builder: (context, constraints) {
@@ -1462,12 +1527,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
   Widget _formContent() {
     final tokens = WebThemeTokens.of(context);
     final receber = _tipoSelecionado == 'Receber';
-    Widget separator() => const Padding(
-      padding: EdgeInsets.symmetric(vertical: 22),
-      child: Divider(height: 1),
-    );
-    return _panel(
-      Column(
+    Widget separator() => widget.modoEdicao
+        ? const Padding(padding: EdgeInsets.symmetric(vertical: 22), child: Divider(height: 1))
+        : const SizedBox(height: 16);
+    final content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _section('main', [
@@ -1801,8 +1864,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
             maxLines: 2,
           ),
         ],
-      ),
-    );
+      );
+    return widget.modoEdicao ? _panel(content) : content;
   }
 
   void _irParaEtapa(int etapa) {
@@ -1823,7 +1886,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_etapa == 2) {
       if(_aguardandoPagamento)return;
       if(_compraCartao){if(!(_compraKey.currentState?.validate()??false))return;}
-      else if(!(_formKey.currentState?.validate()??false))return;
+      else if(!(_formKey.currentState?.validate()??false)) {
+        setState(() { _openSections['main'] = true; _openSections['dates'] = true; });
+        return;
+      }
     }
     _irParaEtapa(_etapa + 1);
   }

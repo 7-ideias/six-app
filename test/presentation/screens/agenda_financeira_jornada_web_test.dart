@@ -348,6 +348,7 @@ void main() {
       expect(find.text('Quais são os dados do lançamento?'), findsOneWidget);
       expect(calls.requests, isEmpty);
       await _fill(tester);
+      await _tap(tester, find.byKey(const ValueKey('detail-section-classification')));
       final category = _field(tester, 'agenda.form.category');
       await tester.ensureVisible(category);
       await tester.enterText(category, 'Moradia');
@@ -476,3 +477,4 @@ void main() {
     });
   }
 }
+
