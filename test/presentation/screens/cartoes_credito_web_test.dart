@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/screens/cartoes_credito_web.dart';
 class _Api extends CartaoCreditoApiClient {
   _Api() : super(espaco: 'PESSOAL', client: MockClient((_) async => http.Response('{}', 200)));
   bool failLoad = false, failSave = false, canEdit = true;
+  String saveError = 'connection';
   final requests = <CartaoCreditoRequest>[];
   List<CartaoCredito> items = [];
   @override
@@ -21,7 +22,7 @@ class _Api extends CartaoCreditoApiClient {
   @override
   Future<CartaoCredito> salvar(CartaoCreditoRequest input) async {
     requests.add(input);
-    if (failSave) throw const CartaoCreditoApiException('connection');
+    if (failSave) throw CartaoCreditoApiException(saveError);
     final card = CartaoCredito(id: input.id, nome: input.nome, instituicao: input.instituicao,
       diaFechamento: input.diaFechamento, diaVencimento: input.diaVencimento, ativo: input.ativo,
       versao: (input.versao ?? -1) + 1, contaPrevistaId: input.contaPrevistaId);
@@ -75,6 +76,22 @@ void main() {
     await open(tester, _Api()..canEdit = false);
     expect(find.byKey(const ValueKey('cards-create')), findsNothing);
     expect(find.textContaining('não possui permissão'), findsOneWidget);
+  });
+
+  testWidgets('erro de validacao apos timeout permite corrigir o formulario', (tester) async {
+    final api = _Api()..failSave = true;
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Nubank');
+    await tester.enterText(find.byKey(const ValueKey('cards-institution')), 'Nu');
+    await tester.enterText(find.byKey(const ValueKey('cards.closing')), '3');
+    await tester.enterText(find.byKey(const ValueKey('cards.due')), '10');
+    await tap(tester, find.byKey(const ValueKey('cards-save')));
+    expect(tester.widget<TextFormField>(find.byKey(const ValueKey('cards-name'))).enabled, isFalse);
+    api.saveError = 'validation';
+    await tap(tester, find.byKey(const ValueKey('cards-save')));
+    expect(tester.widget<TextFormField>(find.byKey(const ValueKey('cards-name'))).enabled, isTrue);
+    expect(find.text('Nubank'), findsOneWidget);
   });
 
   testWidgets('edicao inativa o cartao preservando ID e versao', (tester) async {

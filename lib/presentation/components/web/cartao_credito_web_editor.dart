@@ -76,6 +76,8 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
         // command and ID before allowing a different edit; never invent success.
         if (['connection', 'server', 'invalidResponse'].contains(apiError.kind)) {
           _uncertainRequest = request;
+        } else {
+          _uncertainRequest = null;
         }
       });
     }
