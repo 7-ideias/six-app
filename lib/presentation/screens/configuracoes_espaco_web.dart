@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'cartoes_credito_web.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/web/configuracao_financeira_web_editor.dart';
@@ -87,11 +89,6 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final content = <Widget>[
-      Text(
-        context.t('space.' + widget.espaco),
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-      const SizedBox(height: 16),
       Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -99,10 +96,10 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
           ActionChip(
             avatar: const Icon(Icons.credit_card_outlined, size: 18),
             label: Text(context.t('cards.title')),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CartoesCreditoWeb(espaco: widget.espaco),
-              ),
+            onPressed: () => showFinanceiroConfiguracaoWebDialog<void>(
+              context: context,
+              title: context.t('cards.title'),
+              child: CartoesCreditoWeb(espaco: widget.espaco),
             ),
           ),
           for (final grupo in [
@@ -123,15 +120,6 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
                       },
             ),
         ],
-      ),
-      const SizedBox(height: 16),
-      Align(
-        alignment: Alignment.centerRight,
-        child: FilledButton.icon(
-          onPressed: _loading ? null : () => _edit(),
-          icon: const Icon(Icons.add),
-          label: Text(context.t('space.add')),
-        ),
       ),
       const SizedBox(height: 16),
       if (_loading)
@@ -185,12 +173,28 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
           ),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('space.settings'))),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: ListView(padding: const EdgeInsets.all(24), children: content),
-        ),
+      body: Column(
+        children: [
+          SixWebDashboardHeader(
+            icon: Icons.account_balance_outlined,
+            title: context.t('space.settings'),
+            subtitle: context.t('space.' + widget.espaco),
+            onBack: () => Navigator.of(context).maybePop(),
+            actions: [
+              FilledButton.icon(
+                onPressed: _loading ? null : () => _edit(),
+                icon: const Icon(Icons.add),
+                label: Text(context.t('space.add')),
+              ),
+            ],
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: content,
+            ),
+          ),
+        ],
       ),
     );
   }

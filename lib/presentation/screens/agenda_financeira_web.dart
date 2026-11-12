@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
@@ -141,11 +142,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _configurarEspaco() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            ConfiguracoesEspacoWeb(espaco: _service.espacoFinanceiro),
-      ),
+    await showFinanceiroConfiguracaoWebDialog<void>(
+      context: context,
+      title: context.t('space.settings'),
+      child: ConfiguracoesEspacoWeb(espaco: _service.espacoFinanceiro),
     );
     if (mounted) await _carregarCentrosCusto();
   }
