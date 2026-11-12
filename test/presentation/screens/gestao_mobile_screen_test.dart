@@ -346,6 +346,7 @@ void main() {
       expect(find.text('Catálogo sem dados para exibir'), findsOneWidget);
       expect(find.text('--'), findsWidgets);
 
+      await tester.pumpWidget(const SizedBox.shrink());
       await _pumpGestao(
         tester,
         snapshot: _emptySnapshot,
