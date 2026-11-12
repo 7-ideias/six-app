@@ -32,7 +32,39 @@ class DeleteApi extends Api {
   await pending.future;removed=true;
  }
 }
+class RecurringApi extends Api {
+ bool paid=false,stopped=false;
+ final commands=<String>[];
+ @override Future<List<FaturaCartao>> faturas(String id)async{
+  final j=invoiceJson();j['paga']=paid;
+  (j['compras'] as List).first.addAll({'serieRecorrenciaId':'serie','numeroOcorrencia':1,'prevista':!paid,'recorrenciaAtiva':!stopped});
+  return [FaturaCartao.fromJson(j)];
+ }
+ @override Future<void> encerrarRecorrencia(String id,int versao,String comandoId)async{
+  commands.add(comandoId);if(commands.length==1)throw const CartaoCreditoApiException('connection');stopped=true;
+ }
+}
 void main(){
+ for(final paid in [false,true])testWidgets('recorrencia distingue previsao e encerra inclusive na fatura paga $paid',(tester)async{
+  tester.view.physicalSize=const Size(390,1400);tester.view.devicePixelRatio=1;
+  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+  final api=RecurringApi()..paid=paid;addTearDown(api.dispose);
+  await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(regionalizacaoService:RegionalizacaoService(apiClient:RegionalClient())),child:MaterialApp(
+   locale:const Locale('pt'),supportedLocales:const[Locale('pt')],localizationsDelegates:GlobalMaterialLocalizations.delegates,
+   home:FaturasCartaoWeb(espaco:'PESSOAL',client:api))));
+  await tester.pumpAndSettle();
+  if(paid){expect(find.widgetWithText(FilledButton,'Pagar fatura'),findsNothing);}
+  else{expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,isNull);}
+  await tester.ensureVisible(find.byType(ExpansionTile));await tester.tap(find.byType(ExpansionTile));await tester.pumpAndSettle();
+  expect(find.textContaining(paid?'Mensal · Lançada':'Mensal · Prevista'),findsOneWidget);
+  await tester.ensureVisible(find.byType(PopupMenuButton<String>));await tester.tap(find.byType(PopupMenuButton<String>));await tester.pumpAndSettle();
+  await tester.tap(find.text('Encerrar após esta compra'));await tester.pumpAndSettle();
+  expect(find.text('Encerrar recorrência?'),findsOneWidget);expect(tester.takeException(),isNull);
+  await tester.ensureVisible(find.text('Encerrar após esta compra'));await tester.tap(find.text('Encerrar após esta compra'));await tester.pumpAndSettle();
+  expect(api.commands.length,1);
+  await tester.tap(find.text('Encerrar após esta compra'));await tester.pump();await tester.pump(const Duration(seconds:2));await tester.pumpAndSettle();
+  expect(api.stopped,isTrue);expect(api.commands[0],api.commands[1]);expect(tester.takeException(),isNull);
+ });
  testWidgets('excluir compra confirma impacto, bloqueia envio e permite retry', (tester)async{
   tester.view.physicalSize=const Size(1100,1400);tester.view.devicePixelRatio=1;
   addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
