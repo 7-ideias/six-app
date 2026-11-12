@@ -305,6 +305,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _somar(_itensConfirmadosFiltrados, 'receber', 'valorConfirmado');
   double get _totalPagoConfirmado =>
       _somar(_itensConfirmadosFiltrados, 'pagar', 'valorConfirmado');
+  double get _saldoARealizar => _totalReceberPrevisto - _totalPagarPrevisto;
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) -
       (_totalPagoConfirmado + _totalPagarPrevisto);
@@ -2077,6 +2078,34 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  Future<void> _mostrarComposicaoConfirmada(String tipo) async {
+    final itens = _itensConfirmadosFiltrados.where((i) => i['tipo'] == tipo).toList();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.t(tipo == 'receber'
+          ? 'agenda.mobile.summary.received' : 'agenda.mobile.summary.paid')),
+        content: SizedBox(
+          width: 760,
+          height: MediaQuery.sizeOf(dialogContext).height * .65,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.t('agenda.summary.actualDates')),
+            const SizedBox(height: 12),
+            Text(_formatarMoeda(tipo == 'receber' ? _totalRecebidoConfirmado : _totalPagoConfirmado),
+              style: Theme.of(dialogContext).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            Expanded(child: itens.isEmpty
+              ? Center(child: Text(context.t('agenda.summary.noEntries')))
+              : ListView(children: itens.map((item) =>
+                  _cardLancamento(Theme.of(dialogContext), item, exibirValorConfirmado: true)).toList())),
+          ]),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext),
+          child: Text(context.t('common.close')))],
+      ),
+    );
+  }
+
   Widget _buildResumo(ThemeData theme) {
     final cards = <Map<String, dynamic>>[
       <String, dynamic>{
@@ -2090,22 +2119,29 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         'icone': Icons.north_east_rounded,
       },
       <String, dynamic>{
-        'titulo': 'Saldo previsto',
+        'titulo': context.t('agenda.summary.remaining'),
+        'valor': _saldoARealizar,
+        'icone': Icons.pending_actions_outlined,
+      },
+      <String, dynamic>{
+        'titulo': context.t('agenda.mobile.summary.forecastBalance'),
         'valor': _saldoPrevisto,
         'icone': Icons.query_stats_rounded,
       },
       <String, dynamic>{
-        'titulo': 'Recebido confirmado',
+        'titulo': context.t('agenda.mobile.summary.received'),
+        'tipoConfirmado': 'receber',
         'valor': _totalRecebidoConfirmado,
         'icone': Icons.verified_rounded,
       },
       <String, dynamic>{
-        'titulo': 'Pago confirmado',
+        'titulo': context.t('agenda.mobile.summary.paid'),
+        'tipoConfirmado': 'pagar',
         'valor': _totalPagoConfirmado,
         'icone': Icons.task_alt_rounded,
       },
       <String, dynamic>{
-        'titulo': 'Saldo confirmado',
+        'titulo': context.t('agenda.mobile.summary.confirmedBalance'),
         'valor': _saldoConfirmado,
         'icone': Icons.account_balance_wallet_outlined,
       },
@@ -2113,7 +2149,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth >= 1500
-            ? (constraints.maxWidth - 5 * SixWebPageShell.sectionSpacing) / 6
+            ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) / 4
             : constraints.maxWidth >= 1000
             ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) / 4
             : (constraints.maxWidth - SixWebPageShell.sectionSpacing) / 2;
@@ -2125,7 +2161,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 (card) =>
                     SizedBox(width: width, child: _resumoCard(theme, card)),
               )
-              .toList(),
+              .toList()..add(SizedBox(
+                width: constraints.maxWidth,
+                child: Text(context.t('agenda.summary.explanation'),
+                  style: theme.textTheme.bodySmall),
+              )),
         );
       },
     );
@@ -2142,9 +2182,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final valor = _toDouble(card['valor']);
     final titulo = card['titulo'] as String;
     final Color accent =
-        titulo.contains('receber') || titulo.contains('Recebido')
+        card['tipoConfirmado'] == 'receber' || card['icone'] == Icons.south_west_rounded
         ? tokens.financialPositive
-        : titulo.contains('pagar') || titulo.contains('Pago')
+        : card['tipoConfirmado'] == 'pagar' || card['icone'] == Icons.north_east_rounded
         ? tokens.financialNegative
         : tokens.info;
     return Card(
@@ -2176,6 +2216,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (card['tipoConfirmado'] != null)
+                    TextButton.icon(
+                      onPressed: () => _mostrarComposicaoConfirmada(card['tipoConfirmado'] as String),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 16),
+                      label: Text(context.t('agenda.summary.viewEntries')),
+                    ),
                   const SizedBox(height: 4),
                   Text(
                     _formatarMoeda(valor),
@@ -2390,7 +2436,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           Text('Saídas em aberto: ${_formatarMoeda(_totalPagarPrevisto)}'),
           const SizedBox(height: 8),
           Text(
-            'Saldo previsto: ${_formatarMoeda(_saldoPrevisto)}',
+            '${context.t('agenda.mobile.summary.forecastBalance')}: ${_formatarMoeda(_saldoPrevisto)}',
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
         ],

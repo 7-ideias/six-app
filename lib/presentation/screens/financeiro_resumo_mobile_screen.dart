@@ -234,8 +234,9 @@ class _FinanceiroResumoMobileScreenState
           : const Duration(milliseconds: 350),
       builder: (_, n, __) => Text(
         moeda ? regional.formatCurrency(n) : n.round().toString(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        maxLines: moeda ? null : 1,
+        softWrap: true,
+        overflow: TextOverflow.visible,
         style: TextStyle(
           fontSize: 25,
           fontWeight: FontWeight.w800,
@@ -291,9 +292,7 @@ class _FinanceiroResumoMobileScreenState
             Text(
               context
                   .t(
-                    receber
-                        ? 'finance.mobile.receipts'
-                        : 'finance.mobile.payments',
+                    'finance.mobile.${receber ? 'receipts' : 'payments'}.${count == 0 ? 'zero' : count == 1 ? 'one' : 'many'}',
                   )
                   .replaceAll('{count}', '$count'),
               style: TextStyle(color: c.mutedText),
@@ -337,28 +336,9 @@ class _FinanceiroResumoMobileScreenState
           ],
         ),
         const Divider(height: 28),
-        LayoutBuilder(
-          builder: (_, constraints) {
-            if (constraints.maxWidth < 300 ||
-                MediaQuery.textScalerOf(context).scale(1) > 1.3) {
-              return Column(
-                children: [
-                  _valor(true, data),
-                  const Divider(),
-                  _valor(false, data),
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _valor(true, data)),
-                const SizedBox(width: 16),
-                Expanded(child: _valor(false, data)),
-              ],
-            );
-          },
-        ),
+        _valor(true, data),
+        const Divider(height: 24),
+        _valor(false, data),
       ],
     ),
   );
@@ -475,6 +455,10 @@ class _FinanceiroResumoMobileScreenState
                             context.t('space.$espaco'),
                             textAlign: TextAlign.center,
                           ),
+                        ),
+                        labelStyle: TextStyle(
+                          color: _espaco == espaco ? c.accent : c.titleText,
+                          fontWeight: _espaco == espaco ? FontWeight.w700 : FontWeight.w500,
                         ),
                         selected: _espaco == espaco,
                         showCheckmark: false,
