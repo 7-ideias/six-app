@@ -1,3 +1,5 @@
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:sixpos/data/models/fatura_cartao_model.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import '../../data/services/fatura_cartao_api_client_test.dart' show invoiceJson;
+class RegionalClient extends Fake implements RegionalizacaoApiClient {}
 class Api extends CartaoCreditoApiClient {
  Api():super(espaco:'PESSOAL');
  bool falha=false,escrita=true;
@@ -24,7 +27,7 @@ void main(){
     tester.view.physicalSize=Size(width,1400);tester.view.devicePixelRatio=1;
     addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
     final api=Api();addTearDown(api.dispose);
-    await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(),child:MaterialApp(
+    await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(regionalizacaoService:RegionalizacaoService(apiClient:RegionalClient())),child:MaterialApp(
      locale:Locale(lang),supportedLocales:const[Locale('pt'),Locale('en'),Locale('es')],
      localizationsDelegates:GlobalMaterialLocalizations.delegates,
      home:FaturasCartaoWeb(espaco:'PESSOAL',client:api))));
