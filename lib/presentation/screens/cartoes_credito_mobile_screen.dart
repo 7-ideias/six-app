@@ -29,11 +29,10 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
     await Navigator.push(context,MaterialPageRoute<bool>(builder:(_)=>CartaoCreditoMobileEditor(client:api,card:card)));
     if(mounted)await load();
   }
-  @override Widget build(BuildContext context)=>Scaffold(
-    backgroundColor:context.sixMobileColors.background,
-    appBar:AppBar(title:Text(context.t('cards.title')),actions:[IconButton(onPressed:loading?null:load,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))]),
+  @override Widget build(BuildContext context)=>CartaoMobilePage(
+    title:context.t('cards.title'),actions:[IconButton(onPressed:loading?null:load,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))],
     floatingActionButton:!loading&&error==null&&data?.podeEditar==true?FloatingActionButton.extended(onPressed:()=>edit(),icon:const Icon(Icons.add),label:Text(context.t('cards.new'))):null,
-    body:RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),physics:const AlwaysScrollableScrollPhysics(),children:[
+    bodyBuilder:(context,scroll,topInset)=>RefreshIndicator(onRefresh:load,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,100),physics:const AlwaysScrollableScrollPhysics(),children:[
       Text(context.t('space.${widget.espaco}'),style:Theme.of(context).textTheme.titleMedium),const SizedBox(height:12),
       if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.title')),
       if(error!=null)CartaoMobileError(error!,retry:loading?null:load,stale:data!=null),
@@ -87,7 +86,7 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
     finally{if(mounted)setState(()=>saving=false);}
   }
   Widget field(TextEditingController c,String label,{bool day=false})=>Padding(padding:const EdgeInsets.only(bottom:16),child:TextFormField(controller:c,enabled:!locked&&!conflict,decoration:InputDecoration(labelText:context.t(label)),keyboardType:day?TextInputType.number:TextInputType.text,maxLength:day?2:120,validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
-  @override Widget build(BuildContext context)=>PopScope(canPop:!saving,child:Scaffold(appBar:AppBar(title:Text(context.t(widget.card==null?'cards.new':'cards.edit')),automaticallyImplyLeading:!saving),body:SafeArea(child:Form(key:form,child:ListView(padding:const EdgeInsets.all(20),children:[
+  @override Widget build(BuildContext context)=>PopScope(canPop:!saving,child:CartaoMobilePage(title:context.t(widget.card==null?'cards.new':'cards.edit'),canPop:!saving,bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:Form(key:form,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
     field(name,'space.name'),field(bank,'cards.institution'),field(closing,'cards.closing',day:true),field(due,'cards.due',day:true),Text(context.t('cards.daysHint')),const SizedBox(height:16),
     if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.account')),
     CartaoMobileField(label:'cards.account',value:accounts.where((a)=>a.id==account).map((a)=>a.nome).firstOrNull??widget.card?.contaPrevistaNome??'',onTap:locked||loading||error!=null||conflict?null:()async{

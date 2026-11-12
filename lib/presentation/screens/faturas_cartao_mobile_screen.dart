@@ -74,7 +74,7 @@ class _FaturasState extends State<FaturasCartaoMobileScreen> {
    if(!f.paga&&f.total>0&&permission)FilledButton.icon(onPressed:enabled&&!f.compras.any((c)=>c.prevista)?()=>pay(f):null,icon:const Icon(Icons.check),label:Text(context.t('invoices.pay'))),
   ])));
  }
- @override Widget build(BuildContext context)=>PopScope(canPop:!acting,child:Scaffold(appBar:AppBar(title:Text(context.t('invoices.title')),automaticallyImplyLeading:!acting,actions:[IconButton(onPressed:loading||acting?null:load,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))]),body:SafeArea(child:RefreshIndicator(onRefresh:()async{if(!loading&&!acting)await load();},child:ListView(physics:const AlwaysScrollableScrollPhysics(),padding:const EdgeInsets.all(16),children:[
+ @override Widget build(BuildContext context)=>PopScope(canPop:!acting,child:CartaoMobilePage(title:context.t('invoices.title'),canPop:!acting,actions:[IconButton(onPressed:loading||acting?null:load,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))],bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:RefreshIndicator(onRefresh:()async{if(!loading&&!acting)await load();},child:ListView(controller:scroll,physics:const AlwaysScrollableScrollPhysics(),padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
   Text(context.t('space.${widget.espaco}')),const SizedBox(height:12),
   if(widget.faturaId==null&&cards.isNotEmpty)CartaoMobileField(label:'cards.title',value:cards.where((c)=>c.id==card).map((c)=>c.nome).firstOrNull??'',onTap:loading||acting?null:()async{final v=await escolherCartaoOpcao(context,'cards.title',{for(final c in cards)c.id:c.nome},card);if(v!=null&&mounted){setState((){card=v;invoices=[];});load();}}),
   if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.title')),
@@ -109,7 +109,7 @@ class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
   catch(e){if(mounted)setState((){error=erroCartaoMobile(e);if(rejeicaoCartaoDefinitiva(e)){attempt=null;conflict=e is CartaoCreditoApiException&&(e.statusCode==409||acessoCartaoNegado(e));}});}
   finally{if(mounted)setState(()=>busy=false);}
  }
- @override Widget build(BuildContext context){final r=context.watch<LocaleSettingsProvider>();return PopScope(canPop:!busy,child:Scaffold(appBar:AppBar(title:Text(context.t('invoices.pay')),automaticallyImplyLeading:!busy),body:SafeArea(child:ListView(padding:const EdgeInsets.all(20),children:[
+ @override Widget build(BuildContext context){final r=context.watch<LocaleSettingsProvider>();return PopScope(canPop:!busy,child:CartaoMobilePage(title:context.t('invoices.pay'),canPop:!busy,bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
   Text(widget.fatura.nomeCartao,style:Theme.of(context).textTheme.titleLarge),Text(r.formatCurrency(widget.fatura.total),style:Theme.of(context).textTheme.headlineMedium),const SizedBox(height:16),Text(context.t('invoices.payHint')),const SizedBox(height:20),
   if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.pay')),
   if(!loading)...[

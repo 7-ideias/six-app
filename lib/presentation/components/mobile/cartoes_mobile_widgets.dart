@@ -1,9 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/presentation/components/date_selector_mobile_bottom_sheet.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+
+/// The same mobile header and scroll treatment used by the financial agenda.
+class CartaoMobilePage extends StatelessWidget {
+  const CartaoMobilePage({super.key, required this.title, required this.bodyBuilder,
+    this.actions = const [], this.canPop = true, this.floatingActionButton});
+  final String title;
+  final SixMobileBodyBuilder bodyBuilder;
+  final List<Widget> actions;
+  final bool canPop;
+  final Widget? floatingActionButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.sixMobileColors;
+    return SixMobilePageShell(
+      title: title,
+      backgroundColor: colors.background,
+      primaryColor: colors.primary,
+      secondaryColor: colors.secondary,
+      accentColor: colors.accent,
+      enableAnimatedBackground: false,
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        icon: const Icon(Icons.arrow_back),
+        onPressed: canPop ? () => Navigator.of(context).maybePop() : null,
+      ),
+      actions: actions,
+      bodyBuilder: (context, scroll, inset) => Stack(children: [
+        Positioned.fill(child: bodyBuilder(context, scroll, inset)),
+        if (floatingActionButton != null)
+          Positioned(right: 16, bottom: 16, child: SafeArea(top: false,
+            child: floatingActionButton!)),
+      ]),
+    );
+  }
+}
 
 String erroCartaoMobile(Object e) => e is CartaoCreditoApiException ? e.messageKey : 'cards.error.connection';
 bool acessoCartaoNegado(Object e) => e is CartaoCreditoApiException && (e.statusCode == 401 || e.statusCode == 403);
@@ -21,10 +59,16 @@ Future<DateTime?> escolherDataCartao(BuildContext context, String title, DateTim
 class CartaoMobileField extends StatelessWidget {
   const CartaoMobileField({super.key, required this.label, required this.value, this.onTap, this.icon = Icons.expand_more});
   final String label, value; final VoidCallback? onTap; final IconData icon;
-  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Material(
-    color: context.sixMobileColors.surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: context.sixMobileColors.border)),
-    child: ListTile(onTap: onTap, title: Text(context.t(label), style: Theme.of(context).textTheme.labelMedium), subtitle: Text(value.isEmpty ? context.t('space.none') : value), trailing: Icon(icon)),
-  ));
+  @override Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: SixMobileSelectionField(
+      label: context.t(label),
+      value: value.isEmpty ? context.t('space.none') : value,
+      icon: icon == Icons.expand_more ? Icons.tune_rounded : icon,
+      enabled: onTap != null,
+      onTap: onTap ?? () {},
+    ),
+  );
 }
 class CartaoMobileError extends StatelessWidget {
   const CartaoMobileError(this.message, {super.key, this.retry, this.stale = false});
@@ -39,6 +83,7 @@ class CartaoMobileError extends StatelessWidget {
 /// A mobile confirmation keeps its command closure for safe retries after timeout.
 Future<bool?> confirmarCartaoMobile(BuildContext context, {required String prefix, required String summary, required Future<void> Function() action}) => showModalBottomSheet<bool>(
   context: context, isScrollControlled: true, useSafeArea: true, isDismissible: false, enableDrag: false,
+  backgroundColor: Colors.transparent, barrierColor: Colors.black.withValues(alpha: 0.44),
   builder: (_) => _Confirmacao(prefix: prefix, summary: summary, action: action),
 );
 class _Confirmacao extends StatefulWidget {
@@ -54,10 +99,50 @@ class _ConfirmacaoState extends State<_Confirmacao> {
     catch(e){if(mounted)setState((){error=erroCartaoMobile(e);conflict=rejeicaoCartaoDefinitiva(e);});}
     finally {if(mounted)setState(()=>busy=false);}
   }
-  @override Widget build(BuildContext context) => PopScope(canPop: !busy, child: SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min,crossAxisAlignment: CrossAxisAlignment.stretch,children:[
-    Text(context.t('${widget.prefix}.title'),style:Theme.of(context).textTheme.titleLarge),const SizedBox(height:16),Text(widget.summary),const SizedBox(height:16),Text(context.t('${widget.prefix}.impact')),
-    if(error!=null)CartaoMobileError(error!),const SizedBox(height:20),
-    FilledButton(onPressed:busy||conflict?null:run,child:Text(context.t(busy?'${widget.prefix}.processing':error!=null?'space.retry':'${widget.prefix}.confirm'))),
-    TextButton(onPressed:busy?null:()=>Navigator.pop(context,false),child:Text(context.t('common.close'))),
-  ]))));
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.sixMobileColors;
+    return PopScope(canPop: !busy, child: SafeArea(top: false,
+      child: Padding(padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        child: Material(color: colors.surface, borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(18, 10, 18, 20 + MediaQuery.viewInsetsOf(context).bottom),
+            child: Column(mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Center(child: Container(width: 42, height: 4,
+                  decoration: BoxDecoration(color: colors.strongBorder,
+                    borderRadius: BorderRadius.circular(999)))),
+                const SizedBox(height: 16),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: Text(context.t('${widget.prefix}.title'),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: colors.titleText, fontWeight: FontWeight.w900))),
+                  IconButton(tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                    onPressed: busy ? null : () => Navigator.pop(context, false),
+                    icon: const Icon(Icons.close_rounded)),
+                ]),
+                const SizedBox(height: 12),
+                Container(padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: colors.softSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.border)),
+                  child: Text(widget.summary, style: TextStyle(color: colors.titleText))),
+                const SizedBox(height: 16),
+                Text(context.t('${widget.prefix}.impact'),
+                  style: TextStyle(color: colors.mutedText, height: 1.4)),
+                if(error != null) CartaoMobileError(error!),
+                const SizedBox(height: 20),
+                SizedBox(height: 52, child: FilledButton(
+                  onPressed: busy || conflict ? null : run,
+                  child: Text(context.t(busy ? '${widget.prefix}.processing'
+                    : error != null ? 'space.retry' : '${widget.prefix}.confirm')))),
+                TextButton(onPressed: busy ? null : () => Navigator.pop(context, false),
+                  child: Text(context.t('common.close'))),
+              ]),
+          ),
+        ),
+      ),
+    ));
+  }
 }

@@ -86,8 +86,8 @@ class _CompraState extends State<CompraCartaoMobileScreen> {
       if(controller==count){final n=int.tryParse(v??'');return n==null||n<2||n>48?context.t('invoices.installments.invalid'):null;}
       return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
   @override Widget build(BuildContext context){final r=context.watch<LocaleSettingsProvider>();final selected=cards.where((c)=>c.id==card).firstOrNull;
-    return PopScope(canPop:!busy,child:Scaffold(appBar:AppBar(title:Text(context.t(widget.compra==null?'invoices.newPurchase':'invoices.editPurchase')),automaticallyImplyLeading:!busy),
-      body:SafeArea(child:ListView(padding:const EdgeInsets.all(20),children:[
+    return PopScope(canPop:!busy,child:CartaoMobilePage(title:context.t(widget.compra==null?'invoices.newPurchase':'invoices.editPurchase'),canPop:!busy,
+      bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
         Text(context.t('space.${widget.espaco}')),const SizedBox(height:12),
         if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.title')),
         if(error!=null)CartaoMobileError(error!,retry:!locked&&!conflict&&!review?load:null),
