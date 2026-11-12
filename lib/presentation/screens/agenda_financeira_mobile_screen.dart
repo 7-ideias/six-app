@@ -564,6 +564,7 @@ class _AgendaFinanceiraMobileScreenState
       _somar(_itensConfirmadosFiltrados, 'receber', 'valorConfirmado');
   double get _totalPagoConfirmado =>
       _somar(_itensConfirmadosFiltrados, 'pagar', 'valorConfirmado');
+  double get _saldoARealizar => _totalReceberPrevisto - _totalPagarPrevisto;
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) -
       (_totalPagoConfirmado + _totalPagarPrevisto);
@@ -2343,6 +2344,45 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
+  Future<void> _mostrarComposicaoConfirmada(String tipo) async {
+    final itens = _itensConfirmadosFiltrados.where((i) => i['tipo'] == tipo).toList();
+    await showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: _surfaceColor,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * .75,
+        child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+          Row(children: [
+            Expanded(child: Text(context.t(tipo == 'receber'
+              ? 'agenda.mobile.summary.received' : 'agenda.mobile.summary.paid'),
+              style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w700))),
+            IconButton(tooltip: context.t('common.close'),
+              onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close)),
+          ]),
+          Text(context.t('agenda.summary.actualDates'),
+            style: TextStyle(color: _mutedTextColor)),
+          const SizedBox(height: 12),
+          Text(_formatarMoeda(tipo == 'receber' ? _totalRecebidoConfirmado : _totalPagoConfirmado),
+            style: TextStyle(color: _titleTextColor, fontSize: 24, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          Expanded(child: itens.isEmpty
+            ? Center(child: Text(context.t('agenda.summary.noEntries')))
+            : ListView(children: itens.map((item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(item['descricao']?.toString() ?? ''),
+                subtitle: Text('${item['data'] ?? ''}
+${_formatarMoeda(_toDouble(item['valorConfirmado']))}'),
+                isThreeLine: true, trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _abrirAcoesLancamento(item);
+                },
+              )).toList())),
+        ])),
+      ),
+    );
+  }
+
   Widget _buildResumo() {
     final items = <_ResumoAgendaCardData>[
       _ResumoAgendaCardData(
@@ -2355,7 +2395,13 @@ class _AgendaFinanceiraMobileScreenState
         context.t('agenda.mobile.summary.openPayable'),
         _totalPagarPrevisto,
         Icons.north_east_rounded,
-        Color.lerp(Colors.greenAccent, _colors.titleText, 0.24)!,
+        _colors.error,
+      ),
+      _ResumoAgendaCardData(
+        context.t('agenda.summary.remaining'),
+        _saldoARealizar,
+        Icons.pending_actions_outlined,
+        _accentColor,
       ),
       _ResumoAgendaCardData(
         context.t('agenda.mobile.summary.forecastBalance'),
@@ -2368,12 +2414,14 @@ class _AgendaFinanceiraMobileScreenState
         _totalRecebidoConfirmado,
         Icons.verified_rounded,
         Color.lerp(Colors.cyanAccent, _colors.titleText, 0.22)!,
+        onTap: () => _mostrarComposicaoConfirmada('receber'),
       ),
       _ResumoAgendaCardData(
         context.t('agenda.mobile.summary.paid'),
         _totalPagoConfirmado,
         Icons.task_alt_rounded,
         Color.lerp(Colors.amberAccent, _colors.titleText, 0.18)!,
+        onTap: () => _mostrarComposicaoConfirmada('pagar'),
       ),
       _ResumoAgendaCardData(
         context.t('agenda.mobile.summary.confirmedBalance'),
@@ -2397,6 +2445,11 @@ class _AgendaFinanceiraMobileScreenState
             child: Column(
               children: [
                 Divider(color: _borderColor, height: 20),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(context.t('agenda.summary.explanation'),
+                    style: TextStyle(color: _mutedTextColor, fontSize: 12)),
+                ),
                 ...items
                     .take(items.length - 1)
                     .map(
@@ -2539,57 +2592,23 @@ class _AgendaFinanceiraMobileScreenState
       padding: EdgeInsets.only(bottom: 13),
       child: Column(
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: item.color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 8),
-              Icon(item.icon, color: item.color, size: 16),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey<String>(
-                    '${item.title}-${item.value.toStringAsFixed(2)}',
-                  ),
-                  tween: Tween<double>(begin: 0, end: item.value),
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 650),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      _formatarMoeda(value),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Row(children: [
+            Icon(item.icon, color: item.color, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(item.title,
+              style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w700))),
+          ]),
+          const SizedBox(height: 6),
+          Align(alignment: Alignment.centerLeft, child: Text(
+            _formatarMoeda(item.value),
+            style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, fontSize: 18))),
+          if (item.onTap != null)
+            Align(alignment: Alignment.centerLeft, child: OutlinedButton.icon(
+              onPressed: _executandoAcao ? null : item.onTap,
+              icon: const Icon(Icons.receipt_long_outlined, size: 16),
+              label: Text(context.t('agenda.summary.viewEntries')),
+              style: _outlinedCtaStyle(),
+            )),
           SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
@@ -3960,7 +3979,8 @@ class _AgendaMobileFiltro {
 }
 
 class _ResumoAgendaCardData {
-  const _ResumoAgendaCardData(this.title, this.value, this.icon, this.color);
+  const _ResumoAgendaCardData(this.title, this.value, this.icon, this.color, {this.onTap});
+  final VoidCallback? onTap;
   final String title;
   final double value;
   final IconData icon;
