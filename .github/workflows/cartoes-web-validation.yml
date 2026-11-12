@@ -3,6 +3,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'lib/sub_painel_lancamento_agenda_financeira_web.dart'
       - 'lib/data/models/cartao_credito_model.dart'
       - '**/*fatura_cartao*'
       - '**/*faturas_cartao*'
@@ -33,9 +34,9 @@ jobs:
       - name: Format invoice files
         run: dart format lib/data/models/fatura_cartao_model.dart lib/presentation/screens/faturas_cartao_web.dart lib/presentation/components/web/compra_cartao_web_editor.dart lib/presentation/components/web/pagar_fatura_cartao_web.dart test/data/services/fatura_cartao_api_client_test.dart test/presentation/screens/faturas_cartao_web_test.dart
       - name: Analyze card registration
-        run: dart analyze lib/data/models/fatura_cartao_model.dart lib/presentation/screens/faturas_cartao_web.dart lib/presentation/components/web/compra_cartao_web_editor.dart lib/presentation/components/web/pagar_fatura_cartao_web.dart test/data/services/fatura_cartao_api_client_test.dart test/presentation/screens/faturas_cartao_web_test.dart lib/presentation/components/web/financeiro_configuracao_web_dialog.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart lib/data/models/cartao_credito_model.dart lib/data/services/cartoes/cartao_credito_api_client.dart lib/presentation/screens/cartoes_credito_web.dart lib/presentation/screens/configuracoes_espaco_web.dart lib/presentation/components/web/cartao_credito_web_editor.dart lib/core/utils/uuid_v4.dart lib/providers/agenda_email_reenvio_controller.dart test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
+        run: dart analyze lib/sub_painel_lancamento_agenda_financeira_web.dart lib/data/models/fatura_cartao_model.dart lib/presentation/screens/faturas_cartao_web.dart lib/presentation/components/web/compra_cartao_web_editor.dart lib/presentation/components/web/pagar_fatura_cartao_web.dart test/data/services/fatura_cartao_api_client_test.dart test/presentation/screens/faturas_cartao_web_test.dart lib/presentation/components/web/financeiro_configuracao_web_dialog.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart lib/data/models/cartao_credito_model.dart lib/data/services/cartoes/cartao_credito_api_client.dart lib/presentation/screens/cartoes_credito_web.dart lib/presentation/screens/configuracoes_espaco_web.dart lib/presentation/components/web/cartao_credito_web_editor.dart lib/core/utils/uuid_v4.dart lib/providers/agenda_email_reenvio_controller.dart test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
       - name: Validate errors, retries and responsive form
-        run: flutter test test/data/services/fatura_cartao_api_client_test.dart test/presentation/screens/faturas_cartao_web_test.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
+        run: flutter test test/presentation/screens/compra_cartao_jornada_test.dart test/data/services/fatura_cartao_api_client_test.dart test/presentation/screens/faturas_cartao_web_test.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
       - name: Build Web
         run: flutter build web --release
 

@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/components/web/compra_cartao_web_editor.dart';
+import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
 import 'package:sixpos/presentation/components/competencia_mes_ano_picker.dart';
 import 'package:sixpos/data/models/agenda_financeira_origem.dart';
@@ -181,6 +183,21 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
+  bool _noCartao=false,_cartaoVisitado=false,_cartaoPendente=false;
+  bool get _compraCartao => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&_noCartao;
+  final _compraKey=GlobalKey<CompraCartaoWebEditorState>();
+  CartaoCreditoApiClient? _cartaoClient;
+  Widget _paymentDestination()=>Padding(padding:const EdgeInsets.only(bottom:20),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+    Text(context.t('invoices.paymentDestination'),style:Theme.of(context).textTheme.titleMedium),
+    const SizedBox(height:12),SegmentedButton<bool>(
+      key:const ValueKey('journey-payment-destination'),
+      segments:[ButtonSegment(value:false,icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.directPayment'))),
+        ButtonSegment(value:true,icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('cards.title')))],
+      selected:{_noCartao},onSelectionChanged:_cartaoPendente?null:(v)=>setState((){
+        _noCartao=v.first;_alterado=true;
+        if(_noCartao){_cartaoVisitado=true;_cartaoClient??=CartaoCreditoApiClient(espaco:_service.espacoFinanceiro);_compraKey.currentState?.syncCategory();}
+      })),
+  ]));
   String? _erroJornada;
   int _etapa = 0;
   bool _tipoEscolhido = false;
@@ -365,6 +382,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _descricaoController.dispose();
     _contatoController.dispose();
     _idContatoController.dispose();
+    _cartaoClient?.dispose();
     _categoriaController.dispose();
     _valorController.dispose();
     _valorConfirmadoController.dispose();
@@ -480,6 +498,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
       return;
     setState(() {
+      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_noCartao=false;
       _service = _service.paraEspaco(espaco);
       _contaFinanceiraId = null;
       _centroCustoId = null;
@@ -791,6 +810,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Future<void> _salvar() async {
     if (_isLoading || _ir.carregando) return;
+    if(_compraCartao){await _compraKey.currentState?.submit();return;}
     if (!widget.modoEdicao) setState(() => _erroJornada = null);
     if (!_formKey.currentState!.validate()) {
       if (!widget.modoEdicao) _irParaEtapa(2);
@@ -1742,6 +1762,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _irParaEtapa(int etapa) {
+    if(_cartaoPendente||_isLoading)return;
     FocusScope.of(context).unfocus();
     setState(() {
       _etapa = etapa;
@@ -1755,7 +1776,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || _ir.carregando) return;
     if (_etapa == 0 && !_tipoEscolhido) return;
     if (_etapa == 1 && !_espacoEscolhido) return;
-    if (_etapa == 2 && !(_formKey.currentState?.validate() ?? false)) return;
+    if (_etapa == 2) {
+      if(_compraCartao){if(!(_compraKey.currentState?.validate()??false))return;}
+      else if(!(_formKey.currentState?.validate()??false))return;
+    }
     _irParaEtapa(_etapa + 1);
   }
 
@@ -1868,7 +1892,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final duration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 320);
-    final labels = ['type', 'space', 'details', 'recurrence'];
+    final labels = ['type', 'space', 'details', _compraCartao?'cardReview':'recurrence'];
     final icons = [
       Icons.swap_vert_rounded,
       Icons.account_balance_wallet_outlined,
@@ -2081,7 +2105,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       child: Text(_label('cancel')),
     );
     final back = OutlinedButton.icon(
-      onPressed: blocked ? null : () => _irParaEtapa(_etapa - 1),
+      onPressed: blocked || _cartaoPendente ? null : () => _irParaEtapa(_etapa - 1),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(112, 48),
         shape: buttonShape,
@@ -2112,7 +2136,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             : _label(
                 _isLoading
                     ? 'saving'
-                    : _registrarPagamento
+                    : _registrarPagamento && !_compraCartao
                     ? (_tipoSelecionado == 'Receber'
                           ? 'saveReceive'
                           : 'saveContinue')
@@ -2227,9 +2251,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
       'typeTitle',
       'spaceTitle',
       'detailsTitle',
-      'recurrenceTitle',
+      _compraCartao?'cardReviewTitle':'recurrenceTitle',
     ];
-    final hints = ['typeHint', 'spaceHint', 'detailsHint', 'recurrenceHint'];
+    final hints = ['typeHint', 'spaceHint', 'detailsHint', _compraCartao?'cardReviewHint':'recurrenceHint'];
     return PopScope(
       canPop: !_isLoading && !_ir.carregando && !_alterado,
       onPopInvokedWithResult: (didPop, result) {
@@ -2241,7 +2265,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           if (_isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: AbsorbPointer(
-              absorbing: _isLoading,
+              absorbing: _isLoading || _cartaoPendente,
               child: SingleChildScrollView(
                 controller: _journeyScroll,
                 padding: const EdgeInsets.all(24),
@@ -2368,20 +2392,22 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             _notice(_journey('spaceResetHint')),
                           ],
                         ],
-                        // Keep controllers, validators and optional fields alive when returning.
+                        if(_etapa==2&&_tipoSelecionado=='Pagar')_paymentDestination(),
                         if (_detalhesVisitados)
-                          Offstage(
-                            offstage: _etapa != 2,
-                            child: ExcludeFocus(
-                              excluding: _etapa != 2,
-                              child: Form(
-                                key: _formKey,
-                                onChanged: () => _alterado = true,
-                                child: _formContent(),
-                              ),
-                            ),
-                          ),
-                        if (_etapa == 3) _journeyRecurrence(),
+                          Offstage(offstage:_etapa!=2||_compraCartao,
+                            child:ExcludeFocus(excluding:_etapa!=2||_compraCartao,
+                              child:Form(key:_formKey,onChanged:()=>_alterado=true,child:_formContent()))),
+                        if(_cartaoVisitado&&_cartaoClient!=null)
+                          Offstage(offstage:_etapa!=2||!_compraCartao,
+                            child:ExcludeFocus(excluding:_etapa!=2||!_compraCartao,
+                              child:CompraCartaoWebEditor(key:_compraKey,client:_cartaoClient!,embedded:true,
+                                descricaoController:_descricaoController,valorController:_valorController,categoriaController:_categoriaController,
+                                onBusy:(v){if(mounted)setState(()=>_isLoading=v);},
+                                onLocked:(v){if(mounted)setState(()=>_cartaoPendente=v);},
+                                onError:(v){if(mounted)setState(()=>_erroJornada=v);},
+                                onSaved:(f)=>Navigator.of(context).pop(<String,dynamic>{'espacoFinanceiro':_service.espacoFinanceiro,'faturaCartaoId':f.id}),
+                              ))),
+                        if (_etapa == 3) _compraCartao?_panel(_compraKey.currentState?.review()??const SizedBox.shrink()):_journeyRecurrence(),
                       ],
                     ),
                   ),
@@ -2448,7 +2474,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
               _label(
                 _isLoading
                     ? 'saving'
-                    : _registrarPagamento
+                    : _registrarPagamento && !_compraCartao
                     ? (_tipoSelecionado == 'Receber'
                           ? 'saveReceive'
                           : 'saveContinue')
@@ -2473,7 +2499,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           if (_isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: AbsorbPointer(
-              absorbing: _isLoading,
+              absorbing: _isLoading || _cartaoPendente,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -2779,3 +2805,4 @@ String _agendaOptionLabel(BuildContext context, String value) {
   final key = keys[value];
   return key == null ? value : context.t('agenda.form.option.$key');
 }
+

@@ -1661,22 +1661,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return codigo;
   }
 
-  Future<void> _abrirCartoes({String? faturaId, bool novaCompra = false}) async {
-    await abrirFaturasCartaoWeb(context,espaco:_service.espacoFinanceiro,faturaId:faturaId,novaCompra:novaCompra);
+  Future<void> _abrirCartoes({String? faturaId}) async {
+    await abrirFaturasCartaoWeb(context,espaco:_service.espacoFinanceiro,faturaId:faturaId);
     if(mounted) await _consultar(mostrarFeedback:true);
   }
 
   Future<void> _novoLancamento() async {
-    final cartao = await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
-      title:Text(context.t('agenda.newEntry')),
-      content:ConstrainedBox(constraints:const BoxConstraints(maxWidth:480),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-        OutlinedButton.icon(onPressed:()=>Navigator.of(ctx).pop(false),icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.directEntry'))),
-        const SizedBox(height:12),
-        FilledButton.icon(onPressed:()=>Navigator.of(ctx).pop(true),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.newPurchase'))),
-      ])),actions:[TextButton(onPressed:()=>Navigator.of(ctx).pop(),child:Text(context.t('common.close')))]));
-    if(!mounted || cartao==null)return;
-    if(cartao){await _abrirCartoes(novaCompra:true);return;}
-
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
       service: _service,

@@ -7,13 +7,11 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
-import 'package:sixpos/presentation/components/web/compra_cartao_web_editor.dart';
 import 'package:sixpos/presentation/components/web/pagar_fatura_cartao_web.dart';
 import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 
 class FaturasCartaoWeb extends StatefulWidget {
- const FaturasCartaoWeb({super.key,required this.espaco,this.cartaoId,this.faturaId,this.client,this.novaCompra=false});
- final bool novaCompra;
+ const FaturasCartaoWeb({super.key,required this.espaco,this.cartaoId,this.faturaId,this.client});
  final String espaco;
  final String? cartaoId,faturaId;
  final CartaoCreditoApiClient? client;
@@ -24,7 +22,6 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
  List<CartaoCredito> _cartoes=[];
  List<FaturaCartao> _faturas=[];
  String? _cartao,_erro;
- bool _abriuCompra=false;
  bool _loading=true,_canEdit=false,_acting=false;
  @override void initState(){super.initState();_cartao=widget.cartaoId;_load();}
  @override void dispose(){if(widget.client==null)_client.dispose();super.dispose();}
@@ -40,22 +37,10 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
    }
    if(!mounted)return;
    setState((){_cartoes=cards.cartoes;_canEdit=cards.podeEditar;_faturas=items;});
-   if(widget.novaCompra&&!_abriuCompra&&_canEdit&&_cartoes.any((c)=>c.ativo)){
-    _abriuCompra=true;WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)_comprar();});
-   }
   }catch(e){if(mounted)setState((){
    _erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server';
    if(e is CartaoCreditoApiException&&(e.statusCode==401||e.statusCode==403)){_cartoes=[];_faturas=[];}
   });}finally{if(mounted)setState(()=>_loading=false);}
- }
- Future<void> _comprar()async{
-  setState(()=>_acting=true);
-  final result=await showDialog<FaturaCartao>(context:context,barrierDismissible:false,builder:(_)=>Dialog(
-   child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:620),child:CompraCartaoWebEditor(
-    client:_client,cartoes:_cartoes,cartaoInicial:_cartoes.any((c)=>c.id==_cartao&&c.ativo)?_cartao:null))));
-  if(!mounted)return;
-  setState(()=>_acting=false);
-  if(result!=null){_cartao=result.cartaoId;await _load();}
  }
  Future<void> _pagar(FaturaCartao f)async{
   setState(()=>_acting=true);
@@ -98,8 +83,6 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
   SixWebDashboardHeader(icon:Icons.credit_card_rounded,title:context.t('invoices.title'),
    subtitle:context.t('space.${widget.espaco}'),onBack:()=>Navigator.of(context).maybePop(),actions:[
     OutlinedButton.icon(onPressed:_loading||_acting?null:_load,icon:const Icon(Icons.refresh),label:Text(context.t('cards.refresh'))),
-    if(_canEdit&&_erro==null&&widget.faturaId==null&&_cartoes.any((c)=>c.ativo))FilledButton.icon(
-     onPressed:_loading||_acting?null:_comprar,icon:const Icon(Icons.add),label:Text(context.t('invoices.newPurchase'))),
    ]),
   const SizedBox(height:20),Text(context.t('invoices.listHint')),
   if(widget.faturaId==null&&_cartoes.isNotEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:20),child:DropdownButtonFormField<String>(
@@ -118,6 +101,6 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
  ])));
 }
 
-Future<void> abrirFaturasCartaoWeb(BuildContext context,{required String espaco,String? cartaoId,String? faturaId,bool novaCompra=false}) =>
+Future<void> abrirFaturasCartaoWeb(BuildContext context,{required String espaco,String? cartaoId,String? faturaId}) =>
  showFinanceiroConfiguracaoWebDialog<void>(context:context,title:context.t('invoices.title'),
-  child:FaturasCartaoWeb(espaco:espaco,cartaoId:cartaoId,faturaId:faturaId,novaCompra:novaCompra));
+  child:FaturasCartaoWeb(espaco:espaco,cartaoId:cartaoId,faturaId:faturaId));
