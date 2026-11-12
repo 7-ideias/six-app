@@ -1290,6 +1290,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
     return hoje.difference(vencimento).inDays.clamp(0, 100000);
   }
 
+  Widget _animateDetailBlock({required Widget child}) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return AnimatedSize(duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOutCubic, alignment: Alignment.topCenter, child: child);
+  }
+
   final Map<String, bool> _openSections = {'main': true};
 
   void _openDetailSection(String section) {
@@ -1342,10 +1348,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.secondaryText),
           ])),
         )),
-        AnimatedSize(
-          duration: MediaQuery.of(context).disableAnimations ? Duration.zero : const Duration(milliseconds: 450),
-          curve: Curves.easeInOutCubic,
-          alignment: Alignment.topCenter,
+        _animateDetailBlock(
           child: Offstage(offstage: !open, child: ExcludeFocus(excluding: !open,
             child: Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
