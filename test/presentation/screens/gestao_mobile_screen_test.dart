@@ -363,7 +363,10 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Nenhuma conta em aberto neste período.'),
         200,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(Scrollable),
+        ).first,
       );
       expect(
         find.text('Nenhuma conta em aberto neste período.'),
