@@ -149,7 +149,7 @@ class _SixWebFinancialLaunchDeleteDialogState
   }
 
   String _txt(String key, String fallback) =>
-      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: widget.textPrefix == 'agenda.launchDelete' || !key.startsWith('agenda.launchDelete.') ? fallback : null);
+      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: widget.textPrefix == 'agenda.launchDelete' ? fallback : null);
 
   @override
   Widget build(BuildContext context) {
