@@ -1762,7 +1762,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _irParaEtapa(int etapa) {
-    if(_cartaoPendente||_isLoading)return;
+    if(_cartaoPendente)return;
     FocusScope.of(context).unfocus();
     setState(() {
       _etapa = etapa;

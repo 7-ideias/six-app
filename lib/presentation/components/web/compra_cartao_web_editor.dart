@@ -41,7 +41,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   @override void initState(){super.initState();_cartao=widget.cartaoInicial;_carregar();}
   @override void dispose(){if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}
   Future<void> _carregar() async {
-    setState((){_carregando=true;_erro=null;});
+    setState((){_carregando=true;_erro=null;_previa=null;_permitido=false;});
     try {
       if(widget.cartoes==null){final cards=await widget.client.listar();if(!mounted)return;_cartoes=cards.cartoes;_permitido=cards.podeEditar;}
       else {_cartoes=widget.cartoes!;_permitido=true;}
@@ -138,6 +138,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           icon:const Icon(Icons.calendar_today_outlined),label:Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}')),
         const SizedBox(height:16),DropdownButtonFormField<String>(key:ValueKey(_categoria),initialValue:_categoria,isExpanded:true,
           decoration:InputDecoration(labelText:context.t('invoices.category')),
+          validator:(_)=>widget.categoriaController!=null&&widget.categoriaController!.text.trim().isNotEmpty&&_categoria==null?context.t('invoices.required'):null,
           items:[DropdownMenuItem<String>(value:null,child:Text(context.t('space.none'))),
             ..._categorias.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.nome,overflow:TextOverflow.ellipsis)))],
           onChanged:_bloqueado?null:(v)=>setState((){_categoria=v;widget.categoriaController?.text=v==null?'':_categorias.firstWhere((c)=>c.id==v).nome;})),
