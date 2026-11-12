@@ -317,6 +317,7 @@ void main() {
         await _tap(tester, find.text('Continuar'));
         if (web) await _tap(tester, find.byKey(const Key('journey-company')));
         await _tap(tester, find.text('Continuar'));
+        if (web) await _tap(tester, find.text('Pagamento direto'));
         final accountFinder = web
             ? find.byType(ContaFinanceiraWebField)
             : find.byType(ContaFinanceiraMobileField);
@@ -339,6 +340,7 @@ void main() {
         await _tap(tester, find.widgetWithText(OutlinedButton, 'Voltar'));
         await _tap(tester, find.text('Pessoal').last);
         await _tap(tester, find.text('Continuar'));
+        if (web) await _tap(tester, find.text('Pagamento direto'));
         if (accountFinder.evaluate().isEmpty)
           await tester.scrollUntilVisible(
             accountFinder,
