@@ -1,0 +1,33 @@
+name: Cartoes - cadastro Web
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/data/models/cartao_credito_model.dart'
+      - 'lib/data/services/cartoes/**'
+      - 'lib/presentation/screens/cartoes_credito_web.dart'
+      - 'lib/presentation/screens/configuracoes_espaco_web.dart'
+      - 'lib/presentation/components/web/cartao_credito_web_editor.dart'
+      - 'lib/core/utils/uuid_v4.dart'
+      - 'test/**/cartao*'
+      - '.github/workflows/cartoes-web-validation.yml'
+permissions:
+  contents: read
+jobs:
+  cartoes-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze card registration
+        run: dart analyze lib/data/models/cartao_credito_model.dart lib/data/services/cartoes/cartao_credito_api_client.dart lib/presentation/screens/cartoes_credito_web.dart lib/presentation/screens/configuracoes_espaco_web.dart lib/presentation/components/web/cartao_credito_web_editor.dart lib/core/utils/uuid_v4.dart lib/providers/agenda_email_reenvio_controller.dart test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
+      - name: Validate errors, retries and responsive form
+        run: flutter test test/data/services/cartao_credito_api_client_test.dart test/presentation/screens/cartoes_credito_web_test.dart
+      - name: Build Web
+        run: flutter build web --release

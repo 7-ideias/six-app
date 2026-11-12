@@ -1,3 +1,4 @@
+import 'cartoes_credito_web.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/web/configuracao_financeira_web_editor.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
@@ -95,6 +96,15 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
         spacing: 8,
         runSpacing: 8,
         children: [
+          ActionChip(
+            avatar: const Icon(Icons.credit_card_outlined, size: 18),
+            label: Text(context.t('cards.title')),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CartoesCreditoWeb(espaco: widget.espaco),
+              ),
+            ),
+          ),
           for (final grupo in [
             'CONTAS',
             'MAQUININHAS',
@@ -185,3 +195,4 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
     );
   }
 }
+
