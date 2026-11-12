@@ -10,10 +10,11 @@ import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class CompraCartaoWebEditor extends StatefulWidget {
-  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved});
+  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial});
   final CartaoCreditoApiClient client;
   final List<CartaoCredito>? cartoes;
   final bool embedded;
+  final CompraCartao? compraInicial;
   final TextEditingController? descricaoController,valorController,categoriaController;
   final ValueChanged<bool>? onBusy,onLocked;
   final ValueChanged<String?>? onError;
@@ -37,8 +38,15 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   CompraCartaoRequest? _tentativa;
   bool _carregando=true,_prevendo=false,_salvando=false;
   int _seq=0;
+  bool _preenchido=false;
   bool get _bloqueado=>_salvando||_tentativa!=null;
-  @override void initState(){super.initState();_cartao=widget.cartaoInicial;_carregar();}
+  @override void initState(){super.initState();_cartao=widget.cartaoInicial;
+    if(widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
+    final compra=widget.compraInicial;if(compra!=null){_descricao.text=compra.descricao;_data=compra.dataCompra;_categoria=compra.categoriaId;}
+    _carregar();}
+  @override void didChangeDependencies(){super.didChangeDependencies();
+    if(!_preenchido&&widget.compraInicial!=null){_preenchido=true;_valor.text=widget.compraInicial!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}
+  }
   @override void dispose(){if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}
   Future<void> _carregar() async {
     setState((){_carregando=true;_erro=null;_previa=null;_permitido=false;});
@@ -101,12 +109,12 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     }
     setState((){_salvando=true;_erro=null;});
     widget.onBusy?.call(true);widget.onLocked?.call(true);widget.onError?.call(null);
-    try{final f=await widget.client.comprar(_tentativa!);if(mounted){if(widget.onSaved!=null){widget.onSaved!(f);}else{Navigator.of(context).pop(f);}}}
+    try{final compra=widget.compraInicial;final f=compra==null?await widget.client.comprar(_tentativa!):await widget.client.editarCompra(compra.id,compra.versao,_tentativa!);if(mounted){if(widget.onSaved!=null){widget.onSaved!(f);}else{Navigator.of(context).pop(f);}}}
     catch(e){if(mounted)setState((){
       _erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.server';
       if(e is CartaoCreditoApiException&&e.statusCode!=null&&e.statusCode!>=400&&e.statusCode!<500){
         _tentativa=null;
-        if(e.statusCode==409){_previa=null;_erro='invoices.conflict';}
+        if(e.statusCode==409){_previa=null;_erro=widget.compraInicial==null?'invoices.conflict':'invoices.editConflict';}
       }
     });}finally{if(mounted){setState(()=>_salvando=false);widget.onBusy?.call(false);widget.onLocked?.call(_tentativa!=null);widget.onError?.call(_erro==null?null:'${context.t(_erro!)}${_tentativa==null?'':' ${context.t('invoices.uncertain')}'}');}}
   }
@@ -114,7 +122,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     final r=context.watch<LocaleSettingsProvider>();
     return PopScope(canPop:!_salvando,child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Form(key:_form,child:Column(
       mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-      if(!widget.embedded)Text(context.t('invoices.newPurchase'),style:Theme.of(context).textTheme.titleLarge),
+      if(!widget.embedded)Text(context.t(widget.compraInicial==null?'invoices.newPurchase':'invoices.editPurchase'),style:Theme.of(context).textTheme.titleLarge),
       const SizedBox(height:8),Text(context.t('invoices.purchaseHint')),
       const SizedBox(height:20),
       if(!_carregando&&!_permitido)Text(context.t('cards.error.permission')),
@@ -140,6 +148,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           decoration:InputDecoration(labelText:context.t('invoices.category')),
           validator:(_)=>widget.categoriaController!=null&&widget.categoriaController!.text.trim().isNotEmpty&&_categoria==null?context.t('invoices.required'):null,
           items:[DropdownMenuItem<String>(value:null,child:Text(context.t('space.none'))),
+            if(_categoria!=null&&!_categorias.any((c)=>c.id==_categoria))DropdownMenuItem(value:_categoria,child:Text(widget.compraInicial?.categoria??context.t('invoices.category'))),
             ..._categorias.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.nome,overflow:TextOverflow.ellipsis)))],
           onChanged:_bloqueado?null:(v)=>setState((){_categoria=v;widget.categoriaController?.text=v==null?'':_categorias.firstWhere((c)=>c.id==v).nome;})),
         const SizedBox(height:16),
@@ -157,7 +166,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if(!widget.embedded)...[const SizedBox(height:24),Wrap(alignment:WrapAlignment.end,spacing:12,runSpacing:8,children:[
         TextButton(onPressed:_salvando?null:()=>Navigator.of(context).pop(),child:Text(context.t('common.close'))),
         FilledButton(onPressed:_salvando||_carregando||_prevendo||(_tentativa==null&&(_previa==null||_previa!.paga))?null:submit,
-          child:Text(context.t(_salvando?'invoices.saving':_tentativa!=null?'space.retry':'invoices.savePurchase'))),
+          child:Text(context.t(_salvando?'invoices.saving':_tentativa!=null?'space.retry':widget.compraInicial==null?'invoices.savePurchase':'invoices.saveChanges'))),
       ])]
     ]))));
   }

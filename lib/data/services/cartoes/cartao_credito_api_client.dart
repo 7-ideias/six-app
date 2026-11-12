@@ -111,6 +111,12 @@ class CartaoCreditoApiClient {
     _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/faturas'),
     (j) => (j['faturas'] as List).map((e) => FaturaCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList());
   Future<FaturaCartao> fatura(String id) => _decode(_request('GET',path:'/faturas/${Uri.encodeComponent(id)}'),FaturaCartao.fromJson);
+  Future<FaturaCartao> editarCompra(String id,int versao,CompraCartaoRequest compra) => _decode(
+    _request('PUT',path:'/compras/$id',input:{'cartaoId':compra.cartaoId,'versao':versao,'compra':compra.toJson()}),FaturaCartao.fromJson);
+  Future<void> excluirCompra(String id,int versao,String comandoId) async {
+    final result=await _request('POST',path:'/compras/$id/exclusao',input:{'versao':versao,'comandoId':comandoId});
+    if(result['excluida']!=true)throw const CartaoCreditoApiException('invalidResponse');
+  }
   Future<PreviaFaturaCartao> previa(String cartaoId,DateTime data) => _decode(
     _request('GET',path:'/${Uri.encodeComponent(cartaoId)}/previa?dataCompra=${dataCartaoIso(data)}'),PreviaFaturaCartao.fromJson);
   Future<FaturaCartao> comprar(CompraCartaoRequest input) => _decode(

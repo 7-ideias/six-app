@@ -8,6 +8,7 @@ import '../../theme/web_theme_tokens.dart';
 
 Future<bool> showSixWebFinancialLaunchDeleteDialog({
   required BuildContext context,
+  String textPrefix = 'agenda.launchDelete',
   required String description,
   required String amountLabel,
   required String statusLabel,
@@ -21,7 +22,7 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
     barrierDismissible: false,
     barrierColor: Colors.transparent,
     barrierLabel: context.t(
-      'agenda.launchDelete.dialogBarrier',
+      '$textPrefix.dialogBarrier',
       fallback: 'Confirmar exclusão do lançamento financeiro',
     ),
     transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
@@ -34,6 +35,7 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
         animation: animation,
         reduceMotion: reduceMotion,
         child: SixWebFinancialLaunchDeleteDialog(
+          textPrefix: textPrefix,
           description: description,
           amountLabel: amountLabel,
           statusLabel: statusLabel,
@@ -57,6 +59,7 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
 class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
   const SixWebFinancialLaunchDeleteDialog({
     super.key,
+    this.textPrefix = 'agenda.launchDelete',
     required this.description,
     required this.amountLabel,
     required this.statusLabel,
@@ -64,6 +67,7 @@ class SixWebFinancialLaunchDeleteDialog extends StatefulWidget {
     required this.errorMessageBuilder,
   });
 
+  final String textPrefix;
   final String description;
   final String amountLabel;
   final String statusLabel;
@@ -145,7 +149,7 @@ class _SixWebFinancialLaunchDeleteDialogState
   }
 
   String _txt(String key, String fallback) =>
-      context.t(key, fallback: fallback);
+      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: fallback);
 
   @override
   Widget build(BuildContext context) {
@@ -714,3 +718,4 @@ class _FinancialLaunchDeleteSummaryTile extends StatelessWidget {
     );
   }
 }
+

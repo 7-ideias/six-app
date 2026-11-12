@@ -10,6 +10,16 @@ Map<String,dynamic> invoiceJson()=>{'id':'fatura','cartaoId':'cartao','nomeCarta
  'compras':[{'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoria':'Assinaturas'}],
  'porCategoria':{'Assinaturas':80.0}};
 void main(){
+ test('editar e excluir enviam versao e comando e propagam conflitos',()async{
+  final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{
+   final j=jsonDecode(r.body);expect(j['versao'],5);
+   if(r.method=='PUT'){expect(r.url.path.endsWith('/compras/compra'),isTrue);expect(j['cartaoId'],'outro');expect(j['compra']['id'],'comando');return http.Response(jsonEncode(invoiceJson()),200);}
+   expect(r.url.path.endsWith('/compras/compra/exclusao'),isTrue);expect(j['comandoId'],'excluir');return http.Response('{}',409);
+  }));addTearDown(api.dispose);
+  await api.editarCompra('compra',5,CompraCartaoRequest(id:'comando',cartaoId:'outro',descricao:'Compra',dataCompra:DateTime(2026,11,11),valor:80,
+   previa:PreviaFaturaCartao.fromJson({'fechamento':'2026-12-03','vencimento':'2026-12-10','versaoCartao':0,'paga':false})));
+  await expectLater(api.excluirCompra('compra',5,'excluir'),throwsA(isA<CartaoCreditoApiException>().having((e)=>e.statusCode,'status',409)));
+ });
  test('compra envia previa e retry repete ID sem criar outra compra',()async{
   final bodies=<String>[];
   final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{

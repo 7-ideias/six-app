@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +22,39 @@ class Api extends CartaoCreditoApiClient {
   if(falha)throw const CartaoCreditoApiException('connection');return [FaturaCartao.fromJson(invoiceJson())];
  }
 }
+class DeleteApi extends Api {
+ final ids=<String>[];
+ final pending=Completer<void>();
+ bool removed=false;
+ @override Future<List<FaturaCartao>> faturas(String id)async=>removed?[]:super.faturas(id);
+ @override Future<void> excluirCompra(String id,int versao,String comandoId)async{
+  ids.add(comandoId);if(ids.length==1)throw const CartaoCreditoApiException('connection');
+  await pending.future;removed=true;
+ }
+}
 void main(){
+ testWidgets('excluir compra confirma impacto, bloqueia envio e permite retry', (tester)async{
+  tester.view.physicalSize=const Size(1100,1400);tester.view.devicePixelRatio=1;
+  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+  final api=DeleteApi();addTearDown(api.dispose);
+  await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(regionalizacaoService:RegionalizacaoService(apiClient:RegionalClient())),child:MaterialApp(
+   locale:const Locale('pt'),supportedLocales:const[Locale('pt')],localizationsDelegates:GlobalMaterialLocalizations.delegates,
+   home:FaturasCartaoWeb(espaco:'PESSOAL',client:api))));
+  await tester.pumpAndSettle();await tester.tap(find.byType(ExpansionTile));await tester.pumpAndSettle();
+  await tester.tap(find.byType(PopupMenuButton<String>));await tester.pumpAndSettle();
+  await tester.tap(find.text('Excluir compra'));await tester.pumpAndSettle();
+  expect(find.text('Excluir compra?'),findsOneWidget);
+  expect(find.byType(BackdropFilter),findsWidgets);
+  await tester.tap(find.text('Excluir compra'));await tester.pumpAndSettle();
+  expect(api.ids.length,1);
+  // The confirmation keeps its command ID after an uncertain response.
+  final retry=find.text('Excluir compra');
+  await tester.tap(retry);await tester.pump();
+  expect(api.ids.length,2);expect(api.ids[0],api.ids[1]);
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);await tester.pump();expect(find.text('Excluir compra?'),findsOneWidget);
+  api.pending.complete();await tester.pump();await tester.pump(const Duration(seconds:2));await tester.pumpAndSettle();
+  expect(api.removed,isTrue);expect(find.byType(ExpansionTile),findsNothing);expect(tester.takeException(),isNull);
+ });
  for(final width in [390.0,1280.0]){
   for(final lang in ['pt','en','es']){
    testWidgets('faturas e categorias sem overflow $width $lang',(tester)async{

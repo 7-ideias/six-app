@@ -4,9 +4,11 @@ class CompraCartao {
   CompraCartao.fromJson(Map<String, dynamic> j)
     : id = j['id'] as String, descricao = j['descricao'] as String,
       dataCompra = DateTime.parse(j['dataCompra'] as String),
-      valor = (j['valor'] as num).toDouble(), categoria = j['categoria'] as String?;
+      valor = (j['valor'] as num).toDouble(), categoria = j['categoria'] as String?,
+      categoriaId=j['categoriaId'] as String?,versao=(j['versao'] as num?)?.toInt()??0;
   final String id, descricao;
-  final String? categoria;
+  final String? categoria,categoriaId;
+  final int versao;
   final DateTime dataCompra;
   final double valor;
 }
@@ -21,7 +23,7 @@ class FaturaCartao {
       dataPagamento = j['dataPagamento'] == null ? null : DateTime.parse(j['dataPagamento'] as String),
       compras = (j['compras'] as List).map((e) => CompraCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList(),
       porCategoria = (j['porCategoria'] as Map).map((k,v) => MapEntry(k as String, (v as num).toDouble())) {
-    if (id.isEmpty || total <= 0 || !total.isFinite || versao < 0) throw const FormatException('Invalid invoice');
+    if (id.isEmpty || total < 0 || !total.isFinite || versao < 0) throw const FormatException('Invalid invoice');
   }
   final String id, cartaoId, nomeCartao, idLancamento;
   final DateTime fechamento, vencimento;

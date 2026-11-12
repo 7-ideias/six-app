@@ -1,3 +1,7 @@
+import 'package:sixpos/core/utils/uuid_v4.dart';
+import 'package:sixpos/presentation/components/web/compra_cartao_web_editor.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_financial_launch_delete_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
@@ -42,6 +46,31 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
    if(e is CartaoCreditoApiException&&(e.statusCode==401||e.statusCode==403)){_cartoes=[];_faturas=[];}
   });}finally{if(mounted)setState(()=>_loading=false);}
  }
+ Future<void> _editar(FaturaCartao f,CompraCartao c)async{
+  if(_acting||_loading)return;
+  setState(()=>_acting=true);
+  final result=await showSixWebAnimatedDialog<FaturaCartao>(context:context,barrierDismissible:false,
+    barrierLabel:context.t('invoices.editPurchase'),builder:(_)=>Dialog(
+      child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:660),child:CompraCartaoWebEditor(
+       client:_client,cartoes:_cartoes,cartaoInicial:f.cartaoId,compraInicial:c))));
+  if(!mounted)return;
+  setState(()=>_acting=false);
+  if(result!=null&&widget.faturaId==null)_cartao=result.cartaoId;
+  await _load();
+ }
+ Future<void> _excluir(FaturaCartao f,CompraCartao c)async{
+  if(_acting||_loading)return;
+  setState(()=>_acting=true);
+  final comando=gerarUuidV4();
+  final regional=context.read<LocaleSettingsProvider>();
+  await showSixWebFinancialLaunchDeleteDialog(context:context,textPrefix:'invoices.delete',
+   description:c.descricao,amountLabel:regional.formatCurrency(c.valor),
+   statusLabel:'${f.nomeCartao} · ${regional.formatDate(f.vencimento)}',
+   onConfirm:()=>_client.excluirCompra(c.id,c.versao,comando),
+   errorMessageBuilder:(e)=>context.t(e is CartaoCreditoApiException&&e.statusCode==409?'invoices.editConflict':e is CartaoCreditoApiException?e.messageKey:'cards.error.server'));
+  if(!mounted)return;
+  setState(()=>_acting=false);await _load();
+ }
  Future<void> _pagar(FaturaCartao f)async{
   setState(()=>_acting=true);
   final result=await showDialog<FaturaCartao>(context:context,barrierDismissible:false,builder:(_)=>Dialog(
@@ -60,8 +89,8 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
       Text('${context.t('invoices.closingDate')}: ${r.formatDate(f.fechamento)}'),
      ]),
      Text(r.formatCurrency(f.total),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800)),
-     Chip(avatar:Icon(f.paga?Icons.check_circle_outline:Icons.schedule,size:18),label:Text(context.t(f.paga?'invoices.paid':'invoices.open'))),
-     if(!f.paga&&_canEdit&&_erro==null)FilledButton.icon(onPressed:_acting||_loading?null:()=>_pagar(f),
+     Chip(avatar:Icon(f.paga?Icons.check_circle_outline:Icons.schedule,size:18),label:Text(context.t(f.paga?'invoices.paid':f.total==0?'invoices.emptyInvoice':'invoices.open'))),
+     if(!f.paga&&f.total>0&&_canEdit&&_erro==null)FilledButton.icon(onPressed:_acting||_loading?null:()=>_pagar(f),
       icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.pay'))),
     ]),
     if(f.dataPagamento!=null)Padding(padding:const EdgeInsets.only(top:8),child:Text('${context.t('invoices.paymentDate')}: ${r.formatDate(f.dataPagamento!)}')),
@@ -71,6 +100,11 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
       Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(c.descricao,style:const TextStyle(fontWeight:FontWeight.w600)),
        Text('${r.formatDate(c.dataCompra)} · ${c.categoria??context.t('invoices.noCategory')}',style:Theme.of(context).textTheme.bodySmall)])),
       const SizedBox(width:16),Flexible(child:Text(r.formatCurrency(c.valor),textAlign:TextAlign.end)),
+      if(!f.paga&&_canEdit&&_erro==null)PopupMenuButton<String>(
+       tooltip:context.t('invoices.purchaseActions'),enabled:!_acting&&!_loading,
+       onSelected:(v){if(v=='edit'){_editar(f,c);}else{_excluir(f,c);}},
+       itemBuilder:(_)=>[PopupMenuItem(value:'edit',child:Text(context.t('invoices.editPurchase'))),
+         PopupMenuItem(value:'delete',child:Text(context.t('invoices.delete.confirm')))]),
      ]))),const Divider(),
      Align(alignment:Alignment.centerLeft,child:Text(context.t('invoices.byCategory'),style:const TextStyle(fontWeight:FontWeight.w700))),
      ...f.porCategoria.entries.map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Row(children:[
