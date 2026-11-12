@@ -23,7 +23,7 @@ Future<bool> showSixWebFinancialLaunchDeleteDialog({
     barrierColor: Colors.transparent,
     barrierLabel: context.t(
       '$textPrefix.dialogBarrier',
-      fallback: 'Confirmar exclusão do lançamento financeiro',
+      fallback: textPrefix == 'agenda.launchDelete' ? 'Confirmar exclusão do lançamento financeiro' : null,
     ),
     transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
     pageBuilder: (
@@ -149,7 +149,7 @@ class _SixWebFinancialLaunchDeleteDialogState
   }
 
   String _txt(String key, String fallback) =>
-      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: fallback);
+      context.t(key.replaceFirst('agenda.launchDelete',widget.textPrefix), fallback: widget.textPrefix == 'agenda.launchDelete' || !key.startsWith('agenda.launchDelete.') ? fallback : null);
 
   @override
   Widget build(BuildContext context) {
