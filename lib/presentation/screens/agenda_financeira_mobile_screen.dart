@@ -1,3 +1,4 @@
+import 'faturas_cartao_mobile_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
@@ -1198,6 +1199,8 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
+    final faturaId = item['faturaCartaoId']?.toString();
+    if (faturaId != null && faturaId.isNotEmpty) { await _abrirFaturaMobile(faturaId); return; }
     final comando = acao.trim().toLowerCase();
     if (comando == 'detalhes') {
       await _mostrarDetalhes(item);
@@ -1343,6 +1346,12 @@ class _AgendaFinanceiraMobileScreenState
         item['id'].toString(),
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      final faturaId = detalhe['faturaCartaoId']?.toString() ?? item['faturaCartaoId']?.toString();
+      if (faturaId != null && faturaId.isNotEmpty) {
+        if (mounted) setState(() => _executandoAcao = false);
+        if (mounted) await _abrirFaturaMobile(faturaId);
+        return;
+      }
       dadosBaixa = AgendaBaixaDados.fromDetalhe(detalhe, item);
     } catch (_) {
       if (mounted) {
@@ -2723,7 +2732,14 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
+  Future<void> _abrirFaturaMobile(String id) async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FaturasCartaoMobileScreen(espaco: _service.espacoFinanceiro, faturaId: id)));
+    if (mounted) await _consultar(mostrarFeedback: true);
+  }
+
   Future<void> _abrirAcoesLancamento(Map<String, dynamic> item) {
+    final faturaId = item['faturaCartaoId']?.toString();
+    if (faturaId != null && faturaId.isNotEmpty) return _abrirFaturaMobile(faturaId);
     final Set<String> acoesInformadas = item['acoes'] is List
         ? (item['acoes'] as List).map((dynamic acao) => acao.toString()).toSet()
         : <String>{};
@@ -3988,3 +4004,4 @@ class _ResumoAgendaCardData {
   final IconData icon;
   final Color color;
 }
+

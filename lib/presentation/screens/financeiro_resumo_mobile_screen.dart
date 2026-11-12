@@ -1,3 +1,5 @@
+import 'cartoes_credito_mobile_screen.dart';
+import 'gastos_categorias_mobile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
@@ -578,6 +580,10 @@ class _FinanceiroResumoMobileScreenState
               c.error,
               () => _abrirAgenda(contas: AgendaContasMobile.pagar),
             ),
+            _acesso('cards.title', 'invoices.title', Icons.credit_card_outlined, c.accent,
+              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CartoesCreditoMobileScreen(espaco: _espaco))); if (mounted) _load(); }),
+            _acesso('gastos.title', 'mobile.cards.categoryHint', Icons.pie_chart_outline, c.accent,
+              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GastosCategoriasMobileScreen(espaco: _espaco, inicio: _inicio, fim: _fim))); if (mounted) _load(); }),
             _acesso(
               'gestao.finance.paymentMethods',
               'gestao.finance.paymentMethodsDesc',
@@ -596,3 +602,4 @@ class _FinanceiroResumoMobileScreenState
     );
   }
 }
+

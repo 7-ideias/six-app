@@ -1,3 +1,5 @@
+import 'compra_cartao_mobile_screen.dart';
+import 'package:sixpos/data/models/fatura_cartao_model.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_financeira_lancamento_card_mobile.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/competencia_financeira.dart';
@@ -98,6 +100,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   bool _registrarPagamento = false;
   DateTime _dataPagamentoRealizado = DateUtils.dateOnly(DateTime.now());
 
+  bool _pagamentoDireto = false;
   int _etapa = 0;
   bool _salvando = false;
   bool _carregandoTiposRecebimento = false;
@@ -301,7 +304,14 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                   ),
                 ),
             ],
-            if (_etapa == 2) ...[
+            if (_etapa == 2 && _tipoSelecionado == 'Pagar' && !_pagamentoDireto) ...[
+              Text(context.t('agenda.journey.paymentTitle'), style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Card(child: ListTile(leading: const Icon(Icons.account_balance_outlined), title: Text(context.t('invoices.directPayment')), subtitle: Text(context.t('agenda.journey.directPaymentHint')), onTap: () => setState(() => _pagamentoDireto = true))),
+              Card(child: ListTile(leading: const Icon(Icons.credit_card_outlined), title: Text(context.t('agenda.journey.creditCard')), subtitle: Text(context.t('agenda.journey.creditCardHint')), onTap: _abrirCompraCartao)),
+            ],
+            if (_etapa == 2 && (_tipoSelecionado != 'Pagar' || _pagamentoDireto)) ...[
+              if (_tipoSelecionado == 'Pagar') TextButton.icon(onPressed: () => setState(() => _pagamentoDireto = false), icon: const Icon(Icons.swap_horiz), label: Text(context.t('invoices.paymentDestination'))),
               _buildMainSection(),
               const SizedBox(height: 14),
               _buildValueSection(),
@@ -773,6 +783,14 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     );
   }
 
+  Future<void> _abrirCompraCartao() async {
+    final fatura = await Navigator.of(context).push<FaturaCartao>(MaterialPageRoute<FaturaCartao>(
+      builder: (_) => CompraCartaoMobileScreen(espaco: _service.espacoFinanceiro)));
+    if (mounted && fatura != null) Navigator.of(context).pop(<String, dynamic>{
+      'espacoFinanceiro': _service.espacoFinanceiro, 'faturaCartaoId': fatura.id,
+    });
+  }
+
   Widget _buildBottomBar() {
     return SafeArea(
       top: false,
@@ -826,6 +844,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 ),
                 onPressed:
                     (_salvando ||
+                        (_etapa == 2 && _tipoSelecionado == 'Pagar' && !_pagamentoDireto) ||
                         _ir.carregando ||
                         (_etapa == 3 && _carregandoTiposRecebimento))
                     ? null
@@ -1350,3 +1369,4 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
     );
   }
 }
+
