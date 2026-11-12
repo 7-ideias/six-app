@@ -92,13 +92,13 @@ class PagarFaturaCartaoMobileScreen extends StatefulWidget {
 class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
  final id=gerarUuidV4();late final config=widget.configuracoes??ConfiguracaoFinanceiraService(widget.client.espaco);
  List<ConfiguracaoFinanceira> accounts=[];List<FormaPagamentoFatura> methods=[];
- String? account,method,error;DateTime date=DateTime.now();bool loading=true,busy=false,conflict=false;
+ String? account,method,error;DateTime date=DateTime.now();bool loading=true,busy=false,conflict=false,loaded=false;
  PagarFaturaCartaoRequest? attempt;bool get locked=>busy||attempt!=null;
  @override void initState(){super.initState();load();}
  @override void dispose(){if(widget.configuracoes==null)config.dispose();super.dispose();}
  Future<void> load()async{
-  setState((){loading=true;error=null;});
-  try{final a=await config.listar('CONTAS').timeout(const Duration(seconds:20));final m=await widget.client.formasFatura();if(mounted)setState((){accounts=a.where((c)=>c.ativo&&c.tipo!='CAIXA').toList();methods=m;account=accounts.any((c)=>c.id==widget.fatura.contaPrevistaId)?widget.fatura.contaPrevistaId:null;});}
+  setState((){loading=true;error=null;loaded=false;});
+  try{final a=await config.listar('CONTAS').timeout(const Duration(seconds:20));final m=await widget.client.formasFatura();if(mounted)setState((){loaded=true;accounts=a.where((c)=>c.ativo&&c.tipo!='CAIXA').toList();methods=m;account=accounts.any((c)=>c.id==widget.fatura.contaPrevistaId)?widget.fatura.contaPrevistaId:null;});}
   catch(e){if(mounted)setState(()=>error=erroCartaoMobile(e));}finally{if(mounted)setState(()=>loading=false);}
  }
  Future<void> pay()async{
@@ -120,6 +120,6 @@ class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
   ],
   if(error!=null)CartaoMobileError(error!,retry:locked||conflict?null:load),
   if(attempt!=null&&!busy)Text(context.t('invoices.uncertain')),const SizedBox(height:20),
-  FilledButton(onPressed:loading||busy||conflict||account==null||method==null||widget.fatura.paga||widget.fatura.total<=0||widget.fatura.compras.any((c)=>c.prevista)?null:pay,child:Text(context.t(busy?'invoices.saving':attempt!=null?'space.retry':'invoices.confirmPayment'))),
+  FilledButton(onPressed:!loaded||loading||busy||conflict||account==null||method==null||widget.fatura.paga||widget.fatura.total<=0||widget.fatura.compras.any((c)=>c.prevista)?null:pay,child:Text(context.t(busy?'invoices.saving':attempt!=null?'space.retry':'invoices.confirmPayment'))),
  ]))));}
 }

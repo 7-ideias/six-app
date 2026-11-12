@@ -51,7 +51,7 @@ void main(){
   await open(t,CompraCartaoMobileScreen(espaco:'PESSOAL',client:api,configuracoes:config));
   await tap(t,find.text('Cartões de crédito'));
   await tap(t,find.text('Nubank'));
-  await t.enterText(field('Descrição'),'Netflix');await t.enterText(field('Valor da compra'),'50');
+  await t.enterText(field('Descrição da compra'),'Netflix');await t.enterText(field('Valor da compra'),'50');
   await tap(t,find.text('Revisar compra'));
   await tap(t,find.text('Adicionar à fatura'));
   expect(api.purchases.length,1);
