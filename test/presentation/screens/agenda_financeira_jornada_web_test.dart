@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -155,6 +156,56 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  for (final width in [390.0, 900.0, 1500.0]) {
+    for (final language in ['pt', 'en', 'es']) {
+      testWidgets('resumo do período em $language com largura $width', (tester) async {
+        tester.view.physicalSize = Size(width, 1100);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        var receivedTaps = 0;
+        var paidTaps = 0;
+        await tester.pumpWidget(MaterialApp(
+          locale: Locale(language),
+          supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          theme: width == 900 ? ThemeData.light() : ThemeData.dark(),
+          home: Scaffold(body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: AgendaResumoPeriodoWeb(
+                receberAberto: 22800,
+                pagarAberto: 1200,
+                saldoARealizar: 21600,
+                recebido: 11281.12,
+                pago: 1380,
+                realizado: 9901.12,
+                projetado: 31501.12,
+                formatarMoeda: (value) => value.toStringAsFixed(2),
+                onRecebido: () => receivedTaps++,
+                onPago: () => paidTaps++,
+              ),
+            ),
+          )),
+        ));
+        await tester.pumpAndSettle();
+        expect(find.text('31501.12'), findsOneWidget);
+        expect(find.text('21600.00'), findsNWidgets(2));
+        expect(find.text('9901.12'), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
+        for (final key in ['received', 'paid']) {
+          final row = find.byKey(ValueKey('period-summary-$key'));
+          await tester.ensureVisible(row);
+          await tester.pumpAndSettle();
+          await tester.tap(row);
+        }
+        expect(receivedTaps, 1);
+        expect(paidTaps, 1);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   for (final status in ['PAGO', 'RECEBIDO', 'PARCIAL']) {
     testWidgets('edição web $status preserva baixa e recorrência no contrato', (
       tester,
