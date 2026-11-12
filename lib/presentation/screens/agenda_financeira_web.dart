@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_status_labels.dart';
 import 'package:sixpos/data/models/agenda_financeira_baixa_model.dart';
 import 'package:sixpos/core/services/agenda_venda_comprovante_service.dart';
@@ -151,12 +152,57 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   bool _somenteImpostoRenda = false;
 
+  static const double _filterHeight = 58;
+
+  Widget _filterToggle({
+    Key? key,
+    required Widget label,
+    required bool selected,
+    required ValueChanged<bool>? onSelected,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    return Semantics(
+      selected: selected,
+      child: OutlinedButton(
+        key: key,
+        style: OutlinedButton.styleFrom(
+          fixedSize: const Size.fromHeight(_filterHeight),
+          minimumSize: const Size(0, _filterHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          visualDensity: VisualDensity.standard,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: selected
+              ? tokens.selectedBackground
+              : tokens.inputBackground,
+          foregroundColor: tokens.primaryText,
+          side: BorderSide(
+            color: selected ? tokens.selectedBorder : tokens.cardBorder,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        onPressed: onSelected == null ? null : () => onSelected(!selected),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              const Icon(Icons.check_rounded, size: 18),
+              const SizedBox(width: 8),
+            ],
+            label,
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _seletorEspaco() => Wrap(
     spacing: 8,
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      FilterChip(
+      _filterToggle(
         key: const ValueKey('ir-filter'),
         label: Text(context.t('ir.filter')),
         selected: _somenteImpostoRenda,
@@ -169,7 +215,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               },
       ),
       for (final tipo in ['EMPRESA', 'PESSOAL'])
-        ChoiceChip(
+        _filterToggle(
           label: Text(context.t('space.' + tipo)),
           selected: _service.espacoFinanceiro == tipo,
           onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
@@ -178,6 +224,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ),
       if (_service.espacoFinanceiro == 'EMPRESA')
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            fixedSize: const Size.fromHeight(_filterHeight),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           icon: const Icon(Icons.payments_outlined),
           label: Text(context.t('machine.receivables')),
           onPressed: () => Navigator.of(context).push(
@@ -187,6 +238,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
         ),
       IconButton(
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(_filterHeight),
+          visualDensity: VisualDensity.standard,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
         tooltip: context.t('space.settings'),
         onPressed: (_trocandoEspaco || _carregando || _executandoAcao)
             ? null
@@ -1954,7 +2010,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ],
           _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
           _drop('Status', _statusSelecionado, _status, _selecionarStatus),
-          FilterChip(
+          _filterToggle(
             label: Text(context.t('agenda.list.showCanceled')),
             selected: _mostrarCancelados || _statusSelecionado == 'Cancelado',
             onSelected: _statusSelecionado == 'Cancelado'
@@ -1967,7 +2023,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _multiSelectTipoPagamento(theme),
           if (_centrosCusto.isNotEmpty) _multiSelectCentroCusto(theme),
           FilledButton.icon(
-            style: _primaryCtaStyle(theme),
+            style: _primaryCtaStyle(theme).copyWith(
+              fixedSize: const WidgetStatePropertyAll(Size.fromHeight(_filterHeight)),
+              visualDensity: VisualDensity.standard,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: _carregando
                 ? null
                 : () => _consultar(mostrarFeedback: true),
@@ -2106,138 +2166,24 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildResumo(ThemeData theme) {
-    final cards = <Map<String, dynamic>>[
-      <String, dynamic>{
-        'titulo': 'A receber aberto',
-        'valor': _totalReceberPrevisto,
-        'icone': Icons.south_west_rounded,
-      },
-      <String, dynamic>{
-        'titulo': 'A pagar aberto',
-        'valor': _totalPagarPrevisto,
-        'icone': Icons.north_east_rounded,
-      },
-      <String, dynamic>{
-        'titulo': context.t('agenda.summary.remaining'),
-        'valor': _saldoARealizar,
-        'icone': Icons.pending_actions_outlined,
-      },
-      <String, dynamic>{
-        'titulo': context.t('agenda.mobile.summary.forecastBalance'),
-        'valor': _saldoPrevisto,
-        'icone': Icons.query_stats_rounded,
-      },
-      <String, dynamic>{
-        'titulo': context.t('agenda.mobile.summary.received'),
-        'tipoConfirmado': 'receber',
-        'valor': _totalRecebidoConfirmado,
-        'icone': Icons.verified_rounded,
-      },
-      <String, dynamic>{
-        'titulo': context.t('agenda.mobile.summary.paid'),
-        'tipoConfirmado': 'pagar',
-        'valor': _totalPagoConfirmado,
-        'icone': Icons.task_alt_rounded,
-      },
-      <String, dynamic>{
-        'titulo': context.t('agenda.mobile.summary.confirmedBalance'),
-        'valor': _saldoConfirmado,
-        'icone': Icons.account_balance_wallet_outlined,
-      },
-    ];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = constraints.maxWidth >= 1500
-            ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) / 4
-            : constraints.maxWidth >= 1000
-            ? (constraints.maxWidth - 3 * SixWebPageShell.sectionSpacing) / 4
-            : (constraints.maxWidth - SixWebPageShell.sectionSpacing) / 2;
-        return Wrap(
-          spacing: SixWebPageShell.sectionSpacing,
-          runSpacing: SixWebPageShell.sectionSpacing,
-          children: cards
-              .map(
-                (card) =>
-                    SizedBox(width: width, child: _resumoCard(theme, card)),
-              )
-              .toList()..add(SizedBox(
-                width: constraints.maxWidth,
-                child: Text(context.t('agenda.summary.explanation'),
-                  style: theme.textTheme.bodySmall),
-              )),
-        );
-      },
-    );
-  }
+  Widget _buildResumo(ThemeData theme) => AgendaResumoPeriodoWeb(
+    receberAberto: _totalReceberPrevisto,
+    pagarAberto: _totalPagarPrevisto,
+    saldoARealizar: _saldoARealizar,
+    recebido: _totalRecebidoConfirmado,
+    pago: _totalPagoConfirmado,
+    realizado: _saldoConfirmado,
+    projetado: _saldoPrevisto,
+    formatarMoeda: _formatarMoeda,
+    onRecebido: () => _mostrarComposicaoConfirmada('receber'),
+    onPago: () => _mostrarComposicaoConfirmada('pagar'),
+  );
 
   ButtonStyle _secondaryCtaStyle(ThemeData theme) =>
       SixWebActionStyles.secondary(context);
 
   ButtonStyle _primaryCtaStyle(ThemeData theme) =>
       SixWebActionStyles.primary(context);
-
-  Widget _resumoCard(ThemeData theme, Map<String, dynamic> card) {
-    final tokens = WebThemeTokens.of(context);
-    final valor = _toDouble(card['valor']);
-    final titulo = card['titulo'] as String;
-    final Color accent =
-        card['tipoConfirmado'] == 'receber' || card['icone'] == Icons.south_west_rounded
-        ? tokens.financialPositive
-        : card['tipoConfirmado'] == 'pagar' || card['icone'] == Icons.north_east_rounded
-        ? tokens.financialNegative
-        : tokens.info;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Color.alphaBlend(
-                  accent.withValues(alpha: 0.10),
-                  tokens.cardBackground,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(card['icone'] as IconData, color: accent, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    titulo,
-                    style: TextStyle(
-                      color: tokens.secondaryText,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (card['tipoConfirmado'] != null)
-                    TextButton.icon(
-                      onPressed: () => _mostrarComposicaoConfirmada(card['tipoConfirmado'] as String),
-                      icon: const Icon(Icons.receipt_long_outlined, size: 16),
-                      label: Text(context.t('agenda.summary.viewEntries')),
-                    ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatarMoeda(valor),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAbas(ThemeData theme) => SegmentedButton<int>(
     selected: <int>{_abaSelecionada},
