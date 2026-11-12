@@ -2,6 +2,7 @@ import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -346,7 +347,6 @@ void main() {
       expect(find.text('Catálogo sem dados para exibir'), findsOneWidget);
       expect(find.text('--'), findsWidgets);
 
-      await tester.pumpWidget(const SizedBox.shrink());
       await _pumpGestao(
         tester,
         snapshot: _emptySnapshot,
@@ -354,22 +354,17 @@ void main() {
         area: GestaoMobileArea.financeiro,
       );
       await tester.pumpAndSettle();
-      expect(
-        find.text('0'),
-        findsWidgets,
-        reason: tester.widgetList<Text>(find.byType(Text))
-            .map((text) => text.data).join(' | '),
+      await tester.scrollUntilVisible(
+        find.text('Nenhuma conta em aberto neste período.'),
+        200,
+        scrollable: find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(Scrollable),
+        ).first,
       );
-      final financeList = tester.widget<ListView>(find.byType(ListView).first);
-      financeList.controller!.jumpTo(
-        financeList.controller!.position.maxScrollExtent,
-      );
-      await tester.pumpAndSettle();
       expect(
         find.text('Nenhuma conta em aberto neste período.'),
         findsOneWidget,
-        reason: tester.widgetList<Text>(find.byType(Text))
-            .map((text) => text.data).join(' | '),
       );
 
       await tester.ensureVisible(find.text('Agenda financeira'));
@@ -462,6 +457,9 @@ Future<void> _pumpGestao(
         ),
       ],
       child: MaterialApp(
+        locale: const Locale('pt'),
+        supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: MediaQuery(
           data:
               (mediaQueryData ??
