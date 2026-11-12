@@ -183,6 +183,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   AgendaImpostoRenda _ir = AgendaImpostoRenda();
 
+  bool _pagamentoEscolhido=false;
+  bool get _aguardandoPagamento => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&!_pagamentoEscolhido;
   bool _noCartao=false,_cartaoVisitado=false,_cartaoPendente=false;
   bool get _compraCartao => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&_noCartao;
   final _compraKey=GlobalKey<CompraCartaoWebEditorState>();
@@ -193,8 +195,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       key:const ValueKey('journey-payment-destination'),
       segments:[ButtonSegment(value:false,icon:const Icon(Icons.account_balance_outlined),label:Text(context.t('invoices.directPayment'))),
         ButtonSegment(value:true,icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('cards.title')))],
-      selected:{_noCartao},onSelectionChanged:_cartaoPendente?null:(v)=>setState((){
-        _noCartao=v.first;_alterado=true;
+      emptySelectionAllowed:true,
+      selected:_pagamentoEscolhido?{_noCartao}:<bool>{},onSelectionChanged:_cartaoPendente?null:(v)=>setState((){
+        if(v.isEmpty)return;
+        _pagamentoEscolhido=true;_noCartao=v.first;_alterado=true;
         if(_noCartao){_cartaoVisitado=true;_cartaoClient??=CartaoCreditoApiClient(espaco:_service.espacoFinanceiro);_compraKey.currentState?.syncCategory();}
       })),
   ]));
@@ -498,7 +502,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
       return;
     setState(() {
-      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_noCartao=false;
+      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_noCartao=false;_pagamentoEscolhido=false;
       _service = _service.paraEspaco(espaco);
       _contaFinanceiraId = null;
       _centroCustoId = null;
@@ -1777,6 +1781,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_etapa == 0 && !_tipoEscolhido) return;
     if (_etapa == 1 && !_espacoEscolhido) return;
     if (_etapa == 2) {
+      if(_aguardandoPagamento)return;
       if(_compraCartao){if(!(_compraKey.currentState?.validate()??false))return;}
       else if(!(_formKey.currentState?.validate()??false))return;
     }
@@ -2091,7 +2096,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final canContinue =
         !blocked &&
         (_etapa != 0 || _tipoEscolhido) &&
-        (_etapa != 1 || _espacoEscolhido);
+        (_etapa != 1 || _espacoEscolhido) &&
+        (_etapa != 2 || !_aguardandoPagamento);
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     );
@@ -2394,8 +2400,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         ],
                         if(_etapa==2&&_tipoSelecionado=='Pagar')_paymentDestination(),
                         if (_detalhesVisitados)
-                          Offstage(offstage:_etapa!=2||_compraCartao,
-                            child:ExcludeFocus(excluding:_etapa!=2||_compraCartao,
+                          Offstage(offstage:_etapa!=2||_compraCartao||_aguardandoPagamento,
+                            child:ExcludeFocus(excluding:_etapa!=2||_compraCartao||_aguardandoPagamento,
                               child:Form(key:_formKey,onChanged:()=>_alterado=true,child:_formContent()))),
                         if(_cartaoVisitado&&_cartaoClient!=null)
                           Offstage(offstage:_etapa!=2||!_compraCartao,

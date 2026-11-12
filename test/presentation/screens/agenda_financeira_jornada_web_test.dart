@@ -156,6 +156,26 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('pagar exige escolha antes de mostrar campos e preserva ao voltar', (tester) async {
+    await _open(tester, _Calls());
+    await _tap(tester, _choice('pay'));
+    await _tap(tester, _next);
+    await _tap(tester, _choice('personal'));
+    await _tap(tester, _next);
+    final selector=find.byKey(const ValueKey('journey-payment-destination'));
+    expect(tester.widget<SegmentedButton<bool>>(selector).selected,isEmpty);
+    expect(_field(tester,'agenda.form.description'),findsNothing);
+    expect(tester.widget<FilledButton>(_next).onPressed,isNull);
+    await _tap(tester,find.text('Pagamento direto'));
+    expect(_field(tester,'agenda.form.description'),findsOneWidget);
+    await _fill(tester);
+    await _tap(tester,find.text('Voltar'));
+    await _tap(tester,_next);
+    expect(tester.widget<SegmentedButton<bool>>(selector).selected,{false});
+    expect(tester.widget<TextField>(_field(tester,'agenda.form.description')).controller!.text,'Aluguel');
+    expect(tester.takeException(),isNull);
+  });
+
   for (final width in [390.0, 900.0, 1500.0]) {
     for (final language in ['pt', 'en', 'es']) {
       testWidgets('resumo do período em $language com largura $width', (tester) async {
