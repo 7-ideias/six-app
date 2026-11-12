@@ -226,7 +226,12 @@ void main() {
         expect(find.text('Conta quitada'), findsNothing);
         expect(find.text('Outro tipo'), findsNothing);
         expect(find.text('Fluxo previsto'), findsNothing);
-        await tester.tap(find.byKey(const ValueKey('contas-mobile-filter-2')));
+        final settledFilter = find.byKey(
+          const ValueKey('contas-mobile-filter-2'),
+        );
+        await tester.ensureVisible(settledFilter);
+        await tester.pumpAndSettle();
+        await tester.tap(settledFilter);
         await tester.pumpAndSettle();
         expect(find.text('Conta quitada'), findsOneWidget);
         expect(find.text('Conta pendente'), findsNothing);

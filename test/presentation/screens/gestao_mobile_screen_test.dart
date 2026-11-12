@@ -2,6 +2,7 @@ import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -352,6 +353,15 @@ void main() {
         navigations: navigations,
         area: GestaoMobileArea.financeiro,
       );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Nenhuma conta em aberto neste período.'),
+        200,
+        scrollable: find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
       expect(
         find.text('Nenhuma conta em aberto neste período.'),
         findsOneWidget,
@@ -447,6 +457,9 @@ Future<void> _pumpGestao(
         ),
       ],
       child: MaterialApp(
+        locale: const Locale('pt'),
+        supportedLocales: const [Locale('pt'), Locale('en'), Locale('es')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: MediaQuery(
           data:
               (mediaQueryData ??

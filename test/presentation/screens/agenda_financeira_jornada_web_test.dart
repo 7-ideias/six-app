@@ -225,6 +225,7 @@ void main() {
         'valorOriginal': 1680,
         'valorConfirmado': 1380,
         'valorRestante': 0,
+        'somenteCadastro': true,
       },
     );
     await tester.enterText(
@@ -234,6 +235,9 @@ void main() {
     await _tap(tester, find.text('Atualizar lançamento'));
     expect(find.text('Correção'), findsOneWidget);
     expect(calls.metadata, isEmpty);
+    expect(find.byType(SnackBar), findsWidgets);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
     calls.fail = false;
     await _tap(tester, find.text('Atualizar lançamento'));
     expect(calls.metadata.single.descricao, 'Correção');
