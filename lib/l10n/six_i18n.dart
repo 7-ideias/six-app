@@ -71,6 +71,12 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'finance.mobile.receipts.zero': 'Nenhum recebimento',
+    'finance.mobile.receipts.one': '1 recebimento',
+    'finance.mobile.receipts.many': '{count} recebimentos',
+    'finance.mobile.payments.zero': 'Nenhum pagamento',
+    'finance.mobile.payments.one': '1 pagamento',
+    'finance.mobile.payments.many': '{count} pagamentos',
     'finance.mobile.period': 'Período',
     'finance.mobile.period.0': 'Hoje',
     'finance.mobile.period.1': 'Próximos 7 dias',
@@ -3112,6 +3118,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'finance.mobile.receipts.zero': 'No receipts',
+    'finance.mobile.receipts.one': '1 receipt',
+    'finance.mobile.receipts.many': '{count} receipts',
+    'finance.mobile.payments.zero': 'No payments',
+    'finance.mobile.payments.one': '1 payment',
+    'finance.mobile.payments.many': '{count} payments',
     'finance.mobile.period': 'Period',
     'finance.mobile.period.0': 'Today',
     'finance.mobile.period.1': 'Next 7 days',
@@ -5931,6 +5943,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'finance.mobile.receipts.zero': 'Ningún cobro',
+    'finance.mobile.receipts.one': '1 cobro',
+    'finance.mobile.receipts.many': '{count} cobros',
+    'finance.mobile.payments.zero': 'Ningún pago',
+    'finance.mobile.payments.one': '1 pago',
+    'finance.mobile.payments.many': '{count} pagos',
     'finance.mobile.period': 'Período',
     'finance.mobile.period.0': 'Hoy',
     'finance.mobile.period.1': 'Próximos 7 días',
