@@ -133,7 +133,14 @@ class CartaoCreditoApiClient {
   }
   Future<List<ParcelaCartao>> previaParcelamento(CompraCartaoRequest compra,int parcelas) => _decode(
     _request('POST',path:'/${Uri.encodeComponent(compra.cartaoId)}/previa-parcelamento',input:{'compra':compra.toJson(),'parcelas':parcelas}),
-    (j)=>(j['parcelas'] as List).map((e)=>ParcelaCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList());
+    (j){
+      final items=(j['parcelas'] as List).map((e)=>ParcelaCartao.fromJson(Map<String,dynamic>.from(e as Map))).toList();
+      if(items.length!=parcelas)throw const FormatException('Invalid installments');
+      int cents=0;
+      for(int i=0;i<items.length;i++){final p=items[i];if(p.numero!=i+1||!p.valor.isFinite||p.valor<=0)throw const FormatException('Invalid installment');cents+=(p.valor*100).round();}
+      if(cents!=(compra.valor*100).round())throw const FormatException('Invalid total');
+      return items;
+    });
   Future<FaturaCartao> parcelar(CompraCartaoRequest compra,int parcelas) => _decode(
     _request('POST',path:'/${Uri.encodeComponent(compra.cartaoId)}/parcelamentos',input:{'compra':compra.toJson(),'parcelas':parcelas}),FaturaCartao.fromJson);
   Future<FaturaCartao> pagar(PagarFaturaCartaoRequest input) => _decode(

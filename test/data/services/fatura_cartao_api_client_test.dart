@@ -10,6 +10,11 @@ Map<String,dynamic> invoiceJson()=>{'id':'fatura','cartaoId':'cartao','nomeCarta
  'compras':[{'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoria':'Assinaturas'}],
  'porCategoria':{'Assinaturas':80.0}};
 void main(){
+ test('previa parcelada rejeita total inconsistente',()async{
+  final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((_)async=>http.Response(jsonEncode({'parcelas':[{'numero':1,'valor':40,'vencimento':'2026-12-10','paga':false},{'numero':2,'valor':40,'vencimento':'2027-01-10','paga':false}]}),200)));
+  addTearDown(api.dispose);
+  await expectLater(api.previaParcelamento(CompraCartaoRequest(id:'id',cartaoId:'cartao',descricao:'Compra',dataCompra:DateTime(2026,11,11),valor:100,previa:PreviaFaturaCartao.fromJson({'fechamento':'2026-12-03','vencimento':'2026-12-10','versaoCartao':0,'paga':false})),2),throwsA(isA<CartaoCreditoApiException>().having((e)=>e.kind,'kind','invalidResponse')));
+ });
  test('parcelamento envia total, quantidade e reutiliza comando apos erro',()async{
   final bodies=<String>[];
   final api=CartaoCreditoApiClient(espaco:'PESSOAL',tokenProvider:()async=>'token',client:MockClient((r)async{

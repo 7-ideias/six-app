@@ -30,7 +30,7 @@ class Config extends ConfiguracaoFinanceiraService {
  Config():super('PESSOAL');
  @override Future<List<ConfiguracaoFinanceira>> listar(String grupo)async=>const[ConfiguracaoFinanceira(id:'category',nome:'Assinaturas',tipo:'DESPESA')];
 }
-void main(){for(final mode in ['new','edit','monthly','installments']){final editing=mode=='edit';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
+void main(){for(final mode in ['new','edit','monthly','installments','parcela']){final editing=mode=='edit'||mode=='parcela';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
  tester.view.physicalSize=const Size(1100,1600);tester.view.devicePixelRatio=1;
  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
  final api=Cards(),config=Config();addTearDown(api.dispose);addTearDown(config.dispose);
@@ -39,7 +39,7 @@ void main(){for(final mode in ['new','edit','monthly','installments']){final edi
  final key=GlobalKey<CompraCartaoWebEditorState>();FaturaCartao? saved;bool locked=false;
  await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(regionalizacaoService:RegionalizacaoService(apiClient:RegionalClient())),child:MaterialApp(
   locale:const Locale('pt'),localizationsDelegates:GlobalMaterialLocalizations.delegates,supportedLocales:const[Locale('pt')],home:Scaffold(body:CompraCartaoWebEditor(
-   key:key,client:api,configuracoes:config,cartaoInicial:'cartao',compraInicial:editing?CompraCartao.fromJson({'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoriaId':'category','categoria':'Assinaturas','versao':5}):null,embedded:true,descricaoController:description,valorController:amount,categoriaController:category,
+   key:key,client:api,configuracoes:config,cartaoInicial:'cartao',compraInicial:editing?CompraCartao.fromJson({'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoriaId':'category','categoria':'Assinaturas','versao':5,if(mode=='parcela')'parcelamentoId':'grupo',if(mode=='parcela')'numeroParcela':2,if(mode=='parcela')'quantidadeParcelas':3,if(mode=='parcela')'valorTotalCompra':240}):null,faturaInicial:mode=='parcela'?FaturaCartao.fromJson(invoiceJson()):null,embedded:true,descricaoController:description,valorController:amount,categoriaController:category,
    onSaved:(f)=>saved=f,onLocked:(v)=>locked=v)))));
  await tester.pumpAndSettle();expect(find.byType(FilledButton),findsNothing);
  if(mode=='monthly'){await tester.tap(find.text('Mensal'));await tester.pumpAndSettle();}
