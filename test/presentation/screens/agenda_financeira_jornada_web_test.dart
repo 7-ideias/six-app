@@ -225,6 +225,7 @@ void main() {
         'valorOriginal': 1680,
         'valorConfirmado': 1380,
         'valorRestante': 0,
+        'somenteCadastro': true,
       },
     );
     await tester.enterText(

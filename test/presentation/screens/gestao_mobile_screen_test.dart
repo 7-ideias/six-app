@@ -352,6 +352,11 @@ void main() {
         navigations: navigations,
         area: GestaoMobileArea.financeiro,
       );
+      await tester.scrollUntilVisible(
+        find.text('Nenhuma conta em aberto neste período.'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
       expect(
         find.text('Nenhuma conta em aberto neste período.'),
         findsOneWidget,
