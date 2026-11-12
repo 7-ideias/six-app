@@ -77,6 +77,36 @@ void main() {
     expect(find.textContaining('não possui permissão'), findsOneWidget);
   });
 
+  testWidgets('edicao inativa o cartao preservando ID e versao', (tester) async {
+    final api = _Api()..items = [const CartaoCredito(
+      id: 'card-existing', nome: 'Inter', instituicao: 'Inter',
+      diaFechamento: 25, diaVencimento: 5, ativo: true, versao: 2,
+    )];
+    await open(tester, api);
+    await tap(tester, find.byIcon(Icons.edit_outlined));
+    await tap(tester, find.byType(SwitchListTile));
+    await tap(tester, find.byKey(const ValueKey('cards-save')));
+    expect(api.requests.single.id, 'card-existing');
+    expect(api.requests.single.versao, 2);
+    expect(api.requests.single.ativo, isFalse);
+    expect(api.items.single.versao, 3);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('falha de atualizacao conserva dados sem permitir edicao desatualizada', (tester) async {
+    final api = _Api()..items = [const CartaoCredito(
+      id: 'card-existing', nome: 'Inter', instituicao: 'Banco Inter',
+      diaFechamento: 25, diaVencimento: 5, ativo: true, versao: 2,
+    )];
+    await open(tester, api);
+    api.failLoad = true;
+    await tap(tester, find.widgetWithIcon(OutlinedButton, Icons.refresh).first);
+    expect(find.text('Inter'), findsOneWidget);
+    expect(find.textContaining('última consulta'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+    expect(find.byKey(const ValueKey('cards-create')), findsNothing);
+  });
+
   for (final width in [390.0, 1100.0]) {
     for (final locale in ['pt', 'en', 'es']) {
       testWidgets('cadastro preserva formulario e ID no retry $width $locale', (tester) async {
