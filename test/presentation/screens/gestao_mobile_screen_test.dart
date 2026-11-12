@@ -360,17 +360,16 @@ void main() {
         reason: tester.widgetList<Text>(find.byType(Text))
             .map((text) => text.data).join(' | '),
       );
-      await tester.scrollUntilVisible(
-        find.text('Nenhuma conta em aberto neste período.'),
-        200,
-        scrollable: find.descendant(
-          of: find.byType(ListView),
-          matching: find.byType(Scrollable),
-        ).first,
+      final financeList = tester.widget<ListView>(find.byType(ListView).first);
+      financeList.controller!.jumpTo(
+        financeList.controller!.position.maxScrollExtent,
       );
+      await tester.pumpAndSettle();
       expect(
         find.text('Nenhuma conta em aberto neste período.'),
         findsOneWidget,
+        reason: tester.widgetList<Text>(find.byType(Text))
+            .map((text) => text.data).join(' | '),
       );
 
       await tester.ensureVisible(find.text('Agenda financeira'));
