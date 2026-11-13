@@ -11,6 +11,7 @@ on:
       - 'test/providers/financeiro_resumo_test.dart'
       - 'lib/presentation/screens/agenda_financeira*mobile*'
       - 'test/presentation/screens/agenda_financeira_mobile_jornada_test.dart'
+      - 'test/presentation/screens/agenda_financeira_mobile_dark_mode_test.dart'
       - 'lib/data/models/usuario_model.dart'
       - 'test/data/models/usuario_model_preferences_test.dart'
       - 'lib/data/models/agenda_financeira_baixa_model.dart'
