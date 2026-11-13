@@ -206,7 +206,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   bool _pagamentoEscolhido=false;
   bool get _aguardandoPagamento => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&!_pagamentoEscolhido;
-  bool _noCartao=false,_cartaoVisitado=false,_cartaoPendente=false;
+  bool _noCartao=false,_cartaoVisitado=false,_cartaoPendente=false,_cartaoDisponivel=false;
   bool get _compraCartao => !widget.modoEdicao&&_tipoSelecionado=='Pagar'&&_noCartao;
   final _compraKey=GlobalKey<CompraCartaoWebEditorState>();
   CartaoCreditoApiClient? _cartaoClient;
@@ -560,7 +560,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_isLoading || widget.modoEdicao || _service.espacoFinanceiro == espaco)
       return;
     setState(() {
-      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_noCartao=false;_pagamentoEscolhido=false;
+      _cartaoClient?.dispose();_cartaoClient=null;_cartaoVisitado=false;_cartaoDisponivel=false;_noCartao=false;_pagamentoEscolhido=false;
       _service = _service.paraEspaco(espaco);
       _contaFinanceiraId = null;
       _centroCustoId = null;
@@ -1909,7 +1909,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_etapa == 1 && !_espacoEscolhido) return;
     if (_etapa == 2) {
       if(_aguardandoPagamento)return;
-      if(_compraCartao){if(!(_compraKey.currentState?.validate()??false))return;}
+      if(_compraCartao){
+        if(!(_compraKey.currentState?.validate()??false)) {
+          setState(() => _erroJornada = context.t('invoices.checkPurchase'));
+          return;
+        }
+      }
       else if(!(_formKey.currentState?.validate()??false)) {
         setState(() { _openSections['main'] = true; _openSections['dates'] = true; });
         return;
@@ -2097,7 +2102,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         !blocked &&
         (_etapa != 0 || _tipoEscolhido) &&
         (_etapa != 1 || _espacoEscolhido) &&
-        (_etapa != 2 || !_aguardandoPagamento);
+        (_etapa != 2 || (!_aguardandoPagamento && (!_compraCartao || _cartaoDisponivel)));
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     );
@@ -2407,6 +2412,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             child:ExcludeFocus(excluding:_etapa!=2||!_compraCartao,
                               child:CompraCartaoWebEditor(key:_compraKey,client:_cartaoClient!,embedded:true,
                                 descricaoController:_descricaoController,valorController:_valorController,categoriaController:_categoriaController,
+                                onAvailabilityChanged:(v){if(mounted&&_cartaoDisponivel!=v)setState(()=>_cartaoDisponivel=v);},
                                 onBusy:(v){if(mounted)setState(()=>_isLoading=v);},
                                 onLocked:(v){if(mounted)setState(()=>_cartaoPendente=v);},
                                 onError:(v){if(mounted)setState(()=>_erroJornada=v);},
