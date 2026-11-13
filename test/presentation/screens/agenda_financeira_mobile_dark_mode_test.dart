@@ -36,7 +36,27 @@ void main() {
   });
 
   for (final brightness in [Brightness.light, Brightness.dark]) {
-    testWidgets('compact summary expands and collapses in $brightness', (
+    testWidgets('eventos pagos aparecem no dia efetivo sem somar o valor original em $brightness', (tester) async {
+    await _pumpAgenda(tester, brightness: brightness, service: _FakeAgendaService(agendaPayload: {
+      'gruposAgenda': [
+        {'titulo': 'Confirmados', 'itens': [
+          {..._agendaItem('evento1', 'RECEBER', 'Recebimento antecipado', 'RECEBIDO', 100),
+            'dataVencimento': '2026-08-15', 'dataAgenda': '2026-08-08',
+            'tipoEvento': 'REALIZADO', 'idEvento': 'evento1:baixa-0',
+            'valorEvento': 30, 'valorConfirmado': 30, 'valorRestante': 0},
+        ]},
+      ],
+    }));
+    expect(find.textContaining('Recebido em 08/08/2026'), findsWidgets);
+    expect(find.textContaining('Antecipado'), findsWidgets);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Calendário'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('agenda-calendario-toggle-08/08/2026')), findsOneWidget);
+    expect(find.byKey(const Key('agenda-calendario-toggle-15/08/2026')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('compact summary expands and collapses in $brightness', (
       tester,
     ) async {
       await _pumpAgenda(

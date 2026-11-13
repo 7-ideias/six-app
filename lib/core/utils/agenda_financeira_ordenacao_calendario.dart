@@ -26,7 +26,7 @@ class AgendaFinanceiraOrdenacaoCalendario {
   }
 
   static DateTime? _lerVencimento(Map<String, dynamic> item) =>
-      _lerData(item['dataVencimento']) ?? _lerData(item['vencimento']);
+      _lerData(item['dataAgenda']) ?? _lerData(item['dataVencimento']) ?? _lerData(item['vencimento']);
 
   static DateTime? _lerData(dynamic valor) {
     if (valor is DateTime) return DateTime(valor.year, valor.month, valor.day);

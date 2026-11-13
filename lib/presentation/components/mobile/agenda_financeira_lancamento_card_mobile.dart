@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_financeira_evento_label.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/agenda_financeira_calendario_resumo.dart';
@@ -60,6 +61,7 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
     final cor = cancelado ? cores.mutedText : corNatureza(context, entrada);
     final titulo = item['descricao']?.toString().trim() ?? '';
     final status = item['status']?.toString().trim() ?? '';
+    final eventoLabel = agendaFinanceiraEventoLabel(context, item);
     final vencimento = item['vencimento']?.toString().trim() ?? '';
     final meta = <InlineSpan>[
       TextSpan(
@@ -72,7 +74,8 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-      if (mostrarVencimento && vencimento.isNotEmpty && vencimento != '-')
+      if (eventoLabel != null) TextSpan(text: ' • $eventoLabel'),
+      if (eventoLabel == null && mostrarVencimento && vencimento.isNotEmpty && vencimento != '-')
         TextSpan(
           text:
               ' • ${context.t('agenda.mobile.due').replaceAll('{date}', vencimento)}',
@@ -158,8 +161,8 @@ class AgendaFinanceiraLancamentoCardMobile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text.rich(
                         TextSpan(children: meta),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: eventoLabel != null ? null : 2,
+                        overflow: eventoLabel != null ? TextOverflow.visible : TextOverflow.ellipsis,
                         style: TextStyle(
                           color: cores.mutedText,
                           fontSize: 11.5,

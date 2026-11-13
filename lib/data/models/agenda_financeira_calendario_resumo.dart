@@ -1,4 +1,4 @@
-/// Totais por data de vencimento. Recebimentos/saídas confirmadas e saldos
+/// Totais por data do evento. Recebimentos/saídas confirmadas e saldos
 /// pendentes são campos distintos e nunca se confundem com o valor original.
 class AgendaFinanceiraCalendarioResumo {
   const AgendaFinanceiraCalendarioResumo({
@@ -28,6 +28,9 @@ class AgendaFinanceiraCalendarioResumo {
   }
 
   static double confirmado(Map<String, dynamic> item) {
+    if (item['tipoEvento'] != null) {
+      return item['tipoEvento'] == 'REALIZADO' ? numero(item['valorEvento']) : 0;
+    }
     final informado = numero(item['valorConfirmado']);
     if (informado > 0) return informado;
     final original = numero(item['valorOriginal'] ?? item['valor']);
@@ -42,6 +45,9 @@ class AgendaFinanceiraCalendarioResumo {
   }
 
   static double aberto(Map<String, dynamic> item) {
+    if (item['tipoEvento'] != null) {
+      return item['tipoEvento'] == 'EM_ABERTO' ? numero(item['valorEvento']) : 0;
+    }
     if (finalizado(item)) return 0.0;
     final restante = item['valorRestante'];
     if (restante != null) return numero(restante).clamp(0.0, double.infinity).toDouble();

@@ -168,7 +168,7 @@ class AgendaResumoPeriodoWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = WebThemeTokens.of(context);
     final open = _panel(context,
-      title: 'open', subtitle: 'dueDates', icon: Icons.pending_actions_outlined,
+      title: 'open', subtitle: 'plannedDates', icon: Icons.pending_actions_outlined,
       children: [
         _line(context, 'receivable', receberAberto, icon: Icons.south_west_rounded, color: tokens.financialPositive),
         Divider(height: 1, color: tokens.divider),

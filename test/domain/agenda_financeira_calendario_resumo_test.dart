@@ -14,6 +14,24 @@ void main() {
     'valor': aberto > 0 ? aberto : total,
   };
 
+  test('eventos separam baixas do saldo sem inferir pagamentos de outro dia', () {
+    final realizado = <String, dynamic>{
+      'tipo': 'receber', 'tipoEvento': 'REALIZADO', 'valorEvento': 30,
+      'valorOriginal': 100, 'valorConfirmado': 30, 'valorRestante': 0,
+      'status': 'Recebido',
+    };
+    final aberto = <String, dynamic>{
+      'tipo': 'receber', 'tipoEvento': 'EM_ABERTO', 'valorEvento': 50,
+      'valorOriginal': 100, 'valorConfirmado': 0, 'valorRestante': 50,
+      'status': 'Parcial',
+    };
+    expect(AgendaFinanceiraCalendarioResumo.confirmado(aberto), 0);
+    expect(AgendaFinanceiraCalendarioResumo.aberto(realizado), 0);
+    final resumo = AgendaFinanceiraCalendarioResumo.calcular([realizado, aberto]);
+    expect(resumo.recebido, 30);
+    expect(resumo.aReceber, 50);
+  });
+
   test('pendente destaca saldo aberto, nunca confirmado zero', () {
     final item = operacao('receber', 'Vencido', 150, 0, 150);
     expect(AgendaFinanceiraCalendarioResumo.valorPrincipal(item), 150);

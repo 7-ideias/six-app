@@ -9,6 +9,15 @@ void main() {
     {'id': 'fevereiro', 'vencimento': '15/02/2026'},
   ];
 
+  test('data do evento prevalece sobre vencimento na ordenacao', () {
+    final itens = <Map<String, dynamic>>[
+      {'id': 'antecipado', 'dataAgenda': '2026-11-11', 'dataVencimento': '2026-11-15'},
+      {'id': 'atrasado', 'dataAgenda': '2026-11-12', 'dataVencimento': '2026-11-10'},
+    ];
+    final ordenados = AgendaFinanceiraOrdenacaoCalendario.ordenarPorVencimento(itens);
+    expect(ordenados.map((i) => i['id']), ['atrasado', 'antecipado']);
+  });
+
   test('ordena por data real decrescente por padrao', () {
     final ordenados =
         AgendaFinanceiraOrdenacaoCalendario.ordenarPorVencimento(lancamentos);
