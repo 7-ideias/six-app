@@ -1673,12 +1673,32 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if(mounted) await _consultar(mostrarFeedback:true);
   }
 
-  Future<void> _novoLancamento() async {
+  Future<void> _duplicarLancamento(Map<String, dynamic> origem) async {
+    if (_executandoAcao) return;
+    setState(() => _executandoAcao = true);
+    Map<String, dynamic>? copia;
+    try {
+      copia = await _service.prepararDuplicacao(origem,
+        descricaoModelo: context.t('agenda.duplicate.description'),
+        hoje: context.read<LocaleSettingsProvider>().calendarNow,
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('agenda.duplicate.error'))),
+      );
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (mounted && copia != null) await _novoLancamento(copia: copia);
+  }
+
+  Future<void> _novoLancamento({Map<String, dynamic>? copia}) async {
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
       service: _service,
       empresaSelecionada: 'Empresa',
       empresas: const <String>['Empresa'],
+      lancamentoInicial: copia,
     );
     if (!mounted || item == null) {
       return;
@@ -2251,6 +2271,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       bloqueado: _executandoAcao,
       onDetalhes: () => _mostrarDetalhesLancamento(item),
       onEditar: () => _editarLancamento(item),
+      onDuplicar: item['faturaCartaoId'] == null ? () => _duplicarLancamento(item) : null,
       onLiquidar: () => _confirmarTotal(item, 'Liquidar'),
       onRegistrarParcial: () => _registrarParcial(item),
       onCancelar: () => _cancelarRecorrencia(item),

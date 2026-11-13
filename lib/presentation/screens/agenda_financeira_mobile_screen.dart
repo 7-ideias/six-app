@@ -1161,13 +1161,33 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
-  Future<void> _novoLancamento() async {
+  Future<void> _duplicarLancamento(Map<String, dynamic> origem) async {
+    if (_executandoAcao) return;
+    setState(() => _executandoAcao = true);
+    Map<String, dynamic>? copia;
+    try {
+      copia = await _service.prepararDuplicacao(origem,
+        descricaoModelo: context.t('agenda.duplicate.description'),
+        hoje: context.read<LocaleSettingsProvider>().calendarNow,
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('agenda.duplicate.error'))),
+      );
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (mounted && copia != null) await _novoLancamento(copia: copia);
+  }
+
+  Future<void> _novoLancamento({Map<String, dynamic>? copia}) async {
     final item = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute<Map<String, dynamic>>(
         builder: (_) => AgendaFinanceiraLancamentoMobileCreateScreen(
           service: _service,
           caixaApiClient: _caixaApiClient,
           tipoInicial: _visaoContas ? _tipoContas : null,
+          lancamentoInicial: copia,
         ),
       ),
     );
@@ -1209,6 +1229,10 @@ class _AgendaFinanceiraMobileScreenState
     final comando = acao.trim().toLowerCase();
     if (comando == 'detalhes') {
       await _mostrarDetalhes(item);
+      return;
+    }
+    if (comando == 'duplicar') {
+      await _duplicarLancamento(item);
       return;
     }
     if (comando == 'editar') {
@@ -2714,8 +2738,10 @@ class _AgendaFinanceiraMobileScreenState
         _toDouble(item['valorConfirmado']) == 0)
       acoesInformadas.add('Excluir');
     acoesInformadas.add('Detalhes');
+    acoesInformadas.add('Duplicar');
     const List<String> ordemAcoes = <String>[
       'Editar',
+      'Duplicar',
       'Liquidar',
       'Registrar parcial',
       'Cancelar',
@@ -2928,7 +2954,7 @@ class _AgendaFinanceiraMobileScreenState
                                   item,
                                 ),
                           icon: Icon(_iconeAcaoAgenda(acao), size: 19),
-                          label: Text(acao),
+                          label: Text(acao == 'Duplicar' ? context.t('agenda.duplicate.action') : acao),
                           style: _outlinedCtaStyle(),
                         ),
                       ),
@@ -2957,6 +2983,8 @@ class _AgendaFinanceiraMobileScreenState
 
   IconData _iconeAcaoAgenda(String acao) {
     switch (acao) {
+      case 'Duplicar':
+        return Icons.copy_outlined;
       case 'Editar':
         return Icons.edit_outlined;
       case 'Liquidar':

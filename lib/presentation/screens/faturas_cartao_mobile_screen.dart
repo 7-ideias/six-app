@@ -35,13 +35,16 @@ class _FaturasState extends State<FaturasCartaoMobileScreen> {
  Future<void> purchaseAction(FaturaCartao f,CompraCartao c)async{
   if(loading||acting||error!=null||!permission)return;
   final v=await escolherCartaoOpcao(context,'invoices.purchaseActions',{
+   'duplicate':context.t('agenda.duplicate.action'),
    if(!f.paga)'edit':context.t('invoices.editPurchase'),
    if(!f.paga)'delete':context.t(c.serieRecorrenciaId==null?'invoices.delete.confirm':'invoices.recurring.deleteThis'),
    if(c.recorrenciaAtiva)'stop':context.t('invoices.stop.confirm'),
   },null);
   if(v==null||!mounted)return;
   setState(()=>acting=true);
-  if(v=='edit'){
+  if(v=='duplicate'){
+   await Navigator.push(context,MaterialPageRoute<FaturaCartao>(builder:(_)=>CompraCartaoMobileScreen(espaco:widget.espaco,client:api,duplicarCompra:c,fatura:f)));
+  }else if(v=='edit'){
    await Navigator.push(context,MaterialPageRoute<FaturaCartao>(builder:(_)=>CompraCartaoMobileScreen(espaco:widget.espaco,client:api,compra:c,fatura:f)));
   }else{
    final command=gerarUuidV4(),r=context.read<LocaleSettingsProvider>();
@@ -64,7 +67,7 @@ class _FaturasState extends State<FaturasCartaoMobileScreen> {
    if(!f.paga&&f.compras.any((c)=>c.prevista))Text(context.t('invoices.recurring.paymentHint')),
    ExpansionTile(key:ValueKey('${f.id}-${f.versao}'),initiallyExpanded:widget.faturaId!=null,tilePadding:EdgeInsets.zero,title:Text('${context.t('invoices.purchases')} (${f.compras.length})'),children:[
     for(final c in f.compras)Padding(padding:const EdgeInsets.symmetric(vertical:10),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-     Row(crossAxisAlignment:CrossAxisAlignment.start,children:[Expanded(child:Text(c.descricao,style:const TextStyle(fontWeight:FontWeight.w600))),if(enabled&&(!f.paga||c.recorrenciaAtiva))IconButton(onPressed:()=>purchaseAction(f,c),tooltip:context.t('invoices.purchaseActions'),icon:const Icon(Icons.more_horiz))]),
+     Row(crossAxisAlignment:CrossAxisAlignment.start,children:[Expanded(child:Text(c.descricao,style:const TextStyle(fontWeight:FontWeight.w600))),if(enabled)IconButton(onPressed:()=>purchaseAction(f,c),tooltip:context.t('invoices.purchaseActions'),icon:const Icon(Icons.more_horiz))]),
      Text(r.formatCurrency(c.valor),style:Theme.of(context).textTheme.titleMedium),Text('${r.formatDate(c.dataCompra)} · ${c.categoria??context.t('invoices.noCategory')}'),
      if(c.parcelamentoId!=null)Text('${context.t('invoices.installments.part')} ${c.numeroParcela}/${c.quantidadeParcelas} · ${r.formatCurrency(c.valorTotalCompra??0)}'),
      if(c.serieRecorrenciaId!=null)Text('${context.t('invoices.recurring.monthly')} · ${context.t(c.prevista?'invoices.recurring.forecast':'invoices.recurring.recorded')} · ${context.t(c.recorrenciaAtiva?'space.active':'invoices.recurring.ended')}'),

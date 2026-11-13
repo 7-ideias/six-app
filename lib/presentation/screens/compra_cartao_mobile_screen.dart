@@ -13,7 +13,8 @@ import 'cartoes_credito_mobile_screen.dart';
 
 /// Mobile purchase route: bottom-sheet selectors, stacked form and review.
 class CompraCartaoMobileScreen extends StatefulWidget {
-  const CompraCartaoMobileScreen({super.key,required this.espaco,this.client,this.compra,this.fatura,this.configuracoes});
+  const CompraCartaoMobileScreen({super.key,required this.espaco,this.client,this.compra,this.fatura,this.configuracoes,this.duplicarCompra});
+  final CompraCartao? duplicarCompra;
   final String espaco;final CartaoCreditoApiClient? client;final CompraCartao? compra;final FaturaCartao? fatura;final ConfiguracaoFinanceiraService? configuracoes;
   @override State<CompraCartaoMobileScreen> createState()=>_CompraState();
 }
@@ -24,7 +25,7 @@ class _CompraState extends State<CompraCartaoMobileScreen> {
   late final description=TextEditingController(text:widget.compra?.descricao??'');
   final amount=TextEditingController(),count=TextEditingController(text:'2');
   late DateTime date=widget.compra?.dataCompra??context.read<LocaleSettingsProvider>().calendarNow;late DateTime? end=widget.compra?.recorrenciaFim;
-  late String? card=widget.fatura?.cartaoId,category=widget.compra?.categoriaId;
+  late String? card=widget.fatura?.cartaoId,category=widget.compra?.categoriaId??widget.duplicarCompra?.categoriaId;
   List<CartaoCredito> cards=[];List<ConfiguracaoFinanceira> categories=[];
   String mode='once';bool nextOccurrences=false,loading=true,busy=false,permission=false,review=false,conflict=false,seeded=false;
   String? error;PreviaFaturaCartao? preview;List<ParcelaCartao>? plan;
@@ -34,7 +35,7 @@ class _CompraState extends State<CompraCartaoMobileScreen> {
   bool get series=>widget.compra==null?mode=='monthly':recurring&&nextOccurrences;
   bool get locked=>busy||attempt!=null;
   @override void initState(){super.initState();load();}
-  @override void didChangeDependencies(){super.didChangeDependencies();if(!seeded){seeded=true;amount.text=widget.compra==null?'':widget.compra!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}}
+  @override void didChangeDependencies(){super.didChangeDependencies();if(!seeded){seeded=true;amount.text=widget.compra==null?'':widget.compra!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);final copia=widget.duplicarCompra;if(copia!=null){description.text=context.t('agenda.duplicate.description').replaceAll('{description}',copia.descricao);amount.text=(copia.valorTotalCompra??copia.valor).toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}}}
   @override void dispose(){description.dispose();amount.dispose();count.dispose();if(widget.client==null)api.dispose();if(widget.configuracoes==null)config.dispose();super.dispose();}
   Future<void> load()async{
     setState((){loading=true;error=null;permission=false;});
