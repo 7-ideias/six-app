@@ -45,28 +45,47 @@ void main() {
         service: _FakeAgendaService(),
       );
       final toggle = find.byKey(const ValueKey('agenda-mobile-summary-toggle'));
-      expect(find.text('Resultado realizado no período'), findsOneWidget);
-      expect(find.text('A receber aberto'), findsNothing);
-      expect(find.text('Pago confirmado'), findsNothing);
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(find.text('Resultado realizado no período'), findsOneWidget);
-      expect(find.text('A receber aberto'), findsOneWidget);
-      expect(find.text('Pago confirmado'), findsOneWidget);
+      expect(find.text('A receber'), findsOneWidget);
       expect(find.text('Saldo a realizar'), findsOneWidget);
-      expect(find.text('Resultado projetado do período'), findsOneWidget);
-      final composition = find.text('Ver lançamentos').last;
+      expect(find.text('Recebido'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('agenda-mobile-summary-group-1')));
+      await tester.pumpAndSettle();
+      expect(find.text('A receber'), findsNothing);
+      expect(find.text('Recebido'), findsOneWidget);
+      expect(find.text('Pago'), findsOneWidget);
+      expect(find.text('Resultado realizado'), findsOneWidget);
+      final composition = find.byKey(const ValueKey('agenda-mobile-summary-paid'));
       await tester.ensureVisible(composition);
       await tester.tap(composition);
       await tester.pumpAndSettle();
       expect(find.text('Nenhuma baixa confirmada nesta seleção.'), findsOneWidget);
       await tester.tap(find.byTooltip('Fechar'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(toggle);
+      await tester.tap(find.byKey(const ValueKey('agenda-mobile-summary-group-2')));
+      await tester.pumpAndSettle();
+      expect(find.text('Projeção do período'), findsOneWidget);
+      expect(find.text('Recebido'), findsNothing);
+      await tester.tap(find.text('Entender cálculo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Resultado realizado'), findsOneWidget);
+      expect(find.text('Saldo a realizar'), findsOneWidget);
+      await tester.tap(find.byTooltip('Fechar'));
+      await tester.pumpAndSettle();
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      expect(find.text('Resultado realizado no período'), findsOneWidget);
-      expect(find.text('A receber aberto'), findsNothing);
+      expect(find.text('Projeção do período'), findsOneWidget);
+      expect(find.byKey(const ValueKey('agenda-mobile-summary-group-0')), findsNothing);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('agenda-mobile-summary-group-0')));
+      await tester.pumpAndSettle();
+      tester.view.physicalSize = const Size(320, 1600);
+      await tester.pumpAndSettle();
+      final tile = tester.widget<Material>(find.ancestor(
+        of: find.byKey(const ValueKey('agenda-mobile-summary-receivable')),
+        matching: find.byType(Material)).first);
+      expect(tile.color, brightness == Brightness.dark
+        ? SixMobileColorScheme.dark.surface : SixMobileColorScheme.light.surface);
       expect(tester.takeException(), isNull);
     });
   }

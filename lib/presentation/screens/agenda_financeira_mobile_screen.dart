@@ -177,7 +177,8 @@ class _AgendaFinanceiraMobileScreenState
 
   bool _somenteImpostoRenda = false;
   bool _mostrarCancelados = false;
-  bool _resumoExpandido = false;
+  bool _resumoExpandido = true;
+  int _resumoGrupo = 0;
   bool _calendarioDataDecrescente = true;
   Future<void> _filaPreferencias = Future<void>.value();
   static const _visoesPreferencia = [
@@ -2397,245 +2398,199 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _buildResumo() {
-    final items = <_ResumoAgendaCardData>[
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.openReceivable'),
-        _totalReceberPrevisto,
-        Icons.south_west_rounded,
-        _accentColor,
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.openPayable'),
-        _totalPagarPrevisto,
-        Icons.north_east_rounded,
-        _colors.error,
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.summary.remaining'),
-        _saldoARealizar,
-        Icons.pending_actions_outlined,
-        _accentColor,
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.forecastBalance'),
-        _saldoPrevisto,
-        Icons.query_stats_rounded,
-        Color.lerp(Colors.deepPurpleAccent, _colors.titleText, 0.18)!,
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.received'),
-        _totalRecebidoConfirmado,
-        Icons.verified_rounded,
-        Color.lerp(Colors.cyanAccent, _colors.titleText, 0.22)!,
-        onTap: () => _mostrarComposicaoConfirmada('receber'),
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.paid'),
-        _totalPagoConfirmado,
-        Icons.task_alt_rounded,
-        Color.lerp(Colors.amberAccent, _colors.titleText, 0.18)!,
-        onTap: () => _mostrarComposicaoConfirmada('pagar'),
-      ),
-      _ResumoAgendaCardData(
-        context.t('agenda.mobile.summary.confirmedBalance'),
-        _saldoConfirmado,
-        Icons.account_balance_wallet_rounded,
-        _accentColor,
-      ),
-    ];
-
-    final maiorValor = items.fold<double>(0, (maior, item) {
-      final valorAbsoluto = item.value.abs();
-      return valorAbsoluto > maior ? valorAbsoluto : maior;
-    });
-
-    final duration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 220);
-    final detalhes = _resumoExpandido
-        ? Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Column(
-              children: [
-                Divider(color: _borderColor, height: 20),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(context.t('agenda.summary.explanation'),
-                    style: TextStyle(color: _mutedTextColor, fontSize: 12),),
-                ),
-                ...items
-                    .take(items.length - 1)
-                    .map(
-                      (item) => _buildResumoItem(
-                        item,
-                        percent: maiorValor <= 0
-                            ? 0
-                            : item.value.abs() / maiorValor,
-                      ),
-                    ),
-              ],
-            ),
-          )
-        : const SizedBox(width: double.infinity);
-    return Container(
+    final actual = _resumoGrupo == 1;
+    final forecast = _resumoGrupo == 2;
+    final total = forecast ? _saldoPrevisto : actual ? _saldoConfirmado : _saldoARealizar;
+    final totalKey = forecast ? 'forecast' : actual ? 'actualResult' : 'remaining';
+    final duration = MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context)
+        ? Duration.zero : const Duration(milliseconds: 220);
+    return Column(
       key: const ValueKey('agenda-mobile-summary'),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            button: true,
-            expanded: _resumoExpandido,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                key: const ValueKey('agenda-mobile-summary-toggle'),
-                borderRadius: BorderRadius.circular(20),
-                onTap: () =>
-                    setState(() => _resumoExpandido = !_resumoExpandido),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _softBlueColor,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Expanded(child: Text(context.t('agenda.periodSummary.title'),
+            style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w800))),
+          IconButton(
+            key: const ValueKey('agenda-mobile-summary-toggle'),
+            tooltip: context.t(_resumoExpandido ? 'agenda.mobile.summary.hide' : 'agenda.mobile.summary.show'),
+            onPressed: () => setState(() => _resumoExpandido = !_resumoExpandido),
+            icon: Icon(_resumoExpandido ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              color: _accentColor)),
+        ]),
+        _animarResumo(duration: duration,
+          child: !_resumoExpandido
+            ? _resumoTotal(totalKey, total)
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Row(children: [
+                  for (var i = 0; i < 3; i++)
+                    Expanded(child: Padding(
+                      padding: EdgeInsets.only(right: i == 2 ? 0 : 4),
+                      child: Semantics(selected: _resumoGrupo == i, child: Material(
+                        color: _resumoGrupo == i ? _colors.softAccentSurface : _surfaceColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: _resumoGrupo == i ? _accentColor : _borderColor)),
+                        child: InkWell(
+                          key: ValueKey('agenda-mobile-summary-group-$i'),
                           borderRadius: BorderRadius.circular(12),
+                          onTap: () => setState(() => _resumoGrupo = i),
+                          child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
+                            child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                              child: Text(context.t([
+                                'agenda.periodSummary.open', 'agenda.mobile.summary.actualTab',
+                                'agenda.mobile.summary.forecastTab'][i]),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: _resumoGrupo == i ? _accentColor : _titleTextColor,
+                                  fontWeight: _resumoGrupo == i ? FontWeight.w700 : FontWeight.w500)))),
                         ),
-                        child: Icon(
-                          Icons.account_balance_wallet_outlined,
-                          size: 20,
-                          color: _accentColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t(
-                                'agenda.mobile.summary.confirmedBalance',
-                              ),
-                              style: TextStyle(
-                                color: _mutedTextColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            TweenAnimationBuilder<double>(
-                              key: ValueKey(
-                                'confirmed-balance-$_saldoConfirmado',
-                              ),
-                              tween: Tween(begin: 0, end: _saldoConfirmado),
-                              duration: MediaQuery.disableAnimationsOf(context)
-                                  ? Duration.zero
-                                  : const Duration(milliseconds: 650),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, value, child) => Text(
-                                _formatarMoeda(value),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: _saldoConfirmado < 0
-                                      ? _colors.error
-                                      : _titleTextColor,
-                                  fontSize: 23,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              context.t(
-                                _resumoExpandido
-                                    ? 'agenda.mobile.summary.hide'
-                                    : 'agenda.mobile.summary.show',
-                              ),
-                              style: TextStyle(
-                                color: _accentColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      AnimatedRotation(
-                        turns: _resumoExpandido ? 0.5 : 0,
-                        duration: duration,
-                        child: Icon(
-                          Icons.expand_more_rounded,
-                          color: _accentColor,
-                        ),
-                      ),
+                      )),
+                    )),
+                ]),
+                const SizedBox(height: 12),
+                Text(context.t('agenda.periodSummary.${forecast ? 'forecastHint' : actual ? 'actualDates' : 'dueDates'}'),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12)),
+                const SizedBox(height: 12),
+                AnimatedSwitcher(duration: duration, child: Column(
+                  key: ValueKey(_resumoGrupo), crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!forecast) ...[
+                      _resumoLinha(actual ? 'received' : 'receivable',
+                        actual ? _totalRecebidoConfirmado : _totalReceberPrevisto,
+                        Icons.south_west_rounded,
+                        AgendaFinanceiraLancamentoCardMobile.corNatureza(context, true),
+                        onTap: actual ? () => _mostrarComposicaoConfirmada('receber') : null),
+                      const SizedBox(height: 8),
+                      _resumoLinha(actual ? 'paid' : 'payable',
+                        actual ? _totalPagoConfirmado : _totalPagarPrevisto,
+                        Icons.north_east_rounded, _colors.error,
+                        onTap: actual ? () => _mostrarComposicaoConfirmada('pagar') : null),
+                      const SizedBox(height: 12),
                     ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (duration == Duration.zero)
-            detalhes
-          else
-            AnimatedSize(
-              duration: duration,
-              alignment: Alignment.topCenter,
-              curve: Curves.easeInOutCubic,
-              child: detalhes,
-            ),
-        ],
-      ),
+                    _resumoTotal(totalKey, total),
+                    if (forecast) ...[
+                      Text(context.t('agenda.periodSummary.estimate'),
+                        style: TextStyle(color: _mutedTextColor, fontSize: 12)),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        style: _outlinedCtaStyle(),
+                        onPressed: _mostrarCalculoResumo,
+                        icon: const Icon(Icons.info_outline_rounded, size: 18),
+                        label: Text(context.t('agenda.mobile.summary.calculation'))),
+                    ],
+                  ],
+                )),
+              ])),
+      ],
     );
   }
 
-  Widget _buildResumoItem(
-    _ResumoAgendaCardData item, {
-    required double percent,
-  }) {
-    final safePercent = percent.clamp(0.0, 1.0).toDouble();
+  Widget _animarResumo({required Duration duration, required Widget child}) =>
+      duration == Duration.zero ? child : AnimatedSize(
+        duration: duration, alignment: Alignment.topCenter, child: child);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 13),
-      child: Column(
-        children: <Widget>[
-          Row(children: [
-            Icon(item.icon, color: item.color, size: 18),
-            const SizedBox(width: 8),
-            Expanded(child: Text(item.title,
-              style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w700,),),),
-          ],),
-          const SizedBox(height: 6),
-          Align(alignment: Alignment.centerLeft, child: Text(
-            _formatarMoeda(item.value),
-            style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, fontSize: 18,),),),
-          if (item.onTap != null)
-            Align(alignment: Alignment.centerLeft, child: OutlinedButton.icon(
-              onPressed: _executandoAcao ? null : item.onTap,
-              icon: const Icon(Icons.receipt_long_outlined, size: 16),
-              label: Text(context.t('agenda.summary.viewEntries')),
-              style: _outlinedCtaStyle(),
-            ),),
-          SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: safePercent,
-              minHeight: 8,
-              color: item.color,
-              backgroundColor: _borderColor,
-            ),
-          ),
-        ],
-      ),
+  Widget _resumoValor(String id, double value, {double fontSize = 18}) =>
+    TweenAnimationBuilder<double>(
+      key: ValueKey('summary-$id-$value'),
+      tween: Tween(begin: 0, end: value),
+      duration: MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
+        ? Duration.zero : const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      builder: (context, animated, child) => FittedBox(
+        fit: BoxFit.scaleDown, alignment: Alignment.centerRight,
+        child: Text(_formatarMoeda(animated), maxLines: 1,
+          style: TextStyle(color: value < 0 ? _colors.error : _titleTextColor,
+            fontSize: fontSize, fontWeight: FontWeight.w800))),
     );
-  }
+
+  Widget _resumoLinha(String label, double value, IconData icon, Color color,
+      {VoidCallback? onTap}) => Material(
+    color: _surfaceColor,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
+      side: BorderSide(color: _borderColor)),
+    child: InkWell(
+      key: ValueKey('agenda-mobile-summary-$label'),
+      borderRadius: BorderRadius.circular(14),
+      onTap: _executandoAcao ? null : onTap,
+      child: Padding(padding: const EdgeInsets.all(14), child: LayoutBuilder(
+        builder: (context, constraints) {
+          final labelWidget = Row(children: [
+            Icon(icon, color: color, size: 20), const SizedBox(width: 10),
+            Expanded(child: Text(context.t('agenda.periodSummary.$label'),
+              style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w600))),
+          ]);
+          final valueWidget = Row(children: [
+            Expanded(child: _resumoValor(label, value)),
+            if (onTap != null) ...[const SizedBox(width: 6),
+              Icon(Icons.chevron_right_rounded, color: _mutedTextColor, size: 20)],
+          ]);
+          if (constraints.maxWidth < 310 || MediaQuery.textScalerOf(context).scale(14) > 18) {
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [labelWidget, const SizedBox(height: 8), valueWidget]);
+          }
+          return Row(children: [Expanded(child: labelWidget), const SizedBox(width: 8),
+            Expanded(child: valueWidget)]);
+        },
+      )),
+    ),
+  );
+
+  Widget _resumoTotal(String label, double value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: LayoutBuilder(builder: (context, constraints) {
+      final title = Row(children: [
+        Expanded(child: Text(context.t('agenda.periodSummary.$label'),
+          style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w700))),
+        if (label != 'forecast') Tooltip(
+          message: context.t('agenda.periodSummary.${label == 'remaining' ? 'remainingHint' : 'actualHint'}'),
+          triggerMode: TooltipTriggerMode.tap,
+          child: Padding(padding: const EdgeInsets.all(12),
+            child: Icon(Icons.info_outline_rounded, color: _mutedTextColor, size: 20))),
+      ]);
+      if (label == 'forecast' || constraints.maxWidth < 340 ||
+          MediaQuery.textScalerOf(context).scale(14) > 18) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          title, const SizedBox(height: 8), _resumoValor(label, value, fontSize: 24)]);
+      }
+      return Row(children: [Expanded(child: title), const SizedBox(width: 8),
+        Expanded(child: _resumoValor(label, value, fontSize: 20))]);
+    }),
+  );
+
+  Future<void> _mostrarCalculoResumo() => showModalBottomSheet<void>(
+    context: context, isScrollControlled: true, useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => SafeArea(top: false,
+      child: Padding(padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        child: Material(color: _surfaceColor, borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: SingleChildScrollView(padding: const EdgeInsets.all(20),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: Container(width: 42, height: 4,
+                  decoration: BoxDecoration(color: _borderColor, borderRadius: BorderRadius.circular(99)))),
+                Row(children: [
+                  Expanded(child: Text(context.t('agenda.mobile.summary.calculation'),
+                    style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w700))),
+                  IconButton(tooltip: context.t('common.close'),
+                    onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close_rounded)),
+                ]),
+                Text(context.t('agenda.periodSummary.forecastHint'),
+                  style: TextStyle(color: _mutedTextColor)),
+                _resumoTotal('actualResult', _saldoConfirmado),
+                Center(child: Icon(Icons.add, color: _mutedTextColor)),
+                _resumoTotal('remaining', _saldoARealizar),
+                Divider(color: _borderColor),
+                _resumoTotal('forecast', _saldoPrevisto),
+                Text(context.t('agenda.periodSummary.estimate'), style: TextStyle(color: _mutedTextColor)),
+                const SizedBox(height: 8),
+                Text(context.t('agenda.periodSummary.scopeHint'), style: TextStyle(color: _mutedTextColor, fontSize: 12)),
+              ]),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Widget _buildTabs() {
     return SizedBox(
@@ -3996,13 +3951,4 @@ class _AgendaMobileFiltro {
   final String status;
   final Set<String> formasPagamento;
   final Set<String> centrosCusto;
-}
-
-class _ResumoAgendaCardData {
-  const _ResumoAgendaCardData(this.title, this.value, this.icon, this.color, {this.onTap,});
-  final VoidCallback? onTap;
-  final String title;
-  final double value;
-  final IconData icon;
-  final Color color;
 }
