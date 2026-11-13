@@ -46,13 +46,13 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
    if(e is CartaoCreditoApiException&&(e.statusCode==401||e.statusCode==403)){_cartoes=[];_faturas=[];}
   });}finally{if(mounted)setState(()=>_loading=false);}
  }
- Future<void> _editar(FaturaCartao f,CompraCartao c)async{
+ Future<void> _editar(FaturaCartao f,CompraCartao c,{bool duplicar=false})async{
   if(_acting||_loading)return;
   setState(()=>_acting=true);
   final result=await showSixWebAnimatedDialog<FaturaCartao>(context:context,barrierDismissible:false,
-    barrierLabel:context.t('invoices.editPurchase'),builder:(_)=>Dialog(
+    barrierLabel:context.t(duplicar?'agenda.duplicate.action':'invoices.editPurchase'),builder:(_)=>Dialog(
       child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:660),child:CompraCartaoWebEditor(
-       client:_client,cartoes:_cartoes,cartaoInicial:f.cartaoId,compraInicial:c,faturaInicial:f))));
+       client:_client,cartoes:_cartoes,cartaoInicial:f.cartaoId,compraInicial:duplicar?null:c,duplicarCompra:duplicar?c:null,faturaInicial:duplicar?null:f))));
   if(!mounted)return;
   setState(()=>_acting=false);
   if(result!=null&&widget.faturaId==null)_cartao=result.cartaoId;
@@ -114,10 +114,11 @@ class _FaturasCartaoWebState extends State<FaturasCartaoWeb> {
        if(c.parcelamentoId!=null)Text('${context.t('invoices.installments.part')} ${c.numeroParcela}/${c.quantidadeParcelas} · ${context.t('invoices.installments.total')}: ${r.formatCurrency(c.valorTotalCompra??0)}',style:Theme.of(context).textTheme.bodySmall),
        if(c.serieRecorrenciaId!=null)Padding(padding:const EdgeInsets.only(top:4),child:Text('${context.t('invoices.recurring.monthly')} · ${context.t(c.prevista?'invoices.recurring.forecast':'invoices.recurring.recorded')}${c.recorrenciaAtiva?'':' · ${context.t('invoices.recurring.ended')}'}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.primary)))])),
       const SizedBox(width:16),Flexible(child:Text(r.formatCurrency(c.valor),textAlign:TextAlign.end)),
-      if((!f.paga||c.recorrenciaAtiva)&&_canEdit&&_erro==null)PopupMenuButton<String>(
+      if(_canEdit&&_erro==null)PopupMenuButton<String>(
        tooltip:context.t('invoices.purchaseActions'),enabled:!_acting&&!_loading,
-       onSelected:(v){if(v=='edit'){_editar(f,c);}else if(v=='stop'){_encerrar(f,c);}else{_excluir(f,c);}},
+       onSelected:(v){if(v=='duplicate'){_editar(f,c,duplicar:true);}else if(v=='edit'){_editar(f,c);}else if(v=='stop'){_encerrar(f,c);}else{_excluir(f,c);}},
        itemBuilder:(_)=>[
+         PopupMenuItem(value:'duplicate',child:Text(context.t('agenda.duplicate.action'))),
          if(!f.paga)PopupMenuItem(value:'edit',child:Text(context.t('invoices.editPurchase'))),
          if(!f.paga)PopupMenuItem(value:'delete',child:Text(context.t(c.serieRecorrenciaId==null?'invoices.delete.confirm':'invoices.recurring.deleteThis'))),
          if(c.recorrenciaAtiva)PopupMenuItem(value:'stop',child:Text(context.t('invoices.stop.confirm')))]),

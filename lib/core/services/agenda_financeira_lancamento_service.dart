@@ -182,6 +182,18 @@ class AgendaFinanceiraLancamentoService {
     }
   }
 
+  Future<Map<String, dynamic>> prepararDuplicacao(
+    Map<String, dynamic> item, {
+    required String descricaoModelo,
+    required DateTime hoje,
+  }) async {
+    final detalhe = await buscarDetalheLancamento(item['id'].toString());
+    if (detalhe.isEmpty) throw const FormatException('Empty detail');
+    return AgendaFinanceiraLancamentoDetalhe.fromJson(detalhe).paraDuplicacao(
+      item, descricaoModelo: descricaoModelo, hoje: hoje,
+    );
+  }
+
   Future<Map<String, dynamic>> buscarDetalheLancamento(
     String idLancamento,
   ) async {

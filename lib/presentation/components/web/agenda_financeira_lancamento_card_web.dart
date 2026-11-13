@@ -20,6 +20,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     required this.formatarMoeda,
     required this.onDetalhes,
     required this.onEditar,
+    this.onDuplicar,
     required this.onLiquidar,
     required this.onRegistrarParcial,
     required this.onCancelar,
@@ -33,6 +34,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
   final String Function(double) formatarMoeda;
   final VoidCallback onDetalhes;
   final VoidCallback onEditar;
+  final VoidCallback? onDuplicar;
   final VoidCallback onLiquidar;
   final VoidCallback onRegistrarParcial;
   final VoidCallback onCancelar;
@@ -350,6 +352,8 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
           icon: const Icon(Icons.more_vert_rounded),
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'detalhes', child: Text('Detalhes')),
+            if (onDuplicar != null)
+              PopupMenuItem(value: 'duplicar', child: Text(context.t('agenda.duplicate.action'))),
             if (podeEditar)
               PopupMenuItem(
                 key: const Key('agenda-card-editar'),
@@ -376,7 +380,9 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
               ),
           ],
           onSelected: (acao) {
-            if (acao == 'excluir') {
+            if (acao == 'duplicar') {
+              onDuplicar?.call();
+            } else if (acao == 'excluir') {
               onExcluir?.call();
             } else if (acao == 'editar') {
               onEditar();

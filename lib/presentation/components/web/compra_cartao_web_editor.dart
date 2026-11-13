@@ -10,11 +10,12 @@ import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class CompraCartaoWebEditor extends StatefulWidget {
-  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial,this.faturaInicial});
+  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial,this.faturaInicial,this.duplicarCompra});
   final CartaoCreditoApiClient client;
   final List<CartaoCredito>? cartoes;
   final bool embedded;
   final CompraCartao? compraInicial;
+  final CompraCartao? duplicarCompra;
   final FaturaCartao? faturaInicial;
   final TextEditingController? descricaoController,valorController,categoriaController;
   final ValueChanged<bool>? onBusy,onLocked;
@@ -56,8 +57,15 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   @override void initState(){super.initState();_cartao=widget.cartaoInicial;
     if(!_parcelaExistente&&widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
     final compra=widget.compraInicial;if(compra!=null){_descricao.text=compra.descricao;_data=compra.dataCompra;_categoria=compra.categoriaId;_mensal=compra.serieRecorrenciaId!=null;_fim=compra.recorrenciaFim;}
+    final copia=widget.duplicarCompra;
+    if(copia!=null){_categoria=copia.categoriaId;}
     _carregar();}
   @override void didChangeDependencies(){super.didChangeDependencies();
+    if(!_preenchido&&widget.duplicarCompra!=null){
+      _preenchido=true;final copia=widget.duplicarCompra!;
+      _descricao.text=context.t('agenda.duplicate.description').replaceAll('{description}',copia.descricao);
+      _valor.text=(copia.valorTotalCompra??copia.valor).toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);
+    }
     if(!_preenchido&&widget.compraInicial!=null){_preenchido=true;_valor.text=widget.compraInicial!.valor.toStringAsFixed(2).replaceAll('.',context.read<LocaleSettingsProvider>().decimalSeparator);}
   }
   @override void dispose(){_quantidade.dispose();if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}

@@ -159,7 +159,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
         maxWidth: modoEdicao ? null : 1120,
         textoDaAppBar: modoEdicao
             ? context.t('agenda.form.edit')
-            : context.t('agenda.form.create'),
+            : context.t(lancamentoInicial != null ? 'agenda.duplicate.action' : 'agenda.form.create'),
         body: _LancamentoAgendaFinanceiraWebBody(
           service: service,
           empresaSelecionada: empresaSelecionada,
@@ -410,8 +410,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
         ? widget.empresaSelecionada
         : empresas.first;
 
-    if (widget.modoEdicao && widget.lancamentoInicial != null) {
+    if (widget.lancamentoInicial != null) {
       _preencherCamposEdicao(widget.lancamentoInicial!);
+      if (!widget.modoEdicao) {
+        _tipoEscolhido = true;
+        _espacoEscolhido = true;
+        _pagamentoEscolhido = true;
+        _etapa = 2;
+        _detalhesVisitados = true;
+        _alterado = true;
+      }
     }
 
     _sincronizarTextosData();
@@ -1159,6 +1167,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: !widget.modoEdicao && widget.lancamentoInicial != null && controller == _contatoController
+          ? (_) => _idContatoController.clear() : null,
       keyboardType: keyboardType,
       maxLines: maxLines,
       enabled: enabled,
@@ -2289,7 +2299,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          _journey(hints[_etapa]),
+                          !widget.modoEdicao && widget.lancamentoInicial != null
+                              ? context.t('agenda.duplicate.hint') : _journey(hints[_etapa]),
                           style: TextStyle(
                             color: tokens.secondaryText,
                             height: 1.5,
