@@ -1,4 +1,5 @@
-import 'dart:convert';
+import 'providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'dart:convert';
 
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
@@ -52,8 +53,10 @@ class _CadastroColaboradorWebBodyState
   );
   final TextEditingController _idUnicoDoUsuarioController =
       TextEditingController(text: 'USR-');
+  late
   final TextEditingController _dataCadastroController = TextEditingController(
-    text: _formatDateTime(DateTime.now()),
+    text: _formatDateTime(
+          context.read<LocaleSettingsProvider>().calendarNow,),
   );
   final TextEditingController _idUnicoDaEmpresaController =
       TextEditingController();
@@ -68,8 +71,10 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _idColaboradorAtualizacaoController =
       TextEditingController(text: 'COLAB-0001');
 
+  late
+
   final TextEditingController _dataDeContratacaoController =
-      TextEditingController(text: _formatDate(DateTime.now()));
+      TextEditingController(text: _formatDate(context.read<LocaleSettingsProvider>().calendarNow),);
   final TextEditingController _salarioController = TextEditingController(
     text: '0,00',
   );
@@ -140,8 +145,10 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _modoCapturaFotoController =
       TextEditingController(text: 'upload');
   final TextEditingController _hashFotoController = TextEditingController();
+  late
   final TextEditingController _dataCapturaFotoController =
-      TextEditingController(text: _formatDateTime(DateTime.now()));
+      TextEditingController(text: _formatDateTime(
+          context.read<LocaleSettingsProvider>().calendarNow,),);
 
   final TextEditingController _moedaPagamentoController = TextEditingController(
     text: 'BRL',
@@ -413,7 +420,7 @@ class _CadastroColaboradorWebBodyState
     TextEditingController controller, {
     required bool includeTime,
   }) async {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: now,

@@ -1702,7 +1702,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22,),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -2203,7 +2203,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   DateTime _hojeNormalizado() {
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(agora.year, agora.month, agora.day);
   }
 
@@ -2298,7 +2298,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       context: context,
       initialDate: atual,
       firstDate: firstDate,
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: context.read<LocaleSettingsProvider>().calendarNow.add(const Duration(days: 365),),
       helpText: _txt(
         inicial
             ? 'caixa.operacoes.historyStartDateHelp'
@@ -3330,7 +3330,7 @@ class _HistoricoDateFilterButton extends StatelessWidget {
         onPressed: onPressed,
         child: Row(
           children: <Widget>[
-            Icon(Icons.calendar_today_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.calendar_today_outlined, size: 18, color: Theme.of(context).colorScheme.primary,),
             const SizedBox(width: 9),
             Expanded(
               child: Column(

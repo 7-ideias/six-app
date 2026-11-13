@@ -93,8 +93,8 @@ class ChatSuporteConversaModel {
       status: ChatSuporteStatus.fromApi(json['status']),
       idSuperResponsavel: _nullableText(json['idSuperResponsavel']),
       nomeSuperResponsavel: _nullableText(json['nomeSuperResponsavel']),
-      criadaEm: _date(json['criadaEm']) ?? DateTime.now(),
-      atualizadaEm: _date(json['atualizadaEm']) ?? DateTime.now(),
+      criadaEm: _date(json['criadaEm']) ?? DateTime.now().toUtc(),
+      atualizadaEm: _date(json['atualizadaEm']) ?? DateTime.now().toUtc(),
       ultimaMensagemEm: _date(json['ultimaMensagemEm']),
       ultimoRemetenteTipo: json['ultimoRemetenteTipo'] == null
           ? null
@@ -179,12 +179,12 @@ class ChatSuporteMensagemModel {
                 )
                 .toList(growable: false)
           : const <ChatSuporteArquivoModel>[],
-      criadaEm: _date(json['criadaEm']) ?? DateTime.now(),
+      criadaEm: _date(json['criadaEm']) ?? DateTime.now().toUtc(),
       lidaPeloSuporteEm: _date(json['lidaPeloSuporteEm']),
       lidaPeloSolicitanteEm: _date(json['lidaPeloSolicitanteEm']),
       expiraEm:
           _date(json['expiraEm']) ??
-          DateTime.now().add(const Duration(days: 30)),
+          DateTime.now().toUtc().add(const Duration(days: 30)),
     );
   }
 }
@@ -268,5 +268,5 @@ int _integer(dynamic value, {int fallback = 0}) {
 
 DateTime? _date(dynamic value) {
   final DateTime? parsed = DateTime.tryParse(value?.toString() ?? '');
-  return parsed?.toLocal();
+  return parsed;
 }

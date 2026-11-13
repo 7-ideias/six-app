@@ -14,7 +14,9 @@ class LocaleSettingsProvider extends ChangeNotifier {
     required RegionalizacaoService regionalizacaoService,
     SixI18nApiClient? i18nApiClient,
     WebI18nApiClient? webI18nApiClient,
+    DateTime Function()? now,
   }) : _regionalizacaoService = regionalizacaoService,
+       _now = now ?? DateTime.now,
        _i18nApiClient = i18nApiClient ?? webI18nApiClient ?? SixI18nApiClient();
 
   static const List<Locale> supportedLocales = <Locale>[
@@ -29,6 +31,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   static const String idiomaPreferenciaDefault = 'DEFAULT';
 
   final RegionalizacaoService _regionalizacaoService;
+  final DateTime Function() _now;
   final SixI18nApiClient _i18nApiClient;
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
@@ -358,11 +361,34 @@ class LocaleSettingsProvider extends ChangeNotifier {
     return cleaned.trim();
   }
 
-  DateTime get nowInCompany =>
-      CompanyTime.fromInstant(DateTime.now(), timeZone);
+  DateTime get nowInCompany => CompanyTime.fromInstant(_now(), timeZone);
 
   DateTime instantInCompany(DateTime value) =>
       CompanyTime.fromInstant(value, timeZone);
+
+  /// Calendar components for form defaults and civil-date API fields.
+  DateTime get calendarNow {
+    final value = nowInCompany;
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+      value.microsecond,
+    );
+  }
+
+  DateTime dateTimeForDisplay(DateTime value) =>
+      CompanyTime.forDisplay(value, timeZone);
+
+  DateTime companyTimeToUtc(DateTime value) =>
+      CompanyTime.toInstant(value, timeZone);
+
+  String formatDateTime(DateTime value) =>
+      '${formatDate(value)} ${formatTime(value)}';
 
   String formatDate(DateTime value) {
     value = CompanyTime.forDisplay(value, timeZone);

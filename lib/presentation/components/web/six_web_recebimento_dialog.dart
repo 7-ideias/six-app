@@ -284,9 +284,11 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   void initState() {
     super.initState();
     final dados = widget.dadosBaixa;
-    _dataLiquidacao = dados?.dataInicial ?? DateTime.now();
-    if (_dataLiquidacao.isAfter(DateTime.now()))
-      _dataLiquidacao = DateTime.now();
+    _dataLiquidacao = dados?.dataInicial ??
+        context.read<LocaleSettingsProvider>().calendarNow;
+    if (_dataLiquidacao.isAfter(
+      context.read<LocaleSettingsProvider>().calendarNow,))
+      _dataLiquidacao = context.read<LocaleSettingsProvider>().calendarNow;
     _categoriaController.text = dados?.categoria ?? '';
     _contatoController.text = dados?.contato ?? '';
     _observacaoLancamentoController.text = dados?.observacoes ?? '';
@@ -1518,7 +1520,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     onTap: _processando
         ? null
         : () async {
-            final hoje = DateTime.now();
+            final hoje = context.read<LocaleSettingsProvider>().calendarNow;
             final selecionada = await showDatePicker(
               context: context,
               initialDate: _dataLiquidacao,
@@ -2270,7 +2272,7 @@ class _RecebimentoProcessingOverlay extends StatelessWidget {
                         ),
                         child: Center(
                           child: success
-                              ? Icon(Icons.check_circle_rounded, color: accent)
+                              ? Icon(Icons.check_circle_rounded, color: accent,)
                               : const SizedBox(
                                   width: 20,
                                   height: 20,

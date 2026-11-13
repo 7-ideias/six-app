@@ -34,7 +34,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   late final _config=widget.configuracoes??ConfiguracaoFinanceiraService(widget.client.espaco);
   String? _cartao,_categoria,_erro;
   List<ConfiguracaoFinanceira> _categorias=[];
-  DateTime _data=DateTime.now();
+  late DateTime _data=context.read<LocaleSettingsProvider>().calendarNow;
   bool _mensal=false,_proximas=false,_parcelada=false,_calculando=false;
   final _quantidade=TextEditingController(text:'2');
   List<ParcelaCartao>? _plano;
@@ -170,7 +170,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
         Wrap(spacing:8,runSpacing:8,children:[
           for(final mode in ['once','monthly','installments'])ChoiceChip(label:Text(context.t(mode=='installments'?'invoices.installments.title':'invoices.recurring.$mode')),
             selected:mode=='installments'?_parcelada:mode=='monthly'?_mensal:!_mensal&&!_parcelada,
-            onSelected:_bloqueado?null:(_){setState((){_mensal=mode=='monthly';_parcelada=mode=='installments';if(!_mensal&&_data.isAfter(DateTime.now()))_data=DateTime.now();});_prever();}),
+            onSelected:_bloqueado?null:(_){setState((){_mensal=mode=='monthly';_parcelada=mode=='installments';if(!_mensal&&_data.isAfter(context.read<LocaleSettingsProvider>().calendarNow))_data=context.read<LocaleSettingsProvider>().calendarNow;});_prever();}),
         ]),
         if(_parcelada)...[
           const SizedBox(height:12),Text(context.t('invoices.installments.hint')),
@@ -216,7 +216,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           decoration:InputDecoration(labelText:context.t(_parcelada?'invoices.installments.total':'invoices.value'),helperText:context.t('invoices.valueHint')),
           validator:(_){final v=_valorNumerico();return v==null||v<=0||!v.isFinite||v>=1e13?context.t('invoices.invalidValue'):null;}),
         const SizedBox(height:16),OutlinedButton.icon(onPressed:_bloqueado||_parcelaExistente?null:()async{
-          final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:(_mensal||_recorrente)?(widget.compraInicial!=null?DateTime(2100):DateTime(DateTime.now().year+1,DateTime.now().month,DateTime.now().day)):DateTime.now());
+          final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:(_mensal||_recorrente)?(widget.compraInicial!=null?DateTime(2100):DateTime(context.read<LocaleSettingsProvider>().calendarNow.year+1,context.read<LocaleSettingsProvider>().calendarNow.month,context.read<LocaleSettingsProvider>().calendarNow.day)):context.read<LocaleSettingsProvider>().calendarNow);
           if(d!=null&&mounted){setState(()=>_data=d);_prever();}},
           icon:const Icon(Icons.calendar_today_outlined),label:Text('${context.t('invoices.purchaseDate')}: ${r.formatDate(_data)}')),
         const SizedBox(height:16),DropdownButtonFormField<String>(key:ValueKey(_categoria),initialValue:_categoria,isExpanded:true,

@@ -70,7 +70,7 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
                     .toDouble(),
                 height: compact
                     ? (MediaQuery.of(context).size.height * 0.96).clamp(0.0,
-                        MediaQuery.of(context).size.width < 640 ? 720.0 : 540.0)
+                        MediaQuery.of(context).size.width < 640 ? 720.0 : 540.0,)
                     : MediaQuery.of(context).size.height * 0.96,
                 decoration: BoxDecoration(
                   color: tokens.surfaceElevated,
@@ -167,7 +167,7 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
           modoEdicao: modoEdicao,
           lancamentoInicial: lancamentoInicial,
         ),
-      )));
+      ),),);
     },
   );
 }
@@ -215,7 +215,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (!_aguardandoPagamento) ...[
         Text(context.t('invoices.paymentDestination'),
-            style: Theme.of(context).textTheme.titleMedium),
+            style: Theme.of(context).textTheme.titleMedium,),
         const SizedBox(height: 12),
       ],
       _choiceGrid([
@@ -224,7 +224,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             id: card ? 'credit-card' : 'direct-payment',
             icon: card ? Icons.credit_card_outlined : Icons.account_balance_outlined,
             title: card ? _journey('creditCard') : context.t('invoices.directPayment'),
-            description: _journey(card ? 'creditCardHint' : 'directPaymentHint'),
+            description: _journey(card ? 'creditCardHint' : 'directPaymentHint',),
             selected: _pagamentoEscolhido && _noCartao == card,
             onTap: () {
               if (_cartaoPendente) return;
@@ -234,14 +234,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 _alterado = true;
                 if (card) {
                   _cartaoVisitado = true;
-                  _cartaoClient ??= CartaoCreditoApiClient(espaco: _service.espacoFinanceiro);
+                  _cartaoClient ??= CartaoCreditoApiClient(espaco: _service.espacoFinanceiro,);
                   _compraKey.currentState?.syncCategory();
                 }
               });
             },
           ),
       ]),
-    ]),
+    ],),
   );
   String? _erroJornada;
   int _etapa = 0;
@@ -291,7 +291,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime? _dataCriacao;
   DateTime? _dataQuitacao;
   bool _registrarPagamento = false;
-  DateTime _dataPagamentoRealizado = DateTime.now();
+  late
+  DateTime _dataPagamentoRealizado =
+      context.read<LocaleSettingsProvider>().calendarNow;
   final _dataPagamentoController = TextEditingController();
   bool _isLoading = false;
   bool _statusQuitada = false;
@@ -306,9 +308,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
   String _empresaSelecionada = '';
   String _formaPagamentoSelecionada = 'Pix';
 
-  DateTime _dataOperacao = DateTime.now();
-  DateTime _dataVencimento = DateTime.now();
-  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
+  late
+
+  DateTime _dataOperacao =
+      context.read<LocaleSettingsProvider>().calendarNow;
+  late
+  DateTime _dataVencimento =
+      context.read<LocaleSettingsProvider>().calendarNow;
+  late
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(
+    context.read<LocaleSettingsProvider>().calendarNow,);
 
   static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _formasPagamentoPadrao = <String>[
@@ -778,7 +787,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
     final String origem = widget.modoEdicao
-        ? AgendaFinanceiraOrigem.preservada(_origemPersistida, _tipoSelecionado)
+        ? AgendaFinanceiraOrigem.preservada(_origemPersistida, _tipoSelecionado,)
         : AgendaFinanceiraOrigem.manual(_tipoSelecionado);
     final String formaPagamento = _formaPagamentoParaBackend();
     final String contatoIdDigitado = _idContatoController.text.trim();
@@ -1056,7 +1065,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   style: FilledButton.styleFrom(
                     backgroundColor: tokens.danger,
                     foregroundColor: Theme.of(
-                      dialogContext,
+                      dialogContext
                     ).colorScheme.onError,
                   ),
                 ),
@@ -1280,7 +1289,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   int get _diasAtraso {
     if (_statusQuitada || _statusSelecionado == 'Cancelado') return 0;
-    final now = DateTime.now();
+    final now = context.read<LocaleSettingsProvider>().calendarNow;
     final hoje = DateTime.utc(now.year, now.month, now.day);
     final vencimento = DateTime.utc(
       _dataVencimento.year,
@@ -1293,7 +1302,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   Widget _animateDetailBlock({required Widget child}) {
     if (MediaQuery.of(context).disableAnimations) return child;
     return AnimatedSize(duration: const Duration(milliseconds: 450),
-        curve: Curves.easeInOutCubic, alignment: Alignment.topCenter, child: child);
+        curve: Curves.easeInOutCubic, alignment: Alignment.topCenter, child: child,);
   }
 
   final Map<String, bool> _openSections = {'main': true};
@@ -1313,10 +1322,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
   Widget _section(String title, List<Widget> children) {
     if (widget.modoEdicao) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(_label(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        Text(_label(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
         const SizedBox(height: 20),
         ...children,
-      ]);
+      ],);
     }
     final tokens = WebThemeTokens.of(context);
     final open = _openSections[title] ?? false;
@@ -1326,7 +1335,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       decoration: BoxDecoration(
         color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: open ? tokens.info.withValues(alpha: .5) : tokens.cardBorder),
+        border: Border.all(color: open ? tokens.info.withValues(alpha: .5) : tokens.cardBorder,),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -1338,16 +1347,17 @@ class _LancamentoAgendaFinanceiraWebBodyState
           },
           child: Padding(padding: const EdgeInsets.all(20), child: Row(children: [
             CircleAvatar(radius: 16, backgroundColor: tokens.info.withValues(alpha: .12),
-                child: Text('${index + 1}', style: TextStyle(color: tokens.info, fontSize: 14))),
+                child: Text('${index + 1}', style: TextStyle(color: tokens.info, fontSize: 14),),),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(_label(title), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: tokens.primaryText)),
+              Text(_label(title), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: tokens.primaryText,),),
               const SizedBox(height: 4),
-              Text(_journey('blockHint.$title'), style: TextStyle(fontSize: 12, color: tokens.secondaryText)),
-            ])),
-            Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.secondaryText),
-          ])),
-        )),
+              Text(_journey('blockHint.$title'), style: TextStyle(fontSize: 12, color: tokens.secondaryText,),),
+            ],),),
+            Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.secondaryText,),
+          ],),
+        ),
+            ),),
         _animateDetailBlock(
           child: Offstage(offstage: !open, child: ExcludeFocus(excluding: !open,
             child: Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -1357,15 +1367,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   const SizedBox(height: 20),
                   Align(alignment: Alignment.centerRight, child: TextButton.icon(
                     onPressed: () => _openDetailSection(next),
-                    icon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                    icon: const Icon(Icons.arrow_downward_rounded, size: 16,),
                     label: Text(_journey('blockNext.$title')),
-                  )),
+                  ),),
                 ],
-              ]),
+              ],),
             ),
-          )),
+          ),),
         ),
-      ]),
+      ],),
     );
   }
 
@@ -1531,7 +1541,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final tokens = WebThemeTokens.of(context);
     final receber = _tipoSelecionado == 'Receber';
     Widget separator() => widget.modoEdicao
-        ? const Padding(padding: EdgeInsets.symmetric(vertical: 22), child: Divider(height: 1))
+        ? const Padding(padding: EdgeInsets.symmetric(vertical: 22), child: Divider(height: 1),)
         : const SizedBox(height: 16);
     final content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1544,7 +1554,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   segments: [
                     ButtonSegment(
                       value: 'Pagar',
-                      label: Text(_label('payable')),
+                      label: Text(_label('payable'))
                     ),
                     ButtonSegment(
                       value: 'Receber',
@@ -1633,15 +1643,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   children: [
                     _buildDateField(
                       label: _label(
-                        receber ? 'forecastReceive' : 'forecastPay',
+                        receber ? 'forecastReceive' : 'forecastPay'
                       ),
                       controller: _dataPrevisaoController,
-                      initialDate: _dataPrevisaoPagamento ?? DateTime.now(),
+                      initialDate: _dataPrevisaoPagamento ??
+                        context.read<LocaleSettingsProvider>().calendarNow,
                       clearable: true,
                       onChanged: (date) => _dataPrevisaoPagamento = date,
                     ),
                     _helper(
-                      receber ? 'forecastReceiveHint' : 'forecastPayHint',
+                      receber ? 'forecastReceiveHint' : 'forecastPayHint'
                     ),
                   ],
                 ),
@@ -1650,7 +1661,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 padding: const EdgeInsets.only(top: 14),
                 child: _notice(
                   _label('forecastHint'),
-                  warning: _diasAtraso > 0,
+                  warning: _diasAtraso > 0
                 ),
               ),
               if (!_bloquearTipoStatus) ...[
@@ -1675,7 +1686,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     label: _label('actualDate'),
                     controller: _dataPagamentoController,
                     initialDate: _dataPagamentoRealizado,
-                    lastDate: DateTime.now(),
+                    lastDate: context.read<LocaleSettingsProvider>().calendarNow,
                     onChanged: (date) => _dataPagamentoRealizado = date,
                   ),
                 ],
@@ -1934,7 +1945,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             if (i > 0) const SizedBox(height: 12),
             choices[i],
           ],
-        ]);
+        ],);
       }
       return IntrinsicHeight(child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1944,7 +1955,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             Expanded(child: choices[i]),
           ],
         ],
-      ));
+      ),);
     },
   );
 
@@ -1963,12 +1974,12 @@ class _LancamentoAgendaFinanceiraWebBodyState
       selected: selected,
       child: Material(
         color: selected
-            ? Color.alphaBlend(highlight.withValues(alpha: .10), tokens.cardBackground)
+            ? Color.alphaBlend(highlight.withValues(alpha: .10), tokens.cardBackground,)
             : tokens.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: selected ? highlight : tokens.cardBorder,
-              width: selected ? 2 : 1),
+              width: selected ? 2 : 1,),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -1992,16 +2003,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: TextStyle(fontSize: 19,
-                      fontWeight: FontWeight.w800, color: tokens.primaryText)),
+                      fontWeight: FontWeight.w800, color: tokens.primaryText,),),
                   const SizedBox(height: 8),
                   Text(description, style: TextStyle(
-                      color: tokens.secondaryText, height: 1.5)),
+                      color: tokens.secondaryText, height: 1.5,),),
                 ],
-              )),
+              ),),
               const SizedBox(width: 12),
               Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-                  size: 22, color: selected ? highlight : tokens.secondaryText),
-            ]),
+                  size: 22, color: selected ? highlight : tokens.secondaryText,),
+            ],),
           ),
         ),
       ),
@@ -2010,22 +2021,22 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Widget _journeyProgress() {
     final tokens = WebThemeTokens.of(context);
-    final labels = ['type', 'context', 'details', _compraCartao ? 'cardReview' : 'recurrence'];
+    final labels = ['type', 'context', 'details', _compraCartao ? 'cardReview' : 'recurrence',];
     return Semantics(
       liveRegion: true,
       label: _journey('step').replaceAll('{step}', '${_etapa + 1}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(color: tokens.cardBackground,
-            border: Border(bottom: BorderSide(color: tokens.divider))),
+            border: Border(bottom: BorderSide(color: tokens.divider)),),
         child: LayoutBuilder(builder: (context, constraints) {
           final narrow = constraints.maxWidth < 640;
           return Row(children: [
             for (var index = 0; index < labels.length; index++) ...[
               if (index > 0) Expanded(child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Divider(color: index <= _etapa ? tokens.info : tokens.divider),
-              )),
+                child: Divider(color: index <= _etapa ? tokens.info : tokens.divider,),
+              ),),
               Flexible(flex: 3, child: Semantics(
                 selected: index == _etapa,
                 child: InkWell(
@@ -2033,7 +2044,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   onTap: index < _etapa && !_isLoading && !_ir.carregando && !_cartaoPendente
                       ? () => _irParaEtapa(index) : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8,),
                     decoration: BoxDecoration(
                       color: index == _etapa ? tokens.info.withValues(alpha: .12) : Colors.transparent,
                       borderRadius: BorderRadius.circular(24),
@@ -2043,28 +2054,28 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         CircleAvatar(radius: 14,
                           backgroundColor: index <= _etapa ? tokens.info : tokens.surfaceMuted,
                           foregroundColor: index <= _etapa ? tokens.workspaceBackground : tokens.secondaryText,
-                          child: index < _etapa ? const Icon(Icons.check_rounded, size: 17)
-                              : Text('${index + 1}', style: const TextStyle(fontSize: 13)),
+                          child: index < _etapa ? const Icon(Icons.check_rounded, size: 17,)
+                              : Text('${index + 1}', style: const TextStyle(fontSize: 13,),),
                         ),
                         if (!narrow) ...[
                           const SizedBox(width: 8),
                           Flexible(child: Text(_journey(labels[index]),
                               style: TextStyle(color: index == _etapa ? tokens.primaryText : tokens.secondaryText,
-                                  fontWeight: index == _etapa ? FontWeight.w700 : FontWeight.w400))),
+                                  fontWeight: index == _etapa ? FontWeight.w700 : FontWeight.w400,),),),
                         ],
-                      ]),
+                      ],),
                       if (narrow) ...[
                         const SizedBox(height: 4),
                         Text(_journey(labels[index]), textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 11, color: tokens.secondaryText)),
+                            style: TextStyle(fontSize: 11, color: tokens.secondaryText,),),
                       ],
-                    ]),
+                    ],),
                   ),
                 ),
-              )),
+              ),),
             ],
-          ]);
-        }),
+          ],);
+        },),
       ),
     );
   }
@@ -2246,7 +2257,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _aguardandoPagamento ? 'paymentTitle' : 'detailsTitle',
       _compraCartao?'cardReviewTitle':'recurrenceTitle',
     ];
-    final hints = ['typeHint', 'spaceHint', _aguardandoPagamento ? 'paymentHint' : 'detailsHint', _compraCartao?'cardReviewHint':'recurrenceHint'];
+    final hints = ['typeHint', 'spaceHint', _aguardandoPagamento ? 'paymentHint' : 'detailsHint', _compraCartao?'cardReviewHint':'recurrenceHint',];
     return PopScope(
       canPop: !_isLoading && !_ir.carregando && !_alterado,
       onPopInvokedWithResult: (didPop, result) {
@@ -2379,7 +2390,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         if (_detalhesVisitados)
                           Offstage(offstage:_etapa!=2||_compraCartao||_aguardandoPagamento,
                             child:ExcludeFocus(excluding:_etapa!=2||_compraCartao||_aguardandoPagamento,
-                              child:Form(key:_formKey,onChanged:()=>_alterado=true,child:_formContent()))),
+                              child:Form(key:_formKey,onChanged:()=>_alterado=true,child:_formContent(),),),),
                         if(_cartaoVisitado&&_cartaoClient!=null)
                           Offstage(offstage:_etapa!=2||!_compraCartao,
                             child:ExcludeFocus(excluding:_etapa!=2||!_compraCartao,
@@ -2388,9 +2399,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 onBusy:(v){if(mounted)setState(()=>_isLoading=v);},
                                 onLocked:(v){if(mounted)setState(()=>_cartaoPendente=v);},
                                 onError:(v){if(mounted)setState(()=>_erroJornada=v);},
-                                onSaved:(f)=>Navigator.of(context).pop(<String,dynamic>{'espacoFinanceiro':_service.espacoFinanceiro,'faturaCartaoId':f.id}),
-                              ))),
-                        if (_etapa == 3) _compraCartao?_panel(_compraKey.currentState?.review()??const SizedBox.shrink()):_journeyRecurrence(),
+                                onSaved:(f)=>Navigator.of(context,).pop(<String,dynamic>{'espacoFinanceiro':_service.espacoFinanceiro,'faturaCartaoId':f.id,}),
+                              ),),),
+                        if (_etapa == 3) _compraCartao?_panel(_compraKey.currentState?.review()??const SizedBox.shrink(),):_journeyRecurrence(),
                       ],
                     ),
                   ),
@@ -2594,7 +2605,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
             (String item) => PopupMenuItem<String>(
               value: item,
               height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2,),
               child: _SixWebSelectMenuItem(
                 label: _agendaOptionLabel(context, item),
                 selected: item == safeValue,
@@ -2788,4 +2799,3 @@ String _agendaOptionLabel(BuildContext context, String value) {
   final key = keys[value];
   return key == null ? value : context.t('agenda.form.option.$key');
 }
-

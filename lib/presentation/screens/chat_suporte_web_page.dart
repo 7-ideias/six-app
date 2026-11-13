@@ -434,7 +434,7 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
                               conversa.nomeSolicitante,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleSmall
+                              style: Theme.of(context,).textTheme.titleSmall
                                   ?.copyWith(
                                     color: tokens.primaryText,
                                     fontWeight: unread > 0
@@ -842,7 +842,7 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
             ),
             child: snapshot.hasError
                 ? Icon(Icons.broken_image_outlined, color: tokens.danger)
-                : CircularProgressIndicator(strokeWidth: 2, color: tokens.info),
+                : CircularProgressIndicator(strokeWidth: 2, color: tokens.info,),
           );
         }
         return Semantics(
@@ -1479,7 +1479,7 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
     final DateTime date = conversa.ultimaMensagemEm ?? conversa.atualizadaEm;
     final LocaleSettingsProvider locale = context
         .read<LocaleSettingsProvider>();
-    return _sameDay(date, DateTime.now())
+    return _sameDay(locale.dateTimeForDisplay(date), locale.calendarNow)
         ? locale.formatTime(date)
         : locale.formatDate(date);
   }

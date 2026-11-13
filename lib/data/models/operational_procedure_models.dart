@@ -793,7 +793,7 @@ class ProcedureItemResponse {
       dateValue: clearDateValue ? null : dateValue ?? this.dateValue,
       selectedOptions: selectedOptions ?? this.selectedOptions,
       evidence: clearEvidence ? null : evidence ?? this.evidence,
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
     );
   }
 }
@@ -841,7 +841,7 @@ Map<String, String> _currentTranslation(
 }
 
 DateTime _dateTime(dynamic value) {
-  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now().toUtc();
 }
 
 ProcedureAdminNotificationConfiguration _adminNotificationFromJson(

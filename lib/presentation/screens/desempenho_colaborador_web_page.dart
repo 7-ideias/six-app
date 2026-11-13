@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import '../theme/six_web_action_styles.dart';
 import 'package:intl/intl.dart';
 
@@ -28,7 +29,6 @@ class _DesempenhoColaboradorWebPageState
     extends State<DesempenhoColaboradorWebPage> {
   final DesempenhoColaboradorApiClient _api =
       HttpDesempenhoColaboradorApiClient();
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR',
     symbol: r'R$',
@@ -49,7 +49,7 @@ class _DesempenhoColaboradorWebPageState
   @override
   void initState() {
     super.initState();
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     _inicio = DateTime(now.year, now.month);
     _fim = DateTime(now.year, now.month, now.day);
     _load();
@@ -285,15 +285,18 @@ class _DesempenhoColaboradorWebPageState
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
           _periodChip(theme, 'Mês atual', _isCurrentMonth(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(DateTime(now.year, now.month), now);
           }),
           _periodChip(theme, 'Últimos 30 dias', _isLastThirtyDays(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(now.subtract(const Duration(days: 29)), now);
           }),
           _periodChip(theme, 'Hoje', _isToday(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(now, now);
           }),
           ConstrainedBox(
@@ -326,7 +329,7 @@ class _DesempenhoColaboradorWebPageState
             onPressed: _load,
             icon: const Icon(Icons.event_repeat_rounded, size: 18),
             label: Text(
-              '${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}',
+              '${context.read<LocaleSettingsProvider>().formatDate(_inicio)} até ${context.read<LocaleSettingsProvider>().formatDate(_fim)}',
             ),
             style: _outlinedCtaStyle(),
           ),
@@ -601,7 +604,7 @@ class _DesempenhoColaboradorWebPageState
                   color: tokens.info.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20,),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -751,19 +754,19 @@ class _DesempenhoColaboradorWebPageState
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   bool _isCurrentMonth() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, DateTime(now.year, now.month)) &&
         _sameDay(_fim, DateTime(now.year, now.month, now.day));
   }
 
   bool _isLastThirtyDays() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now.subtract(const Duration(days: 29))) &&
         _sameDay(_fim, now);
   }
 
   bool _isToday() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now) && _sameDay(_fim, now);
   }
 
@@ -802,7 +805,7 @@ class _DesempenhoColaboradorWebPageState
 
   String _formatPeriod(DateTime? inicio, DateTime? fim) {
     if (inicio == null || fim == null) return 'sem período';
-    return '${_dateFormat.format(inicio)} a ${_dateFormat.format(fim)}';
+    return '${context.read<LocaleSettingsProvider>().formatDate(inicio)} a ${context.read<LocaleSettingsProvider>().formatDate(fim)}';
   }
 
   String _statusLabel(String status) {
@@ -1434,7 +1437,7 @@ class _KpiCard extends StatelessWidget {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(data.icon, color: Theme.of(context).colorScheme.primary),
+            child: Icon(data.icon, color: Theme.of(context).colorScheme.primary,),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1598,7 +1601,7 @@ class _SelectorTile extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary),
+                  Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary,),
               ],
             ),
           ),

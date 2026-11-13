@@ -405,7 +405,8 @@ class _AtendimentosTecnicosListaWebPageState
         _atendimentoFinalizadoOperacionalmente(atendimento)) {
       return false;
     }
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime dataEntrega = _inicioDoDia(entrega);
     return dataEntrega.isBefore(hoje);
   }
@@ -1906,7 +1907,7 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: InputDecoration(
                 hintText:
                     'Buscar por cliente, técnico, status, equipamento ou número...',
-                prefixIcon: Icon(Icons.search_rounded, color: Theme.of(context).colorScheme.primary),
+                prefixIcon: Icon(Icons.search_rounded, color: Theme.of(context).colorScheme.primary,),
                 suffixIcon:
                     _buscaController.text.trim().isEmpty
                         ? null
@@ -4100,7 +4101,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.search_off_rounded, color: Theme.of(context).colorScheme.primary, size: 38),
+            Icon(Icons.search_off_rounded, color: Theme.of(context).colorScheme.primary, size: 38,),
             const SizedBox(height: 10),
             Text(
               'Nenhum atendimento encontrado.',
@@ -4774,7 +4775,7 @@ class _StatusContextCard extends StatelessWidget {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(Icons.devices_other_outlined, color: Theme.of(context).colorScheme.primary),
+            child: Icon(Icons.devices_other_outlined, color: Theme.of(context).colorScheme.primary,),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -4964,7 +4965,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                       ),
                     ),
                     if (selected)
-                      Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                      Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary,),
                   ],
                 ),
               ),
@@ -5007,7 +5008,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                 color: tokens.info.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+              child: Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary, size: 20,),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -5197,7 +5198,7 @@ class _FiltroMultiSelectDropdownState
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19),
+                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19,),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -5325,7 +5326,7 @@ class _FiltroMultiSelectMenuEntryState
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(widget.titleIcon, color: Theme.of(context).colorScheme.primary, size: 18),
+                Icon(widget.titleIcon, color: Theme.of(context).colorScheme.primary, size: 18,),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -5665,7 +5666,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19),
+                      Icon(widget.icon, color: Theme.of(context).colorScheme.primary, size: 19,),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -5760,7 +5761,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
           AnimatedOpacity(
             opacity: selected ? 1 : 0,
             duration: const Duration(milliseconds: 120),
-            child: Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+            child: Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary,),
           ),
         ],
       ),

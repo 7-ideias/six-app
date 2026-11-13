@@ -1,4 +1,4 @@
-import 'dart:async';
+import '../../providers/locale_settings_provider.dart';import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -86,9 +86,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final NumberFormat _compactFmt = NumberFormat.compactCurrency(
     locale: 'pt_BR',
     symbol: 'R\$',
-    decimalDigits: 1,
-  );
-  final DateFormat _dateFmt = DateFormat('dd/MM', 'pt_BR');
+    decimalDigits: 1,);
 
   final ImagePicker _picker = ImagePicker();
   final AuthService _authService = AuthService();
@@ -3432,7 +3430,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  _dateFmt.format(item.dataPrevista),
+                  context.read<LocaleSettingsProvider>().formatDate(item.dataPrevista,),
                   style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],

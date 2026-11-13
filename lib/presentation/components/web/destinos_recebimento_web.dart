@@ -12,7 +12,15 @@ Future<List<RecebimentoFormaInput>?> selecionarDestinosWeb(
   BuildContext context,
   List<RecebimentoFormaInput> formas,
 ) {
-  final drafts = formas.map(DestinoRecebimentoDraft.new).toList();
+  final drafts =
+      formas
+          .map(
+            (forma) => DestinoRecebimentoDraft(
+              forma,
+              dataPadrao: context.read<LocaleSettingsProvider>().calendarNow,
+            ),
+          )
+          .toList();
   if (drafts.isNotEmpty && drafts.every((d) => d.dinheiro)) {
     return Future.value(drafts.map((d) => d.toInput()).toList());
   }
@@ -39,7 +47,15 @@ class DestinosRecebimentoWeb extends StatefulWidget {
 }
 
 class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
-  late final _drafts = widget.formas.map(DestinoRecebimentoDraft.new).toList();
+  late final _drafts =
+      widget.formas
+          .map(
+            (forma) => DestinoRecebimentoDraft(
+              forma,
+              dataPadrao: context.read<LocaleSettingsProvider>().calendarNow,
+            ),
+          )
+          .toList();
   late final _service =
       widget.service ?? ConfiguracaoFinanceiraService('EMPRESA');
   List<ConfiguracaoFinanceira> _contas = [], _maquinas = [];
@@ -223,6 +239,8 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
                           descricao: d.origem.descricao,
                           valor: metade,
                         ),
+                        dataPadrao:
+                            context.read<LocaleSettingsProvider>().calendarNow,
                       ),
                     );
                   }),

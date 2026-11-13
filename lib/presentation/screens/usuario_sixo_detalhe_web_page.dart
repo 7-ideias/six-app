@@ -564,7 +564,7 @@ class _WebUserHero extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: tokens.danger,
                   backgroundColor: tokens.surfaceMuted,
-                  side: BorderSide(color: tokens.danger.withValues(alpha: 0.32)),
+                  side: BorderSide(color: tokens.danger.withValues(alpha: 0.32),),
                 ),
                 label: Text(adminPasswordResetText(context, 'action')),
               ),
@@ -575,10 +575,10 @@ class _WebUserHero extends StatelessWidget {
                     '${billingText(context, 'title')} · ${company.name}',
                   ),
                   onPressed: () =>
-                      showBillingAccessWeb(context, company.id, company.name),
+                      showBillingAccessWeb(context, company.id, company.name,),
                 ),
               for (final (index, company) in StorageCompany.fromUser(
-                detail,
+                detail
               ).indexed)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.cloud_outlined),
@@ -769,7 +769,7 @@ String _formatDetailValue(BuildContext context, String key, dynamic value) {
         ? context.t('common.yes', fallback: 'Sim')
         : context.t('common.no', fallback: 'Não');
   }
-  if (value is DateTime) return value.toLocal().toIso8601String();
+  if (value is DateTime) return value.toIso8601String();
   if (value is List) {
     return value.isEmpty
         ? context.t('common.notInformed', fallback: 'Não informado')
@@ -786,4 +786,3 @@ String _formatDetailValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
-

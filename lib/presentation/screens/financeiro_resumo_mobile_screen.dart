@@ -35,7 +35,8 @@ class FinanceiroResumoMobileScreen extends StatefulWidget {
 class _FinanceiroResumoMobileScreenState
     extends State<FinanceiroResumoMobileScreen> {
   late final _provider =
-      widget.overviewProvider ?? ManagementOverviewProvider();
+      widget.overviewProvider ?? ManagementOverviewProvider(
+        companyNow: () => context.read<LocaleSettingsProvider>().calendarNow,);
   String _espaco = 'EMPRESA';
   int _periodo = 1;
   late DateTime _inicio, _fim;
@@ -45,7 +46,7 @@ class _FinanceiroResumoMobileScreenState
   DateTime? _updated;
   int _request = 0;
   DateTime get _hoje {
-    final n = DateTime.now();
+    final n = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(n.year, n.month, n.day);
   }
 
@@ -116,7 +117,7 @@ class _FinanceiroResumoMobileScreenState
       _loading = false;
       _error = result.hasError || result.data == null;
       _data = result.data;
-      if (!_error) _updated = DateTime.now();
+      if (!_error) _updated = DateTime.now().toUtc();
     });
   }
 
@@ -163,7 +164,7 @@ class _FinanceiroResumoMobileScreenState
               ListTile(
                 title: Text(ctx.t('finance.mobile.period.$i')),
                 trailing: _periodo == i
-                    ? Icon(Icons.check, color: ctx.sixMobileColors.accent)
+                    ? Icon(Icons.check, color: ctx.sixMobileColors.accent,)
                     : null,
                 onTap: () => Navigator.pop(ctx, i),
               ),
@@ -294,7 +295,11 @@ class _FinanceiroResumoMobileScreenState
             Text(
               context
                   .t(
-                    'finance.mobile.${receber ? 'receipts' : 'payments'}.${count == 0 ? 'zero' : count == 1 ? 'one' : 'many'}',
+                    'finance.mobile.${receber ? 'receipts' : 'payments'}.${count == 0
+                        ? 'zero'
+                        : count == 1
+                        ? 'one'
+                        : 'many'}',
                   )
                   .replaceAll('{count}', '$count'),
               style: TextStyle(color: c.mutedText),
@@ -528,7 +533,7 @@ class _FinanceiroResumoMobileScreenState
                   child: Text(
                     context
                         .t('agenda.mobile.updated')
-                        .replaceAll('{time}', regional.formatTime(_updated!)),
+                        .replaceAll('{time}', regional.formatTime(_updated!),),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: c.mutedText, fontSize: 12),
                   ),
@@ -556,7 +561,7 @@ class _FinanceiroResumoMobileScreenState
             const SizedBox(height: 10),
             Text(
               context.t('finance.mobile.shortcuts'),
-              style: TextStyle(color: c.mutedText, fontWeight: FontWeight.w600),
+              style: TextStyle(color: c.mutedText, fontWeight: FontWeight.w600,),
             ),
             const SizedBox(height: 12),
             _acesso(
@@ -570,7 +575,7 @@ class _FinanceiroResumoMobileScreenState
               'gestao.finance.receivable',
               'gestao.finance.receivableDesc',
               Icons.south_west,
-              AgendaFinanceiraLancamentoCardMobile.corNatureza(context, true),
+              AgendaFinanceiraLancamentoCardMobile.corNatureza(context, true,),
               () => _abrirAgenda(contas: AgendaContasMobile.receber),
             ),
             _acesso(
@@ -581,9 +586,9 @@ class _FinanceiroResumoMobileScreenState
               () => _abrirAgenda(contas: AgendaContasMobile.pagar),
             ),
             _acesso('cards.title', 'invoices.title', Icons.credit_card_outlined, c.accent,
-              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CartoesCreditoMobileScreen(espaco: _espaco))); if (mounted) _load(); }),
+              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CartoesCreditoMobileScreen(espaco: _espaco),),); if (mounted) _load(); },),
             _acesso('gastos.title', 'mobile.cards.categoryHint', Icons.pie_chart_outline, c.accent,
-              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GastosCategoriasMobileScreen(espaco: _espaco, inicio: _inicio, fim: _fim))); if (mounted) _load(); }),
+              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GastosCategoriasMobileScreen(espaco: _espaco, inicio: _inicio, fim: _fim,),),); if (mounted) _load(); },),
             _acesso(
               'gestao.finance.paymentMethods',
               'gestao.finance.paymentMethodsDesc',
@@ -602,4 +607,3 @@ class _FinanceiroResumoMobileScreenState
     );
   }
 }
-

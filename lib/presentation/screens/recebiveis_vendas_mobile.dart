@@ -52,7 +52,7 @@ class _RecebiveisVendasMobileState extends State<RecebiveisVendasMobile> {
     final valor = TextEditingController(
       text: locale.formatDecimal(item.liquido),
     );
-    DateTime data = DateTime.now();
+    DateTime data = context.read<LocaleSettingsProvider>().calendarNow;
     double numero() =>
         double.tryParse(
           valor.text
@@ -104,7 +104,9 @@ class _RecebiveisVendasMobileState extends State<RecebiveisVendasMobile> {
                         child: CalendarDatePicker(
                           initialDate: data,
                           firstDate: DateTime(2020),
-                          lastDate: DateTime.now(),
+                          lastDate:
+                              context.read<LocaleSettingsProvider>()
+                                  .calendarNow,
                           onDateChanged: (v) => Navigator.pop(ctx, v),
                         ),
                       ),

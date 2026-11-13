@@ -357,7 +357,7 @@ class _DevolucoesProdutosMobileScreenState
 
   String _data(DateTime? value) {
     if (value == null) return _t('common.notInformed');
-    return context.read<LocaleSettingsProvider>().formatDate(value.toLocal());
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   String _mensagemErro(Object error) {
@@ -944,7 +944,7 @@ class _DevolucoesProdutosMobileScreenState
                             helperText: _interpolate(
                               'devolucao.mobile.maximumQuantity',
                               <String, String>{
-                                'value': _quantidade(item.quantidadeDisponivel),
+                                'value': _quantidade(item.quantidadeDisponivel,),
                               },
                             ),
                             prefixIcon: const Icon(Icons.numbers_rounded),
@@ -1297,7 +1297,7 @@ class _DevolucoesProdutosMobileScreenState
                         ? _t('devolucao.mobile.unidentifiedCustomer')
                         : _recentes[index].nomeCliente,
                     dateLabel: _data(_recentes[index].dataCriacao),
-                    valueLabel: _moeda(_recentes[index].saldoFinanceiro.abs()),
+                    valueLabel: _moeda(_recentes[index].saldoFinanceiro.abs(),),
                   ),
                   if (index < _recentes.length - 1)
                     Divider(height: 1, color: _colors.border),

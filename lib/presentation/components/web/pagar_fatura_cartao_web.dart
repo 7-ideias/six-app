@@ -21,7 +21,7 @@ class _PagarFaturaCartaoWebState extends State<PagarFaturaCartaoWeb> {
  List<ConfiguracaoFinanceira> _contas=[];
  List<FormaPagamentoFatura> _formas=[];
  String? _conta,_forma,_erro;
- DateTime _data=DateTime.now();
+ late DateTime _data=context.read<LocaleSettingsProvider>().calendarNow;
  bool _loading=true,_saving=false,_conflito=false;
  PagarFaturaCartaoRequest? _tentativa;
  bool get _bloqueado=>_saving||_tentativa!=null;
@@ -72,7 +72,7 @@ class _PagarFaturaCartaoWebState extends State<PagarFaturaCartaoWeb> {
      items:_formas.map((c)=>DropdownMenuItem(value:c.codigo,child:Text(c.nome,overflow:TextOverflow.ellipsis))).toList(),
      onChanged:_bloqueado?null:(v)=>setState(()=>_forma=v)),
     const SizedBox(height:16),OutlinedButton.icon(onPressed:_bloqueado?null:()async{
-      final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:DateTime.now());
+      final d=await showDatePicker(context:context,initialDate:_data,firstDate:DateTime(2000),lastDate:context.read<LocaleSettingsProvider>().calendarNow);
       if(d!=null&&mounted)setState(()=>_data=d);},icon:const Icon(Icons.calendar_today_outlined),
       label:Text('${context.t('invoices.paymentDate')}: ${r.formatDate(_data)}')),
    ],

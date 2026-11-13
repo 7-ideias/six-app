@@ -215,7 +215,7 @@ class SixNotificationEvent {
     final DateTime receivedAt =
         _parseDate(normalizedPayload['recebidoEmIso']) ??
         _parseDate(normalizedPayload['recebidoEm']) ??
-        DateTime.now();
+        DateTime.now().toUtc();
     final String eventType =
         _read(normalizedPayload, 'tipoDeEvento') ?? 'EVENTO_BACKEND';
     final _VendaResumo? vendaResumo = _saleSummaryFor(normalizedPayload);
@@ -267,7 +267,7 @@ class SixNotificationEvent {
             : <String, dynamic>{};
 
     return SixNotificationEvent(
-      id: json['id']?.toString() ?? _idFor(payload, DateTime.now()),
+      id: json['id']?.toString() ?? _idFor(payload, DateTime.now().toUtc()),
       title: json['title']?.toString() ?? 'Mensagem recebida do backend',
       description: json['description']?.toString() ?? '',
       entity: json['entity']?.toString() ?? 'Evento do backend',
@@ -275,7 +275,7 @@ class SixNotificationEvent {
       status: json['status']?.toString() ?? 'RECEBIDA',
       receivedAt:
           DateTime.tryParse(json['receivedAt']?.toString() ?? '') ??
-          DateTime.now(),
+          DateTime.now().toUtc(),
       payload: Map<String, dynamic>.unmodifiable(payload),
       isUnread: json['isUnread'] != false,
       isError: json['isError'] == true,
@@ -353,7 +353,7 @@ class SixNotificationEvent {
   }
 
   String get groupTitle {
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     final DateTime today = DateTime(now.year, now.month, now.day);
     final DateTime eventDay = DateTime(
       receivedAt.year,

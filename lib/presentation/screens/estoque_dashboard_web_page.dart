@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import '../theme/six_web_action_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/web_header_assets_model.dart';
@@ -41,8 +42,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     locale: 'pt_BR',
     symbol: r'R$',
   );
-  final NumberFormat _number = NumberFormat.decimalPattern('pt_BR');
-  final DateFormat _date = DateFormat('dd/MM HH:mm', 'pt_BR');
+  final NumberFormat _number = NumberFormat.decimalPattern( 'pt_BR');
 
   @override
   void initState() {
@@ -826,7 +826,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.warehouse_outlined, size: 48, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.warehouse_outlined, size: 48, color: Theme.of(context).colorScheme.primary,),
             const SizedBox(height: 14),
             Text(
               'Nenhum produto em estoque ainda.',
@@ -872,7 +872,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
   }
 
   String _dateLabel(DateTime? value) =>
-      value == null ? '-' : _date.format(value);
+      value == null ? '-' : context.read<LocaleSettingsProvider>().formatDateTime(value);
 
   Color _alertColor(ThemeData theme, String tipo) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);

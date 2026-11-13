@@ -81,7 +81,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
 
     setState(() {
       _assinaturaConcluida = true;
-      _assinadoEm = DateTime.now();
+      _assinadoEm = DateTime.now().toUtc();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(

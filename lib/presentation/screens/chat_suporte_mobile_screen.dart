@@ -351,7 +351,7 @@ class _ChatSuporteMobileScreenState extends State<ChatSuporteMobileScreen> {
                               conversa.nomeSolicitante,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleSmall
+                              style: Theme.of(context,).textTheme.titleSmall
                                   ?.copyWith(
                                     color: colors.titleText,
                                     fontWeight: FontWeight.w800,
@@ -485,7 +485,7 @@ class _ChatSuporteMobileScreenState extends State<ChatSuporteMobileScreen> {
                   ),
                   child: Icon(
                     Icons.support_agent_rounded,
-                    color: colors.accent,
+                    color: colors.accent
                   ),
                 ),
           const SizedBox(width: 11),
@@ -778,7 +778,7 @@ class _ChatSuporteMobileScreenState extends State<ChatSuporteMobileScreen> {
                   height: 145,
                   color: colors.softSurface,
                   alignment: Alignment.center,
-                  child: Icon(Icons.broken_image_outlined, color: colors.error),
+                  child: Icon(Icons.broken_image_outlined, color: colors.error,),
                 ),
               ),
             ),
@@ -1511,7 +1511,7 @@ class _ChatSuporteMobileScreenState extends State<ChatSuporteMobileScreen> {
     final DateTime date = conversa.ultimaMensagemEm ?? conversa.atualizadaEm;
     final LocaleSettingsProvider locale = context
         .read<LocaleSettingsProvider>();
-    if (_sameDay(date, DateTime.now())) return locale.formatTime(date);
+    if (_sameDay(locale.dateTimeForDisplay(date), locale.calendarNow)) return locale.formatTime(date);
     return locale.formatDate(date);
   }
 

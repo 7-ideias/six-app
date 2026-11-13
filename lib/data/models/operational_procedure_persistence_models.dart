@@ -192,7 +192,7 @@ List<Map<String, dynamic>> _maps(dynamic value) {
 }
 
 DateTime _parseDate(dynamic value) {
-  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now().toUtc();
 }
 
 String? _nullableText(dynamic value) {

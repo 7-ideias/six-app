@@ -1,4 +1,4 @@
-class ConsultaVendasFiltro {
+import '../../core/utils/company_time.dart';class ConsultaVendasFiltro {
   const ConsultaVendasFiltro({
     required this.dataInicial,
     required this.dataFinal,
@@ -553,6 +553,5 @@ double _asDouble(dynamic value) {
 }
 
 DateTime? _asDateTime(dynamic value) {
-  final String text = value?.toString() ?? '';
-  return text.isEmpty ? null : DateTime.tryParse(text);
+  return CompanyTime.tryParse(value);
 }

@@ -1,4 +1,4 @@
-import 'financeiro_resumo_mobile_screen.dart';
+import '../../providers/locale_settings_provider.dart';import 'financeiro_resumo_mobile_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -293,7 +293,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     }
 
     return ChangeNotifierProvider<ManagementOverviewProvider>(
-      create: (_) => ManagementOverviewProvider()..load(),
+      create: (_) => ManagementOverviewProvider(
+            companyNow:
+                () => context.read<LocaleSettingsProvider>().calendarNow,)..load(),
       child: shell,
     );
   }
@@ -398,8 +400,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'O que você quer gerenciar?',
             ),
             key: const ValueKey<String>('gestao-hub-intro'),
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: colors.mutedText,
+            style: Theme.of(context,).textTheme.bodyLarge?.copyWith(
+              color: colors.mutedText
             ),
           ),
           const SizedBox(height: 22),
@@ -1115,7 +1117,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             _ManagementItem(
               title: context.t('compras.title', fallback: 'Compras'),
               subtitle: context.t('compras.subtitle',
-                  fallback: 'Pedidos, fornecedores e compras persistentes'),
+                  fallback: 'Pedidos, fornecedores e compras persistentes',),
               icon: Icons.shopping_cart_outlined,
               accentColor: colors.accent,
               emphasis: ManagementActionEmphasis.secondary,
@@ -1265,7 +1267,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: ManagementActionEmphasis.secondary,
             onTap: () => _navigateTo(
               context,
-              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.receber),
+              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.receber,),
             ),
             visualGroupId: 'finance-receivable-payable',
           ),
@@ -1283,7 +1285,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: ManagementActionEmphasis.secondary,
             onTap: () => _navigateTo(
               context,
-              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.pagar),
+              const AgendaFinanceiraMobileScreen(contas: AgendaContasMobile.pagar,),
             ),
             visualGroupId: 'finance-receivable-payable',
           ),
@@ -1547,7 +1549,7 @@ class _GestaoHubActionCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       alignment: Alignment.topCenter,
                       filterQuality: FilterQuality.high,
-                      placeholder: const SixVisualAssetShimmer(borderRadius: 0),
+                      placeholder: const SixVisualAssetShimmer(borderRadius: 0,),
                       errorBuilder: (_, __, ___) => fallback,
                     ),
             ),
@@ -1601,7 +1603,7 @@ class _GestaoHubActionCard extends StatelessWidget {
                 child: InkWell(
                   onTap: data.onTap,
                   splashColor: colors.titleText.withValues(alpha: .10),
-                  highlightColor: SixMobilePalette.onPrimary.withValues(alpha: .08),
+                  highlightColor: SixMobilePalette.onPrimary.withValues(alpha: .08,),
                 ),
               ),
             ),

@@ -942,7 +942,7 @@ class _OperationalProcedureEditorMobileScreenState
       return procedure.copyWith(moment: nextMoment);
     }
 
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     final List<ProcedureTrigger> synchronized = procedure.triggers
         .map((ProcedureTrigger trigger) {
           final bool shouldSync =
@@ -1012,7 +1012,7 @@ class _OperationalProcedureEditorMobileScreenState
         operationType,
         normalizedTriggerMoment,
       ),
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
     );
   }
 

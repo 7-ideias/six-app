@@ -544,7 +544,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
         _assinanteController.text = nome.text.trim();
         _pontos = temp;
         _assinou = true;
-        _assinadoEm = DateTime.now();
+        _assinadoEm = DateTime.now().toUtc();
         _timeline.insert(0, <String, dynamic>{
           'titulo': 'Assinatura digital coletada',
           'descricao': 'Cliente revisou o resumo da OS e assinou digitalmente.',

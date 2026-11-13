@@ -163,7 +163,7 @@ class LancamentoAgendaFinanceiraRequest {
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataVencimento': dataVencimento.toIso8601String(),
       'dataCompetencia': CompetenciaFinanceira.normalizar(
-        dataCompetencia,
+        dataCompetencia
       ).toIso8601String(),
       'dataQuitacao': dataQuitacao?.toIso8601String(),
       'origem': origem,
@@ -229,12 +229,11 @@ class LancamentoAgendaFinanceiraRequest {
       'centroCustoId': centroCustoId,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataCompetencia': CompetenciaFinanceira.normalizar(
-        dataCompetencia,
+        dataCompetencia
       ).toIso8601String(),
       ...dadosRecorrencia,
       'serieRecorrenciaId': configuracaoRecorrencia?.serieId,
-      'historico': [
-        'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
+      'historico': ['Lançamento criado'
       ],
       'acoes': tipoRecebimento
           ? ['Receber', 'Enviar cobrança', 'Detalhes']
@@ -246,14 +245,6 @@ class LancamentoAgendaFinanceiraRequest {
     final dia = data.day.toString().padLeft(2, '0');
     final mes = data.month.toString().padLeft(2, '0');
     return '$dia/$mes/${data.year}';
-  }
-
-  static String _formatarDataHoraBr(DateTime data) {
-    final dia = data.day.toString().padLeft(2, '0');
-    final mes = data.month.toString().padLeft(2, '0');
-    final hora = data.hour.toString().padLeft(2, '0');
-    final minuto = data.minute.toString().padLeft(2, '0');
-    return '$dia/$mes/${data.year} $hora:$minuto';
   }
 }
 

@@ -244,8 +244,8 @@ class _VendasNaoLiquidadasMobileScreenState
           caixaApiClient: _caixaApiClient,
         );
 
-    if (resultado == null) return;
-
+    if (resultado == null || !mounted) return;
+    final dataLiquidacao = context.read<LocaleSettingsProvider>().calendarNow;
     setState(() => _cancelando = true);
     try {
       final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
@@ -280,7 +280,7 @@ class _VendasNaoLiquidadasMobileScreenState
           idLancamento: venda.idOperacaoFinanceira,
           request: AgendaFinanceiraParcialRequest(
             tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao: dataLiquidacao,
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
             recebimentos: resultado.recebimentos,
@@ -504,7 +504,7 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   DateTime _hojeNormalizado() {
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(agora.year, agora.month, agora.day);
   }
 
@@ -959,7 +959,7 @@ class _VendasNaoLiquidadasMobileScreenState
           title: title,
           initialDate: initialDate,
           minimumDate: minimumDate,
-          maximumDate: DateTime.now().add(const Duration(days: 365)),
+          maximumDate: context.read<LocaleSettingsProvider>().calendarNow.add(const Duration(days: 365),),
         );
       },
     );
@@ -2876,7 +2876,7 @@ class _VendasNaoLiquidadasFilterSheetState
   }
 
   void _clear() {
-    final DateTime hoje = DateTime.now();
+    final DateTime hoje = context.read<LocaleSettingsProvider>().calendarNow;
     setState(() {
       _draft = _draft.copyWith(
         periodo: _VendasNaoLiquidadasMobileScreenState._periodoUltimos30Dias,

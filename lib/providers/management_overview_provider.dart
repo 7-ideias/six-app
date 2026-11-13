@@ -18,6 +18,7 @@ class ManagementOverviewProvider extends ChangeNotifier {
     ColaboradorUsuarioApiClient? colaboradorUsuarioApiClient,
     AgendaFinanceiraLancamentoService? agendaFinanceiraService,
     ManagementOverviewSnapshot? initialSnapshot,
+    DateTime Function()? companyNow,
   }) : _catalogHealthApiClient =
            catalogHealthApiClient ?? HttpCatalogHealthApiClient(),
        _categoriaCatalogoApiClient =
@@ -28,8 +29,10 @@ class ManagementOverviewProvider extends ChangeNotifier {
            colaboradorUsuarioApiClient ?? HttpColaboradorUsuarioApiClient(),
        _agendaFinanceiraService =
            agendaFinanceiraService ?? AgendaFinanceiraLancamentoService(),
+       _companyNow = companyNow ?? (() => DateTime.now().toUtc()),
        _snapshot = initialSnapshot ?? ManagementOverviewSnapshot.loading();
 
+  final DateTime Function() _companyNow;
   final CatalogHealthApiClient _catalogHealthApiClient;
   final CategoriaCatalogoApiClient _categoriaCatalogoApiClient;
   final ClienteUsuarioApiClient _clienteUsuarioApiClient;
@@ -96,9 +99,8 @@ class ManagementOverviewProvider extends ChangeNotifier {
 
     final int? products = health?.overview.products.quantity;
     final int? services = health?.overview.services.quantity;
-    final int? lowStockItems = health
-        ?.metric(CatalogHealthMetricType.lowStock)
-        ?.value;
+    final int? lowStockItems =
+        health?.metric(CatalogHealthMetricType.lowStock)?.value;
     final int? attentionItems = health?.attentionItems;
     final int? categoryCount = categories?.total;
 
@@ -146,9 +148,10 @@ class ManagementOverviewProvider extends ChangeNotifier {
       ManagementPeopleOverview(
         clientCount: clients?.total,
         collaboratorCount: collaborators?.length,
-        activeCollaboratorCount: collaborators
-            ?.where((ColaboradorUsuarioResumo item) => item.ativo)
-            .length,
+        activeCollaboratorCount:
+            collaborators
+                ?.where((ColaboradorUsuarioResumo item) => item.ativo)
+                .length,
         supplierCount: null,
       ),
     );
@@ -163,9 +166,10 @@ class ManagementOverviewProvider extends ChangeNotifier {
     AgendaFinanceiraPeriodoRequest? periodo,
   }) async {
     try {
-      final service = espaco == _agendaFinanceiraService.espacoFinanceiro
-          ? _agendaFinanceiraService
-          : _agendaFinanceiraService.paraEspaco(espaco);
+      final service =
+          espaco == _agendaFinanceiraService.espacoFinanceiro
+              ? _agendaFinanceiraService
+              : _agendaFinanceiraService.paraEspaco(espaco);
       final Map<String, dynamic> payload = await service.consultarLancamentos(
         _financeRequest(periodo),
       );
@@ -179,9 +183,8 @@ class ManagementOverviewProvider extends ChangeNotifier {
   AgendaFinanceiraConsultaRequest _financeRequest([
     AgendaFinanceiraPeriodoRequest? periodo,
   ]) {
-    final DateTime now = DateTime.now();
-    final DateTime today = DateTime(now.year, now.month, now.day);
-
+    final now = _companyNow();
+    final today = DateTime(now.year, now.month, now.day);
     return AgendaFinanceiraConsultaRequest(
       periodo:
           periodo ??
@@ -233,15 +236,17 @@ class ManagementOverviewProvider extends ChangeNotifier {
             continue;
           final id = item['idLancamento']?.toString();
           if (id != null && !vistos.add(id)) continue;
-          double numero(dynamic v) => v is num
-              ? v.toDouble()
-              : double.tryParse(v?.toString() ?? '') ?? 0;
-          final restante = item['valorRestante'] != null
-              ? numero(item['valorRestante'])
-              : numero(item['valorOriginal'] ?? item['valor']) +
-                    numero(item['acrescimoTotal']) -
-                    numero(item['descontoTotal']) -
-                    numero(item['valorConfirmado']);
+          double numero(dynamic v) =>
+              v is num
+                  ? v.toDouble()
+                  : double.tryParse(v?.toString() ?? '') ?? 0;
+          final restante =
+              item['valorRestante'] != null
+                  ? numero(item['valorRestante'])
+                  : numero(item['valorOriginal'] ?? item['valor']) +
+                      numero(item['acrescimoTotal']) -
+                      numero(item['descontoTotal']) -
+                      numero(item['valorConfirmado']);
           if (restante <= 0) continue;
           final String type = item['tipo']?.toString().toUpperCase() ?? '';
           if (type == 'PAGAR') {

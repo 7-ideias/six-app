@@ -99,7 +99,7 @@ class _OperationalProcedurePreviewMobileScreenState
       procedureId: widget.procedure.id,
       currentStageIndex: 0,
       responses: const <String, ProcedureItemResponse>{},
-      startedAt: DateTime.now(),
+      startedAt: DateTime.now().toUtc(),
     );
     final List<ProcedureTrigger> enabledTriggers =
         widget.procedure.triggers
@@ -415,7 +415,7 @@ class _OperationalProcedurePreviewMobileScreenState
     setState(() {
       _pendingItemIds.clear();
       if (_isLastStage) {
-        _execution = _execution.copyWith(completedAt: DateTime.now());
+        _execution = _execution.copyWith(completedAt: DateTime.now().toUtc());
         _showSummary = true;
       } else {
         _execution = _execution.copyWith(
@@ -529,7 +529,7 @@ class _OperationalProcedurePreviewMobileScreenState
       ).persistExecution(
         procedure: widget.procedure,
         execution: _execution.copyWith(
-          completedAt: _execution.completedAt ?? DateTime.now(),
+          completedAt: _execution.completedAt ?? DateTime.now().toUtc(),
         ),
         configuration: widget.configuration,
         status: status,

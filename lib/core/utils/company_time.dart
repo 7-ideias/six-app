@@ -11,7 +11,12 @@ abstract final class CompanyTime {
       timezone_data.initializeTimeZones();
       _initialized = true;
     }
-    return tz.getLocation(timeZone);
+    try {
+      return tz.getLocation(timeZone);
+    } on tz.LocationNotFoundException {
+      // An old invalid configuration must not prevent rendering the screen.
+      return tz.UTC;
+    }
   }
 
   static DateTime fromInstant(DateTime instant, String timeZone) =>
@@ -21,4 +26,25 @@ abstract final class CompanyTime {
       value.isUtc || value is tz.TZDateTime
           ? fromInstant(value, timeZone)
           : value;
+
+  static DateTime toInstant(DateTime value, String timeZone) =>
+      value.isUtc || value is tz.TZDateTime
+          ? value.toUtc()
+          : tz.TZDateTime(
+            location(timeZone),
+            value.year,
+            value.month,
+            value.day,
+            value.hour,
+            value.minute,
+            value.second,
+            value.millisecond,
+            value.microsecond,
+          ).toUtc();
+
+  static DateTime? tryParse(Object? value) {
+    if (value is DateTime) return value;
+    if (value is! String || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value.trim());
+  }
 }

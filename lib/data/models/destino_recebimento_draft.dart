@@ -1,13 +1,16 @@
 import 'recebimento_forma_input.dart';
 
 class DestinoRecebimentoDraft {
-  DestinoRecebimentoDraft(this.origem)
+  DestinoRecebimentoDraft(this.origem, {DateTime? dataPadrao})
     : contaId = origem.contaFinanceiraId,
       maquininhaId = origem.maquininhaId,
       futuro =
           origem.recebimentoFuturo ||
           ['tipo3', 'tipo4'].contains(origem.codigo.toLowerCase()),
-      data = DateTime.tryParse(origem.dataPrevista ?? '') ?? DateTime.now(),
+      data =
+          DateTime.tryParse(origem.dataPrevista ?? '') ??
+          dataPadrao ??
+          DateTime.now().toUtc(),
       taxa = origem.taxa,
       valor = origem.valor;
   final RecebimentoFormaInput origem;
@@ -25,9 +28,11 @@ class DestinoRecebimentoDraft {
     maquininhaId: dinheiro ? null : maquininhaId,
     recebimentoFuturo: !dinheiro && futuro,
     taxa: dinheiro ? 0 : taxa,
-    dataPrevista: !dinheiro && futuro ? data.toIso8601String().split('T').first : null,
+    dataPrevista:
+        !dinheiro && futuro ? data.toIso8601String().split('T').first : null,
   );
-  bool get valido => valor > 0 && (dinheiro || (contaId != null && taxa >= 0 && taxa < valor));
+  bool get valido =>
+      valor > 0 && (dinheiro || (contaId != null && taxa >= 0 && taxa < valor));
 }
 
 bool distribuicaoFinanceiraValida(

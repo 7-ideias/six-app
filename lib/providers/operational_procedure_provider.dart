@@ -81,7 +81,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   }
 
   OperationalProcedure createEmptyProcedure() {
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     return OperationalProcedure(
       id: _nextId('procedure'),
       name: '',
@@ -100,7 +100,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   Future<OperationalProcedure?> saveProcedure(
     OperationalProcedure procedure,
   ) async {
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     final OperationalProcedureSummary? previousSummary = _summary;
     final List<OperationalProcedure> current = List<OperationalProcedure>.of(
       procedures,
@@ -265,7 +265,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   }
 
   ProcedureTrigger createTriggerDraft() {
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     return ProcedureTrigger(
       id: _nextId('trigger'),
       operationPoint: ProcedureOperationPoint.saleStartBefore,

@@ -49,7 +49,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
 
   Future<EstoqueDashboardModel> _buscarDashboard() async {
     final dashboard = await _produtoService.buscarDashboardEstoque();
-    _ultimaAtualizacaoEm = DateTime.now();
+    _ultimaAtualizacaoEm = DateTime.now().toUtc();
     return dashboard;
   }
 
