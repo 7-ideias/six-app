@@ -1166,6 +1166,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: !widget.modoEdicao && widget.lancamentoInicial != null && controller == _contatoController
+          ? (_) => _idContatoController.clear() : null,
       keyboardType: keyboardType,
       maxLines: maxLines,
       enabled: enabled,
