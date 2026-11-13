@@ -128,7 +128,7 @@ Future<void> _open(
                               'valor': 100,
                               'status': 'PENDENTE',
                             }
-                      : null,
+                      : initial,
                 );
                 onResult?.call(result);
               },
@@ -156,6 +156,28 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('duplicar abre revisão e salva como novo pendente', (tester) async {
+    final calls = _Calls();
+    final copy = AgendaFinanceiraLancamentoDetalhe.fromJson({
+      'idLancamento': 'old', 'tipo': 'RECEBER', 'descricao': 'Salário',
+      'status': 'RECEBIDO', 'valorOriginal': 100, 'valorPagoRecebido': 100,
+      'uuidOperacaoApp': 'old-command', 'serieRecorrenciaId': 'old-series',
+    }).paraDuplicacao({}, descricaoModelo: 'Cópia de {description}', hoje: DateTime(2026,11,13));
+    await _open(tester, calls, initial: copy);
+    expect(find.text('Cópia de Salário'), findsOneWidget);
+    expect(calls.requests, isEmpty);
+    await _tap(tester, _next);
+    await _tap(tester, _next);
+    final request = calls.requests.single;
+    expect(request.toJson()['statusOperacao'], 'PENDENTE');
+    expect(request.statusQuitada, false);
+    expect(request.uuidOperacaoApp, isNot('old-command'));
+    expect(request.configuracaoRecorrencia!.ativa, false);
+    expect(request.valorTotalOperacao, 100);
+    expect(calls.metadata, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('pagar exige escolha antes de mostrar campos e preserva ao voltar', (tester) async {
     await _open(tester, _Calls());
     await _tap(tester, _choice('pay'));

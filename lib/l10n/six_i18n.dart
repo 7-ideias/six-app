@@ -300,6 +300,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'accounts.mobile.all': 'Todos',
     'accounts.mobile.empty': 'Nenhuma conta nesta seleção',
     'accounts.mobile.emptyHelp': 'Confira o período e os filtros ou use + para cadastrar.',
+    'agenda.duplicate.action': 'Duplicar lançamento',
+    'agenda.duplicate.description': 'Cópia de {description}',
+    'agenda.duplicate.error': 'Não foi possível carregar o lançamento para duplicar. Tente novamente.',
+    'agenda.duplicate.hint': 'Revise os dados e as datas. A cópia será criada em aberto, sem pagamentos nem recorrência.',
     'agenda.edit.action': "Editar lançamento",
     'agenda.edit.protected':
         "Você pode alterar os dados cadastrais. Valores, datas e formas já confirmadas serão preservados.",
@@ -3552,6 +3556,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'accounts.mobile.all': 'All',
     'accounts.mobile.empty': 'No accounts in this selection',
     'accounts.mobile.emptyHelp': 'Check the period and filters or use + to add an entry.',
+    'agenda.duplicate.action': 'Duplicate entry',
+    'agenda.duplicate.description': 'Copy of {description}',
+    'agenda.duplicate.error': 'Unable to load the entry to duplicate. Try again.',
+    'agenda.duplicate.hint': 'Review the details and dates. The copy starts unpaid, without settlements or recurrence.',
     'agenda.edit.action': "Edit entry",
     'agenda.edit.protected':
         "You can edit the entry details. Confirmed amounts, dates and payment methods will be preserved.",
@@ -6582,6 +6590,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'accounts.mobile.all': 'Todas',
     'accounts.mobile.empty': 'No hay cuentas en esta selección',
     'accounts.mobile.emptyHelp': 'Revisa el período y los filtros o usa + para agregar.',
+    'agenda.duplicate.action': 'Duplicar movimiento',
+    'agenda.duplicate.description': 'Copia de {description}',
+    'agenda.duplicate.error': 'No se pudo cargar el movimiento para duplicar. Inténtalo de nuevo.',
+    'agenda.duplicate.hint': 'Revise los datos y las fechas. La copia comienza pendiente, sin pagos ni recurrencia.',
     'agenda.edit.action': "Editar movimiento",
     'agenda.edit.protected':
         "Puedes editar los datos del movimiento. Se conservarán los importes, fechas y medios ya confirmados.",

@@ -38,6 +38,22 @@ Future<void> open(WidgetTester t,Widget page,{String language='pt'})async{
 Future<void> tap(WidgetTester t,Finder f)async{await t.ensureVisible(f);await t.tap(f);await t.pumpAndSettle();}
 Finder field(String text)=>find.byWidgetPredicate((w)=>w is TextField&&w.decoration?.labelText==text);
 void main(){
+ testWidgets('mobile duplicates a purchase with a new id and without its series',(t)async{
+  final api=Api(),config=Config();addTearDown(api.dispose);addTearDown(config.dispose);
+  final source=CompraCartao.fromJson({'id':'old','descricao':'Netflix','valor':50,'dataCompra':'2020-01-01','categoriaId':'category','serieRecorrenciaId':'old-series'});
+  await open(t,CompraCartaoMobileScreen(espaco:'PESSOAL',client:api,configuracoes:config,duplicarCompra:source,fatura:invoice()));
+  expect(find.text('Cópia de Netflix'),findsOneWidget);
+  expect(api.purchases,isEmpty);
+  await tap(t,find.text('Revisar compra'));
+  await tap(t,find.text('Adicionar à fatura'));
+  expect(api.purchases.length,1);
+  expect(api.purchases.single.id,isNot('old'));
+  expect(api.purchases.single.valor,50);
+  expect(api.purchases.single.dataCompra.year,isNot(2020));
+  expect(source.serieRecorrenciaId,'old-series');
+  expect(t.takeException(),isNull);
+ });
+
  for(final language in ['pt','en','es'])testWidgets('mobile card list errors and permission $language',(t)async{
   final api=Api()..failRead=true;addTearDown(api.dispose);
   await open(t,CartoesCreditoMobileScreen(espaco:'PESSOAL',client:api),language:language);

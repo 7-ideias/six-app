@@ -139,6 +139,20 @@ Widget _app(
 );
 
 void main() {
+  testWidgets('duplicacao mobile preenche sem salvar automaticamente', (tester) async {
+    final service = _Service();
+    final copy = AgendaFinanceiraLancamentoDetalhe.fromJson(service.detail).paraDuplicacao(
+      {}, descricaoModelo: 'Cópia de {description}', hoje: DateTime(2026,11,13));
+    await tester.pumpWidget(_app(AgendaFinanceiraLancamentoMobileCreateScreen(
+      service: service, caixaApiClient: _Caixa(), lancamentoInicial: copy,
+    )));
+    await tester.pumpAndSettle();
+    expect(find.text('Cópia de Conta de teste'), findsOneWidget);
+    expect(find.text('Duplicar lançamento'), findsOneWidget);
+    expect(service.saved, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

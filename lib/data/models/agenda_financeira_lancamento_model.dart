@@ -386,6 +386,40 @@ class AgendaFinanceiraLancamentoDetalhe {
     };
   }
 
+  /// Creation seed only. Identity, settlement history and series never cross over.
+  Map<String, dynamic> paraDuplicacao(
+    Map<String, dynamic> item, {
+    required String descricaoModelo,
+    required DateTime hoje,
+  }) {
+    final origem = paraEdicao(item);
+    if (dados['faturaCartaoId'] != null || item['faturaCartaoId'] != null) {
+      throw const FormatException('Duplicate individual purchases, not invoices');
+    }
+    final data = DateTime(hoje.year, hoje.month, hoje.day);
+    final valor = origem['valorOriginal'];
+    if (valor == null || (num.tryParse('$valor') ?? 0) <= 0) {
+      throw const FormatException('Invalid original amount');
+    }
+    return {
+      for (final key in [
+        'tipo', 'contato', 'idContato', 'categoria', 'centroCustoId',
+        'centroDeCusto', 'responsavel', 'observacoes', 'contaFinanceiraId',
+        'formaPagamento', 'codigoTipoRecebimento',
+      ]) key: origem[key],
+      'descricao': descricaoModelo.replaceAll('{description}', origem['descricao']?.toString() ?? ''),
+      'valorOriginal': valor,
+      'valor': valor,
+      'valorRestante': valor,
+      'valorConfirmado': 0,
+      'status': 'PENDENTE',
+      'recorrente': false,
+      'vencimento': data.toIso8601String(),
+      'dataOperacao': data.toIso8601String(),
+      'dataCompetencia': DateTime(data.year, data.month).toIso8601String(),
+    };
+  }
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     ...dados,
     'idLancamento': idLancamento,

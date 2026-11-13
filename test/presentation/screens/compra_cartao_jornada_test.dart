@@ -30,7 +30,7 @@ class Config extends ConfiguracaoFinanceiraService {
  Config():super('PESSOAL');
  @override Future<List<ConfiguracaoFinanceira>> listar(String grupo)async=>const[ConfiguracaoFinanceira(id:'category',nome:'Assinaturas',tipo:'DESPESA')];
 }
-void main(){for(final mode in ['new','edit','monthly','installments','parcela']){final editing=mode=='edit'||mode=='parcela';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
+void main(){for(final mode in ['new','edit','monthly','installments','parcela','duplicate']){final editing=mode=='edit'||mode=='parcela';testWidgets('journey preserves fields and retries, mode=$mode', (tester)async{
  tester.view.physicalSize=const Size(1100,1600);tester.view.devicePixelRatio=1;
  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
  final api=Cards(),config=Config();addTearDown(api.dispose);addTearDown(config.dispose);
@@ -39,17 +39,19 @@ void main(){for(final mode in ['new','edit','monthly','installments','parcela'])
  final key=GlobalKey<CompraCartaoWebEditorState>();FaturaCartao? saved;bool locked=false;
  await tester.pumpWidget(ChangeNotifierProvider(create:(_)=>LocaleSettingsProvider(regionalizacaoService:RegionalizacaoService(apiClient:RegionalClient())),child:MaterialApp(
   locale:const Locale('pt'),localizationsDelegates:GlobalMaterialLocalizations.delegates,supportedLocales:const[Locale('pt')],home:Scaffold(body:CompraCartaoWebEditor(
-   key:key,client:api,configuracoes:config,cartaoInicial:'cartao',compraInicial:editing?CompraCartao.fromJson({'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoriaId':'category','categoria':'Assinaturas','versao':5,if(mode=='parcela')'parcelamentoId':'grupo',if(mode=='parcela')'numeroParcela':2,if(mode=='parcela')'quantidadeParcelas':3,if(mode=='parcela')'valorTotalCompra':240}):null,faturaInicial:mode=='parcela'?FaturaCartao.fromJson(invoiceJson()):null,embedded:true,descricaoController:description,valorController:amount,categoriaController:category,
+   key:key,client:api,configuracoes:config,cartaoInicial:'cartao',duplicarCompra:mode=='duplicate'?CompraCartao.fromJson({'id':'old','descricao':'Netflix','dataCompra':'2020-01-01','valor':80,'valorTotalCompra':240,'parcelamentoId':'old-plan','serieRecorrenciaId':'old-series','categoriaId':'category'}):null,compraInicial:editing?CompraCartao.fromJson({'id':'compra','descricao':'Netflix','dataCompra':'2026-11-11','valor':80,'categoriaId':'category','categoria':'Assinaturas','versao':5,if(mode=='parcela')'parcelamentoId':'grupo',if(mode=='parcela')'numeroParcela':2,if(mode=='parcela')'quantidadeParcelas':3,if(mode=='parcela')'valorTotalCompra':240}):null,faturaInicial:mode=='parcela'?FaturaCartao.fromJson(invoiceJson()):null,embedded:true,descricaoController:description,valorController:amount,categoriaController:category,
    onSaved:(f)=>saved=f,onLocked:(v)=>locked=v)))));
  await tester.pumpAndSettle();expect(find.byType(FilledButton),findsNothing);
  if(mode=='monthly'){await tester.tap(find.text('Mensal'));await tester.pumpAndSettle();}
  if(mode=='installments'){await tester.tap(find.text('Parcelada'));await tester.pumpAndSettle();expect(key.currentState!.validate(),isFalse);await tester.ensureVisible(find.text('Calcular parcelas'));await tester.tap(find.text('Calcular parcelas'));await tester.pumpAndSettle();}
  expect(key.currentState!.validate(),isTrue);
+ if(mode=='duplicate'){expect(description.text,'Cópia de Netflix');expect(amount.text,'240,00');}
  description.text='Netflix atualizado';
  await key.currentState!.submit();await tester.pumpAndSettle();
  expect(saved,isNull);expect(locked,isTrue);expect(description.text,'Netflix atualizado');
  await key.currentState!.submit();await tester.pumpAndSettle();
  expect(saved,isNotNull);expect(api.requests.length,2);
+ if(mode=='duplicate'){expect(api.requests.first.valor,240);expect(api.requests.first.id,isNot('old'));expect(api.requests.first.dataCompra.year,isNot(2020));}
  expect(api.requests[0].toJson(),api.requests[1].toJson());expect(api.requests[0].categoriaId,'category');
  expect(api.installments,mode=='installments'?2:0);expect(api.series,mode=='monthly'?2:0);expect(api.edits,editing?2:0);expect(api.requests[0].descricao,'Netflix atualizado');expect(tester.takeException(),isNull);
  });}}

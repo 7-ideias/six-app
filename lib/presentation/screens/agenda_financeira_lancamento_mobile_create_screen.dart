@@ -31,11 +31,13 @@ class AgendaFinanceiraLancamentoMobileCreateScreen extends StatefulWidget {
     this.service,
     this.caixaApiClient,
     this.tipoInicial,
+    this.lancamentoInicial,
   });
 
   final AgendaFinanceiraLancamentoService? service;
   final CaixaApiClient? caixaApiClient;
   final String? tipoInicial;
+  final Map<String, dynamic>? lancamentoInicial;
 
   @override
   State<AgendaFinanceiraLancamentoMobileCreateScreen> createState() =>
@@ -70,6 +72,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _contatoController = TextEditingController();
   String? _contaFinanceiraId;
+  String? _idContato;
   final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _responsavelController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
@@ -117,6 +120,24 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     super.initState();
     if (_tipos.contains(widget.tipoInicial))
       _tipoSelecionado = widget.tipoInicial!;
+    final copia = widget.lancamentoInicial;
+    if (copia != null) {
+      _tipoSelecionado = copia['tipo']?.toString().toUpperCase() == 'RECEBER' ? 'Receber' : 'Pagar';
+      _descricaoController.text = copia['descricao']?.toString() ?? '';
+      _contatoController.text = copia['contato']?.toString() ?? '';
+      _idContato = copia['idContato']?.toString();
+      _categoriaController.text = copia['categoria']?.toString() ?? '';
+      _centroCustoController.text = copia['centroDeCusto']?.toString() ?? '';
+      _centroCustoId = copia['centroCustoId']?.toString();
+      _contaFinanceiraId = copia['contaFinanceiraId']?.toString();
+      _responsavelController.text = copia['responsavel']?.toString() ?? '';
+      _observacoesController.text = copia['observacoes']?.toString() ?? '';
+      _valorController.text = (num.parse('${copia['valorOriginal']}')).toStringAsFixed(2)
+          .replaceAll('.', context.read<LocaleSettingsProvider>().decimalSeparator);
+      _codigoTipoRecebimentoSelecionado = copia['codigoTipoRecebimento']?.toString() ?? '';
+      _pagamentoDireto = true;
+      _etapa = 2;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarTiposRecebimentoAtivos();
     });
@@ -142,7 +163,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: context.t('agenda.form.create'),
+      title: context.t(widget.lancamentoInicial == null ? 'agenda.form.create' : 'agenda.duplicate.action'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -317,6 +338,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             ],
             if (_etapa == 2 && (_tipoSelecionado != 'Pagar' || _pagamentoDireto)) ...[
               if (_tipoSelecionado == 'Pagar') TextButton.icon(onPressed: () => setState(() => _pagamentoDireto = false), icon: const Icon(Icons.swap_horiz), label: Text(context.t('invoices.paymentDestination')),),
+              if (widget.lancamentoInicial != null) Padding(padding: const EdgeInsets.only(bottom: 14), child: Text(context.t('agenda.duplicate.hint'))),
               _buildMainSection(),
               const SizedBox(height: 14),
               _buildValueSection(),
@@ -547,6 +569,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       children: <Widget>[
         _textField(
           controller: _contatoController,
+          onChanged: (_) => _idContato = null,
           label: _tipoSelecionado == 'Receber' ? 'Cliente' : 'Fornecedor',
           icon: Icons.person_outline,
         ),
@@ -703,6 +726,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
     int minLines = 1,
     int maxLines = 1,
   }) {
@@ -710,6 +734,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      onChanged: onChanged,
       minLines: minLines,
       maxLines: maxLines,
       enabled: !_salvando,
@@ -967,6 +992,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       _centroCustoController.clear();
       _categoriaController.clear();
       _contatoController.clear();
+      _idContato = null;
       _responsavelController.clear();
       _formasPagamento = [];
       _codigoTipoRecebimentoSelecionado = '';
@@ -1162,9 +1188,9 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       contaFinanceiraId: _contaFinanceiraId,
       idColaborador: 'mobile-user',
       nomeColaborador: _responsavelController.text.trim(),
-      idCliente: null,
+      idCliente: isReceber ? _idContato : null,
       nomeCliente: isReceber && contatoNome.isNotEmpty ? contatoNome : null,
-      idFornecedor: null,
+      idFornecedor: isReceber ? null : _idContato,
       nomeFornecedor: !isReceber && contatoNome.isNotEmpty ? contatoNome : null,
       referenciaExterna: _referenciaController.text.trim().isEmpty
           ? null
