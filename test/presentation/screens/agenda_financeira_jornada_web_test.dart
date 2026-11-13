@@ -169,7 +169,7 @@ void main() {
     await _tap(tester, _next);
     await _tap(tester, _next);
     final request = calls.requests.single;
-    expect(request.statusOperacao, 'PENDENTE');
+    expect(request.toJson()['statusOperacao'], 'PENDENTE');
     expect(request.statusQuitada, false);
     expect(request.uuidOperacaoApp, isNot('old-command'));
     expect(request.configuracaoRecorrencia!.ativa, false);
