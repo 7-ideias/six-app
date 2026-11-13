@@ -161,7 +161,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   CaixaSessao? _sessaoCaixaPdv;
   Timer? _sessaoCaixaPdvTempoAtivoTimer;
   Timer? _vendasAReceberPollingTimer;
-  DateTime _referenciaTempoSessaoCaixaPdv = DateTime.now();
+  DateTime _referenciaTempoSessaoCaixaPdv = DateTime.now().toUtc();
   ClienteUsuario? _clienteIdentificado;
   VendaNaoLiquidadaModel? _vendaNaoLiquidadaEmConsulta;
   int _totalVendasAReceberPendentes = 0;
@@ -409,7 +409,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
       setState(() {
         _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
-        _ultimaValidacaoBackend = DateTime.now();
+        _ultimaValidacaoBackend = DateTime.now().toUtc();
       });
     };
 
@@ -438,7 +438,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       final Map<String, dynamic> notificacao = <String, dynamic>{
         ...json,
-        'recebidoEm': DateTime.now().toIso8601String(),
+        'recebidoEm': DateTime.now().toUtc().toIso8601String(),
       };
 
       setState(() {
@@ -446,7 +446,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _quantidadeNotificacoesNaoLidas = (_quantidadeNotificacoesNaoLidas + 1)
             .clamp(0, 9);
         _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
-        _ultimaValidacaoBackend = DateTime.now();
+        _ultimaValidacaoBackend = DateTime.now().toUtc();
       });
 
       _bellAnimationController.forward(from: 0);
@@ -495,11 +495,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
         });
       }
-      _ultimaValidacaoBackend = DateTime.now();
+      _ultimaValidacaoBackend = DateTime.now().toUtc();
       return;
     }
 
-    final DateTime agora = DateTime.now();
+    final DateTime agora = DateTime.now().toUtc();
     final bool podeReconectar =
         _ultimaTentativaReconexao == null ||
         agora.difference(_ultimaTentativaReconexao!) >=
@@ -783,7 +783,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     if (abrirSuporteSolicitado) {
       await Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => const ChatSuporteWebPage(),
+          builder: (_) => const ChatSuporteWebPage()
         ),
       );
     }
@@ -1016,7 +1016,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               }
             },
             itemBuilder:
-                (BuildContext context) =>
+                (BuildContext context,) =>
                     <PopupMenuEntry<_WebHeaderUserAction>>[
                       PopupMenuItem<_WebHeaderUserAction>(
                         value: _WebHeaderUserAction.profile,
@@ -1055,7 +1055,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                               Text(
                                 context.t(
                                   'chatSupport.title',
-                                  fallback: 'Suporte',
+                                  fallback: 'Suporte'
                                 ),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: tokens.primaryText,
@@ -1065,7 +1065,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                             ],
                           ),
                         ),
-                      PopupMenuItem<_WebHeaderUserAction>(value: _WebHeaderUserAction.subscription, child: Text(billingText(context, 'plans'))),
+                      PopupMenuItem<_WebHeaderUserAction>(value: _WebHeaderUserAction.subscription, child: Text(billingText(context, 'plans')),),
                       const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
                       PopupMenuItem<_WebHeaderUserAction>(
                         value: _WebHeaderUserAction.logout,
@@ -1636,7 +1636,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _sessaoCaixaPdv = sessao;
         _erroSessaoCaixaPdv = false;
         _sessaoCaixaPdvSincronizada = true;
-        _referenciaTempoSessaoCaixaPdv = DateTime.now();
+        _referenciaTempoSessaoCaixaPdv = DateTime.now().toUtc();
       });
       _sincronizarTimerTempoAtivoSessaoCaixaPdv();
     } catch (_) {
@@ -1737,7 +1737,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         }
 
         setState(() {
-          _referenciaTempoSessaoCaixaPdv = DateTime.now();
+          _referenciaTempoSessaoCaixaPdv = DateTime.now().toUtc();
         });
       },
     );
@@ -2747,7 +2747,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     setState(() => _registrandoReceberDepois = true);
 
     try {
-      final DateTime dataOperacao = DateTime.now();
+      final DateTime dataOperacao = DateTime.now().toUtc();
       final String idColaborador = await AuthService().getUserId() ?? '';
 
       final OperacaoVendaInput input = OperacaoVendaInput(
@@ -3038,7 +3038,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: FornecedoresWebPage(
             embedded: true,
-            onBack: voltarParaInicio,
+            onBack: voltarParaInicio
           ),
         );
 
@@ -3581,5 +3581,3 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 }
-
-

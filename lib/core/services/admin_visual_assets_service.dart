@@ -262,7 +262,7 @@ class AdminVisualAssetsService {
   bool _has(String? value) => value != null && value.trim().isNotEmpty;
 
   String _localIsoWithoutOffset(DateTime value) {
-    final DateTime local = value.toLocal();
+    final DateTime local = value;
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year.toString().padLeft(4, '0')}-'
         '${two(local.month)}-${two(local.day)}T'

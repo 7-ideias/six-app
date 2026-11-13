@@ -32,8 +32,12 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   bool _loading = true;
   bool _processando = false;
   String? _erro;
-  DateTime _dataInicio = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _dataFim = DateTime.now().add(const Duration(days: 30));
+  late
+  DateTime _dataInicio = context.read<LocaleSettingsProvider>()
+      .calendarNow.subtract(const Duration(days: 30));
+  late
+  DateTime _dataFim = context.read<LocaleSettingsProvider>()
+      .calendarNow.add(const Duration(days: 30));
   List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
 
   List<VendaNaoLiquidadaModel> get _vendasFiltradas {
@@ -66,7 +70,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   );
 
   int get _vencidas {
-    final DateTime hoje = DateTime.now();
+    final DateTime hoje = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
     return _vendasFiltradas
         .where(
@@ -78,7 +82,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   }
 
   int get _venceHoje {
-    final DateTime hoje = DateTime.now();
+    final DateTime hoje = context.read<LocaleSettingsProvider>().calendarNow;
     return _vendasFiltradas.where((VendaNaoLiquidadaModel venda) {
       final DateTime? vencimento = venda.dataVencimento;
       return vencimento != null &&
@@ -89,7 +93,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   }
 
   double get _previsaoSeteDias {
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime seteDias = _fimDoDia(hoje.add(const Duration(days: 7)));
     return _vendas
         .where((VendaNaoLiquidadaModel venda) {
@@ -201,6 +206,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
       fallback: 'Parcial recebida com sucesso.',
     );
 
+    final dataLiquidacao = context.read<LocaleSettingsProvider>().calendarNow;
     setState(() => _processando = true);
     try {
       final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
@@ -228,7 +234,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           idLancamento: venda.idOperacaoFinanceira,
           request: AgendaFinanceiraParcialRequest(
             tipoLiquidacao: 'PARCIAL',
-            dataLiquidacao: DateTime.now(),
+            dataLiquidacao: dataLiquidacao,
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
             recebimentos: resultado.recebimentos,
@@ -505,7 +511,9 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                         _loading || _processando
                             ? null
                             : () {
-                              final DateTime hoje = DateTime.now();
+                              final DateTime hoje =
+                                  context.read<LocaleSettingsProvider>()
+                                      .calendarNow;
                               setState(() {
                                 _dataInicio = _inicioDoDia(hoje);
                                 _dataFim = _inicioDoDia(hoje);
@@ -1440,7 +1448,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Widget _statusChip(VendaNaoLiquidadaModel venda) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime? vencimento = venda.dataVencimento;
     late final Color color;
     late final String label;
@@ -1485,7 +1494,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
         fallback: 'Calculado com as vendas em aberto',
       );
     }
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime data = _inicioDoDia(vencimento);
     if (data.isBefore(hoje)) {
       return '${context.t('vendasAReceber.overdue', fallback: 'Vencidas')}: ${_formatarDataDia(vencimento)}';

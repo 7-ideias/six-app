@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -300,7 +301,7 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
         ProcedureItemResponse(
           itemId: item.id,
           responseType: item.responseType,
-          updatedAt: DateTime.now(),
+          updatedAt: DateTime.now().toUtc(),
         );
     onChanged(
       current.copyWith(
@@ -498,7 +499,7 @@ class _DateControl extends StatelessWidget {
             : OperationalProcedureI18n.formatDate(context, value!);
     return OutlinedButton.icon(
       onPressed: () async {
-        final DateTime now = DateTime.now();
+        final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
         final DateTime? selected = await showModalBottomSheet<DateTime>(
           context: context,
           useSafeArea: true,

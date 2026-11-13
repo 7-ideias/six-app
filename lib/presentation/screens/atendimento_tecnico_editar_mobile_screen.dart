@@ -133,7 +133,8 @@ class _AtendimentoTecnicoEditarMobileScreenState
     );
 
     _validadeOrcamentoEm = _normalizarData(
-      atendimento.validadeOrcamentoEm ?? DateTime.now().add(Duration(days: 7)),
+      atendimento.validadeOrcamentoEm ??
+          context.read<LocaleSettingsProvider>().calendarNow.add(Duration(days: 7),),
     );
     _vencimentoFinanceiroEm = _normalizarData(
       atendimento.dataVencimentoEm ?? _validadeOrcamentoEm,
@@ -1288,7 +1289,8 @@ class _AtendimentoTecnicoEditarMobileScreenState
     required String applyButtonLabel,
     DateTime? firstDate,
   }) async {
-    final DateTime inicio = _normalizarData(DateTime.now());
+    final DateTime inicio = _normalizarData(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime primeiraData = firstDate ?? inicio;
     final DateTime initial =
         initialDate.isBefore(primeiraData) ? primeiraData : initialDate;

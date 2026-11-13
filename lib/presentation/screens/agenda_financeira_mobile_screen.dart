@@ -610,7 +610,7 @@ class _AgendaFinanceiraMobileScreenState
       _aplicarAgenda(resultado.agenda);
       _aplicarConfirmados(resultado.valoresConfirmados);
       _sincronizarValoresConfirmadosNosLancamentos();
-      _ultimaConsultaEm = DateTime.now();
+      _ultimaConsultaEm = DateTime.now().toUtc();
       _erroConsulta = null;
       if (!resultado.valoresConfirmadosDisponiveis) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -791,7 +791,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   DateTime _hojeNormalizado() {
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(agora.year, agora.month, agora.day);
   }
 
@@ -1181,7 +1181,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
-    final itemAtualizado = await Navigator.of(context)
+    final itemAtualizado = await Navigator.of(context,)
         .push<Map<String, dynamic>>(
           MaterialPageRoute<Map<String, dynamic>>(
             builder: (_) => AgendaFinanceiraLancamentoMobileEditScreen(
@@ -1256,7 +1256,7 @@ class _AgendaFinanceiraMobileScreenState
             FilledButton(
               onPressed: () => Navigator.pop(sheetContext, true),
               style: FilledButton.styleFrom(backgroundColor: _colors.error),
-              child: Text(context.t('common.confirm', fallback: 'Confirmar')),
+              child: Text(context.t('common.confirm', fallback: 'Confirmar'),),
             ),
             OutlinedButton(
               onPressed: () => Navigator.pop(sheetContext, false),
@@ -1390,6 +1390,8 @@ class _AgendaFinanceiraMobileScreenState
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
       onConfirm: (resultado) async {
+        final dataLiquidacao = resultado.dataLiquidacao ??
+            context.read<LocaleSettingsProvider>().calendarNow;
         final contaFinanceiraId =
             resultado.recebimentos.first.contaFinanceiraId;
         final String? idSessaoCaixa = _service.espacoFinanceiro == 'PESSOAL'
@@ -1401,7 +1403,7 @@ class _AgendaFinanceiraMobileScreenState
             request: AgendaFinanceiraLiquidacaoRequest(
               contaFinanceiraId: contaFinanceiraId,
               tipoLiquidacao: 'TOTAL',
-              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              dataLiquidacao: dataLiquidacao,
               desconto: resultado.desconto,
               acrescimo: resultado.acrescimo,
               classificacao: resultado.classificacao,
@@ -1419,7 +1421,7 @@ class _AgendaFinanceiraMobileScreenState
             request: AgendaFinanceiraParcialRequest(
               contaFinanceiraId: contaFinanceiraId,
               tipoLiquidacao: 'PARCIAL',
-              dataLiquidacao: resultado.dataLiquidacao ?? DateTime.now(),
+              dataLiquidacao: dataLiquidacao,
               desconto: resultado.desconto,
               acrescimo: resultado.acrescimo,
               classificacao: resultado.classificacao,
@@ -2071,7 +2073,7 @@ class _AgendaFinanceiraMobileScreenState
                                   ? null
                                   : (value) async {
                                       final atualizado =
-                                          await _editarNomeTipoPagamento(value);
+                                          await _editarNomeTipoPagamento(value,);
                                       if (!context.mounted ||
                                           atualizado == null)
                                         return;
@@ -2364,33 +2366,33 @@ class _AgendaFinanceiraMobileScreenState
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           Row(children: [
             Expanded(child: Text(context.t(tipo == 'receber'
-              ? 'agenda.mobile.summary.received' : 'agenda.mobile.summary.paid'),
-              style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w700))),
+              ? 'agenda.mobile.summary.received' : 'agenda.mobile.summary.paid',),
+              style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w700,),),),
             IconButton(tooltip: context.t('common.close'),
-              onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close)),
-          ]),
+              onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close),),
+          ],),
           Text(context.t('agenda.summary.actualDates'),
-            style: TextStyle(color: _mutedTextColor)),
+            style: TextStyle(color: _mutedTextColor),),
           const SizedBox(height: 12),
-          Text(_formatarMoeda(tipo == 'receber' ? _totalRecebidoConfirmado : _totalPagoConfirmado),
-            style: TextStyle(color: _titleTextColor, fontSize: 24, fontWeight: FontWeight.w800)),
+          Text(_formatarMoeda(tipo == 'receber' ? _totalRecebidoConfirmado : _totalPagoConfirmado,),
+            style: TextStyle(color: _titleTextColor, fontSize: 24, fontWeight: FontWeight.w800,),),
           const SizedBox(height: 12),
           Expanded(child: itens.isEmpty
-            ? Center(child: Text(context.t('agenda.summary.noEntries')))
+            ? Center(child: Text(context.t('agenda.summary.noEntries'),),)
             : ListView(children: itens.map((item) => ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(item['descricao']?.toString() ?? ''),
+                title: Text(item['descricao']?.toString() ?? '',),
                 subtitle: Text(
                   '${item['data'] ?? ''}\n'
                   '${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
                 ),
-                isThreeLine: true, trailing: const Icon(Icons.chevron_right),
+                isThreeLine: true, trailing: const Icon(Icons.chevron_right,),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _abrirAcoesLancamento(item);
                 },
-              )).toList())),
-        ])),
+              ),).toList(),),),
+        ],),),
       ),
     );
   }
@@ -2688,7 +2690,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _abrirFaturaMobile(String id) async {
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FaturasCartaoMobileScreen(espaco: _service.espacoFinanceiro, faturaId: id)));
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FaturasCartaoMobileScreen(espaco: _service.espacoFinanceiro, faturaId: id,),),);
     if (mounted) await _consultar(mostrarFeedback: true);
   }
 
@@ -3004,7 +3006,7 @@ class _AgendaFinanceiraMobileScreenState
         final titulo = data == null
             ? entry.key
             : MaterialLocalizations.of(context).formatMediumDate(data);
-        final resumo = AgendaFinanceiraCalendarioResumo.calcular(entry.value);
+        final resumo = AgendaFinanceiraCalendarioResumo.calcular(entry.value,);
         final verde = _corNaturezaFinanceira(true);
         final vermelho = _corNaturezaFinanceira(false);
         final expandido = _diasCalendarioExpandidos.contains(entry.key);
@@ -3044,7 +3046,7 @@ class _AgendaFinanceiraMobileScreenState
                             Expanded(
                               child: Text(
                                 titulo,
-                                key: Key('agenda-calendario-dia-${entry.key}'),
+                                key: Key('agenda-calendario-dia-${entry.key}',),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -3062,7 +3064,7 @@ class _AgendaFinanceiraMobileScreenState
                               ),
                             ),
                             IconButton(
-                              key: Key('agenda-calendario-toggle-${entry.key}'),
+                              key: Key('agenda-calendario-toggle-${entry.key}',),
                               tooltip: acao,
                               onPressed: () =>
                                   _alternarDiaCalendario(entry.key),
@@ -3086,7 +3088,7 @@ class _AgendaFinanceiraMobileScreenState
                             resumo.aReceber > 0 ||
                             resumo.aPagar > 0)
                           Padding(
-                            padding: const EdgeInsets.only(top: 1, bottom: 2),
+                            padding: const EdgeInsets.only(top: 1, bottom: 2,),
                             child: Wrap(
                               spacing: 13,
                               runSpacing: 5,
@@ -3134,7 +3136,7 @@ class _AgendaFinanceiraMobileScreenState
                           children: [
                             ...entry.value.map(
                               (item) =>
-                                  _buildLancamentoCard(item, calendario: true),
+                                  _buildLancamentoCard(item, calendario: true,),
                             ),
                           ],
                         ),
@@ -3417,7 +3419,7 @@ class _AgendaFinanceiraMobileScreenState
                         metadados.join(' • '),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                        style: TextStyle(color: _mutedTextColor, fontSize: 12,),
                       ),
                     ],
                   ],
@@ -3680,11 +3682,11 @@ class _AgendaFinanceiraMobileScreenState
                         itemBuilder: (_) => [
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.a4,
-                            child: Text(context.t('agenda.saleItems.pdfA4')),
+                            child: Text(context.t('agenda.saleItems.pdfA4'),),
                           ),
                           PopupMenuItem(
                             value: FormatoImpressaoOperacao.cupomTermico,
-                            child: Text(context.t('agenda.saleItems.pdfCupom')),
+                            child: Text(context.t('agenda.saleItems.pdfCupom'),),
                           ),
                         ],
                         child: Container(

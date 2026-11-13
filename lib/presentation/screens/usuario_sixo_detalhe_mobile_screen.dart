@@ -954,7 +954,7 @@ String _mobileFormatValue(BuildContext context, String key, dynamic value) {
         ? context.t('common.yes', fallback: 'Sim')
         : context.t('common.no', fallback: 'Não');
   }
-  if (value is DateTime) return value.toLocal().toIso8601String();
+  if (value is DateTime) return value.toIso8601String();
   if (value is List) {
     return value.isEmpty
         ? context.t('common.notInformed', fallback: 'Não informado')
@@ -971,4 +971,3 @@ String _mobileFormatValue(BuildContext context, String key, dynamic value) {
   }
   return text;
 }
-

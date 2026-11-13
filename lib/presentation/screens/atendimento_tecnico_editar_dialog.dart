@@ -130,18 +130,18 @@ class _AtendimentoTecnicoEditarDialogState
     _diagnosticoController.text = atendimento.diagnosticoTecnico ?? '';
     _validadeOrcamentoEm = _normalizarData(
       atendimento.validadeOrcamentoEm ??
-          DateTime.now().add(const Duration(days: 7)),
+          context.read<LocaleSettingsProvider>().calendarNow.add(const Duration(days: 7),),
     );
     _validadeOrcamentoOriginalEm = _validadeOrcamentoEm;
     _dataVencimentoEm = _normalizarData(
       atendimento.dataVencimentoEm ??
           atendimento.validadeOrcamentoEm ??
-          DateTime.now().add(const Duration(days: 7)),
+          context.read<LocaleSettingsProvider>().calendarNow.add(const Duration(days: 7),),
     );
     _dataEntregaPrevista = _normalizarData(
       atendimento.dataEntregaPrevista ??
           atendimento.validadeOrcamentoEm ??
-          DateTime.now().add(const Duration(days: 7)),
+          context.read<LocaleSettingsProvider>().calendarNow.add(const Duration(days: 7),),
     );
     _itens.addAll(atendimento.itens.map(_AtendimentoItemEditavel.fromModel));
     _fotos.addAll(
@@ -334,7 +334,7 @@ class _AtendimentoTecnicoEditarDialogState
   }
 
   Future<void> _selecionarValidade() async {
-    final hoje = DateTime.now();
+    final hoje = context.read<LocaleSettingsProvider>().calendarNow;
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
     final selecionada = await _showThemedDatePicker(
       context: context,
@@ -351,7 +351,7 @@ class _AtendimentoTecnicoEditarDialogState
   }
 
   Future<void> _selecionarVencimentoFinanceiro() async {
-    final hoje = DateTime.now();
+    final hoje = context.read<LocaleSettingsProvider>().calendarNow;
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
     final selecionada = await _showThemedDatePicker(
       context: context,
@@ -368,7 +368,7 @@ class _AtendimentoTecnicoEditarDialogState
   }
 
   Future<void> _selecionarDataEntregaPrevista() async {
-    final hoje = DateTime.now();
+    final hoje = context.read<LocaleSettingsProvider>().calendarNow;
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
     final primeiraData = DateTime(2000);
     final selecionada = await _showThemedDatePicker(
@@ -493,7 +493,7 @@ class _AtendimentoTecnicoEditarDialogState
 
   Future<void> _salvar() async {
     if (_salvando) return;
-    final hoje = DateTime.now();
+    final hoje = context.read<LocaleSettingsProvider>().calendarNow;
     final inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
     final validadeAlterada =
         !_mesmaData(_validadeOrcamentoEm, _validadeOrcamentoOriginalEm);

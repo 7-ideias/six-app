@@ -133,8 +133,10 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
   final TextEditingController _idExternoController = TextEditingController(
     text: 'CLI-',
   );
+  late
   final TextEditingController _dataCadastroController = TextEditingController(
-    text: _formatDateTime(DateTime.now()),
+    text: _formatDateTime(
+          context.read<LocaleSettingsProvider>().calendarNow,),
   );
   final TextEditingController _idUnicoDaEmpresaController =
       TextEditingController();
@@ -387,7 +389,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
     TextEditingController controller, {
     required bool includeTime,
   }) async {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: now,

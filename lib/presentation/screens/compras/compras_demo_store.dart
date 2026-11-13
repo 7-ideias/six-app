@@ -27,13 +27,15 @@ class _ComprasDemoStore {
     _sequence = 1;
   }
 
-  _CompraDemo criarRascunho({required String moeda}) {
-    final DateTime agora = DateTime.now();
+  _CompraDemo criarRascunho({required String moeda, required DateTime agora}) {
     final _CompraDemo compra = _CompraDemo(
       id: novoId('compra'),
       criadaEm: agora,
       atualizadaEm: agora,
       moeda: moeda,
+      dataEmissao: agora,
+      dataEntrada: agora,
+      primeiroVencimento: agora.add(const Duration(days: 30)),
     );
     compras.insert(0, compra);
     return compra;
@@ -75,7 +77,7 @@ class _ComprasDemoStore {
   }
 
   void salvar(_CompraDemo compra) {
-    compra.atualizadaEm = DateTime.now();
+    compra.atualizadaEm = DateTime.now().toUtc();
   }
 
   int confirmar(_CompraDemo compra) {
@@ -87,7 +89,8 @@ class _ComprasDemoStore {
       ..numero = numero
       ..status = _CompraDemoStatus.confirmada
       ..confirmadaEm = DateTime.now()
-      ..atualizadaEm = DateTime.now();
+      .toUtc()
+      ..atualizadaEm = DateTime.now().toUtc();
     return numero;
   }
 
@@ -95,14 +98,15 @@ class _ComprasDemoStore {
     compra
       ..status = _CompraDemoStatus.cancelada
       ..canceladaEm = DateTime.now()
+      .toUtc()
       ..motivoCancelamento = motivo
-      ..atualizadaEm = DateTime.now();
+      ..atualizadaEm = DateTime.now().toUtc();
   }
 
-  _CompraDemo duplicar(_CompraDemo origem) {
+  _CompraDemo duplicar(_CompraDemo origem, {required DateTime agora}) {
     final _CompraDemo copia = origem.duplicar(
       novoId: novoId('compra'),
-      agora: DateTime.now(),
+      agora: agora,
     );
     compras.insert(0, copia);
     return copia;

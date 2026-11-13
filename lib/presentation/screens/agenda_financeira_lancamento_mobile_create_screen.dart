@@ -92,13 +92,20 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   final Map<String, String> _descricaoPorCodigoTipoFormaPagamento =
       <String, String>{};
 
+  late
+
   DateTime _dataOperacao = _inicioHoje();
+  late
   DateTime _dataVencimento = _inicioHoje();
-  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
+  late
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(
+    context.read<LocaleSettingsProvider>().calendarNow,);
 
   DateTime? _dataPrevisaoPagamento;
   bool _registrarPagamento = false;
-  DateTime _dataPagamentoRealizado = DateUtils.dateOnly(DateTime.now());
+  late
+  DateTime _dataPagamentoRealizado = DateUtils.dateOnly(
+    context.read<LocaleSettingsProvider>().calendarNow,);
 
   bool _pagamentoDireto = false;
   int _etapa = 0;
@@ -127,10 +134,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     _documentoFiscalController.dispose();
     _centroCustoController.dispose();
     super.dispose();
-  }
-
-  static DateTime _inicioHoje() {
-    final DateTime now = DateTime.now();
+  } DateTime _inicioHoje() {
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(now.year, now.month, now.day);
   }
 
@@ -305,13 +310,13 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 ),
             ],
             if (_etapa == 2 && _tipoSelecionado == 'Pagar' && !_pagamentoDireto) ...[
-              Text(context.t('agenda.journey.paymentTitle'), style: Theme.of(context).textTheme.titleLarge),
+              Text(context.t('agenda.journey.paymentTitle'), style: Theme.of(context).textTheme.titleLarge,),
               const SizedBox(height: 16),
-              Card(child: ListTile(leading: const Icon(Icons.account_balance_outlined), title: Text(context.t('invoices.directPayment')), subtitle: Text(context.t('agenda.journey.directPaymentHint')), onTap: () => setState(() => _pagamentoDireto = true))),
-              Card(child: ListTile(leading: const Icon(Icons.credit_card_outlined), title: Text(context.t('agenda.journey.creditCard')), subtitle: Text(context.t('agenda.journey.creditCardHint')), onTap: _abrirCompraCartao)),
+              Card(child: ListTile(leading: const Icon(Icons.account_balance_outlined), title: Text(context.t('invoices.directPayment')), subtitle: Text(context.t('agenda.journey.directPaymentHint')), onTap: () => setState(() => _pagamentoDireto = true),),),
+              Card(child: ListTile(leading: const Icon(Icons.credit_card_outlined), title: Text(context.t('agenda.journey.creditCard')), subtitle: Text(context.t('agenda.journey.creditCardHint')), onTap: _abrirCompraCartao,),),
             ],
             if (_etapa == 2 && (_tipoSelecionado != 'Pagar' || _pagamentoDireto)) ...[
-              if (_tipoSelecionado == 'Pagar') TextButton.icon(onPressed: () => setState(() => _pagamentoDireto = false), icon: const Icon(Icons.swap_horiz), label: Text(context.t('invoices.paymentDestination'))),
+              if (_tipoSelecionado == 'Pagar') TextButton.icon(onPressed: () => setState(() => _pagamentoDireto = false), icon: const Icon(Icons.swap_horiz), label: Text(context.t('invoices.paymentDestination')),),
               _buildMainSection(),
               const SizedBox(height: 14),
               _buildValueSection(),
@@ -428,14 +433,14 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           onTap: () => _selecionarValor(
             titulo: context.t('agenda.form.situation'),
             opcoes: _statusParaTipo()
-                .map((s) => AgendaFinanceiraStatusLabels.rotulo(context, s))
+                .map((s) => AgendaFinanceiraStatusLabels.rotulo(context, s),)
                 .toList(),
             selecionado: AgendaFinanceiraStatusLabels.rotulo(
               context,
               _statusSelecionado,
             ),
             onSelected: (String value) => _statusSelecionado =
-                AgendaFinanceiraStatusLabels.codigoDaEscolha(context, value),
+                AgendaFinanceiraStatusLabels.codigoDaEscolha(context, value,),
           ),
         ),
       ],
@@ -785,7 +790,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   Future<void> _abrirCompraCartao() async {
     final fatura = await Navigator.of(context).push<FaturaCartao>(MaterialPageRoute<FaturaCartao>(
-      builder: (_) => CompraCartaoMobileScreen(espaco: _service.espacoFinanceiro)));
+      builder: (_) => CompraCartaoMobileScreen(espaco: _service.espacoFinanceiro),),);
     if (mounted && fatura != null) Navigator.of(context).pop(<String, dynamic>{
       'espacoFinanceiro': _service.espacoFinanceiro, 'faturaCartaoId': fatura.id,
     });
@@ -1146,7 +1151,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       dataOperacao: _dataOperacao,
       dataVencimento: _dataVencimento,
       dataCompetencia: _dataCompetencia,
-      dataQuitacao: statusQuitada ? DateTime.now() : null,
+      dataQuitacao: statusQuitada ? context.read<LocaleSettingsProvider>().calendarNow : null,
       statusQuitada: statusQuitada,
       operacaoFinalizadaProntaCaixa: statusQuitada,
       clientePediuParaApagar: false,
@@ -1369,4 +1374,3 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
     );
   }
 }
-

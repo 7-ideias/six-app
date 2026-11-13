@@ -3771,7 +3771,8 @@ class _AtendimentosTecnicosMobileScreenState
         _atendimentoFinalizadoOperacionalmente(atendimento)) {
       return false;
     }
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime dataEntrega = _inicioDoDia(entrega);
     return dataEntrega.isBefore(hoje);
   }
@@ -3997,7 +3998,8 @@ class _AtendimentosTecnicosMobileScreenState
     if (inicio == null && fim == null) {
       return _t('atendimentoTecnico.mobile.dateAll', 'Todas as datas');
     }
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     if (inicio != null &&
         fim != null &&
         _inicioDoDia(inicio) == hoje &&
@@ -4857,7 +4859,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
   }
 
   Widget _periodSelectorView() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime selected = (_editandoInicio ? _dataInicio : _dataFim) ?? now;
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -5389,7 +5391,8 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
       return _t('atendimentoTecnico.mobile.dateAll', 'Todas as datas');
     }
 
-    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime hoje = _inicioDoDia(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final DateTime ultimos7Inicio = hoje.subtract(Duration(days: 6));
     final DateTime proximos7Fim = hoje.add(Duration(days: 7));
     final DateTime vencidosFim = hoje.subtract(Duration(days: 1));
@@ -5763,7 +5766,7 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime initialDate = (_editandoInicio ? _inicio : _fim) ?? now;
     return DraggableScrollableSheet(
       initialChildSize: 0.82,

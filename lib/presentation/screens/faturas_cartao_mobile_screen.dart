@@ -92,7 +92,7 @@ class PagarFaturaCartaoMobileScreen extends StatefulWidget {
 class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
  final id=gerarUuidV4();late final config=widget.configuracoes??ConfiguracaoFinanceiraService(widget.client.espaco);
  List<ConfiguracaoFinanceira> accounts=[];List<FormaPagamentoFatura> methods=[];
- String? account,method,error;DateTime date=DateTime.now();bool loading=true,busy=false,conflict=false,loaded=false;
+ String? account,method,error;late DateTime date=context.read<LocaleSettingsProvider>().calendarNow;bool loading=true,busy=false,conflict=false,loaded=false;
  PagarFaturaCartaoRequest? attempt;bool get locked=>busy||attempt!=null;
  @override void initState(){super.initState();load();}
  @override void dispose(){if(widget.configuracoes==null)config.dispose();super.dispose();}
@@ -116,7 +116,7 @@ class _PagamentoState extends State<PagarFaturaCartaoMobileScreen> {
    CartaoMobileField(label:'invoices.account',value:accounts.where((c)=>c.id==account).map((c)=>c.nome).firstOrNull??'',onTap:locked||conflict?null:()async{final v=await escolherCartaoOpcao(context,'invoices.account',{for(final a in accounts)a.id:a.nome},account);if(v!=null&&mounted)setState(()=>account=v);}),
    if(accounts.isEmpty)Text(context.t('invoices.noAccounts')),
    CartaoMobileField(label:'invoices.paymentMethod',value:methods.where((c)=>c.codigo==method).map((c)=>c.nome).firstOrNull??'',onTap:locked||conflict?null:()async{final v=await escolherCartaoOpcao(context,'invoices.paymentMethod',{for(final m in methods)m.codigo:m.nome},method);if(v!=null&&mounted)setState(()=>method=v);}),
-   CartaoMobileField(label:'invoices.paymentDate',value:r.formatDate(date),icon:Icons.calendar_today_outlined,onTap:locked||conflict?null:()async{final d=await escolherDataCartao(context,'invoices.paymentDate',date,last:DateTime.now());if(d!=null&&mounted)setState(()=>date=d);}),
+   CartaoMobileField(label:'invoices.paymentDate',value:r.formatDate(date),icon:Icons.calendar_today_outlined,onTap:locked||conflict?null:()async{final d=await escolherDataCartao(context,'invoices.paymentDate',date,last:context.read<LocaleSettingsProvider>().calendarNow);if(d!=null&&mounted)setState(()=>date=d);}),
   ],
   if(error!=null)CartaoMobileError(error!,retry:locked||conflict?null:load),
   if(attempt!=null&&!busy)Text(context.t('invoices.uncertain')),const SizedBox(height:20),

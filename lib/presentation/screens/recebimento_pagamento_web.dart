@@ -311,7 +311,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     _revisandoRecebimento =
         !widget.somenteSelecao && widget.formasPagamentoIniciais.isNotEmpty;
     if (widget.formasPagamentoIniciais.isNotEmpty &&
-        widget.formasPagamentoIniciais.every((forma) => forma.financeiro != null)) {
+        widget.formasPagamentoIniciais.every((forma) => forma.financeiro != null,)) {
       _formasPreparadas = List.of(widget.formasPagamentoIniciais);
     }
     _tipoRecebimentoEscolhido =
@@ -940,7 +940,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         preparadas.length == formasSelecionadas.length &&
         formasSelecionadas.every((forma) => preparadas.any((preparada) =>
             preparada.codigo == forma.codigo &&
-            (preparada.valor - forma.valor).abs() < 0.001));
+            (preparada.valor - forma.valor).abs() < 0.001,),);
     if (podeReutilizar) {
       formasSelecionadas = List.of(preparadas!);
     } else {
@@ -993,10 +993,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       return;
     }
 
+    if (!mounted) return;
     setState(() => _salvandoOperacao = true);
 
     try {
-      final DateTime dataOperacao = DateTime.now();
+      final DateTime dataOperacao =
+          context.read<LocaleSettingsProvider>().calendarNow;
       final OperacaoVendaInput input = OperacaoVendaInput(
         // O estado da venda e seu código são informações separadas da descrição.
         descricao: VendaDescricaoPadrao.valor,
@@ -1688,7 +1690,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                   Expanded(child: Text(forma.titulo)),
                   const SizedBox(width: 12),
                   Text(_formatarValor(forma.valor),
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                      style: const TextStyle(fontWeight: FontWeight.w700),),
                 ],
               ),
             ),
@@ -1860,7 +1862,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                       Divider(height: 1, color: tokens.divider),
                       Expanded(child: _exibirResumo
                           ? _buildResumoRecebimento()
-                          : _buildPainelPrincipal()),
+                          : _buildPainelPrincipal(),),
                       _buildBarraAcoes(),
                     ],
                   ),

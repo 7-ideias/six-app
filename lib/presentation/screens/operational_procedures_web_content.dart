@@ -508,7 +508,7 @@ class _RecentTable extends StatelessWidget {
       children: items
           .take(10)
           .map((item) {
-            final DateTime date = item.startedAt.toLocal();
+            final DateTime date = locale.dateTimeForDisplay( item.startedAt);
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -795,7 +795,7 @@ class _ProcedureWebEditorState extends State<_ProcedureWebEditor> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     final OperationalProcedure? current = widget.procedure;
     final ProcedureOperationPoint point = switch (_context) {
       ProcedureOperationType.technicalService =>

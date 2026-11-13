@@ -188,7 +188,7 @@ void _assinarDestino({
                 ? decoded
                 : Map<String, dynamic>.from(decoded as Map);
 
-        final DateTime recebidoEm = DateTime.now();
+        final DateTime recebidoEm = DateTime.now().toUtc();
         final Map<String, dynamic> payload = <String, dynamic>{
           ...jsonBody,
           'recebidoEm': _formatarDataHoraLocal(recebidoEm),

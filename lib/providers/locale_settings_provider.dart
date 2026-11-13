@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/regionalizacao_models.dart';
+import '../core/utils/company_time.dart';
 import '../data/services/i18n/web_i18n_api_client.dart';
 import '../domain/models/regionalizacao_models.dart';
 import '../domain/services/regionalizacao/regionalizacao_service.dart';
@@ -13,7 +14,9 @@ class LocaleSettingsProvider extends ChangeNotifier {
     required RegionalizacaoService regionalizacaoService,
     SixI18nApiClient? i18nApiClient,
     WebI18nApiClient? webI18nApiClient,
+    DateTime Function()? now,
   }) : _regionalizacaoService = regionalizacaoService,
+       _now = now ?? DateTime.now,
        _i18nApiClient = i18nApiClient ?? webI18nApiClient ?? SixI18nApiClient();
 
   static const List<Locale> supportedLocales = <Locale>[
@@ -28,6 +31,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   static const String idiomaPreferenciaDefault = 'DEFAULT';
 
   final RegionalizacaoService _regionalizacaoService;
+  final DateTime Function() _now;
   final SixI18nApiClient _i18nApiClient;
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
@@ -260,9 +264,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
     final bool negativo = normalizado.startsWith('-');
     final List<String> partes = normalizado.replaceFirst('-', '').split('.');
     final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
-    final String decimal = casasDecimais > 0 && partes.length > 1
-        ? '$decimalSeparator${partes[1]}'
-        : '';
+    final String decimal =
+        casasDecimais > 0 && partes.length > 1
+            ? '$decimalSeparator${partes[1]}'
+            : '';
 
     return '${negativo ? '-' : ''}$inteiro$decimal';
   }
@@ -356,7 +361,37 @@ class LocaleSettingsProvider extends ChangeNotifier {
     return cleaned.trim();
   }
 
+  DateTime get nowInCompany => CompanyTime.fromInstant(_now(), timeZone);
+
+  DateTime instantInCompany(DateTime value) =>
+      CompanyTime.fromInstant(value, timeZone);
+
+  /// Calendar components for form defaults and civil-date API fields.
+  DateTime get calendarNow {
+    final value = nowInCompany;
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+      value.microsecond,
+    );
+  }
+
+  DateTime dateTimeForDisplay(DateTime value) =>
+      CompanyTime.forDisplay(value, timeZone);
+
+  DateTime companyTimeToUtc(DateTime value) =>
+      CompanyTime.toInstant(value, timeZone);
+
+  String formatDateTime(DateTime value) =>
+      '${formatDate(value)} ${formatTime(value)}';
+
   String formatDate(DateTime value) {
+    value = CompanyTime.forDisplay(value, timeZone);
     final String day = _twoDigits(value.day);
     final String month = _twoDigits(value.month);
     final String year = value.year.toString().padLeft(4, '0');
@@ -375,13 +410,15 @@ class LocaleSettingsProvider extends ChangeNotifier {
   }
 
   String formatTime(DateTime value) {
+    value = CompanyTime.forDisplay(value, timeZone);
     if (timeFormat.toLowerCase() == '12h') {
       final bool afternoon = value.hour >= 12;
-      final int hour12 = value.hour == 0
-          ? 12
-          : value.hour > 12
-          ? value.hour - 12
-          : value.hour;
+      final int hour12 =
+          value.hour == 0
+              ? 12
+              : value.hour > 12
+              ? value.hour - 12
+              : value.hour;
       return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';
     }
 

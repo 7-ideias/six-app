@@ -345,7 +345,7 @@ class FirebasePushNotificationService {
       'titulo': _titleFrom(message),
       'mensagem': _bodyFrom(message),
       'canal': 'FIREBASE_PUSH',
-      'recebidoEmIso': DateTime.now().toIso8601String(),
+      'recebidoEmIso': DateTime.now().toUtc().toIso8601String(),
       if (message.messageId != null) 'messageId': message.messageId,
       if (message.sentTime != null)
         'sentTime': message.sentTime!.toIso8601String(),

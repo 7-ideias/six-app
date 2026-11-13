@@ -313,7 +313,7 @@ class _ExecutionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color successColor = Color(0xFF16A34A);
-    final DateTime date = execution.startedAt.toLocal();
+    final DateTime date = locale.dateTimeForDisplay( execution.startedAt);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(

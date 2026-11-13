@@ -335,11 +335,13 @@ class _SalesMobileCard extends StatelessWidget {
         )
         .replaceAll(
           '{start}',
-          regionalizacao.formatDate(provider.periodoInicio ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoInicio ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         )
         .replaceAll(
           '{end}',
-          regionalizacao.formatDate(provider.periodoFim ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoFim ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         );
 
     return _MobileDashboardCard(
@@ -566,7 +568,7 @@ class _OpenSaleMobileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    final DateTime today = DateTime.now();
+    final DateTime today = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? due = sale.dataVencimento;
     final bool overdue =
         due != null &&

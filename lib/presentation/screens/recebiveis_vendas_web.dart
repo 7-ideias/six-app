@@ -50,7 +50,7 @@ class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
     final valor = TextEditingController(
       text: locale.formatDecimal(item.liquido),
     );
-    DateTime data = DateTime.now();
+    DateTime data = context.read<LocaleSettingsProvider>().calendarNow;
     double numero() =>
         double.tryParse(
           valor.text
@@ -97,7 +97,7 @@ class _RecebiveisVendasWebState extends State<RecebiveisVendasWeb> {
                   context: context,
                   initialDate: data,
                   firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
+                  lastDate: context.read<LocaleSettingsProvider>().calendarNow,
                 );
                 if (selected != null && ctx.mounted)
                   update(() => data = selected);

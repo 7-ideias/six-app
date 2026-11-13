@@ -1223,70 +1223,70 @@ class _ColaboradorCadastroMobileScreenState
           ),
           _permission(
             title: _t('suppliers.permission.read', 'Consultar fornecedores'),
-            subtitle: _t('suppliers.permission.readDescription', 'Consultar fornecedores da conta.'),
+            subtitle: _t('suppliers.permission.readDescription', 'Consultar fornecedores da conta.',),
             icon: Icons.local_shipping_outlined,
             value: _fornecedoresConsultar,
             onChanged: (bool v) => setState(() => _fornecedoresConsultar = v),
           ),
           _permission(
             title: _t('suppliers.permission.create', 'Cadastrar fornecedores'),
-            subtitle: _t('suppliers.permission.createDescription', 'Criar fornecedores.'),
+            subtitle: _t('suppliers.permission.createDescription', 'Criar fornecedores.',),
             icon: Icons.add_business_outlined,
             value: _fornecedoresCadastrar,
             onChanged: (bool v) => setState(() => _fornecedoresCadastrar = v),
           ),
           _permission(
             title: _t('suppliers.permission.edit', 'Editar fornecedores'),
-            subtitle: _t('suppliers.permission.editDescription', 'Alterar cadastros.'),
+            subtitle: _t('suppliers.permission.editDescription', 'Alterar cadastros.',),
             icon: Icons.edit_outlined,
             value: _fornecedoresEditar,
             onChanged: (bool v) => setState(() => _fornecedoresEditar = v),
           ),
           _permission(
-            title: _t('suppliers.permission.disable', 'Ativar / inativar fornecedores'),
-            subtitle: _t('suppliers.permission.disableDescription', 'Alterar status.'),
+            title: _t('suppliers.permission.disable', 'Ativar / inativar fornecedores',),
+            subtitle: _t('suppliers.permission.disableDescription', 'Alterar status.',),
             icon: Icons.block_outlined,
             value: _fornecedoresInativar,
             onChanged: (bool v) => setState(() => _fornecedoresInativar = v),
           ),
           _permission(
             title: _t('purchases.permission.read', 'Consultar compras'),
-            subtitle: _t('purchases.permission.readDescription', 'Permite consultar pedidos do comércio.'),
+            subtitle: _t('purchases.permission.readDescription', 'Permite consultar pedidos do comércio.',),
             icon: Icons.shopping_cart_outlined,
             value: _comprasConsultar,
             onChanged: (bool v) => setState(() => _comprasConsultar = v),
           ),
           _permission(
             title: _t('purchases.permission.create', 'Criar compras'),
-            subtitle: _t('purchases.permission.createDescription', 'Permite criar novos rascunhos.'),
+            subtitle: _t('purchases.permission.createDescription', 'Permite criar novos rascunhos.',),
             icon: Icons.add_shopping_cart_outlined,
             value: _comprasCriar,
             onChanged: (bool v) => setState(() => _comprasCriar = v),
           ),
           _permission(
             title: _t('purchases.permission.edit', 'Editar compras'),
-            subtitle: _t('purchases.permission.editDescription', 'Permite alterar rascunhos.'),
+            subtitle: _t('purchases.permission.editDescription', 'Permite alterar rascunhos.',),
             icon: Icons.edit_note_outlined,
             value: _comprasEditar,
             onChanged: (bool v) => setState(() => _comprasEditar = v),
           ),
           _permission(
             title: _t('purchases.permission.confirm', 'Confirmar compras'),
-            subtitle: _t('purchases.permission.confirmDescription', 'Confirma compras e gera contas a pagar.'),
+            subtitle: _t('purchases.permission.confirmDescription', 'Confirma compras e gera contas a pagar.',),
             icon: Icons.check_circle_outline_rounded,
             value: _comprasConfirmar,
             onChanged: (bool v) => setState(() => _comprasConfirmar = v),
           ),
           _permission(
             title: _t('purchases.permission.cancel', 'Cancelar compras'),
-            subtitle: _t('purchases.permission.cancelDescription', 'Permite cancelar compras conforme regras financeiras.'),
+            subtitle: _t('purchases.permission.cancelDescription', 'Permite cancelar compras conforme regras financeiras.',),
             icon: Icons.cancel_outlined,
             value: _comprasCancelar,
             onChanged: (bool v) => setState(() => _comprasCancelar = v),
           ),
           _permission(
             title: _t('purchases.permission.receive', 'Receber mercadorias'),
-            subtitle: _t('purchases.permission.receiveDescription', 'Registra entradas reais de produtos da compra.'),
+            subtitle: _t('purchases.permission.receiveDescription', 'Registra entradas reais de produtos da compra.',),
             icon: Icons.inventory_2_outlined,
             value: _comprasReceber,
             onChanged: (bool v) => setState(() => _comprasReceber = v),
@@ -1459,7 +1459,8 @@ class _ColaboradorCadastroMobileScreenState
   );
 
   Future<void> _pickDate(TextEditingController controller, String title) async {
-    DateTime selected = DateTime.tryParse(controller.text) ?? DateTime.now();
+    DateTime selected = DateTime.tryParse(controller.text) ??
+        context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? result = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,

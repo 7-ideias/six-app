@@ -23,7 +23,7 @@ class _CompraState extends State<CompraCartaoMobileScreen> {
   final form=GlobalKey<FormState>();final id=gerarUuidV4();
   late final description=TextEditingController(text:widget.compra?.descricao??'');
   final amount=TextEditingController(),count=TextEditingController(text:'2');
-  late DateTime date=widget.compra?.dataCompra??DateTime.now();late DateTime? end=widget.compra?.recorrenciaFim;
+  late DateTime date=widget.compra?.dataCompra??context.read<LocaleSettingsProvider>().calendarNow;late DateTime? end=widget.compra?.recorrenciaFim;
   late String? card=widget.fatura?.cartaoId,category=widget.compra?.categoriaId;
   List<CartaoCredito> cards=[];List<ConfiguracaoFinanceira> categories=[];
   String mode='once';bool nextOccurrences=false,loading=true,busy=false,permission=false,review=false,conflict=false,seeded=false;
@@ -97,12 +97,12 @@ class _CompraState extends State<CompraCartaoMobileScreen> {
         ],
         if(!loading&&!review)Form(key:form,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
           CartaoMobileField(label:'cards.title',value:selected?.nome??'',onTap:locked||installment?null:()=>pick('cards.title',{for(final c in cards.where((c)=>c.ativo))c.id:c.nome},card,(v)=>card=v)),
-          if(widget.compra==null)CartaoMobileField(label:'mobile.cards.purchaseType',value:context.t(mode=='installments'?'invoices.installments.title':'invoices.recurring.$mode'),onTap:locked?null:()=>pick('mobile.cards.purchaseType',{'once':context.t('invoices.recurring.once'),'monthly':context.t('invoices.recurring.monthly'),'installments':context.t('invoices.installments.title')},mode,(v){mode=v;if(v!='monthly'&&date.isAfter(DateTime.now()))date=DateTime.now();})),
+          if(widget.compra==null)CartaoMobileField(label:'mobile.cards.purchaseType',value:context.t(mode=='installments'?'invoices.installments.title':'invoices.recurring.$mode'),onTap:locked?null:()=>pick('mobile.cards.purchaseType',{'once':context.t('invoices.recurring.once'),'monthly':context.t('invoices.recurring.monthly'),'installments':context.t('invoices.installments.title')},mode,(v){mode=v;if(v!='monthly'&&date.isAfter(context.read<LocaleSettingsProvider>().calendarNow))date=context.read<LocaleSettingsProvider>().calendarNow;})),
           if(recurring&&widget.compra!.recorrenciaAtiva)CartaoMobileField(label:'invoices.recurring.editScope',value:context.t(nextOccurrences?'invoices.recurring.thisAndNext':'invoices.recurring.onlyThis'),onTap:locked?null:()=>pick('invoices.recurring.editScope',{'this':context.t('invoices.recurring.onlyThis'),'next':context.t('invoices.recurring.thisAndNext')},nextOccurrences?'next':'this',(v)=>nextOccurrences=v=='next')),
           textField(description,'invoices.description'),textField(amount,mode=='installments'?'invoices.installments.total':'invoices.value',number:true,enabled:!installment),
           if(mode=='installments'&&widget.compra==null)textField(count,'invoices.installments.count',number:true),
           if(installment)Text(context.t('invoices.installments.editHint')),
-          CartaoMobileField(label:'invoices.purchaseDate',value:r.formatDate(date),icon:Icons.calendar_today_outlined,onTap:locked||installment?null:()async{final d=await escolherDataCartao(context,'invoices.purchaseDate',date,last:mode=='monthly'||recurring?DateTime(DateTime.now().year+1,12,31):DateTime.now());if(d!=null&&mounted)setState(()=>date=d);}),
+          CartaoMobileField(label:'invoices.purchaseDate',value:r.formatDate(date),icon:Icons.calendar_today_outlined,onTap:locked||installment?null:()async{final d=await escolherDataCartao(context,'invoices.purchaseDate',date,last:mode=='monthly'||recurring?DateTime(context.read<LocaleSettingsProvider>().calendarNow.year+1,12,31):context.read<LocaleSettingsProvider>().calendarNow);if(d!=null&&mounted)setState(()=>date=d);}),
           if(series)...[
             CartaoMobileField(label:'invoices.recurring.until',value:end==null?context.t('invoices.recurring.noEnd'):r.formatDate(end!),icon:Icons.calendar_today_outlined,onTap:locked?null:()async{final d=await escolherDataCartao(context,'invoices.recurring.until',end??date,first:DateUtils.dateOnly(date));if(d!=null&&mounted)setState(()=>end=d);}),
             if(end!=null)TextButton(onPressed:locked?null:()=>setState(()=>end=null),child:Text(context.t('invoices.recurring.removeEnd'))),

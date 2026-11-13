@@ -959,7 +959,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return null;
     }
 
-    return parsed.isUtc ? parsed.toLocal() : parsed;
+    return context.read<LocaleSettingsProvider>().companyTimeToUtc( parsed);
   }
 
   String _formatarTempoAtivoSessaoCaixaPdv(Duration duration) {
@@ -2361,7 +2361,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           pagamentoParcial ? 'pdv.receipt.readyPartial' : 'pdv.receipt.readyToFinish',
                           fallback: pagamentoParcial ? 'Tudo pronto para confirmar o parcial' : 'Tudo pronto para concluir',
                         ),
-                        style: TextStyle(color: tokens.success, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: tokens.success, fontWeight: FontWeight.w700,),
                       ),
                     ],
                   ),
@@ -2412,7 +2412,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2,),
                           )
                           : const Icon(Icons.schedule_send_outlined),
                   label: Text(
@@ -2440,14 +2440,14 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                         )
                         : Icon(prontoParaConfirmar
                             ? Icons.check_circle_rounded
-                            : Icons.payments_rounded),
-                label: Text(labelAcaoPrincipal, maxLines: 2, textAlign: TextAlign.center),
+                            : Icons.payments_rounded,),
+                label: Text(labelAcaoPrincipal, maxLines: 2, textAlign: TextAlign.center,),
                 style: prontoParaConfirmar
                     ? FilledButton.styleFrom(
                         backgroundColor: tokens.success,
                         foregroundColor: tokens.onSuccess,
                         minimumSize: const Size(0, 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14,),
                       ).merge(_pdvFilledCtaStyle())
                     : _pdvFilledCtaStyle(),
               ),

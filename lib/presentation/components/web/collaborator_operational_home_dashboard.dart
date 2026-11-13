@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 
 import '../../../data/models/catalogo_reserva_model.dart';
 import '../../../data/models/consulta_vendas_models.dart';
@@ -1093,11 +1093,13 @@ class _SalesOverview extends StatelessWidget {
         )
         .replaceAll(
           '{start}',
-          regionalizacao.formatDate(provider.periodoInicio ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoInicio ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         )
         .replaceAll(
           '{end}',
-          regionalizacao.formatDate(provider.periodoFim ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoFim ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         );
 
     return SixWebSectionCard(
@@ -1412,7 +1414,7 @@ class _OpenSaleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final DateTime today = DateTime.now();
+    final DateTime today = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? due = sale.dataVencimento;
     final bool overdue =
         due != null &&

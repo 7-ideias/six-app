@@ -59,24 +59,24 @@ class _AtendimentosTecnicosWebPageState
   final ImagePicker _imagePicker = ImagePicker();
 
   late Future<_AtendimentoTecnicoViewState> _future;
-  DateTime _validadeOrcamentoEm = _defaultValidadeOrcamento();
-  DateTime _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
-  DateTime _dataEntregaPrevista = _defaultValidadeOrcamento();
+  late DateTime _validadeOrcamentoEm = _defaultValidadeOrcamento();
+  late DateTime _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
+  late DateTime _dataEntregaPrevista = _defaultValidadeOrcamento();
   String? _clienteSelecionadoId;
   _ResponsavelTecnicoWeb? _responsavelSelecionado;
   bool _salvando = false;
   int _etapaAtual = 0;
 
-  static DateTime _inicioHoje() {
-    final now = DateTime.now();
+  DateTime _inicioHoje() {
+    final now = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(now.year, now.month, now.day);
   }
 
-  static DateTime _defaultValidadeOrcamento() {
+  DateTime _defaultValidadeOrcamento() {
     return _inicioHoje().add(const Duration(days: 7));
   }
 
-  static DateTime _defaultVencimentoFinanceiro() {
+  DateTime _defaultVencimentoFinanceiro() {
     return _inicioHoje().add(const Duration(days: 7));
   }
 
@@ -160,23 +160,26 @@ class _AtendimentosTecnicosWebPageState
         <String, _ResponsavelTecnicoWeb>{};
 
     void add(_ResponsavelTecnicoWeb responsavel) {
-      final String key = responsavel.id.trim().isNotEmpty
-          ? responsavel.id.trim()
-          : responsavel.nome.toLowerCase().trim();
+      final String key =
+          responsavel.id.trim().isNotEmpty
+              ? responsavel.id.trim()
+              : responsavel.nome.toLowerCase().trim();
       if (key.isEmpty || mapa.containsKey(key)) return;
       mapa[key] = responsavel;
     }
 
     for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
       if (!colaborador.ehTecnicoAssistenciaTecnica) continue;
-      final String id = colaborador.idUnicoPessoal.trim().isNotEmpty
-          ? colaborador.idUnicoPessoal.trim()
-          : colaborador.email.trim();
-      final String nome = colaborador.nomeDeGuerra.trim().isNotEmpty
-          ? colaborador.nomeDeGuerra.trim()
-          : colaborador.nome.trim().isNotEmpty
-          ? colaborador.nome.trim()
-          : colaborador.email.trim();
+      final String id =
+          colaborador.idUnicoPessoal.trim().isNotEmpty
+              ? colaborador.idUnicoPessoal.trim()
+              : colaborador.email.trim();
+      final String nome =
+          colaborador.nomeDeGuerra.trim().isNotEmpty
+              ? colaborador.nomeDeGuerra.trim()
+              : colaborador.nome.trim().isNotEmpty
+              ? colaborador.nome.trim()
+              : colaborador.email.trim();
       if (id.isEmpty && nome.isEmpty) continue;
 
       final String subtitulo = <String>[
@@ -246,10 +249,11 @@ class _AtendimentosTecnicosWebPageState
     final _ResponsavelTecnicoWeb? result =
         await showSixWebAnimatedDialog<_ResponsavelTecnicoWeb>(
           context: context,
-          builder: (_) => _ResponsavelTecnicoWebSelectorDialog(
-            responsaveis: responsaveis,
-            responsavelSelecionado: _responsavelSelecionado,
-          ),
+          builder:
+              (_) => _ResponsavelTecnicoWebSelectorDialog(
+                responsaveis: responsaveis,
+                responsavelSelecionado: _responsavelSelecionado,
+              ),
         );
 
     if (!mounted || result == null) return;
@@ -293,9 +297,8 @@ class _AtendimentosTecnicosWebPageState
     final primeiraData = firstDate ?? inicio;
     final data = await showDatePicker(
       context: context,
-      initialDate: initialDate.isBefore(primeiraData)
-          ? primeiraData
-          : initialDate,
+      initialDate:
+          initialDate.isBefore(primeiraData) ? primeiraData : initialDate,
       firstDate: primeiraData,
       lastDate: inicio.add(const Duration(days: 365)),
       helpText: helpText,
@@ -555,12 +558,13 @@ class _AtendimentosTecnicosWebPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Atendimentos técnicos'),
-        leading: widget.onBack == null
-            ? null
-            : IconButton(
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
+        leading:
+            widget.onBack == null
+                ? null
+                : IconButton(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
       ),
       body: content,
     );
@@ -685,21 +689,22 @@ class _AtendimentosTecnicosWebPageState
           ),
         ],
       ),
-      child: isCompact
-          ? Column(
-              children: <Widget>[
-                titleBlock,
-                const SizedBox(height: 14),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: titleBlock),
-                const SizedBox(width: 16),
-                actions,
-              ],
-            ),
+      child:
+          isCompact
+              ? Column(
+                children: <Widget>[
+                  titleBlock,
+                  const SizedBox(height: 14),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 16),
+                  actions,
+                ],
+              ),
     );
   }
 
@@ -710,9 +715,10 @@ class _AtendimentosTecnicosWebPageState
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = isCompact
-            ? constraints.maxWidth
-            : ((constraints.maxWidth - 36) / 4).clamp(190.0, 360.0);
+        final cardWidth =
+            isCompact
+                ? constraints.maxWidth
+                : ((constraints.maxWidth - 36) / 4).clamp(190.0, 360.0);
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -1006,9 +1012,10 @@ class _AtendimentosTecnicosWebPageState
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double spacing = 10;
-        final double width = isCompact
-            ? constraints.maxWidth
-            : (constraints.maxWidth - spacing * 4) / 5;
+        final double width =
+            isCompact
+                ? constraints.maxWidth
+                : (constraints.maxWidth - spacing * 4) / 5;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -1018,22 +1025,25 @@ class _AtendimentosTecnicosWebPageState
             return SizedBox(
               width: width,
               child: InkWell(
-                onTap: index < _etapaAtual
-                    ? () => setState(() => _etapaAtual = index)
-                    : null,
+                onTap:
+                    index < _etapaAtual
+                        ? () => setState(() => _etapaAtual = index)
+                        : null,
                 borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   padding: const EdgeInsets.all(13),
                   decoration: BoxDecoration(
-                    color: active
-                        ? tokens.selectedBackground
-                        : tokens.surfaceMuted,
+                    color:
+                        active
+                            ? tokens.selectedBackground
+                            : tokens.surfaceMuted,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: active || done
-                          ? tokens.selectedBorder
-                          : tokens.cardBorder,
+                      color:
+                          active || done
+                              ? tokens.selectedBorder
+                              : tokens.cardBorder,
                     ),
                   ),
                   child: Row(
@@ -1045,9 +1055,10 @@ class _AtendimentosTecnicosWebPageState
                           color: active || done ? tokens.info : tokens.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: active || done
-                                ? tokens.info
-                                : tokens.cardBorder,
+                            color:
+                                active || done
+                                    ? tokens.info
+                                    : tokens.cardBorder,
                           ),
                         ),
                         child: Icon(
@@ -1055,9 +1066,10 @@ class _AtendimentosTecnicosWebPageState
                               ? Icons.check_rounded
                               : _journeyStepIconWeb(index),
                           size: 16,
-                          color: active || done
-                              ? theme.colorScheme.onPrimary
-                              : tokens.mutedText,
+                          color:
+                              active || done
+                                  ? theme.colorScheme.onPrimary
+                                  : tokens.mutedText,
                         ),
                       ),
                       const SizedBox(width: 9),
@@ -1067,12 +1079,12 @@ class _AtendimentosTecnicosWebPageState
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: active
-                                ? tokens.primaryText
-                                : tokens.secondaryText,
-                            fontWeight: active
-                                ? FontWeight.w900
-                                : FontWeight.w700,
+                            color:
+                                active
+                                    ? tokens.primaryText
+                                    : tokens.secondaryText,
+                            fontWeight:
+                                active ? FontWeight.w900 : FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1232,9 +1244,10 @@ class _AtendimentosTecnicosWebPageState
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final double tileWidth = constraints.maxWidth < 560
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - 36) / 4;
+              final double tileWidth =
+                  constraints.maxWidth < 560
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 36) / 4;
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -1468,9 +1481,10 @@ class _AtendimentosTecnicosWebPageState
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double width = constraints.maxWidth < 680
-              ? constraints.maxWidth
-              : (constraints.maxWidth - 14) / 2;
+          final double width =
+              constraints.maxWidth < 680
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - 14) / 2;
           return Wrap(
             spacing: 14,
             runSpacing: 14,
@@ -1773,11 +1787,13 @@ class _AtendimentosTecnicosWebPageState
             )
           else
             Column(
-              children: _itens
-                  .map(
-                    (item) => _buildItemRow(theme, item, isCompact: isCompact),
-                  )
-                  .toList(),
+              children:
+                  _itens
+                      .map(
+                        (item) =>
+                            _buildItemRow(theme, item, isCompact: isCompact),
+                      )
+                      .toList(),
             ),
         ],
       ),
@@ -1839,50 +1855,53 @@ class _AtendimentosTecnicosWebPageState
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: tokens.cardBorder),
       ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(children: <Widget>[icon, const SizedBox(width: 10), info]),
-                const SizedBox(height: 10),
-                Row(
-                  children: <Widget>[
-                    quantity,
-                    const Spacer(),
-                    Text(
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[icon, const SizedBox(width: 10), info],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      quantity,
+                      const Spacer(),
+                      Text(
+                        _formatarMoeda(item.total),
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      IconButton(
+                        tooltip: 'Remover item',
+                        onPressed: () => _removerItem(item),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  icon,
+                  const SizedBox(width: 10),
+                  info,
+                  quantity,
+                  SizedBox(
+                    width: 104,
+                    child: Text(
                       _formatarMoeda(item.total),
+                      textAlign: TextAlign.right,
                       style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
-                    IconButton(
-                      tooltip: 'Remover item',
-                      onPressed: () => _removerItem(item),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                icon,
-                const SizedBox(width: 10),
-                info,
-                quantity,
-                SizedBox(
-                  width: 104,
-                  child: Text(
-                    _formatarMoeda(item.total),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Remover item',
-                  onPressed: () => _removerItem(item),
-                  icon: const Icon(Icons.delete_outline),
-                ),
-              ],
-            ),
+                  IconButton(
+                    tooltip: 'Remover item',
+                    onPressed: () => _removerItem(item),
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
+              ),
     );
   }
 
@@ -1936,13 +1955,14 @@ class _AtendimentosTecnicosWebPageState
     );
     final action = FilledButton.icon(
       onPressed: _salvando ? null : () => _salvarAtendimento(clientes),
-      icon: _salvando
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.check_rounded),
+      icon:
+          _salvando
+              ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+              : const Icon(Icons.check_rounded),
       label: Text(_salvando ? 'Salvando...' : 'Criar atendimento'),
     );
 
@@ -1953,22 +1973,23 @@ class _AtendimentosTecnicosWebPageState
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: tokens.selectedBorder),
       ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                metrics,
-                const SizedBox(height: 14),
-                SizedBox(width: double.infinity, child: action),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: metrics),
-                const SizedBox(width: 12),
-                action,
-              ],
-            ),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  metrics,
+                  const SizedBox(height: 14),
+                  SizedBox(width: double.infinity, child: action),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: metrics),
+                  const SizedBox(width: 12),
+                  action,
+                ],
+              ),
     );
   }
 
@@ -2023,27 +2044,29 @@ class _AtendimentosTecnicosWebPageState
         final compact = constraints.maxWidth < 720;
         if (compact) {
           return Column(
-            children: children
-                .map(
-                  (child) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: child,
-                  ),
-                )
-                .toList(),
+            children:
+                children
+                    .map(
+                      (child) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: child,
+                      ),
+                    )
+                    .toList(),
           );
         }
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: children
-              .map(
-                (child) => SizedBox(
-                  width: (constraints.maxWidth - 12) / 2,
-                  child: child,
-                ),
-              )
-              .toList(),
+          children:
+              children
+                  .map(
+                    (child) => SizedBox(
+                      width: (constraints.maxWidth - 12) / 2,
+                      child: child,
+                    ),
+                  )
+                  .toList(),
         );
       },
     );
@@ -2113,9 +2136,8 @@ class _AtendimentosTecnicosWebPageState
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: emphasize
-                    ? tokens.selectedBackground
-                    : tokens.surfaceMuted,
+                color:
+                    emphasize ? tokens.selectedBackground : tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: emphasize ? tokens.selectedBorder : tokens.cardBorder,
@@ -2155,9 +2177,8 @@ class _AtendimentosTecnicosWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: emphasize
-                          ? tokens.secondaryText
-                          : tokens.mutedText,
+                      color:
+                          emphasize ? tokens.secondaryText : tokens.mutedText,
                       fontSize: 12,
                     ),
                   ),
@@ -2420,16 +2441,17 @@ class _ResponsavelTecnicoWebSelectorDialogState
                 decoration: InputDecoration(
                   hintText: 'Buscar responsável',
                   prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
-                  suffixIcon: _searchController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Limpar busca',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _filter = '');
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
+                  suffixIcon:
+                      _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                            tooltip: 'Limpar busca',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _filter = '');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -2439,21 +2461,23 @@ class _ResponsavelTecnicoWebSelectorDialogState
               ),
               const SizedBox(height: 14),
               Flexible(
-                child: responsaveis.isEmpty
-                    ? _buildEmpty(theme)
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        itemBuilder: (BuildContext context, int index) {
-                          final _ResponsavelTecnicoWeb responsavel =
-                              responsaveis[index];
-                          final bool selected =
-                              widget.responsavelSelecionado?.id ==
-                              responsavel.id;
-                          return _buildItem(theme, responsavel, selected);
-                        },
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemCount: responsaveis.length,
-                      ),
+                child:
+                    responsaveis.isEmpty
+                        ? _buildEmpty(theme)
+                        : ListView.separated(
+                          shrinkWrap: true,
+                          itemBuilder: (BuildContext context, int index) {
+                            final _ResponsavelTecnicoWeb responsavel =
+                                responsaveis[index];
+                            final bool selected =
+                                widget.responsavelSelecionado?.id ==
+                                responsavel.id;
+                            return _buildItem(theme, responsavel, selected);
+                          },
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 10),
+                          itemCount: responsaveis.length,
+                        ),
               ),
             ],
           ),
@@ -2506,9 +2530,8 @@ class _ResponsavelTecnicoWebSelectorDialogState
             children: <Widget>[
               CircleAvatar(
                 radius: 21,
-                backgroundColor: selected
-                    ? tokens.selectedBackground
-                    : tokens.surfaceMuted,
+                backgroundColor:
+                    selected ? tokens.selectedBackground : tokens.surfaceMuted,
                 child: Icon(Icons.person_outline_rounded, color: tokens.info),
               ),
               const SizedBox(width: 12),

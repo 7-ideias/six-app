@@ -202,7 +202,7 @@ class _SixMobileRecebimentoBottomSheetState
   late String _categoria = widget.dadosBaixa?.categoria ?? '';
   late String? _centroId = widget.dadosBaixa?.centroCustoId;
   late DateTime _dataLiquidacao =
-      widget.dadosBaixa?.dataInicial ?? DateUtils.dateOnly(DateTime.now());
+      widget.dadosBaixa?.dataInicial ?? DateUtils.dateOnly(context.read<LocaleSettingsProvider>().calendarNow);
   bool _salvando = false;
   double get _totalAjustado =>
       (widget.valorAberto * 100 -
@@ -917,7 +917,7 @@ class _SixMobileRecebimentoBottomSheetState
                                       backgroundColor: stateColor,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
+                                        borderRadius: BorderRadius.circular(18,),
                                       ),
                                     ),
                                   ),
@@ -995,7 +995,7 @@ class _SixMobileRecebimentoBottomSheetState
         .read<LocaleSettingsProvider>();
     final String? dataFormatada = data == null
         ? null
-        : '${formatter.formatDate(data.toLocal())} • ${formatter.formatTime(data.toLocal())}';
+        : '${formatter.formatDate(data)} • ${formatter.formatTime(data)}';
 
     return Row(
       children: <Widget>[

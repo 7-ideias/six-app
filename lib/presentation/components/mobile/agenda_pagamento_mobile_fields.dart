@@ -43,7 +43,8 @@ class AgendaPagamentoMobileFields extends StatelessWidget {
     required ValueChanged<DateTime> onChanged,
     bool efetiva = false,
   }) async {
-    final now = DateUtils.dateOnly(DateTime.now());
+    final now = DateUtils.dateOnly(
+      context.read<LocaleSettingsProvider>().calendarNow,);
     final selected = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
@@ -99,7 +100,7 @@ class AgendaPagamentoMobileFields extends StatelessWidget {
           () => _selecionar(
             context,
             title: forecastLabel,
-            initial: previsao ?? DateTime.now(),
+            initial: previsao ?? context.read<LocaleSettingsProvider>().calendarNow,
             onChanged: onPrevisaoChanged,
           ),
         ),

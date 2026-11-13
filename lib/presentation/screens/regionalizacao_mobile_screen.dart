@@ -232,7 +232,9 @@ class _RegionalizacaoMobileScreenState
   @override
   void initState() {
     super.initState();
-    _carregarRegionalizacao();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _carregarRegionalizacao();
+    });
   }
 
   Future<void> _carregarRegionalizacao() async {
@@ -341,7 +343,13 @@ class _RegionalizacaoMobileScreenState
       countryCode: _paisSelecionado.value,
       formatting: config.formatting.copyWith(
         currencyCode: _moedaSelecionada.value,
-        timeZone: _timeZoneSelecionado.value,
+        timeZone:
+            context
+                    .read<LocaleSettingsProvider>()
+                    .companyConfig
+                    .podeAlterarFusoHorario
+                ? _timeZoneSelecionado.value
+                : context.read<LocaleSettingsProvider>().timeZone,
         dateFormat: _dateFormatSelecionado.value,
         timeFormat: _timeFormatSelecionado.value,
         decimalSeparator: _decimalSeparatorSelecionado.value,
@@ -694,6 +702,7 @@ class _RegionalizacaoMobileScreenState
           ),
           SizedBox(height: 10),
           _SelectionField(
+            key: const ValueKey('company-time-zone'),
             icon: Icons.schedule_rounded,
             title: context.t(
               'configuracoes.timeZone',
@@ -702,20 +711,26 @@ class _RegionalizacaoMobileScreenState
             value: _timeZoneSelecionado.label(context),
             subtitle: _timeZoneSelecionado.subtitle(context),
             onTap:
-                () => _selecionarOpcao(
-                  context: context,
-                  title: context.t(
-                    'configuracoes.timeZone',
-                    fallback: 'Fuso horário',
-                  ),
-                  options: _optionsWithSelected(
-                    _timeZoneOptions,
-                    _timeZoneSelecionado,
-                  ),
-                  selected: _timeZoneSelecionado,
-                  onSelected:
-                      (value) => setState(() => _timeZoneSelecionado = value),
-                ),
+                !context
+                        .watch<LocaleSettingsProvider>()
+                        .companyConfig
+                        .podeAlterarFusoHorario
+                    ? null
+                    : () => _selecionarOpcao(
+                      context: context,
+                      title: context.t(
+                        'configuracoes.timeZone',
+                        fallback: 'Fuso horário',
+                      ),
+                      options: _optionsWithSelected(
+                        _timeZoneOptions,
+                        _timeZoneSelecionado,
+                      ),
+                      selected: _timeZoneSelecionado,
+                      onSelected:
+                          (value) =>
+                              setState(() => _timeZoneSelecionado = value),
+                    ),
           ),
         ],
       ),
@@ -1419,6 +1434,7 @@ class _IconBox extends StatelessWidget {
 
 class _SelectionField extends StatelessWidget {
   const _SelectionField({
+    super.key,
     required this.icon,
     required this.title,
     required this.value,
@@ -1430,12 +1446,12 @@ class _SelectionField extends StatelessWidget {
   final String title;
   final String value;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      button: true,
+      button: onTap != null,
       label: '$title, $value',
       child: Material(
         color: SixMobilePalette.softNeutralSurface,
@@ -1495,7 +1511,9 @@ class _SelectionField extends StatelessWidget {
                 ),
                 SizedBox(width: 8),
                 Icon(
-                  Icons.keyboard_arrow_down_rounded,
+                  onTap == null
+                      ? Icons.lock_outline_rounded
+                      : Icons.keyboard_arrow_down_rounded,
                   color: SixMobilePalette.mutedText,
                 ),
               ],
@@ -1924,7 +1942,7 @@ class _PickerOptionTile extends StatelessWidget {
   final String subtitle;
   final String badge;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

@@ -249,7 +249,7 @@ class _OperationalProcedureTriggerEditorSheetState
       return;
     }
 
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().toUtc();
     final ProcedureTrigger trigger = ProcedureTrigger(
       id: widget.trigger?.id ?? '',
       operationPoint: operationPoint,

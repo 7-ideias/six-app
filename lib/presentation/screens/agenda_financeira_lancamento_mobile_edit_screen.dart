@@ -96,13 +96,22 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   String? _nomeCliente;
   String? _nomeFornecedor;
 
-  DateTime _dataOperacao = DateTime.now();
-  DateTime _dataVencimento = DateTime.now();
-  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(DateTime.now());
+  late
+
+  DateTime _dataOperacao =
+      context.read<LocaleSettingsProvider>().calendarNow;
+  late
+  DateTime _dataVencimento =
+      context.read<LocaleSettingsProvider>().calendarNow;
+  late
+  DateTime _dataCompetencia = CompetenciaFinanceira.normalizar(
+    context.read<LocaleSettingsProvider>().calendarNow,);
 
   DateTime? _dataPrevisaoPagamento;
   bool _registrarPagamento = false;
-  DateTime _dataPagamentoRealizado = DateUtils.dateOnly(DateTime.now());
+  late
+  DateTime _dataPagamentoRealizado = DateUtils.dateOnly(
+    context.read<LocaleSettingsProvider>().calendarNow,);
   DateTime? _dataQuitacao;
 
   bool _salvando = false;
@@ -275,7 +284,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     _dataPrevisaoPagamento = datas.dataPrevisaoPagamento;
     _dataQuitacao = datas.dataLiquidacao;
     _dataPagamentoRealizado =
-        _dataQuitacao ?? DateUtils.dateOnly(DateTime.now());
+        _dataQuitacao ?? DateUtils.dateOnly(context.read<LocaleSettingsProvider>().calendarNow);
     _registrarPagamento = false;
     final edicao = detalhe['dadosEdicao'];
     if (edicao is Map)
@@ -521,11 +530,11 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                   backgroundColor: colors.error,
                   foregroundColor: colors.surface,
                 ),
-                child: Text(context.t('common.confirm', fallback: 'Confirmar')),
+                child: Text(context.t('common.confirm', fallback: 'Confirmar'),),
               ),
               OutlinedButton(
                 onPressed: () => Navigator.pop(sheetContext, false),
-                child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+                child: Text(context.t('common.cancel', fallback: 'Cancelar'),),
               ),
             ],
           ),

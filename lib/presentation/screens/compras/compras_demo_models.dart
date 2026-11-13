@@ -145,10 +145,10 @@ class _CompraDemo {
     this.integracaoFinanceiraStatus,
     this.statusRecebimento,
     List<Map<String, dynamic>>? recebimentos,
-  })  : dataEmissao = dataEmissao ?? DateTime.now(),
-        dataEntrada = dataEntrada ?? DateTime.now(),
+  })  : dataEmissao = dataEmissao ?? criadaEm,
+        dataEntrada = dataEntrada ?? criadaEm,
         primeiroVencimento =
-            primeiroVencimento ?? DateTime.now().add(const Duration(days: 30)),
+            primeiroVencimento ?? criadaEm.add(const Duration(days: 30)),
         itens = itens ?? <_CompraDemoItem>[],
         anexos = anexos ?? <_CompraDemoAnexo>[],
         recebimentos = recebimentos ?? <Map<String, dynamic>>[];
@@ -204,7 +204,7 @@ class _CompraDemo {
 
   double get totalCompra => math.max(
         0.0,
-        totalItens + frete + outrosAcrescimos - descontoGeral,
+        totalItens + frete + outrosAcrescimos - descontoGeral
       );
 
   int get itensComEstoque => itens.where((item) => item.movimentaEstoque).length;

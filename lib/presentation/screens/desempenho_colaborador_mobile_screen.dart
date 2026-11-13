@@ -49,7 +49,7 @@ class _DesempenhoColaboradorMobileScreenState
   void initState() {
     super.initState();
     _apiClient = widget.apiClient ?? HttpDesempenhoColaboradorApiClient();
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     _inicio = DateTime(now.year, now.month);
     _fim = DateTime(now.year, now.month, now.day);
     _load();
@@ -423,7 +423,8 @@ class _DesempenhoColaboradorMobileScreenState
                 ),
                 _isCurrentMonth(),
                 () {
-                  final DateTime now = DateTime.now();
+                  final DateTime now =
+                      context.read<LocaleSettingsProvider>().calendarNow;
                   _setPeriod(DateTime(now.year, now.month), now);
                 },
               ),
@@ -435,7 +436,8 @@ class _DesempenhoColaboradorMobileScreenState
                 ),
                 _isLastThirtyDays(),
                 () {
-                  final DateTime now = DateTime.now();
+                  final DateTime now =
+                      context.read<LocaleSettingsProvider>().calendarNow;
                   _setPeriod(now.subtract(const Duration(days: 29)), now);
                 },
               ),
@@ -444,7 +446,8 @@ class _DesempenhoColaboradorMobileScreenState
                 context.t('performance.mobile.today', fallback: 'Hoje'),
                 _isToday(),
                 () {
-                  final DateTime now = DateTime.now();
+                  final DateTime now =
+                      context.read<LocaleSettingsProvider>().calendarNow;
                   _setPeriod(now, now);
                 },
               ),
@@ -1061,19 +1064,19 @@ class _DesempenhoColaboradorMobileScreenState
       first.day == second.day;
 
   bool _isCurrentMonth() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, DateTime(now.year, now.month)) &&
         _sameDay(_fim, now);
   }
 
   bool _isLastThirtyDays() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now.subtract(const Duration(days: 29))) &&
         _sameDay(_fim, now);
   }
 
   bool _isToday() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now) && _sameDay(_fim, now);
   }
 
@@ -1599,7 +1602,8 @@ class _GoalFormMobileState extends State<_GoalFormMobile> {
         title: title,
         initialDate: current,
         firstDate: DateTime(2000),
-        lastDate: DateTime(DateTime.now().year + 10, 12, 31),
+        lastDate: DateTime(
+              context.read<LocaleSettingsProvider>().calendarNow.year + 10, 12, 31,),
         applyButtonLabel: context.t(
           'performance.mobile.applyDate',
           fallback: 'Aplicar data',

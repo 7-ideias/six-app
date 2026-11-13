@@ -1,4 +1,5 @@
-import 'package:intl/intl.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:intl/intl.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
@@ -41,7 +42,7 @@ class _DateSelectorMobileBottomSheetState
   late DateTime _selectedDate;
   late DateTime _visibleMonth;
 
-  DateTime get _today => _startOfDay(DateTime.now());
+  DateTime get _today => _startOfDay(context.read<LocaleSettingsProvider>().calendarNow);
   DateTime get _firstDate => _startOfDay(widget.firstDate);
   DateTime get _lastDate => _startOfDay(widget.lastDate);
 

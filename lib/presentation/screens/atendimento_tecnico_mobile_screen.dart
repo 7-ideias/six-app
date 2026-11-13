@@ -91,9 +91,9 @@ class _AtendimentoTecnicoMobileScreenState
   bool _salvando = false;
   String? _erro;
   int _etapaAtual = 0;
-  DateTime _validadeOrcamentoEm = _defaultDate();
-  DateTime _vencimentoFinanceiroEm = _defaultDate();
-  DateTime _dataEntregaPrevista = _defaultDate();
+  late DateTime _validadeOrcamentoEm = _defaultDate();
+  late DateTime _vencimentoFinanceiroEm = _defaultDate();
+  late DateTime _dataEntregaPrevista = _defaultDate();
 
   int get _quantidadeItens => _itens.fold<int>(
     0,
@@ -105,12 +105,12 @@ class _AtendimentoTecnicoMobileScreenState
     (double total, _AtendimentoItemMobile item) => total + item.total,
   );
 
-  static DateTime _inicioHoje() {
-    final now = DateTime.now();
+  DateTime _inicioHoje() {
+    final now = context.read<LocaleSettingsProvider>().calendarNow;
     return DateTime(now.year, now.month, now.day);
   }
 
-  static DateTime _defaultDate() => _inicioHoje().add(Duration(days: 7));
+  DateTime _defaultDate() => _inicioHoje().add(Duration(days: 7));
 
   @override
   void initState() {

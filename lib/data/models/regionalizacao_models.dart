@@ -2,6 +2,7 @@ class ConfiguracaoRegionalizacaoResponse {
   ConfiguracaoRegionalizacaoResponse({
     this.id,
     this.idEmpresa,
+    this.podeAlterarFusoHorario = false,
     required this.languageCode,
     required this.countryCode,
     required this.currencyCode,
@@ -19,6 +20,7 @@ class ConfiguracaoRegionalizacaoResponse {
 
   final String? id;
   final String? idEmpresa;
+  final bool podeAlterarFusoHorario;
   final String languageCode;
   final String countryCode;
   final String currencyCode;
@@ -33,14 +35,18 @@ class ConfiguracaoRegionalizacaoResponse {
   final bool allowMultipleCurrencies;
   final bool applyFinancialRounding;
 
-  factory ConfiguracaoRegionalizacaoResponse.fromJson(Map<String, dynamic> json) {
-    final regionalizacao = json['regionalizacao'] is Map<String, dynamic>
-        ? json['regionalizacao'] as Map<String, dynamic>
-        : json;
+  factory ConfiguracaoRegionalizacaoResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final regionalizacao =
+        json['regionalizacao'] is Map<String, dynamic>
+            ? json['regionalizacao'] as Map<String, dynamic>
+            : json;
 
     return ConfiguracaoRegionalizacaoResponse(
       id: regionalizacao['id']?.toString(),
       idEmpresa: regionalizacao['idEmpresa']?.toString(),
+      podeAlterarFusoHorario: regionalizacao['podeAlterarFusoHorario'] == true,
       languageCode: regionalizacao['languageCode']?.toString() ?? 'pt',
       countryCode: regionalizacao['countryCode']?.toString() ?? 'BR',
       currencyCode: regionalizacao['currencyCode']?.toString() ?? 'BRL',
@@ -52,7 +58,8 @@ class ConfiguracaoRegionalizacaoResponse {
       firstDayOfWeek: regionalizacao['firstDayOfWeek']?.toString() ?? 'MONDAY',
       numberPattern: regionalizacao['numberPattern']?.toString() ?? '#,##0.00',
       decimalPlaces: (regionalizacao['decimalPlaces'] as num?)?.toInt() ?? 2,
-      allowMultipleCurrencies: regionalizacao['allowMultipleCurrencies'] == true,
+      allowMultipleCurrencies:
+          regionalizacao['allowMultipleCurrencies'] == true,
       applyFinancialRounding: regionalizacao['applyFinancialRounding'] != false,
     );
   }

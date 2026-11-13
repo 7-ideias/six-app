@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../l10n/six_i18n.dart';
@@ -452,7 +453,7 @@ class _SixWebAtendimentoDateFilterDialogState
   }
 
   Widget _buildQuickPeriods(ThemeData theme, WebThemeTokens tokens) {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -722,7 +723,7 @@ class _SixWebAtendimentoDateFilterDialogState
   }
 
   DateTime? _validDate(int year, int month, int day) {
-    if (year < 2000 || year > DateTime.now().year + 5) return null;
+    if (year < 2000 || year > context.read<LocaleSettingsProvider>().calendarNow.year + 5) return null;
     final DateTime date = DateTime(year, month, day);
     if (date.year != year || date.month != month || date.day != day) {
       return null;

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
@@ -31,7 +32,6 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
 
   final DesempenhoColaboradorApiClient _api =
       HttpDesempenhoColaboradorApiClient();
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR',
     symbol: 'R\$',
@@ -51,7 +51,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   @override
   void initState() {
     super.initState();
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     _inicio = DateTime(now.year, now.month);
     _fim = DateTime(now.year, now.month, now.day);
     _load();
@@ -172,7 +172,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool wide = constraints.maxWidth >= 920;
           return ListView(
-            padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 18, wide ? 24 : 16, 28),
+            padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 18, wide ? 24 : 16, 28,),
             children: <Widget>[
               _buildFilters(wide),
               const SizedBox(height: 16),
@@ -207,15 +207,18 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
           _periodChip('Mês atual', _isCurrentMonth(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(DateTime(now.year, now.month), now);
           }),
           _periodChip('Últimos 30 dias', _isLastThirtyDays(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(now.subtract(const Duration(days: 29)), now);
           }),
           _periodChip('Hoje', _isToday(), () {
-            final DateTime now = DateTime.now();
+            final DateTime now =
+                context.read<LocaleSettingsProvider>().calendarNow;
             _setPeriod(now, now);
           }),
           SizedBox(
@@ -229,7 +232,8 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text('${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}'),
+            label: Text(
+              '${context.read<LocaleSettingsProvider>().formatDate(_inicio)} até ${context.read<LocaleSettingsProvider>().formatDate(_fim)}',),
           ),
         ],
       ),
@@ -314,7 +318,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   }
 
   Widget _resultTile(DesempenhoColaboradorItemModel item) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(item.indicador);
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(item.indicador,);
     final Color statusColor = _statusColor(item.status);
     final double progress = (item.percentualAtingido / 100).clamp(0.0, 1.0).toDouble();
 
@@ -374,7 +378,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
               ),
               Text(
                 '${item.percentualAtingido.toStringAsFixed(0)}%',
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.w900),
+                style: TextStyle(color: statusColor, fontWeight: FontWeight.w900,),
               ),
             ],
           ),
@@ -410,7 +414,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   }
 
   Widget _metaTile(MetaColaboradorModel meta) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(meta.indicador);
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(meta.indicador,);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -433,7 +437,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.flag_outlined, color: _accent, size: 20),
+                child: const Icon(Icons.flag_outlined, color: _accent, size: 20,),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -477,7 +481,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
         builder: (BuildContext context) => Dialog(
           insetPadding: const EdgeInsets.all(24),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28),),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: _GoalForm(
@@ -507,7 +511,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
     await _saveGoal(meta, payload);
   }
 
-  Future<void> _saveGoal(MetaColaboradorModel? meta, Map<String, dynamic> payload) async {
+  Future<void> _saveGoal(MetaColaboradorModel? meta, Map<String, dynamic> payload,) async {
     setState(() => _saving = true);
     try {
       if (meta == null) {
@@ -555,19 +559,19 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   }
 
   bool _isCurrentMonth() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, DateTime(now.year, now.month)) &&
         _sameDay(_fim, DateTime(now.year, now.month, now.day));
   }
 
   bool _isLastThirtyDays() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now.subtract(const Duration(days: 29))) &&
         _sameDay(_fim, now);
   }
 
   bool _isToday() {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     return _sameDay(_inicio, now) && _sameDay(_fim, now);
   }
 
@@ -596,7 +600,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
 
   String _formatPeriod(DateTime? inicio, DateTime? fim) {
     if (inicio == null || fim == null) return 'sem período';
-    return '${_dateFormat.format(inicio)} a ${_dateFormat.format(fim)}';
+    return '${context.read<LocaleSettingsProvider>().formatDate(inicio)} a ${context.read<LocaleSettingsProvider>().formatDate(fim)}';
   }
 
   String _statusLabel(String status) {
@@ -655,7 +659,7 @@ class _Header extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(embedded ? 18 : 16, 14, 16, 14),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[_DesempenhoColaboradorPageState._primary, _DesempenhoColaboradorPageState._secondary],
+          colors: <Color>[_DesempenhoColaboradorPageState._primary, _DesempenhoColaboradorPageState._secondary,],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -710,7 +714,7 @@ class _Header extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: _DesempenhoColaboradorPageState._primary,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12,),
               ),
               onPressed: saving ? null : onNewGoal,
               icon: const Icon(Icons.add_rounded, size: 18),
@@ -855,7 +859,7 @@ class _GoalFormState extends State<_GoalForm> {
                     Expanded(
                       child: TextFormField(
                         controller: _valorController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true,),
                         decoration: const InputDecoration(
                           labelText: 'Valor alvo',
                           border: OutlineInputBorder(),
@@ -868,7 +872,7 @@ class _GoalFormState extends State<_GoalForm> {
                       width: 120,
                       child: TextFormField(
                         controller: _pesoController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true,),
                         decoration: const InputDecoration(
                           labelText: 'Peso',
                           border: OutlineInputBorder(),
@@ -926,7 +930,7 @@ class _GoalFormState extends State<_GoalForm> {
                   child: FilledButton.icon(
                     onPressed: _submit,
                     icon: const Icon(Icons.check_rounded),
-                    label: Text(widget.meta == null ? 'Cadastrar meta' : 'Salvar meta'),
+                    label: Text(widget.meta == null ? 'Cadastrar meta' : 'Salvar meta',),
                   ),
                 ),
               ],
@@ -1103,7 +1107,7 @@ class _CollaboratorSheet extends StatelessWidget {
                     subtitle: colaborador.email.isEmpty ? 'Participante' : colaborador.email,
                     selected: colaborador.idUnicoPessoal == selectedId,
                     icon: Icons.badge_outlined,
-                    onTap: () => Navigator.of(context).pop(colaborador.idUnicoPessoal),
+                    onTap: () => Navigator.of(context,).pop(colaborador.idUnicoPessoal),
                   );
                 },
               ),
@@ -1142,7 +1146,7 @@ class _SelectorButton extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20),
+              Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20,),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1152,7 +1156,7 @@ class _SelectorButton extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: _DesempenhoColaboradorPageState._muted),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: _DesempenhoColaboradorPageState._muted,),
             ],
           ),
         ),
@@ -1195,7 +1199,7 @@ class _SelectorTile extends StatelessWidget {
                   color: selected ? const Color(0xFFDCEBFF) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20),
+                child: Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20,),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1213,13 +1217,13 @@ class _SelectorTile extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 12),
+                      style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 12,),
                     ),
                   ],
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: _DesempenhoColaboradorPageState._accent),
+                const Icon(Icons.check_circle_rounded, color: _DesempenhoColaboradorPageState._accent,),
             ],
           ),
         ),
@@ -1281,7 +1285,7 @@ class _Panel extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           subtitle!,
-                          style: const TextStyle(color: _DesempenhoColaboradorPageState._muted),
+                          style: const TextStyle(color: _DesempenhoColaboradorPageState._muted,),
                         ),
                       ],
                     ],
@@ -1344,7 +1348,7 @@ class _KpiCard extends StatelessWidget {
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(data.icon, color: _DesempenhoColaboradorPageState._accent),
+            child: Icon(data.icon, color: _DesempenhoColaboradorPageState._accent,),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1377,7 +1381,7 @@ class _KpiCard extends StatelessWidget {
                   data.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 11),
+                  style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 11,),
                 ),
               ],
             ),
@@ -1405,7 +1409,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900),
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900,),
       ),
     );
   }
@@ -1445,7 +1449,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _DesempenhoColaboradorPageState._muted),
+            style: const TextStyle(color: _DesempenhoColaboradorPageState._muted,),
           ),
         ],
       ),

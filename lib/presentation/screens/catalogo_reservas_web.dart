@@ -692,11 +692,13 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
 
   DateTime? _normalizarData(DateTime? value) {
     if (value == null) return null;
-    final DateTime base = value.toLocal();
+    final DateTime base = context
+        .read<LocaleSettingsProvider>()
+        .dateTimeForDisplay( value);
     return DateTime(base.year, base.month, base.day);
   }
 
-  DateTime _hojeNormalizado() => _normalizarData(DateTime.now())!;
+  DateTime _hojeNormalizado() => _normalizarData(context.read<LocaleSettingsProvider>().calendarNow)!;
 
   DateTimeRange _resolverPeriodoSelecionado() {
     final DateTime base = _hojeNormalizado();
@@ -1744,7 +1746,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
     DateTime? value,
   ) {
     if (value == null) return '';
-    final DateTime local = value.toLocal();
+    final DateTime local = regionalizacao.dateTimeForDisplay( value);
     return '${regionalizacao.formatDate(local)} • ${regionalizacao.formatTime(local)}';
   }
 

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 
 import '../../core/services/auth_service.dart';
@@ -169,7 +170,8 @@ class _GreetingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
-    final String greeting = texts.greetingFor(DateTime.now(), displayName);
+    final String greeting = texts.greetingFor(
+      context.read<LocaleSettingsProvider>().calendarNow, displayName,);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),

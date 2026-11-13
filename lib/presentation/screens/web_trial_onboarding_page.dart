@@ -596,7 +596,7 @@ class _WebTrialOnboardingPageState extends State<WebTrialOnboardingPage> {
       'channels': (_answers['channels'] as Set<String>).toList(),
       'modules': (_answers['modules'] as Set<String>).toList(),
       'aiFocus': (_answers['aiFocus'] as Set<String>).toList(),
-      'createdAt': DateTime.now().toIso8601String(),
+      'createdAt': DateTime.now().toUtc().toIso8601String(),
     };
 
     await prefs.setString('web_trial_onboarding_profile', jsonEncode(payload));

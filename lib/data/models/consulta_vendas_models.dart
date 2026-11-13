@@ -1,4 +1,4 @@
-class ConsultaVendasFiltro {
+import '../../core/utils/company_time.dart';class ConsultaVendasFiltro {
   const ConsultaVendasFiltro({
     required this.dataInicial,
     required this.dataFinal,
@@ -97,16 +97,19 @@ class ConsultaVendasFiltro {
       busca: busca ?? this.busca,
       idCliente: idCliente ?? this.idCliente,
       idColaborador: idColaborador ?? this.idColaborador,
-      idsColaboradores: limparIdsColaboradores
-          ? const <String>[]
-          : idsColaboradores ?? this.idsColaboradores,
+      idsColaboradores:
+          limparIdsColaboradores
+              ? const <String>[]
+              : idsColaboradores ?? this.idsColaboradores,
       idProduto: idProduto ?? this.idProduto,
-      statusFinanceiro: limparStatusFinanceiro
-          ? null
-          : statusFinanceiro ?? this.statusFinanceiro,
-      statusDevolucao: limparStatusDevolucao
-          ? null
-          : statusDevolucao ?? this.statusDevolucao,
+      statusFinanceiro:
+          limparStatusFinanceiro
+              ? null
+              : statusFinanceiro ?? this.statusFinanceiro,
+      statusDevolucao:
+          limparStatusDevolucao
+              ? null
+              : statusDevolucao ?? this.statusDevolucao,
       valorMinimo: limparValorMinimo ? null : valorMinimo ?? this.valorMinimo,
       valorMaximo: limparValorMaximo ? null : valorMaximo ?? this.valorMaximo,
       ordenacao: ordenacao ?? this.ordenacao,
@@ -226,7 +229,9 @@ class VendaConsultaResumo {
     return VendaConsultaResumo(
       idOperacao: json['idOperacao']?.toString() ?? '',
       codigoOperacao: json['codigoOperacao']?.toString() ?? '',
-      dataOperacao: _asDateTime(json['dataOperacao']),
+      dataOperacao: _asDateTime(
+        json['dataOperacaoUtc'] ?? json['dataOperacao'],
+      ),
       idCliente: json['idCliente']?.toString() ?? '',
       nomeCliente: json['nomeCliente']?.toString() ?? '',
       documentoCliente: json['documentoCliente']?.toString() ?? '',
@@ -369,7 +374,7 @@ class RecebimentoVendaDetalhe {
     return RecebimentoVendaDetalhe(
       idRecebimento: json['idRecebimento']?.toString() ?? '',
       origem: json['origem']?.toString() ?? '',
-      dataHora: _asDateTime(json['dataHora']),
+      dataHora: _asDateTime(json['dataHoraUtc'] ?? json['dataHora']),
       codigoTipoRecebimento: json['codigoTipoRecebimento']?.toString() ?? '',
       descricaoTipoRecebimento:
           json['descricaoTipoRecebimento']?.toString() ?? '',
@@ -417,7 +422,7 @@ class DevolucaoVendaDetalhe {
     return DevolucaoVendaDetalhe(
       idDevolucao: json['idDevolucao']?.toString() ?? '',
       codigoDevolucao: json['codigoDevolucao']?.toString() ?? '',
-      dataHora: _asDateTime(json['dataHora']),
+      dataHora: _asDateTime(json['dataHoraUtc'] ?? json['dataHora']),
       tipo: json['tipo']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       idColaborador: json['idColaborador']?.toString() ?? '',
@@ -513,7 +518,7 @@ class EventoVendaDetalhe {
 
   factory EventoVendaDetalhe.fromJson(Map<String, dynamic> json) {
     return EventoVendaDetalhe(
-      dataHora: _asDateTime(json['dataHora']),
+      dataHora: _asDateTime(json['dataHoraUtc'] ?? json['dataHora']),
       tipo: json['tipo']?.toString() ?? '',
       referencia: json['referencia']?.toString() ?? '',
       valor: _asDouble(json['valor']),
@@ -548,6 +553,5 @@ double _asDouble(dynamic value) {
 }
 
 DateTime? _asDateTime(dynamic value) {
-  final String text = value?.toString() ?? '';
-  return text.isEmpty ? null : DateTime.tryParse(text);
+  return CompanyTime.tryParse(value);
 }

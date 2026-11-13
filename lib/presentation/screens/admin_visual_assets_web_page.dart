@@ -1,4 +1,4 @@
-import 'dart:async';
+import '../../core/utils/company_time.dart';import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -25,7 +25,7 @@ import '../components/web/six_web_delete_visual_asset_dialog.dart';
 class AdminVisualAssetsWebPage extends StatefulWidget {
   const AdminVisualAssetsWebPage({
     super.key,
-    this.embeddedInMainShell = false,
+    this.embeddedInMainShell = false
   });
 
   final bool embeddedInMainShell;
@@ -90,9 +90,9 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     if (!mounted) return;
 
     if (!provider.ehSuperUsuario) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
+      Navigator.of(context,).pushNamedAndRemoveUntil(
         '/app',
-        (Route<dynamic> route) => false,
+        (Route<dynamic> route) => false
       );
       return;
     }
@@ -116,7 +116,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       String? companyId = _companyId;
       if (_scope == 'EMPRESA' &&
           (companyId == null ||
-              !companies.any((AdminVisualAssetCompany c) => c.id == companyId))) {
+              !companies.any((AdminVisualAssetCompany c) => c.id == companyId,))) {
         companyId = companies.isEmpty ? null : companies.first.id;
       }
 
@@ -181,8 +181,8 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       await _service.forceRefresh();
       await _reload();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(texts.forceSuccess)),
+        ScaffoldMessenger.of(context,).showSnackBar(
+          SnackBar(content: Text(texts.forceSuccess))
         );
       }
     } catch (error) {
@@ -210,7 +210,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     if (changed == true) await _reload();
   }
 
-  Future<void> _deleteImage(AdminVisualAssetSlotPanel slot, {bool scheduled = false}) async {
+  Future<void> _deleteImage(AdminVisualAssetSlotPanel slot, {bool scheduled = false,}) async {
     final item = scheduled ? slot.next : slot.current;
     if (item == null) return;
     final texts = _VisualAssetsTexts.of(context);
@@ -220,7 +220,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       scheduled: scheduled,
       target: _scope == 'EMPRESA'
           ? (_selectedCompany?.name ?? '')
-          : [_segment, _subsegment].whereType<String>().map(_prettyCode).join(' · '),
+          : [_segment, _subsegment,].whereType<String>().map(_prettyCode).join(' · '),
       onConfirm: () => _service.delete(item.id, subsegment: _subsegment),
     );
     if (changed && mounted) await _reload();
@@ -249,9 +249,9 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       await _authService.logout();
     } finally {
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(
+      Navigator.of(context,).pushNamedAndRemoveUntil(
         '/admin',
-        (Route<dynamic> route) => false,
+        (Route<dynamic> route) => false
       );
     }
   }
@@ -325,9 +325,9 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       ),
     );
     if (widget.embeddedInMainShell) {
-      return ColoredBox(color: Theme.of(context).scaffoldBackgroundColor, child: loading);
+      return ColoredBox(color: Theme.of(context).scaffoldBackgroundColor, child: loading,);
     }
-    return Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: loading);
+    return Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: loading,);
   }
 
   Widget _buildContent(_VisualAssetsTexts texts) {
@@ -512,7 +512,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             service: _service,
             imageUrl: panel.slots
                 .where((slot) => slot.platform == 'WEB' &&
-                    (slot.current ?? slot.fallback) != null)
+                    (slot.current ?? slot.fallback) != null,)
                 .map((slot) => (slot.current ?? slot.fallback)!.imageUrl)
                 .firstOrNull,
           ),
@@ -521,7 +521,7 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             title: 'Web',
             icon: Icons.language_rounded,
             slots: panel.slots
-                .where((AdminVisualAssetSlotPanel slot) => slot.platform == 'WEB')
+                .where((AdminVisualAssetSlotPanel slot) => slot.platform == 'WEB',)
                 .toList(growable: false),
             companyScope: _scope == 'EMPRESA',
             texts: texts,
@@ -597,7 +597,7 @@ class _VisualAssetsDialogTheme extends StatelessWidget {
 class _VisualAssetsSurfaceCard extends StatelessWidget {
   const _VisualAssetsSurfaceCard({
     required this.child,
-    this.compact = false,
+    this.compact = false
   });
 
   final Widget child;
@@ -619,7 +619,7 @@ class _VisualAssetsSurfaceCard extends StatelessWidget {
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: theme.shadowColor.withValues(
-              alpha: dark ? 0.28 : 0.05,
+              alpha: dark ? 0.28 : 0.05
             ),
             blurRadius: dark ? 28 : 22,
             offset: const Offset(0, 12),
@@ -628,7 +628,7 @@ class _VisualAssetsSurfaceCard extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(compact ? 16 : 22),
-        child: child,
+        child: child
       ),
     );
   }
@@ -722,7 +722,7 @@ class _ScopeOptionState extends State<_ScopeOption> {
             boxShadow: active
                 ? <BoxShadow>[
                     BoxShadow(
-                      color: Theme.of(context).shadowColor.withValues(alpha: 0.06),
+                      color: Theme.of(context,).shadowColor.withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -736,7 +736,7 @@ class _ScopeOptionState extends State<_ScopeOption> {
               onTap: widget.enabled ? widget.onTap : null,
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 12,),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -772,7 +772,7 @@ class _ScopeOptionState extends State<_ScopeOption> {
 class _AdminVisualSelectOption<T> {
   const _AdminVisualSelectOption({
     required this.value,
-    required this.label,
+    required this.label
   });
 
   final T value;
@@ -854,7 +854,7 @@ class _AdminVisualSelectFieldState<T>
                 PopupMenuItem<_AdminVisualSelectOption<T>>(
               value: option,
               height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5,),
               child: _AdminVisualSelectMenuItem(
                 label: option.label,
                 selected: option.value == widget.value,
@@ -904,8 +904,8 @@ class _AdminVisualSelectFieldState<T>
                     padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
                     decoration: BoxDecoration(
                       color: active
-                          ? Theme.of(context).colorScheme.surfaceContainerHigh
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ? Theme.of(context,).colorScheme.surfaceContainerHigh
+                          : Theme.of(context,).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(AdminRadius.lg),
                       border: Border.all(
                         color: active
@@ -917,7 +917,7 @@ class _AdminVisualSelectFieldState<T>
                           ? <BoxShadow>[
                               BoxShadow(
                                 color:
-                                    Theme.of(context).shadowColor.withValues(alpha: 0.08),
+                                    Theme.of(context,).shadowColor.withValues(alpha: 0.08),
                                 blurRadius: 18,
                                 offset: const Offset(0, 9),
                               ),
@@ -931,7 +931,7 @@ class _AdminVisualSelectFieldState<T>
                           size: 18,
                           color: active
                               ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                              : Theme.of(context,).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -944,7 +944,7 @@ class _AdminVisualSelectFieldState<T>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context,).colorScheme.onSurfaceVariant,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -972,7 +972,7 @@ class _AdminVisualSelectFieldState<T>
                             Icons.keyboard_arrow_down_rounded,
                             color: active
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                : Theme.of(context,).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -1003,7 +1003,7 @@ class _AdminVisualSelectMenuItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: selected
-            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.32)
+            ? Theme.of(context,).colorScheme.primaryContainer.withValues(alpha: 0.32)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AdminRadius.md),
         border: Border.all(
@@ -1075,7 +1075,7 @@ class _VersionBadge extends StatelessWidget {
 class _EnvironmentBadge extends StatelessWidget {
   const _EnvironmentBadge({
     required this.environment,
-    required this.texts,
+    required this.texts
   });
 
   final String environment;
@@ -1105,7 +1105,7 @@ class _EnvironmentBadge extends StatelessWidget {
             '${texts.environment}: $environment',
             style: TextStyle(
               color: color,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w900
             ),
           ),
         ],
@@ -1128,7 +1128,7 @@ class _EnvironmentNotice extends StatelessWidget {
         color: AdminPalette.warning.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(AdminRadius.md),
         border: Border.all(
-          color: AdminPalette.warning.withValues(alpha: 0.38),
+          color: AdminPalette.warning.withValues(alpha: 0.38)
         ),
       ),
       child: Row(
@@ -1137,7 +1137,7 @@ class _EnvironmentNotice extends StatelessWidget {
           Icon(
             Icons.science_rounded,
             color: AdminPalette.warning,
-            size: 20,
+            size: 20
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1202,7 +1202,7 @@ class _PlatformSection extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               '${slots.length} ${texts.positions}',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,),
             ),
           ],
         ),
@@ -1339,7 +1339,7 @@ class _SlotCard extends StatelessWidget {
             if (onDeleteScheduled != null) TextButton.icon(
               onPressed: onDeleteScheduled,
               icon: const Icon(Icons.event_busy_outlined),
-              label: Text(AdminVisualAssetSettingsTexts(context).deleteScheduled),
+              label: Text(AdminVisualAssetSettingsTexts(context).deleteScheduled,),
             ),
             if (slot.current != null) ...<Widget>[
               const SizedBox(height: 8),
@@ -1443,7 +1443,7 @@ class _AssetPreview extends StatelessWidget {
                       item.focalY * 2 - 1,
                     ),
                     errorBuilder: (_, __, ___) => Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context,).colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: Icon(Icons.broken_image_outlined),
                     ),
@@ -1457,7 +1457,7 @@ class _AssetPreview extends StatelessWidget {
           Text(
             item.activateAtUtc == null
                 ? item.version
-                : '${_formatDate(item.activateAtUtc!)} · ${item.timeZone}',
+                : '${_formatDate(item.activateAtUtc!, item.timeZone)} · ${item.timeZone}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -1476,7 +1476,7 @@ class _AssetPreview extends StatelessWidget {
 class _AssetLinkRow extends StatelessWidget {
   const _AssetLinkRow({
     required this.url,
-    this.compact = false,
+    this.compact = false
   });
 
   final String url;
@@ -1486,7 +1486,7 @@ class _AssetLinkRow extends StatelessWidget {
     final Uri? uri = Uri.tryParse(url);
     if (uri == null || !await launchUrl(
       uri,
-      mode: LaunchMode.externalApplication,
+      mode: LaunchMode.externalApplication
     )) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1545,26 +1545,26 @@ class _AssetLinkRow extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints.tightFor(
               width: 32,
-              height: 32,
+              height: 32
             ),
             tooltip: _VisualAssetsTexts.of(context).openNewWindow,
             onPressed: () => _open(context),
             icon: Icon(
               Icons.open_in_new_rounded,
-              size: 16,
+              size: 16
             ),
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints.tightFor(
               width: 32,
-              height: 32,
+              height: 32
             ),
             tooltip: _VisualAssetsTexts.of(context).copyUrl,
             onPressed: () => _copy(context),
             icon: Icon(
               Icons.content_copy_rounded,
-              size: 15,
+              size: 15
             ),
           ),
         ],
@@ -1658,10 +1658,10 @@ class _PlatformPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: .4)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(isWeb ? Icons.desktop_windows_outlined : Icons.phone_android, size: 12, color: color),
+        Icon(isWeb ? Icons.desktop_windows_outlined : Icons.phone_android, size: 12, color: color,),
         const SizedBox(width: 4),
-        Text(platform, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900)),
-      ]),
+        Text(platform, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900,),),
+      ],),
     );
   }
 }
@@ -1734,7 +1734,7 @@ class _UploadImageMetadata extends StatelessWidget {
     } else {
       message = texts.dimensionCropWarning(
         recommendedWidth,
-        recommendedHeight,
+        recommendedHeight
       );
     }
 
@@ -1745,7 +1745,7 @@ class _UploadImageMetadata extends StatelessWidget {
         color: stateColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: stateColor.withValues(alpha: 0.38),
+          color: stateColor.withValues(alpha: 0.38)
         ),
       ),
       child: Row(
@@ -1859,13 +1859,13 @@ class _UploadCropGuidePreview extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(
               horizontal: 12,
-              vertical: 10,
+              vertical: 10
             ),
             decoration: BoxDecoration(
               color: colors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colors.primary.withValues(alpha: 0.28),
+                color: colors.primary.withValues(alpha: 0.28)
               ),
             ),
             child: Row(
@@ -1905,7 +1905,7 @@ class _UploadCropGuidePreview extends StatelessWidget {
         LayoutBuilder(
           builder: (
             BuildContext context,
-            BoxConstraints constraints,
+            BoxConstraints constraints
           ) {
             final double availableWidth =
                 constraints.maxWidth.isFinite
@@ -1921,13 +1921,13 @@ class _UploadCropGuidePreview extends StatelessWidget {
                 naturalHeight.clamp(220.0, 430.0).toDouble();
             final Size viewport = Size(
               availableWidth,
-              previewHeight,
+              previewHeight
             );
 
             final Size sourceSize = _hasDimensions
                 ? Size(
                     imageWidth!.toDouble(),
-                    imageHeight!.toDouble(),
+                    imageHeight!.toDouble()
                   )
                 : Size(
                     recommendedWidth.toDouble(),
@@ -1959,7 +1959,7 @@ class _UploadCropGuidePreview extends StatelessWidget {
                 color: colors.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: colors.outlineVariant,
+                  color: colors.outlineVariant
                 ),
               ),
               child: ClipRRect(
@@ -1978,7 +1978,7 @@ class _UploadCropGuidePreview extends StatelessWidget {
                           imageRect: imageRect,
                           cropRect: cropRect,
                           maskColor: Colors.black.withValues(
-                            alpha: 0.48,
+                            alpha: 0.48
                           ),
                           borderColor: colors.primary,
                         ),
@@ -2011,13 +2011,13 @@ class _UploadCropGuidePreview extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary.withValues(
-                                alpha: 0.94,
+                                alpha: 0.94
                               ),
                               borderRadius: BorderRadius.circular(999),
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
                                   color: Colors.black.withValues(
-                                    alpha: 0.20,
+                                    alpha: 0.20
                                   ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
@@ -2061,7 +2061,7 @@ class _UploadCropGuidePreview extends StatelessWidget {
         left: 0,
         top: 0,
         width: 1,
-        height: 1,
+        height: 1
       );
     }
 
@@ -2121,7 +2121,7 @@ class _CropGuideOverlayPainter extends CustomPainter {
         ..addRRect(
           RRect.fromRectAndRadius(
             cropRect,
-            const Radius.circular(10),
+            const Radius.circular(10)
           ),
         )
         ..fillType = PathFillType.evenOdd;
@@ -2136,7 +2136,7 @@ class _CropGuideOverlayPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         cropRect,
-        const Radius.circular(10),
+        const Radius.circular(10)
       ),
       borderPaint,
     );
@@ -2193,7 +2193,7 @@ class _CropGuideOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(
-    covariant _CropGuideOverlayPainter oldDelegate,
+    covariant _CropGuideOverlayPainter oldDelegate
   ) {
     return imageRect != oldDelegate.imageRect ||
         cropRect != oldDelegate.cropRect ||
@@ -2304,7 +2304,8 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
   }
 
   Future<void> _chooseDateTime() async {
-    final DateTime now = DateTime.now();
+    final DateTime now = CompanyTime.fromInstant(DateTime.now(),
+        widget.company?.timeZone ?? _timeZoneController.text.trim());
     final DateTime initial = _activateAt ?? now.add(const Duration(days: 1));
     final DateTime? date = await showDatePicker(
       context: context,
@@ -2406,14 +2407,14 @@ class _UploadAssetDialogState extends State<_UploadAssetDialog> {
                 '${widget.slot.recommendedWidth} × '
                 '${widget.slot.recommendedHeight} · '
                 '${widget.slot.platform}',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,),
               ),
               const SizedBox(height: 14),
               OutlinedButton.icon(
                 onPressed: _saving ? null : _pickImage,
                 icon: Icon(Icons.photo_library_outlined),
                 label: Text(
-                  _file == null ? texts.chooseImage : _file!.name,
+                  _file == null ? texts.chooseImage : _file!.name
                 ),
               ),
               if (bytes != null) ...<Widget>[
@@ -2632,7 +2633,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
       context: context,
       builder: (BuildContext context) => _ReuseDialog(
         company: widget.company,
-        asset: item,
+        asset: item
       ),
     );
     if (options == null) return;
@@ -2650,7 +2651,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
     return _VisualAssetsDialogTheme(
       child: AlertDialog(
-        title: Text('${texts.history} · ${texts.slotTitle(context, widget.slot)}'),
+        title: Text('${texts.history} · ${texts.slotTitle(context, widget.slot)}',),
       content: SizedBox(
         width: 780,
         height: 520,
@@ -2710,7 +2711,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                         child: Text(
                           '${_prettyCode(item.status)} · v${item.version}',
                           style: TextStyle(
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w900
                           ),
                         ),
                       ),
@@ -2724,14 +2725,14 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          '${item.activateAtUtc == null ? '—' : _formatDate(item.activateAtUtc!)}'
+                          '${item.activateAtUtc == null ? '—' : _formatDate(item.activateAtUtc!, item.timeZone)}'
                           ' · ${item.timeZone}'
                           '${item.migrated ? ' · Legacy seed' : ''}',
                         ),
                         const SizedBox(height: 6),
                         _AssetLinkRow(
                           url: item.imageUrl,
-                          compact: true,
+                          compact: true
                         ),
                       ],
                     ),
@@ -2750,7 +2751,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
                         IconButton(
                           tooltip: editable
                               ? texts.archive
-                              : texts.readOnlyEnvironment(item.environment),
+                              : texts.readOnlyEnvironment(item.environment,),
                           onPressed: editable ? () => _archive(item) : null,
                           icon: Icon(Icons.archive_outlined),
                         ),
@@ -2776,7 +2777,7 @@ class _AssetHistoryDialogState extends State<_AssetHistoryDialog> {
 class _ReuseDialog extends StatefulWidget {
   const _ReuseDialog({
     required this.company,
-    required this.asset,
+    required this.asset
   });
 
   final AdminVisualAssetCompany? company;
@@ -2809,7 +2810,8 @@ class _ReuseDialogState extends State<_ReuseDialog> {
   }
 
   Future<void> _pick() async {
-    final DateTime now = DateTime.now();
+    final DateTime now = CompanyTime.fromInstant(DateTime.now(),
+        widget.company?.timeZone ?? _zone.text.trim());
     final DateTime initial = now.add(const Duration(days: 1));
     final DateTime? date = await showDatePicker(
       context: context,
@@ -2944,7 +2946,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(icon, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant,),
             const SizedBox(height: 12),
             Text(
               title,
@@ -2959,7 +2961,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,),
             ),
           ],
         ),
@@ -2985,7 +2987,7 @@ class _VisualAssetsTexts {
         'Web · Returns and exchanges',
         'Web · Devoluciones y cambios',
       ],
-      'WEB_CAIXA_HEADER': ['Web · Caixa', 'Web · Cash register', 'Web · Caja'],
+      'WEB_CAIXA_HEADER': ['Web · Caixa', 'Web · Cash register', 'Web · Caja',],
       'WEB_ASSISTENCIAS_HEADER': [
         'Web · Assistências técnicas',
         'Web · Technical assistance',
@@ -3026,14 +3028,14 @@ class _VisualAssetsTexts {
         'Web · Sixo users',
         'Web · Usuarios de Sixo',
       ],
-      'VENDAS_MOBILE_VENDAS': ['Vendas · Nova venda', 'Sales · New sale', 'Ventas · Nueva venta'],
-      'VENDAS_MOBILE_RECEBER': ['Vendas · A receber', 'Sales · Receivables', 'Ventas · Por cobrar'],
-      'VENDAS_MOBILE_CONSULTAR': ['Vendas · Consultar vendas', 'Sales · History', 'Ventas · Consultar ventas'],
+      'VENDAS_MOBILE_VENDAS': ['Vendas · Nova venda', 'Sales · New sale', 'Ventas · Nueva venta',],
+      'VENDAS_MOBILE_RECEBER': ['Vendas · A receber', 'Sales · Receivables', 'Ventas · Por cobrar',],
+      'VENDAS_MOBILE_CONSULTAR': ['Vendas · Consultar vendas', 'Sales · History', 'Ventas · Consultar ventas',],
       'WEB_INICIO_HEADER': ['Web · Início', 'Web · Home', 'Web · Inicio'],
-      'CATALOGO_WEB_PRODUTOS': ['Catálogo Web · Produtos', 'Web catalog · Products', 'Catálogo Web · Productos'],
-      'CATALOGO_WEB_SERVICOS': ['Catálogo Web · Serviços', 'Web catalog · Services', 'Catálogo Web · Servicios'],
-      'CATALOGO_WEB_CATEGORIAS': ['Catálogo Web · Categorias', 'Web catalog · Categories', 'Catálogo Web · Categorías'],
-      'CATALOGO_WEB_ETIQUETAS': ['Catálogo Web · Etiquetas', 'Web catalog · Labels', 'Catálogo Web · Etiquetas'],
+      'CATALOGO_WEB_PRODUTOS': ['Catálogo Web · Produtos', 'Web catalog · Products', 'Catálogo Web · Productos',],
+      'CATALOGO_WEB_SERVICOS': ['Catálogo Web · Serviços', 'Web catalog · Services', 'Catálogo Web · Servicios',],
+      'CATALOGO_WEB_CATEGORIAS': ['Catálogo Web · Categorias', 'Web catalog · Categories', 'Catálogo Web · Categorías',],
+      'CATALOGO_WEB_ETIQUETAS': ['Catálogo Web · Etiquetas', 'Web catalog · Labels', 'Catálogo Web · Etiquetas',],
     }[slot.slot];
     return context.t(
       slot.labelKey,
@@ -3053,7 +3055,7 @@ class _VisualAssetsTexts {
   String get title => _pick(
         'Imagens do SixApp',
         'SixApp images',
-        'Imágenes de SixApp',
+        'Imágenes de SixApp'
       );
   String get subtitle => _pick(
         'Gerencie as imagens atuais, programe campanhas futuras e acompanhe Web e Mobile em um único lugar.',
@@ -3067,17 +3069,17 @@ class _VisualAssetsTexts {
   String get globalDefault => _pick(
         'Padrão global',
         'Global default',
-        'Predeterminado global',
+        'Predeterminado global'
       );
   String get noSpecialty => _pick(
         'Sem especialidade',
         'No specialty',
-        'Sin especialidad',
+        'Sin especialidad'
       );
   String get version => _pick(
         'Versão global',
         'Global version',
-        'Versión global',
+        'Versión global'
       );
   String get environment => _pick('Ambiente', 'Environment', 'Ambiente');
   String get devNotice => _pick(
@@ -3121,12 +3123,12 @@ class _VisualAssetsTexts {
   String get moreScheduled => _pick(
         'outras programadas',
         'more scheduled',
-        'otras programadas',
+        'otras programadas'
       );
   String get addOrSchedule => _pick(
         'Trocar / programar',
         'Replace / schedule',
-        'Cambiar / programar',
+        'Cambiar / programar'
       );
   String get history => _pick('Histórico', 'History', 'Historial');
   String get chooseImage => _pick(
@@ -3142,7 +3144,7 @@ class _VisualAssetsTexts {
   String recommendedImageInfo(
     String platform,
     int width,
-    int height,
+    int height
   ) => _pick(
         'Recomendado para $platform: $width × $height px',
         'Recommended for $platform: $width × $height px',
@@ -3196,14 +3198,14 @@ class _VisualAssetsTexts {
   String uploadTitle(String slot) => _pick(
         'Nova imagem · $slot',
         'New image · $slot',
-        'Nueva imagen · $slot',
+        'Nueva imagen · $slot'
       );
   String get horizontalFocus =>
       _pick('Foco horizontal', 'Horizontal focus', 'Foco horizontal');
   String get verticalFocus =>
       _pick('Foco vertical', 'Vertical focus', 'Foco vertical');
   String get schedule =>
-      _pick('Programar ativação', 'Schedule activation', 'Programar activación');
+      _pick('Programar ativação', 'Schedule activation', 'Programar activación',);
   String get scheduleHelp => _pick(
         'Se desligado, a imagem entra em vigor agora.',
         'If disabled, the image goes live now.',
@@ -3309,8 +3311,9 @@ String _prettyCode(String value) {
       .join(' ');
 }
 
-String _formatDate(DateTime value) {
-  final DateTime local = value.toLocal();
+String _formatDate(DateTime value, [String? timeZone]) {
+  final DateTime local =
+      timeZone == null ? value : CompanyTime.forDisplay(value, timeZone);
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(local.day)}/${two(local.month)}/${local.year} '
       '${two(local.hour)}:${two(local.minute)}';

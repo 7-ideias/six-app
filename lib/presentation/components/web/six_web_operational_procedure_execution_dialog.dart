@@ -127,7 +127,7 @@ class _SixWebOperationalProcedureExecutionDialogState
       procedureId: widget.procedure.id,
       currentStageIndex: 0,
       responses: const <String, ProcedureItemResponse>{},
-      startedAt: DateTime.now(),
+      startedAt: DateTime.now().toUtc(),
     );
     _iconController = AnimationController(
       vsync: this,
@@ -1092,7 +1092,7 @@ class _SixWebOperationalProcedureExecutionDialogState
     return ProcedureItemResponse(
       itemId: item.id,
       responseType: item.responseType,
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
     );
   }
 
@@ -1163,7 +1163,7 @@ class _SixWebOperationalProcedureExecutionDialogState
         OperationalProcedureExecutionSubmission(
           execution: _execution.copyWith(
             currentStageIndex: _stageIndex,
-            completedAt: DateTime.now(),
+            completedAt: DateTime.now().toUtc(),
           ),
           status: status,
         ),

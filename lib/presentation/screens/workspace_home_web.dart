@@ -996,7 +996,7 @@ class _WorkspaceHomeSection extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19,),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1050,7 +1050,7 @@ class _WorkspaceHomeRoleHeader extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20,),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1584,7 +1584,7 @@ class _TodaySituationGrid extends StatelessWidget {
   }
 
   String _formatCashOpenedAt(BuildContext context, DateTime openedAt) {
-    final DateTime localOpenedAt = openedAt.toLocal();
+    final DateTime localOpenedAt = regionalizacao.dateTimeForDisplay( openedAt);
     final bool sameOperationalDay =
         localOpenedAt.year == home.date.year &&
         localOpenedAt.month == home.date.month &&

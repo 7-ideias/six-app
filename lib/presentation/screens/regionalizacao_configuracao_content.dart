@@ -235,7 +235,9 @@ class _RegionalizacaoConfiguracaoContentState
   @override
   void initState() {
     super.initState();
-    _carregarRegionalizacao();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _carregarRegionalizacao();
+    });
   }
 
   @override
@@ -357,7 +359,13 @@ class _RegionalizacaoConfiguracaoContentState
       countryCode: _paisSelecionado.value,
       formatting: config.formatting.copyWith(
         currencyCode: _moedaSelecionada.value,
-        timeZone: _timeZoneSelecionado.value,
+        timeZone:
+            context
+                    .read<LocaleSettingsProvider>()
+                    .companyConfig
+                    .podeAlterarFusoHorario
+                ? _timeZoneSelecionado.value
+                : context.read<LocaleSettingsProvider>().timeZone,
         dateFormat: _dateFormatSelecionado.value,
         timeFormat: _timeFormatSelecionado.value,
         decimalSeparator: _decimalSeparatorSelecionado.value,
@@ -737,6 +745,7 @@ class _RegionalizacaoConfiguracaoContentState
           ),
           const SizedBox(height: 18),
           _buildOptionGroup(
+            key: const ValueKey('company-time-zone'),
             context: context,
             theme: theme,
             title: context.t(
@@ -744,13 +753,24 @@ class _RegionalizacaoConfiguracaoContentState
               fallback: 'Fuso horário',
             ),
             icon: Icons.schedule_rounded,
-            options: _optionsWithSelected(
-              _timeZoneOptions,
-              _timeZoneSelecionado,
-            ),
+            options:
+                context
+                        .watch<LocaleSettingsProvider>()
+                        .companyConfig
+                        .podeAlterarFusoHorario
+                    ? _optionsWithSelected(
+                      _timeZoneOptions,
+                      _timeZoneSelecionado,
+                    )
+                    : [_timeZoneSelecionado],
             selected: _timeZoneSelecionado,
             onSelected:
-                (option) => setState(() => _timeZoneSelecionado = option),
+                context
+                        .watch<LocaleSettingsProvider>()
+                        .companyConfig
+                        .podeAlterarFusoHorario
+                    ? (option) => setState(() => _timeZoneSelecionado = option)
+                    : null,
           ),
           const SizedBox(height: 18),
           _buildOptionGroup(
@@ -1050,15 +1070,17 @@ class _RegionalizacaoConfiguracaoContentState
   }
 
   Widget _buildOptionGroup({
+    Key? key,
     required BuildContext context,
     required ThemeData theme,
     required String title,
     required IconData icon,
     required List<_RegionalizacaoOption> options,
     required _RegionalizacaoOption selected,
-    required ValueChanged<_RegionalizacaoOption> onSelected,
+    required ValueChanged<_RegionalizacaoOption>? onSelected,
   }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _buildGroupTitle(context, theme, icon, title),
@@ -1082,7 +1104,10 @@ class _RegionalizacaoConfiguracaoContentState
                           width: itemWidth,
                           child: _SelectableContainer(
                             selected: option.value == selected.value,
-                            onTap: () => onSelected(option),
+                            onTap:
+                                onSelected == null
+                                    ? null
+                                    : () => onSelected(option),
                             child: Row(
                               children: <Widget>[
                                 _buildOptionIcon(
@@ -1531,7 +1556,7 @@ class _SelectableContainer extends StatelessWidget {
   });
 
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget child;
 
   @override

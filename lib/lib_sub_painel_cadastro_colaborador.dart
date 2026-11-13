@@ -1,4 +1,5 @@
-import 'dart:convert';
+import 'providers/locale_settings_provider.dart';
+import 'package:provider/provider.dart';import 'dart:convert';
 
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
@@ -52,8 +53,10 @@ class _CadastroColaboradorWebBodyState
   );
   final TextEditingController _idUnicoDoUsuarioController =
       TextEditingController(text: 'USR-');
+  late
   final TextEditingController _dataCadastroController = TextEditingController(
-    text: _formatDateTime(DateTime.now()),
+    text: _formatDateTime(
+          context.read<LocaleSettingsProvider>().calendarNow,),
   );
   final TextEditingController _idUnicoDaEmpresaController =
       TextEditingController();
@@ -62,17 +65,16 @@ class _CadastroColaboradorWebBodyState
 
   final TextEditingController _idiomaPreferencialController =
       TextEditingController(text: 'pt-BR');
-  final TextEditingController _fusoHorarioController = TextEditingController(
-    text: 'America/Sao_Paulo',
-  );
   final TextEditingController _statusController = TextEditingController(
     text: 'ATIVO',
   );
   final TextEditingController _idColaboradorAtualizacaoController =
       TextEditingController(text: 'COLAB-0001');
 
+  late
+
   final TextEditingController _dataDeContratacaoController =
-      TextEditingController(text: _formatDate(DateTime.now()));
+      TextEditingController(text: _formatDate(context.read<LocaleSettingsProvider>().calendarNow),);
   final TextEditingController _salarioController = TextEditingController(
     text: '0,00',
   );
@@ -143,8 +145,10 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _modoCapturaFotoController =
       TextEditingController(text: 'upload');
   final TextEditingController _hashFotoController = TextEditingController();
+  late
   final TextEditingController _dataCapturaFotoController =
-      TextEditingController(text: _formatDateTime(DateTime.now()));
+      TextEditingController(text: _formatDateTime(
+          context.read<LocaleSettingsProvider>().calendarNow,),);
 
   final TextEditingController _moedaPagamentoController = TextEditingController(
     text: 'BRL',
@@ -276,7 +280,6 @@ class _CadastroColaboradorWebBodyState
       _comissaoVendasController,
       _comissaoAssistenciaController,
       _idiomaPreferencialController,
-      _fusoHorarioController,
       _statusController,
       _idColaboradorAtualizacaoController,
       _departamentoController,
@@ -417,7 +420,7 @@ class _CadastroColaboradorWebBodyState
     TextEditingController controller, {
     required bool includeTime,
   }) async {
-    final DateTime now = DateTime.now();
+    final DateTime now = context.read<LocaleSettingsProvider>().calendarNow;
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: now,
@@ -783,7 +786,6 @@ class _CadastroColaboradorWebBodyState
         idUnicoDoUsuario: _idUnicoDoUsuarioController.text.trim(),
         dataCadastro: _dataCadastroController.text.trim(),
         idiomaPreferencial: _idiomaPreferencialController.text.trim(),
-        fusoHorario: _fusoHorarioController.text.trim(),
         status: _statusController.text.trim(),
       ),
       objDadosFuncionais: ColaboradorDadosFuncionais(
@@ -1311,17 +1313,6 @@ class _CadastroColaboradorWebBodyState
                   label: 'Idioma (locale)',
                   icon: Icons.language_outlined,
                   hintText: 'pt-BR / en-US',
-                  requiredField: true,
-                ),
-              ),
-              SizedBox(
-                width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
-                child: _buildTextField(
-                  context: context,
-                  controller: _fusoHorarioController,
-                  label: 'Fuso horário',
-                  icon: Icons.public_outlined,
-                  hintText: 'America/Sao_Paulo',
                   requiredField: true,
                 ),
               ),

@@ -262,11 +262,13 @@ class _PerformanceResults extends StatelessWidget {
         .t('performance.home.period', fallback: 'Resultados de {start} a {end}')
         .replaceAll(
           '{start}',
-          regionalizacao.formatDate(provider.periodoInicio ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoInicio ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         )
         .replaceAll(
           '{end}',
-          regionalizacao.formatDate(provider.periodoFim ?? DateTime.now()),
+          regionalizacao.formatDate(provider.periodoFim ??
+                context.read<LocaleSettingsProvider>().calendarNow,),
         );
 
     return KeyedSubtree(

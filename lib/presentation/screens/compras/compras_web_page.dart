@@ -123,7 +123,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
             id: f.id, nome: f.nome, documento: f.documento,
             email: f.email, telefone: f.telefone,
           ),
-        ));
+        ),);
         _store.produtos.addAll(produtos
             .where((p) => p.ativo && p.id != null && p.id!.isNotEmpty)
             .map((p) {
@@ -132,13 +132,13 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
             if (m.valorCusto > 0) custo = m.valorCusto;
           }
           final double saldo = (p.objEntradaSaidaProduto ?? [])
-              .fold<double>(0, (total, movimento) => total + movimento.quantidade);
+              .fold<double>(0, (total, movimento) => total + movimento.quantidade,);
           return _ProdutoCompraDemo(
             id: p.id!, nome: p.nomeProduto, codigo: p.codigoDeBarras,
             unidade: p.regrasOperacionais?.unidadeMedida ?? 'UN',
             ultimoCusto: custo, estoqueAtual: saldo,
           );
-        }));
+        }),);
         _carregando = false;
       });
     } catch (e) {
@@ -159,7 +159,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         context: context,
         builder: (_) => Dialog(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 790),
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 790,),
             child: ComprasRecebimentoPage(api: _comprasApi, compra: atual),
           ),
         ),
@@ -180,7 +180,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
       if (data['integracaoFinanceiraStatus'] == 'CONCLUIDA') {
         _mostrarMensagem('Parcelas sincronizadas com a Agenda Financeira.');
       } else {
-        _mostrarMensagem('Sincronização financeira pendente. Nova tentativa será feita automaticamente.', erro: true);
+        _mostrarMensagem('Sincronização financeira pendente. Nova tentativa será feita automaticamente.', erro: true,);
       }
     } catch (e) {
       if (mounted) _mostrarMensagem('Erro financeiro: $e', erro: true);
@@ -263,7 +263,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
   List<_CompraDemo> get _comprasFiltradas {
     final String query = _buscaController.text.trim().toLowerCase();
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().calendarNow;
     final List<_CompraDemo> resultado = _store.compras
         .where((_CompraDemo compra) {
           final bool statusValido = switch (_filtroStatus) {
@@ -369,7 +369,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   void _novaCompra() {
     if (!_acesso.criar) return;
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
-    final _CompraDemo compra = _store.criarRascunho(moeda: moeda)
+    final _CompraDemo compra = _store.criarRascunho(moeda: moeda,
+      agora: context.read<LocaleSettingsProvider>().calendarNow,)
       ..moedaContabil = moeda;
     setState(() {
       _compraSelecionada = compra;
@@ -394,7 +395,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
   void _duplicarCompra(_CompraDemo compra) {
     if (!_acesso.criar) return;
-    final _CompraDemo copia = _store.duplicar(compra);
+    final _CompraDemo copia = _store.duplicar(compra,
+      agora: context.read<LocaleSettingsProvider>().calendarNow,);
     setState(() {
       _compraSelecionada = copia;
       _etapaAtual = _CompraDemoStep.dados;
@@ -446,8 +448,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Text(_erroCarga!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
-                    OutlinedButton(onPressed: _carregar, child: const Text('Tentar novamente')),
-                  ]))
+                    OutlinedButton(onPressed: _carregar, child: const Text('Tentar novamente'),),
+                  ],),)
                 : _compraSelecionada == null
                     ? _buildListaCompras()
                     : _buildEditorCompra(_compraSelecionada!),
@@ -577,7 +579,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         context: context,
         builder: (_) => Dialog(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 690, maxHeight: 700),
+            constraints: const BoxConstraints(maxWidth: 690, maxHeight: 700,),
             child: page,
           ),
         ),
@@ -819,9 +821,9 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
             _CompraStatusBadge(status: compra.status),
             if (compra.status == _CompraDemoStatus.confirmada) ...[
               Text('Estoque: ${compra.statusRecebimento ?? 'PENDENTE'}',
-                  style: theme.textTheme.labelSmall),
+                  style: theme.textTheme.labelSmall,),
               Text('Financeiro: ${compra.integracaoFinanceiraStatus ?? 'LEGADO'}',
-                  style: theme.textTheme.labelSmall),
+                  style: theme.textTheme.labelSmall,),
             ],
           ],
         ),

@@ -342,7 +342,7 @@ class _ConsultaVendasMobileScreenState
   }
 
   DateTime _hojeNormalizado() {
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().nowInCompany;
     return DateTime(agora.year, agora.month, agora.day);
   }
 
@@ -650,7 +650,9 @@ class _ConsultaVendasMobileScreenState
           title: title,
           initialDate: initialDate,
           minimumDate: minimumDate,
-          maximumDate: DateTime.now().add(const Duration(days: 365)),
+          maximumDate: context.read<LocaleSettingsProvider>().nowInCompany.add(
+            const Duration(days: 365),
+          ),
         );
       },
     );
@@ -2568,8 +2570,8 @@ class _ConsultaVendasFilterSheetState
     setState(() {
       _draft = _draft.copyWith(
         periodo: _ConsultaVendasMobileScreenState._periodoHoje,
-        dataInicio: DateTime.now(),
-        dataFim: DateTime.now(),
+        dataInicio: context.read<LocaleSettingsProvider>().nowInCompany,
+        dataFim: context.read<LocaleSettingsProvider>().nowInCompany,
         idsVendedores: <String>{},
         statusFinanceiro: null,
         statusDevolucao: null,
