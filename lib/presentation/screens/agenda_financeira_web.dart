@@ -1187,7 +1187,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'valorOriginal': valorOriginal,
       'valorConfirmado': valorConfirmado,
       'valorRestante': valorRestante,
-      'valor': valorRestante > 0 ? valorRestante : valorOriginal,
+      'valor': item['valorEvento'] ?? (valorRestante > 0 ? valorRestante : valorOriginal),
+      'dataAgendaFormatada': _formatarDataIsoParaBr((item['dataAgenda'] ?? item['dataVencimento'])?.toString()),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
@@ -1227,6 +1228,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'data': _formatarDataIsoParaBr(
         (item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString(),
       ),
+      'dataAgendaFormatada': _formatarDataIsoParaBr((item['dataAgenda'] ?? item['dataVencimento'])?.toString()),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
@@ -1250,6 +1252,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     for (final grupo in _gruposAgenda) {
       final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
       for (final item in itens) {
+        // Event values already represent only this date, never the whole operation.
+        if (item['tipoEvento'] != null) continue;
         final confirmado = confirmadosPorId[item['id']?.toString()];
         if (confirmado == null) continue;
         if (confirmado['valorOriginal'] != null) {

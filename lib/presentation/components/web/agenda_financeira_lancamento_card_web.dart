@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_financeira_evento_label.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_financeira_resumo_visual.dart';
@@ -138,8 +139,10 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     final competencia = CompetenciaFinanceira.formatarValor(
       item['dataCompetencia'],
     );
+    final eventoLabel = agendaFinanceiraEventoLabel(context, item);
     final metadados = <String>[
-      if (vencimento.isNotEmpty && vencimento != '-') 'Vencimento: $vencimento',
+      if (eventoLabel != null) eventoLabel,
+      if (eventoLabel == null && vencimento.isNotEmpty && vencimento != '-') 'Vencimento: $vencimento',
       if (competencia != '-') 'Competência: $competencia',
     ];
     final informacoes = <String>[
@@ -390,7 +393,7 @@ class AgendaFinanceiraLancamentoCardWeb extends StatelessWidget {
     );
 
     return Card(
-      key: ValueKey('agenda-card-${item['id'] ?? ''}'),
+      key: ValueKey('agenda-card-${item['idEvento'] ?? item['id'] ?? ''}'),
       margin: const EdgeInsets.only(bottom: 9),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(

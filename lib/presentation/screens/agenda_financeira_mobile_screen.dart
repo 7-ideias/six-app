@@ -1063,7 +1063,8 @@ class _AgendaFinanceiraMobileScreenState
       'valorOriginal': valorOriginal,
       'valorConfirmado': valorConfirmado,
       'valorRestante': valorRestante,
-      'valor': valorRestante > 0 ? valorRestante : valorOriginal,
+      'valor': item['valorEvento'] ?? (valorRestante > 0 ? valorRestante : valorOriginal),
+      'dataAgendaFormatada': _formatarDataIsoParaBr((item['dataAgenda'] ?? item['dataVencimento'])?.toString()),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
@@ -1108,6 +1109,7 @@ class _AgendaFinanceiraMobileScreenState
       'data': _formatarDataIsoParaBr(
         (item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString(),
       ),
+      'dataAgendaFormatada': _formatarDataIsoParaBr((item['dataAgenda'] ?? item['dataVencimento'])?.toString()),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
@@ -1135,6 +1137,8 @@ class _AgendaFinanceiraMobileScreenState
     for (final grupo in _gruposAgenda) {
       final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
       for (final item in itens) {
+        // Event values already represent only this date, never the whole operation.
+        if (item['tipoEvento'] != null) continue;
         final confirmado = confirmadosPorId[item['id']?.toString()];
         if (confirmado == null) continue;
         if (confirmado['valorOriginal'] != null) {
@@ -1724,9 +1728,9 @@ class _AgendaFinanceiraMobileScreenState
           }
         }).toList()..sort(
           (a, b) =>
-              (_parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999))
+              (_parseDataBr((a['dataAgendaFormatada'] ?? a['vencimento'])?.toString()) ?? DateTime(9999))
                   .compareTo(
-                    _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999),
+                    _parseDataBr((b['dataAgendaFormatada'] ?? b['vencimento'])?.toString()) ?? DateTime(9999),
                   ),
         );
     if (itens.isEmpty) {
@@ -2977,11 +2981,11 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _buildCalendario() {
-    // Mesmos filtros e lançamentos da Agenda, agrupados pelo vencimento.
+    // Mesmos filtros e lançamentos da Agenda, agrupados pela data do evento.
     final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
     itens.sort((a, b) {
-      final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
-      final dataB = _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999);
+      final dataA = _parseDataBr((a['dataAgendaFormatada'] ?? a['vencimento'])?.toString()) ?? DateTime(9999);
+      final dataB = _parseDataBr((b['dataAgendaFormatada'] ?? b['vencimento'])?.toString()) ?? DateTime(9999);
       return _calendarioDataDecrescente
           ? dataB.compareTo(dataA)
           : dataA.compareTo(dataB);
@@ -2995,7 +2999,7 @@ class _AgendaFinanceiraMobileScreenState
     }
     final itensPorData = <String, List<Map<String, dynamic>>>{};
     for (final item in itens) {
-      final data = item['vencimento']?.toString() ?? '-';
+      final data = (item['dataAgendaFormatada'] ?? item['vencimento'])?.toString() ?? '-';
       itensPorData.putIfAbsent(data, () => <Map<String, dynamic>>[]).add(item);
     }
 
@@ -3180,7 +3184,7 @@ class _AgendaFinanceiraMobileScreenState
   Widget _buildFluxo() {
     final fluxoPorMes = <String, Map<String, double>>{};
     for (final item in _itensSomaveis) {
-      final data = _parseDataBr(item['vencimento']?.toString());
+      final data = _parseDataBr((item['dataAgendaFormatada'] ?? item['vencimento'])?.toString());
       final mes = data == null
           ? 'Sem competência'
           : '${data.year}-${data.month.toString().padLeft(2, '0')}';
