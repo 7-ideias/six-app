@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/agenda_filtros_avancados_web.dart';
 import 'package:sixpos/presentation/screens/gastos_categorias_web.dart';
 import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
@@ -71,8 +72,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<String?> _editarNomeTipoPagamento(String nome) async {
     if (!_podeEditarTiposPagamento ||
         _editandoTipoPagamento ||
-        _service.espacoFinanceiro != 'EMPRESA')
+        _service.espacoFinanceiro != 'EMPRESA') {
       return null;
+    }
     final candidatos = _tiposPagamentoEditaveis.where(
       (t) => t.descricaoExibicao.trim() == nome,
     );
@@ -124,8 +126,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (_trocandoEspaco ||
         _carregando ||
         _executandoAcao ||
-        _service.espacoFinanceiro == espaco)
+        _service.espacoFinanceiro == espaco) {
       return;
+    }
     setState(() {
       _trocandoEspaco = true;
       _gruposAgenda.clear();
@@ -154,105 +157,48 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   bool _somenteImpostoRenda = false;
 
-  static const double _filterHeight = 58;
+  bool get _filtrosOcupados =>
+      _trocandoEspaco || _carregando || _executandoAcao;
 
-  Widget _filterToggle({
-    Key? key,
-    required Widget label,
-    required bool selected,
-    required ValueChanged<bool>? onSelected,
-  }) {
+  Widget _seletorEspaco() {
     final tokens = WebThemeTokens.of(context);
-    return Semantics(
-      selected: selected,
-      child: OutlinedButton(
-        key: key,
-        style: OutlinedButton.styleFrom(
-          fixedSize: const Size.fromHeight(_filterHeight),
-          minimumSize: const Size(0, _filterHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          visualDensity: VisualDensity.standard,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: selected
-              ? tokens.selectedBackground
-              : tokens.inputBackground,
-          foregroundColor: tokens.primaryText,
-          side: BorderSide(
-            color: selected ? tokens.selectedBorder : tokens.cardBorder,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return Wrap(
+      spacing: 16,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          context.t('agenda.web.space'),
+          style: TextStyle(
+            color: tokens.primaryText,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        onPressed: onSelected == null ? null : () => onSelected(!selected),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (selected) ...[
-              const Icon(Icons.check_rounded, size: 18),
-              const SizedBox(width: 8),
-            ],
-            label,
+        SegmentedButton<String>(
+          showSelectedIcon: false,
+          style: SegmentedButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            foregroundColor: tokens.secondaryText,
+            selectedForegroundColor: tokens.primaryText,
+            selectedBackgroundColor: tokens.selectedBackground,
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          segments: [
+            for (final tipo in ['EMPRESA', 'PESSOAL'])
+              ButtonSegment(value: tipo, label: Text(context.t('space.$tipo'))),
           ],
+          selected: {_service.espacoFinanceiro},
+          onSelectionChanged:
+              _filtrosOcupados ? null : (value) => _trocarEspaco(value.first),
         ),
-      ),
+        TextButton.icon(
+          onPressed: _filtrosOcupados ? null : _configurarEspaco,
+          icon: const Icon(Icons.settings_outlined, size: 18),
+          label: Text(context.t('agenda.web.manageSpace')),
+        ),
+      ],
     );
   }
-
-  Widget _seletorEspaco() => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    children: [
-      _filterToggle(
-        key: const ValueKey('ir-filter'),
-        label: Text(context.t('ir.filter')),
-        selected: _somenteImpostoRenda,
-        onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
-            ? null
-            : (value) async {
-                setState(() => _somenteImpostoRenda = value);
-                _salvarPreferenciasAgendaFinanceira();
-                await _consultar(mostrarFeedback: true);
-              },
-      ),
-      for (final tipo in ['EMPRESA', 'PESSOAL'])
-        _filterToggle(
-          label: Text(context.t('space.' + tipo)),
-          selected: _service.espacoFinanceiro == tipo,
-          onSelected: (_trocandoEspaco || _carregando || _executandoAcao)
-              ? null
-              : (_) => _trocarEspaco(tipo),
-        ),
-      if (_service.espacoFinanceiro == 'EMPRESA')
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            fixedSize: const Size.fromHeight(_filterHeight),
-            visualDensity: VisualDensity.standard,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          icon: const Icon(Icons.payments_outlined),
-          label: Text(context.t('machine.receivables')),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const RecebiveisVendasWeb(),
-            ),
-          ),
-        ),
-      IconButton(
-        style: IconButton.styleFrom(
-          fixedSize: const Size.square(_filterHeight),
-          visualDensity: VisualDensity.standard,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        tooltip: context.t('space.settings'),
-        onPressed: (_trocandoEspaco || _carregando || _executandoAcao)
-            ? null
-            : _configurarEspaco,
-        icon: const Icon(Icons.account_balance_outlined),
-      ),
-    ],
-  );
 
   final AgendaFinanceiraLancamentoService _service =
       AgendaFinanceiraLancamentoService();
@@ -813,6 +759,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   void _selecionarPeriodo(String? periodo) {
+    if (_filtrosOcupados) return;
     if (periodo == null) return;
     setState(() {
       _periodoSelecionado = periodo;
@@ -821,34 +768,27 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       }
     });
     _salvarPreferenciasAgendaFinanceira();
+    unawaited(_consultar());
   }
 
   void _selecionarTipo(String? tipo) {
+    if (_filtrosOcupados) return;
     if (tipo == null || !_tipos.contains(tipo)) {
       return;
     }
     setState(() => _tipoSelecionado = tipo);
     _salvarPreferenciasAgendaFinanceira();
+    unawaited(_consultar());
   }
 
   void _selecionarStatus(String? status) {
+    if (_filtrosOcupados) return;
     if (status == null || !_status.contains(status)) {
       return;
     }
     setState(() => _statusSelecionado = status);
     _salvarPreferenciasAgendaFinanceira();
-  }
-
-  void _selecionarTiposPagamento(Set<String> resultado) {
-    final Set<String> valoresValidos = resultado
-        .where((forma) => _tiposRecebimentoFiltro.contains(forma))
-        .toSet();
-    setState(() {
-      _formasPagamentoSelecionadas
-        ..clear()
-        ..addAll(valoresValidos);
-    });
-    _salvarPreferenciasAgendaFinanceira();
+    unawaited(_consultar());
   }
 
   void _salvarPreferenciasAgendaFinanceira() {
@@ -1051,15 +991,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _ajustarPeriodoPersonalizadoSeguro();
     });
     _salvarPreferenciasAgendaFinanceira();
+    await _consultar();
   }
 
   Future<void> _selecionarDataFimPersonalizada() async {
     final inicio = _normalizarData(_dataInicioPersonalizada);
     final limite = _limiteFimPeriodoPersonalizado(inicio);
     final fimAtual = _normalizarData(_dataFimPersonalizada);
-    final initialDate = fimAtual.isBefore(inicio)
-        ? inicio
-        : (fimAtual.isAfter(limite) ? limite : fimAtual);
+    final initialDate =
+        fimAtual.isBefore(inicio)
+            ? inicio
+            : (fimAtual.isAfter(limite) ? limite : fimAtual);
     final selecionada = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -1072,6 +1014,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _ajustarPeriodoPersonalizadoSeguro();
     });
     _salvarPreferenciasAgendaFinanceira();
+    await _consultar();
   }
 
   List<String> _statusFiltro() {
@@ -1303,7 +1246,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       await _consultar(mostrarFeedback: true);
       return true;
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1311,14 +1254,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
         );
+      }
       return false;
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Não foi possível cancelar a ocorrência.'),
           ),
         );
+      }
       return false;
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
@@ -1683,9 +1628,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         hoje: context.read<LocaleSettingsProvider>().calendarNow,
       );
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t('agenda.duplicate.error'))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t('agenda.duplicate.error'))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
     }
@@ -1981,199 +1928,353 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     BuildContext context,
     ThemeData theme, {
     required bool showCloseButton,
-  }) => SixManagedWebHero(
-    page: WebHeaderAssetPage.agendaFinanceira,
-    icon: Icons.account_balance_wallet_outlined,
-    title: SixWebOperationalTexts.title(
-      context,
-      WebHeaderAssetPage.agendaFinanceira,
-    ),
-    subtitle: _ultimaConsultaEm == null
-        ? SixWebOperationalTexts.subtitle(
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    final atalhos = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        OutlinedButton.icon(
+          style: _secondaryCtaStyle(theme),
+          onPressed:
+              _filtrosOcupados
+                  ? null
+                  : () async {
+                    final periodo = _periodoRequest();
+                    await abrirGastosCategoriasWeb(
+                      context,
+                      espaco: _service.espacoFinanceiro,
+                      inicio: periodo.dataInicio,
+                      fim: periodo.dataFim,
+                    );
+                    if (mounted) await _consultar();
+                  },
+          icon: const Icon(Icons.donut_small_outlined, size: 18),
+          label: Text(context.t('gastos.title')),
+        ),
+        OutlinedButton.icon(
+          style: _secondaryCtaStyle(theme),
+          onPressed: _filtrosOcupados ? null : _abrirCartoes,
+          icon: const Icon(Icons.credit_card_outlined, size: 18),
+          label: Text(context.t('invoices.title')),
+        ),
+        if (_service.espacoFinanceiro == 'EMPRESA')
+          TextButton.icon(
+            onPressed:
+                _filtrosOcupados
+                    ? null
+                    : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RecebiveisVendasWeb(),
+                      ),
+                    ),
+            icon: const Icon(Icons.payments_outlined, size: 18),
+            label: Text(context.t('machine.receivables')),
+          ),
+      ],
+    );
+    final atualizacao = Wrap(
+      spacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (_ultimaConsultaEm != null)
+          Text(
+            SixWebOperationalTexts.updatedAt(
+              context,
+              context.watch<LocaleSettingsProvider>().formatTime(
+                _ultimaConsultaEm!,
+              ),
+            ),
+            style: TextStyle(color: tokens.secondaryText, fontSize: 12),
+          ),
+        TextButton.icon(
+          onPressed:
+              _filtrosOcupados ? null : () => _consultar(mostrarFeedback: true),
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: Text(context.t('common.refresh')),
+        ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SixManagedWebHero(
+          page: WebHeaderAssetPage.agendaFinanceira,
+          compactLayout: true,
+          title: SixWebOperationalTexts.title(
             context,
             WebHeaderAssetPage.agendaFinanceira,
-          )
-        : SixWebOperationalTexts.updatedAt(
-            context,
-            context.watch<LocaleSettingsProvider>().formatTime(
-              _ultimaConsultaEm!,
-            ),
           ),
-    actions: <Widget>[
-      OutlinedButton.icon(
-        style: _secondaryCtaStyle(theme),
-        onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
-        icon: const Icon(Icons.refresh_rounded),
-        label: Text(SixWebOperationalTexts.action(context, 'common.refresh')),
-      ),
-      FilledButton.icon(
-        style: _primaryCtaStyle(theme),
-        onPressed: _novoLancamento,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(SixWebOperationalTexts.action(context, 'agenda.newEntry')),
-      ),
-      OutlinedButton.icon(onPressed:_trocandoEspaco?null:()async{final periodo=_periodoRequest();await abrirGastosCategoriasWeb(context,espaco:_service.espacoFinanceiro,inicio:periodo.dataInicio,fim:periodo.dataFim,);if(mounted)await _consultar(mostrarFeedback:true);},icon:const Icon(Icons.category_outlined),label:Text(context.t('gastos.title')),),
-      OutlinedButton.icon(onPressed:()=>_abrirCartoes(),icon:const Icon(Icons.credit_card_outlined),label:Text(context.t('invoices.title')),),
-      if (showCloseButton)
-        IconButton.filled(
-          onPressed: _fechar,
-          icon: const Icon(Icons.close_rounded),
-          tooltip: SixWebOperationalTexts.action(context, 'common.close'),
+          subtitle: context.t('agenda.web.subtitle'),
+          trailing: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FilledButton.icon(
+                style: _primaryCtaStyle(theme),
+                onPressed: _filtrosOcupados ? null : _novoLancamento,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  SixWebOperationalTexts.action(context, 'agenda.newEntry'),
+                ),
+              ),
+              if (showCloseButton)
+                IconButton(
+                  onPressed: _fechar,
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: context.t('common.close'),
+                ),
+            ],
+          ),
         ),
-    ],
-  );
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 1150) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [atalhos, const SizedBox(height: 8), atualizacao],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: atalhos),
+                const SizedBox(width: 16),
+                atualizacao,
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
 
-  Widget _buildFiltros(ThemeData theme) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          _seletorEspaco(),
-          _drop('Período', _periodoSelecionado, _periodos, _selecionarPeriodo),
-          if (_usaPeriodoPersonalizado) ...<Widget>[
-            _dateFilterField(
-              'Início',
-              _dataInicioPersonalizada,
-              _selecionarDataInicioPersonalizada,
-            ),
-            _dateFilterField(
-              'Fim',
-              _dataFimPersonalizada,
-              _selecionarDataFimPersonalizada,
-            ),
-          ],
-          _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
-          _drop('Status', _statusSelecionado, _status, _selecionarStatus),
-          _filterToggle(
-            label: Text(context.t('agenda.list.showCanceled')),
-            selected: _mostrarCancelados || _statusSelecionado == 'Cancelado',
-            onSelected: _statusSelecionado == 'Cancelado'
-                ? null
-                : (value) {
-                    setState(() => _mostrarCancelados = value);
-                    _salvarPreferenciasAgendaFinanceira();
-                  },
-          ),
-          _multiSelectTipoPagamento(theme),
-          if (_centrosCusto.isNotEmpty) _multiSelectCentroCusto(theme),
-          FilledButton.icon(
-            style: _primaryCtaStyle(theme).copyWith(
-              fixedSize: const WidgetStatePropertyAll(Size.fromHeight(_filterHeight),),
-              visualDensity: VisualDensity.standard,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            onPressed: _carregando
-                ? null
-                : () => _consultar(mostrarFeedback: true),
-            icon: const Icon(Icons.search_rounded),
-            label: const Text('Buscar'),
-          ),
-        ],
+  int get _quantidadeFiltrosAvancados =>
+      (_formasPagamentoSelecionadas.isEmpty ? 0 : 1) +
+      (_centrosCustoSelecionados.isEmpty ? 0 : 1) +
+      (_somenteImpostoRenda ? 1 : 0) +
+      (_mostrarCancelados ? 1 : 0);
+
+  Future<void> _abrirFiltrosAvancados() async {
+    if (_filtrosOcupados) return;
+    final resultado = await showAgendaFiltrosAvancadosWeb(
+      context: context,
+      initial: AgendaFiltrosAvancados(
+        pagamentos: _formasPagamentoSelecionadas,
+        centros: _centrosCustoSelecionados,
+        somenteImpostoRenda: _somenteImpostoRenda,
+        mostrarCancelados: _mostrarCancelados,
       ),
-    ),
+      pagamentos:
+          _tiposRecebimentoFiltro.where((value) => value != 'Todos').toList(),
+      centros: _centrosCusto.map((centro) => centro.nome).toList(),
+      espaco: context.t('space.${_service.espacoFinanceiro}'),
+      statusCancelado: _statusSelecionado == 'Cancelado',
+      onEditarPagamento:
+          _podeEditarTiposPagamento ? _editarNomeTipoPagamento : null,
+    );
+    if (!mounted || resultado == null) return;
+    setState(() {
+      _formasPagamentoSelecionadas
+        ..clear()
+        ..addAll(resultado.pagamentos);
+      _centrosCustoSelecionados
+        ..clear()
+        ..addAll(resultado.centros);
+      _somenteImpostoRenda = resultado.somenteImpostoRenda;
+      _mostrarCancelados = resultado.mostrarCancelados;
+    });
+    _salvarPreferenciasAgendaFinanceira();
+    await _consultar();
+  }
+
+  Widget _chipFiltro(String label, VoidCallback remover) => InputChip(
+    label: Text(label, overflow: TextOverflow.ellipsis),
+    tooltip: label,
+    deleteButtonTooltipMessage: context.t('agenda.web.removeFilter'),
+    onDeleted:
+        _filtrosOcupados
+            ? null
+            : () {
+              setState(remover);
+              _salvarPreferenciasAgendaFinanceira();
+              unawaited(_consultar());
+            },
+    visualDensity: VisualDensity.compact,
   );
 
-  Widget _dateFilterField(String label, DateTime value, VoidCallback onTap) {
-    return _AgendaFilterTrigger(
-      width: 170,
-      label: label,
-      value: _formatarDataCurta(value),
-      icon: Icons.event_outlined,
-      onTap: onTap,
+  String _rotuloFiltro(String value) {
+    final periodoIndex = _periodos.indexOf(value);
+    if (periodoIndex >= 0) {
+      return context.t('agenda.mobile.period.$periodoIndex');
+    }
+    return switch (value) {
+      'Todos' => context.t('common.all'),
+      'Receber' => context.t('agenda.periodSummary.receivable'),
+      'Pagar' => context.t('agenda.periodSummary.payable'),
+      'Vence hoje' => context.t('agenda.web.dueToday'),
+      'Vencido' => context.t('agenda.web.overdue'),
+      _ => AgendaFinanceiraStatusLabels.rotulo(context, value),
+    };
+  }
+
+  Widget _buildFiltros(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
+    final chips = <Widget>[
+      if (_somenteImpostoRenda)
+        _chipFiltro(context.t('ir.filter'), () => _somenteImpostoRenda = false),
+      if (_mostrarCancelados)
+        _chipFiltro(
+          context.t('agenda.list.showCanceled'),
+          () => _mostrarCancelados = false,
+        ),
+      for (final forma in _formasPagamentoSelecionadas)
+        _chipFiltro(
+          '${context.t('agenda.web.paymentType')}: $forma',
+          () => _formasPagamentoSelecionadas.remove(forma),
+        ),
+      for (final centro in _centrosCustoSelecionados)
+        _chipFiltro(
+          '${context.t('agenda.web.costCenter')}: $centro',
+          () => _centrosCustoSelecionados.remove(centro),
+        ),
+    ];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _seletorEspaco(),
+            Divider(height: 28, color: tokens.divider),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final scale = MediaQuery.textScalerOf(context).scale(1);
+                final columns =
+                    constraints.maxWidth / scale >= 1000
+                        ? 4
+                        : constraints.maxWidth / scale >= 600
+                        ? 2
+                        : 1;
+                final width =
+                    (constraints.maxWidth - (columns - 1) * 12) / columns;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _drop(
+                      context.t('agenda.mobile.period'),
+                      _periodoSelecionado,
+                      _periodos,
+                      _selecionarPeriodo,
+                      Icons.calendar_today_outlined,
+                      width,
+                    ),
+                    _drop(
+                      context.t('agenda.journey.type'),
+                      _tipoSelecionado,
+                      _tipos,
+                      _selecionarTipo,
+                      Icons.swap_vert_rounded,
+                      width,
+                    ),
+                    _drop(
+                      context.t('agenda.web.status'),
+                      _statusSelecionado,
+                      _status,
+                      _selecionarStatus,
+                      Icons.flag_outlined,
+                      width,
+                    ),
+                    SizedBox(
+                      width: width,
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('agenda-more-filters'),
+                        style: _secondaryCtaStyle(theme).copyWith(
+                          minimumSize: const WidgetStatePropertyAll(
+                            Size(0, 56),
+                          ),
+                        ),
+                        onPressed:
+                            _filtrosOcupados ? null : _abrirFiltrosAvancados,
+                        icon: const Icon(Icons.tune_rounded, size: 18),
+                        label: Text(
+                          '${context.t('agenda.web.moreFilters')}${_quantidadeFiltrosAvancados == 0 ? '' : ' · $_quantidadeFiltrosAvancados'}',
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (_usaPeriodoPersonalizado) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _dateFilterField(
+                    context.t('agenda.web.startDate'),
+                    _dataInicioPersonalizada,
+                    _selecionarDataInicioPersonalizada,
+                  ),
+                  _dateFilterField(
+                    context.t('agenda.web.endDate'),
+                    _dataFimPersonalizada,
+                    _selecionarDataFimPersonalizada,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text(
+              [
+                context.t('space.${_service.espacoFinanceiro}'),
+                _rotuloFiltro(_periodoSelecionado),
+                if (_tipoSelecionado != 'Todos')
+                  _rotuloFiltro(_tipoSelecionado),
+                if (_statusSelecionado != 'Todos')
+                  _rotuloFiltro(_statusSelecionado),
+              ].join(' · '),
+              style: TextStyle(color: tokens.secondaryText, fontSize: 12),
+            ),
+            if (chips.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 4, children: chips),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _multiSelectTipoPagamento(ThemeData theme) {
-    return _AgendaMultiSelectDropdown(
-      width: 260,
-      label: 'Tipo de pagamento',
-      value: _formasPagamentoFiltroLabel(),
-      values: _tiposRecebimentoFiltro
-          .where((forma) => forma != 'Todos')
-          .toList(),
-      selectedValues: _formasPagamentoSelecionadas,
-      icon: Icons.payments_outlined,
-      onChanged: _selecionarTiposPagamento,
-      onEdit: _podeEditarTiposPagamento ? _editarNomeTipoPagamento : null,
-    );
-  }
-
-  Widget _multiSelectCentroCusto(ThemeData theme) {
-    return _AgendaMultiSelectDropdown(
-      width: 260,
-      label: 'Centro de custos',
-      value: _centrosCustoFiltroLabel(),
-      values: _centrosCusto.map((centro) => centro.nome).toList(),
-      selectedValues: _centrosCustoSelecionados,
-      icon: Icons.account_tree_outlined,
-      onChanged: (selecionados) {
-        setState(() {
-          _centrosCustoSelecionados
-            ..clear()
-            ..addAll(selecionados);
-          _usuarioAlterouFiltros = true;
-        });
-        _salvarPreferenciasAgendaFinanceira();
-      },
-    );
-  }
-
-  String _centrosCustoFiltroLabel() {
-    if (_centrosCustoSelecionados.isEmpty) return 'Todos';
-    if (_centrosCustoSelecionados.length == 1) {
-      return _centrosCustoSelecionados.first;
-    }
-    return '${_centrosCustoSelecionados.length} centros selecionados';
-  }
-
-  String _formasPagamentoFiltroLabel() {
-    if (_formasPagamentoSelecionadas.isEmpty) {
-      return 'Todos';
-    }
-    if (_formasPagamentoSelecionadas.length == 1) {
-      return _formasPagamentoSelecionadas.first;
-    }
-    return '${_formasPagamentoSelecionadas.length} tipos selecionados';
-  }
+  Widget _dateFilterField(String label, DateTime value, VoidCallback onTap) =>
+      _AgendaFilterTrigger(
+        width: 200,
+        label: label,
+        value: _formatarDataCurta(value),
+        icon: Icons.event_outlined,
+        onTap: _filtrosOcupados ? null : onTap,
+      );
 
   Widget _drop(
     String label,
     String value,
     List<String> values,
     ValueChanged<String?> onChanged,
-  ) {
-    final safeValue = values.contains(value) ? value : values.first;
-    return _AgendaFilterDropdown(
-      label: label,
-      value: safeValue,
-      values: values,
-      icon: _iconeFiltro(label),
-      width: _larguraFiltro(label),
-      onChanged: onChanged,
-    );
-  }
-
-  double _larguraFiltro(String label) {
-    if (label == 'Tipo de pagamento') return 260;
-    if (label == 'Período') return 230;
-    return 190;
-  }
-
-  IconData _iconeFiltro(String label) {
-    switch (label) {
-      case 'Período':
-        return Icons.calendar_today_outlined;
-      case 'Tipo':
-        return Icons.swap_vert_rounded;
-      case 'Status':
-        return Icons.flag_outlined;
-      default:
-        return Icons.tune_rounded;
-    }
-  }
+    IconData icon,
+    double width,
+  ) => _AgendaFilterDropdown(
+    label: label,
+    value: values.contains(value) ? value : values.first,
+    values: values,
+    labelFor: _rotuloFiltro,
+    icon: icon,
+    width: width,
+    onChanged: _filtrosOcupados ? null : onChanged,
+  );
 
   Future<void> _mostrarComposicaoConfirmada(String tipo) async {
     final itens = _itensConfirmadosFiltrados.where((i) => i['tipo'] == tipo).toList();
@@ -2222,18 +2323,27 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   ButtonStyle _primaryCtaStyle(ThemeData theme) =>
       SixWebActionStyles.primary(context);
 
-  Widget _buildAbas(ThemeData theme) => SegmentedButton<int>(
-    selected: <int>{_abaSelecionada},
-    onSelectionChanged: (value) {
-      setState(() => _abaSelecionada = value.first);
-      _salvarPreferenciasAgendaFinanceira();
-    },
-    segments: const <ButtonSegment<int>>[
-      ButtonSegment<int>(value: 0, label: Text('Agenda')),
-      ButtonSegment<int>(value: 1, label: Text('Calendário')),
-      ButtonSegment<int>(value: 2, label: Text('Fluxo previsto')),
-      ButtonSegment<int>(value: 3, label: Text('Valores confirmados')),
-    ],
+  Widget _buildAbas(ThemeData theme) => DefaultTabController(
+    key: ValueKey('agenda-tabs-$_abaSelecionada'),
+    length: 4,
+    initialIndex: _abaSelecionada,
+    child: TabBar(
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelColor: WebThemeTokens.of(context).primaryText,
+      unselectedLabelColor: WebThemeTokens.of(context).secondaryText,
+      indicatorColor: WebThemeTokens.of(context).info,
+      indicatorSize: TabBarIndicatorSize.tab,
+      dividerColor: WebThemeTokens.of(context).divider,
+      onTap: (value) {
+        setState(() => _abaSelecionada = value);
+        _salvarPreferenciasAgendaFinanceira();
+      },
+      tabs: [
+        for (final key in ['agenda', 'calendar', 'forecast', 'confirmed'])
+          Tab(text: context.t('agenda.web.tab.$key')),
+      ],
+    ),
   );
 
   Widget _buildConteudoAba(ThemeData theme) {
@@ -2278,7 +2388,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       onExcluir: item['faturaCartaoId'] != null ? null : () async {
         if (_executandoAcao) return;
         final excluido = await _confirmarExcluirLancamentoDetalhe(item);
-        if (excluido && mounted) await _consultar(mostrarFeedback: true);
+        if (excluido && mounted) {
+          await _consultar(mostrarFeedback: true);
+        }
       },
       onComprovante: () => _baixarComprovanteDaLista(item),
     );
@@ -2560,6 +2672,7 @@ class _AgendaFilterDropdown extends StatefulWidget {
     required this.label,
     required this.value,
     required this.values,
+    required this.labelFor,
     required this.icon,
     required this.onChanged,
     this.width,
@@ -2569,7 +2682,8 @@ class _AgendaFilterDropdown extends StatefulWidget {
   final String value;
   final List<String> values;
   final IconData icon;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String?>? onChanged;
+  final String Function(String) labelFor;
   final double? width;
 
   @override
@@ -2587,7 +2701,7 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
   }
 
   Future<void> _showOptions() async {
-    if (widget.values.isEmpty) {
+    if (widget.values.isEmpty || widget.onChanged == null) {
       return;
     }
     setState(() => _open = true);
@@ -2614,25 +2728,29 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
       elevation: 12,
       color: tokens.menuBackground,
       constraints: BoxConstraints.tightFor(width: box.size.width),
-      items: widget.values
-          .map(
-            (item) => PopupMenuItem<String>(
-              value: item,
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2,),
-              child: _AgendaFilterMenuItem(
-                label: item,
-                selected: item == safeValue,
-              ),
-            ),
-          )
-          .toList(),
+      items:
+          widget.values
+              .map(
+                (item) => PopupMenuItem<String>(
+                  value: item,
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  child: _AgendaFilterMenuItem(
+                    label: widget.labelFor(item),
+                    selected: item == safeValue,
+                  ),
+                ),
+              )
+              .toList(),
     );
 
     if (!mounted) return;
     setState(() => _open = false);
     if (selected != null && selected != widget.value) {
-      widget.onChanged(selected);
+      widget.onChanged?.call(selected);
     }
   }
 
@@ -2640,332 +2758,11 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
   Widget build(BuildContext context) {
     return _AgendaFilterTrigger(
       label: widget.label,
-      value: _safeValue,
+      value: widget.labelFor(_safeValue),
       icon: widget.icon,
       width: widget.width,
       open: _open,
-      onTap: _showOptions,
-    );
-  }
-}
-
-class _AgendaMultiSelectDropdown extends StatefulWidget {
-  const _AgendaMultiSelectDropdown({
-    required this.label,
-    required this.value,
-    required this.values,
-    required this.selectedValues,
-    this.onEdit,
-    required this.icon,
-    required this.onChanged,
-    this.width,
-  });
-
-  final String label;
-  final String value;
-  final List<String> values;
-  final Set<String> selectedValues;
-  final Future<String?> Function(String)? onEdit;
-  final IconData icon;
-  final ValueChanged<Set<String>> onChanged;
-  final double? width;
-
-  @override
-  State<_AgendaMultiSelectDropdown> createState() =>
-      _AgendaMultiSelectDropdownState();
-}
-
-class _AgendaMultiSelectDropdownState
-    extends State<_AgendaMultiSelectDropdown> {
-  bool _open = false;
-
-  Future<void> _showOptions() async {
-    setState(() => _open = true);
-
-    final RenderBox box = context.findRenderObject()! as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-
-    final Set<String>? selected = await showMenu<Set<String>>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          position.dx,
-          position.dy + box.size.height + 8,
-          box.size.width,
-          box.size.height,
-        ),
-        Offset.zero & overlay.size,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 12,
-      color: tokens.menuBackground,
-      constraints: BoxConstraints(
-        minWidth: box.size.width,
-        maxWidth: box.size.width < 320 ? 320 : box.size.width,
-      ),
-      items: <PopupMenuEntry<Set<String>>>[
-        _AgendaMultiSelectMenuEntry(
-          label: widget.label,
-          values: widget.values,
-          selectedValues: widget.selectedValues,
-          onEdit: widget.onEdit,
-        ),
-      ],
-    );
-
-    if (!mounted) return;
-    setState(() => _open = false);
-    if (selected != null) {
-      widget.onChanged(selected);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _AgendaFilterTrigger(
-      label: widget.label,
-      value: widget.value,
-      icon: widget.icon,
-      width: widget.width,
-      open: _open,
-      onTap: _showOptions,
-    );
-  }
-}
-
-class _AgendaMultiSelectMenuEntry extends PopupMenuEntry<Set<String>> {
-  const _AgendaMultiSelectMenuEntry({
-    required this.label,
-    required this.values,
-    required this.selectedValues,
-    this.onEdit,
-  });
-
-  final String label;
-  final List<String> values;
-  final Set<String> selectedValues;
-  final Future<String?> Function(String)? onEdit;
-
-  @override
-  double get height {
-    final int itemCount = values.length + 1;
-    final double computed = 112 + (itemCount * 46);
-    if (computed < 214) {
-      return 214;
-    }
-    if (computed > 420) {
-      return 420;
-    }
-    return computed;
-  }
-
-  @override
-  bool represents(Set<String>? value) => false;
-
-  @override
-  State<_AgendaMultiSelectMenuEntry> createState() =>
-      _AgendaMultiSelectMenuEntryState();
-}
-
-class _AgendaMultiSelectMenuEntryState
-    extends State<_AgendaMultiSelectMenuEntry> {
-  late final Set<String> _selection;
-  late final List<String> _values;
-  bool _editing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selection = Set<String>.from(widget.selectedValues);
-    _values = List<String>.from(widget.values);
-  }
-
-  Future<void> _edit(String value) async {
-    if (_editing) return;
-    setState(() => _editing = true);
-    try {
-      final updated = await widget.onEdit!(value);
-      if (!mounted || updated == null) return;
-      setState(() {
-        _values[_values.indexOf(value)] = updated;
-        if (_selection.remove(value)) _selection.add(updated);
-      });
-    } finally {
-      if (mounted) setState(() => _editing = false);
-    }
-  }
-
-  void _toggle(String value) {
-    setState(() {
-      if (_selection.contains(value)) {
-        _selection.remove(value);
-      } else {
-        _selection.add(value);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return SizedBox(
-      height: widget.height,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.payments_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                Text(
-                  _selection.isEmpty ? 'Todos' : '${_selection.length}',
-                  style: TextStyle(
-                    color: tokens.info,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: <Widget>[
-                    _AgendaMultiSelectMenuTile(
-                      label: 'Todos',
-                      selected: _selection.isEmpty,
-                      onTap: () => setState(_selection.clear),
-                    ),
-                    const SizedBox(height: 4),
-                    ..._values.map(
-                      (value) => _AgendaMultiSelectMenuTile(
-                        label: value,
-                        selected: _selection.contains(value),
-                        onTap: () => _toggle(value),
-                        onEdit: widget.onEdit == null || _editing
-                            ? null
-                            : () => _edit(value),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(null),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 4),
-                TextButton(
-                  onPressed: () => setState(_selection.clear),
-                  child: const Text('Limpar'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () =>
-                      Navigator.of(context,).pop(Set<String>.from(_selection)),
-                  child: const Text('Aplicar'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AgendaMultiSelectMenuTile extends StatelessWidget {
-  const _AgendaMultiSelectMenuTile({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.onEdit,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final VoidCallback? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            decoration: BoxDecoration(
-              color: selected ? tokens.selectedBackground : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  selected
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : tokens.mutedText,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (onEdit != null)
-                  IconButton(
-                    tooltip: context.t('paymentSettings.edit'),
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      onTap: widget.onChanged == null ? null : _showOptions,
     );
   }
 }
@@ -3000,18 +2797,16 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool enabled = widget.onTap != null;
     final bool active = enabled && (widget.open || _hover);
-    final Color borderColor = active
-        ? tokens.selectedBorder
-        : tokens.cardBorder;
-    final Color backgroundColor = active
-        ? tokens.selectedBackground
-        : tokens.inputBackground;
+    final Color borderColor =
+        active ? tokens.selectedBorder : tokens.cardBorder;
+    final Color backgroundColor =
+        active ? tokens.selectedBackground : tokens.inputBackground;
     final Widget content = Semantics(
       button: true,
       enabled: enabled,
       label: '${widget.label}: ${widget.value}',
       child: Tooltip(
-        message: 'Selecionar ${widget.label}',
+        message: '${widget.label}: ${widget.value}',
         waitDuration: const Duration(milliseconds: 450),
         child: MouseRegion(
           cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
@@ -3019,31 +2814,32 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
           onExit: (_) => setState(() => _hover = false),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               onTap: enabled ? widget.onTap : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
-                height: 58,
+                constraints: const BoxConstraints(minHeight: 56),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor),
-                  boxShadow: active
-                      ? <BoxShadow>[
-                          BoxShadow(
-                            color: tokens.info.withValues(alpha: 0.10),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ]
-                      : null,
+                  boxShadow:
+                      active
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: tokens.info.withValues(alpha: 0.10),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                          : null,
                 ),
                 child: Row(
                   children: <Widget>[
@@ -3055,6 +2851,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -3087,9 +2884,10 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                       curve: Curves.easeOutCubic,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: active
-                            ? Theme.of(context).colorScheme.primary
-                            : tokens.mutedText,
+                        color:
+                            active
+                                ? Theme.of(context).colorScheme.primary
+                                : tokens.mutedText,
                         size: 20,
                       ),
                     ),
