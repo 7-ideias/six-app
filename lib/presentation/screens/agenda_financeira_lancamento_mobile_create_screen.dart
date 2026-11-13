@@ -726,6 +726,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
     int minLines = 1,
     int maxLines = 1,
   }) {
@@ -733,6 +734,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      onChanged: onChanged,
       minLines: minLines,
       maxLines: maxLines,
       enabled: !_salvando,
