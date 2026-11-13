@@ -20,6 +20,8 @@ class SixManagedWebHero extends StatefulWidget {
     this.icon,
     this.onBack,
     this.actions = const <Widget>[],
+    this.trailing,
+    this.compactLayout = false,
   });
 
   final WebHeaderAssetPage page;
@@ -29,6 +31,8 @@ class SixManagedWebHero extends StatefulWidget {
   final IconData? icon;
   final VoidCallback? onBack;
   final List<Widget> actions;
+  final Widget? trailing;
+  final bool compactLayout;
 
   @override
   State<SixManagedWebHero> createState() => _SixManagedWebHeroState();
@@ -58,24 +62,23 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
       builder: (BuildContext context, Widget? _) {
         final WebHeroAppearance appearance =
             _assets.assets?.appearance ?? const WebHeroAppearance();
-        final WebHeroFade fade =
-            theme.brightness == Brightness.dark
-                ? appearance.dark
-                : appearance.light;
-        final String? resolvedUrl =
-            _assets.assets?.asset(widget.page)?.imagemUrl;
+        final WebHeroFade fade = theme.brightness == Brightness.dark
+            ? appearance.dark
+            : appearance.light;
+        final String? resolvedUrl = _assets.assets
+            ?.asset(widget.page)
+            ?.imagemUrl;
         final String? version = _assets.assetsVersion;
-        final String? url =
-            resolvedUrl == null || version == null
-                ? resolvedUrl
-                : Uri.parse(resolvedUrl)
-                    .replace(
-                      queryParameters: <String, String>{
-                        ...Uri.parse(resolvedUrl).queryParameters,
-                        'v': version,
-                      },
-                    )
-                    .toString();
+        final String? url = resolvedUrl == null || version == null
+            ? resolvedUrl
+            : Uri.parse(resolvedUrl)
+                  .replace(
+                    queryParameters: <String, String>{
+                      ...Uri.parse(resolvedUrl).queryParameters,
+                      'v': version,
+                    },
+                  )
+                  .toString();
         return LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool compact = constraints.maxWidth < 760;
@@ -85,7 +88,9 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
               child: Container(
                 key: ValueKey<String>('web-hero-${widget.page.backendCode}'),
                 width: double.infinity,
-                constraints: BoxConstraints(minHeight: compact ? 180 : 196),
+                constraints: BoxConstraints(
+                  minHeight: widget.compactLayout ? 132 : (compact ? 180 : 196),
+                ),
                 decoration: BoxDecoration(
                   color: tokens.surface,
                   border: Border.all(color: tokens.cardBorder),
@@ -96,33 +101,28 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
                     Positioned.fill(
                       child: ExcludeSemantics(
                         child: IgnorePointer(
-                          child:
-                              _assets.isLoading
-                                  ? const SixVisualAssetShimmer(
+                          child: _assets.isLoading
+                              ? const SixVisualAssetShimmer(borderRadius: 22)
+                              : url == null
+                              ? const SizedBox.shrink()
+                              : SixCachedNetworkImage(
+                                  // Nova URL/contexto nunca preserva o frame anterior.
+                                  key: ValueKey<String>(url),
+                                  imageUrl: url,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.centerRight,
+                                  placeholder: const SixVisualAssetShimmer(
                                     borderRadius: 22,
-                                  )
-                                  : url == null
-                                  ? const SizedBox.shrink()
-                                  : SixCachedNetworkImage(
-                                    // Nova URL/contexto nunca preserva o frame anterior.
-                                    key: ValueKey<String>(url),
-                                    imageUrl: url,
-                                    fit: BoxFit.cover,
-                                    alignment: Alignment.centerRight,
-                                    placeholder: const SixVisualAssetShimmer(
-                                      borderRadius: 22,
-                                    ),
-                                    loadingBuilder:
-                                        (context, child, progress) =>
-                                            progress == null
-                                                ? child
-                                                : const SixVisualAssetShimmer(
-                                                  borderRadius: 22,
-                                                ),
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const SizedBox.shrink(),
                                   ),
+                                  loadingBuilder: (context, child, progress) =>
+                                      progress == null
+                                      ? child
+                                      : const SixVisualAssetShimmer(
+                                          borderRadius: 22,
+                                        ),
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const SizedBox.shrink(),
+                                ),
                         ),
                       ),
                     ),
@@ -142,10 +142,9 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
                     Padding(
                       padding: EdgeInsets.all(padding),
                       child: SizedBox(
-                        width:
-                            compact
-                                ? double.infinity
-                                : (constraints.maxWidth - padding * 2) * 0.75,
+                        width: compact || widget.trailing != null
+                            ? double.infinity
+                            : (constraints.maxWidth - padding * 2) * 0.75,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -214,8 +213,21 @@ class _SixManagedWebHeroState extends State<SixManagedWebHero> {
                                     ],
                                   ),
                                 ),
+                                if (!compact && widget.trailing != null) ...[
+                                  const SizedBox(width: 24),
+                                  Flexible(
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: widget.trailing!,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
+                            if (compact && widget.trailing != null) ...[
+                              const SizedBox(height: 16),
+                              widget.trailing!,
+                            ],
                             if (widget.actions.isNotEmpty) ...<Widget>[
                               const SizedBox(height: 18),
                               Wrap(
