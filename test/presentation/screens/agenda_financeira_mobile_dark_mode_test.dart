@@ -676,24 +676,24 @@ Future<void> _pumpScreen(
   );
 
   await tester.pumpWidget(
-    MaterialApp(
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(disableAnimations: true),
-        child: child!,
-      ),
-      locale: const Locale('pt'),
-      supportedLocales: _testSupportedLocales,
-      localizationsDelegates: _testLocalizationsDelegates,
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      home: ChangeNotifierProvider(
-        create: (_) => LocaleSettingsProvider(
-          regionalizacaoService: RegionalizacaoService(
-            apiClient: _RegionalApi(),
-          ),
+    ChangeNotifierProvider(
+      create: (_) => LocaleSettingsProvider(
+        regionalizacaoService: RegionalizacaoService(
+          apiClient: _RegionalApi(),
         ),
-        child: child,
+      ),
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        locale: const Locale('pt'),
+        supportedLocales: _testSupportedLocales,
+        localizationsDelegates: _testLocalizationsDelegates,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+        home: child,
       ),
     ),
   );
