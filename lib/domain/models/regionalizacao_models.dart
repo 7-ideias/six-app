@@ -78,6 +78,7 @@ class ConfiguracaoRegionalizacaoSistema {
   const ConfiguracaoRegionalizacaoSistema({
     this.id,
     this.idEmpresa,
+    this.podeAlterarFusoHorario = false,
     required this.languageCode,
     required this.countryCode,
     required this.formatting,
@@ -85,6 +86,7 @@ class ConfiguracaoRegionalizacaoSistema {
 
   final String? id;
   final String? idEmpresa;
+  final bool podeAlterarFusoHorario;
   final String languageCode;
   final String countryCode;
   final AppRegionalFormatting formatting;
@@ -102,6 +104,7 @@ class ConfiguracaoRegionalizacaoSistema {
   ConfiguracaoRegionalizacaoSistema copyWith({
     String? id,
     String? idEmpresa,
+    bool? podeAlterarFusoHorario,
     String? languageCode,
     String? countryCode,
     AppRegionalFormatting? formatting,
@@ -109,6 +112,8 @@ class ConfiguracaoRegionalizacaoSistema {
     return ConfiguracaoRegionalizacaoSistema(
       id: id ?? this.id,
       idEmpresa: idEmpresa ?? this.idEmpresa,
+      podeAlterarFusoHorario:
+          podeAlterarFusoHorario ?? this.podeAlterarFusoHorario,
       languageCode: languageCode ?? this.languageCode,
       countryCode: countryCode ?? this.countryCode,
       formatting: formatting ?? this.formatting,

@@ -2,6 +2,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/data/models/consulta_vendas_models.dart';
 
 void main() {
+  test(
+    'prioriza UTC explícito no resumo, recebimentos, devoluções e histórico',
+    () {
+      const utc = '2026-11-12T22:50:05.636Z';
+      const legacy = '2026-11-12T19:50:05.636';
+      final response = VendaDetalheResponse.fromJson({
+        'resumo': {'dataOperacaoUtc': utc, 'dataOperacao': legacy},
+        'recebimentos': [
+          {'dataHoraUtc': utc, 'dataHora': legacy},
+        ],
+        'devolucoes': [
+          {'dataHoraUtc': utc, 'dataHora': legacy},
+        ],
+        'historico': [
+          {'dataHoraUtc': utc, 'dataHora': legacy},
+        ],
+      });
+      for (final value in [
+        response.resumo.dataOperacao,
+        response.recebimentos.single.dataHora,
+        response.devolucoes.single.dataHora,
+        response.historico.single.dataHora,
+      ]) {
+        expect(value, DateTime.parse(utc));
+        expect(value!.isUtc, isTrue);
+      }
+      final legacyResponse = VendaConsultaResumo.fromJson({
+        'dataOperacao': legacy,
+      });
+      expect(legacyResponse.dataOperacao!.hour, 19);
+      expect(legacyResponse.dataOperacao!.isUtc, isFalse);
+    },
+  );
+
   group('ConsultaVendasFiltro', () {
     test('envia um ou mais vendedores como parametro repetido', () {
       final ConsultaVendasFiltro filtro = ConsultaVendasFiltro(

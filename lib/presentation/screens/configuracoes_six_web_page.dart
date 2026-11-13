@@ -260,6 +260,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
     _atendimentoTecnicoService = AtendimentoTecnicoService();
     _caixaService = CaixaModule.caixaService;
+    _fusoSelecionado = context.read<LocaleSettingsProvider>().timeZone;
     _carregarDadosDaEmpresa();
     _carregarAparencia();
     _carregarStatusAtendimentoCustomizacoes();
@@ -299,6 +300,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
     try {
       final informacoes = await _caixaService.buscarInformacoesBasicasDoCaixa();
+      if (!mounted) return;
+      if (informacoes.regionalizacao case final regionalizacao?) {
+        await context
+            .read<LocaleSettingsProvider>()
+            .atualizarConfiguracaoDaEmpresaPorResponse(regionalizacao);
+        if (!mounted) return;
+        _fusoSelecionado = regionalizacao.timeZone;
+      }
       final caixas =
           informacoes.caixaOuGuiche.isNotEmpty
               ? informacoes.caixaOuGuiche
@@ -1314,7 +1323,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             locale.countryCode ?? localeProvider.companyConfig.countryCode,
         formatting: AppRegionalFormatting(
           currencyCode: _mapMoedaSelecionadaParaCurrencyCode(_moedaSelecionada),
-          timeZone: _fusoSelecionado,
+          timeZone:
+              localeProvider.companyConfig.podeAlterarFusoHorario
+                  ? _fusoSelecionado
+                  : localeProvider.timeZone,
           dateFormat: _formatoDataSelecionado,
           timeFormat: _formatoHoraSelecionado == '24 horas' ? '24h' : '12h',
           decimalSeparator:
@@ -2432,16 +2444,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required String label,
     required String value,
     required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required ValueChanged<String?>? onChanged,
     bool enabled = true,
   }) {
     return SixWebSelectField(
       label: label,
       value: value,
       items: items,
-      enabled: enabled,
+      enabled: enabled && onChanged != null,
       onSelected: (String novo) {
-        onChanged(novo);
+        onChanged?.call(novo);
         _marcarAlteracao();
       },
     );
@@ -3815,18 +3827,37 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 width: 320,
                 child: _buildDropdownField(
                   label: 'Fuso horário',
-                  value: _fusoSelecionado,
-                  items: const [
-                    'America/Sao_Paulo',
-                    'UTC',
-                    'Europe/Warsaw',
-                    'America/New_York',
-                  ],
-                  onChanged: (valor) {
-                    setState(() {
-                      _fusoSelecionado = valor!;
-                    });
-                  },
+                  value:
+                      context
+                              .watch<LocaleSettingsProvider>()
+                              .companyConfig
+                              .podeAlterarFusoHorario
+                          ? _fusoSelecionado
+                          : context.watch<LocaleSettingsProvider>().timeZone,
+                  items:
+                      context
+                              .watch<LocaleSettingsProvider>()
+                              .companyConfig
+                              .podeAlterarFusoHorario
+                          ? <String>{
+                            _fusoSelecionado,
+                            'America/Sao_Paulo',
+                            'UTC',
+                            'Europe/Warsaw',
+                            'America/New_York',
+                          }.toList()
+                          : [context.watch<LocaleSettingsProvider>().timeZone],
+                  onChanged:
+                      !context
+                              .watch<LocaleSettingsProvider>()
+                              .companyConfig
+                              .podeAlterarFusoHorario
+                          ? null
+                          : (valor) {
+                            setState(() {
+                              _fusoSelecionado = valor!;
+                            });
+                          },
                 ),
               ),
               SizedBox(
@@ -6633,4 +6664,3 @@ class _ConfiguracaoChoiceOption {
   final String description;
   final IconData icon;
 }
-

@@ -8,6 +8,7 @@ class ConfiguracaoRegionalizacaoMapper {
     return ConfiguracaoRegionalizacaoSistema(
       id: response.id,
       idEmpresa: response.idEmpresa,
+      podeAlterarFusoHorario: response.podeAlterarFusoHorario,
       languageCode: response.languageCode,
       countryCode: response.countryCode,
       formatting: AppRegionalFormatting(

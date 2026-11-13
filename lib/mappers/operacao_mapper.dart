@@ -3,7 +3,7 @@ import '../data/models/operacao_models.dart';
 class OperacaoRequestMapper {
   OperacaoInserirRequest toRequest(OperacaoVendaInput input) {
     final dataOperacao =
-        (input.dataOperacao ?? DateTime.now()).toIso8601String();
+        (input.dataOperacao ?? DateTime.now()).toUtc().toIso8601String();
     final receberDepois = input.receberDepois;
 
     final vendaList =

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/regionalizacao_models.dart';
+import '../core/utils/company_time.dart';
 import '../data/services/i18n/web_i18n_api_client.dart';
 import '../domain/models/regionalizacao_models.dart';
 import '../domain/services/regionalizacao/regionalizacao_service.dart';
@@ -260,9 +261,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
     final bool negativo = normalizado.startsWith('-');
     final List<String> partes = normalizado.replaceFirst('-', '').split('.');
     final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
-    final String decimal = casasDecimais > 0 && partes.length > 1
-        ? '$decimalSeparator${partes[1]}'
-        : '';
+    final String decimal =
+        casasDecimais > 0 && partes.length > 1
+            ? '$decimalSeparator${partes[1]}'
+            : '';
 
     return '${negativo ? '-' : ''}$inteiro$decimal';
   }
@@ -356,7 +358,14 @@ class LocaleSettingsProvider extends ChangeNotifier {
     return cleaned.trim();
   }
 
+  DateTime get nowInCompany =>
+      CompanyTime.fromInstant(DateTime.now(), timeZone);
+
+  DateTime instantInCompany(DateTime value) =>
+      CompanyTime.fromInstant(value, timeZone);
+
   String formatDate(DateTime value) {
+    value = CompanyTime.forDisplay(value, timeZone);
     final String day = _twoDigits(value.day);
     final String month = _twoDigits(value.month);
     final String year = value.year.toString().padLeft(4, '0');
@@ -375,13 +384,15 @@ class LocaleSettingsProvider extends ChangeNotifier {
   }
 
   String formatTime(DateTime value) {
+    value = CompanyTime.forDisplay(value, timeZone);
     if (timeFormat.toLowerCase() == '12h') {
       final bool afternoon = value.hour >= 12;
-      final int hour12 = value.hour == 0
-          ? 12
-          : value.hour > 12
-          ? value.hour - 12
-          : value.hour;
+      final int hour12 =
+          value.hour == 0
+              ? 12
+              : value.hour > 12
+              ? value.hour - 12
+              : value.hour;
       return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';
     }
 

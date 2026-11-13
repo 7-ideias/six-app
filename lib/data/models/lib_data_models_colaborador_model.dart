@@ -108,14 +108,12 @@ class ColaboradorInformacoesCadastro {
     required this.idUnicoDoUsuario,
     required this.dataCadastro,
     required this.idiomaPreferencial,
-    required this.fusoHorario,
     required this.status,
   });
 
   final String idUnicoDoUsuario;
   final String dataCadastro;
   final String idiomaPreferencial;
-  final String fusoHorario;
   final String status;
 
   Map<String, dynamic> toJson() {
@@ -123,7 +121,6 @@ class ColaboradorInformacoesCadastro {
       'idUnicoDoUsuario': idUnicoDoUsuario,
       'dataCadastro': dataCadastro,
       'idiomaPreferencial': idiomaPreferencial,
-      'fusoHorario': fusoHorario,
       'status': status,
     };
   }

@@ -62,9 +62,6 @@ class _CadastroColaboradorWebBodyState
 
   final TextEditingController _idiomaPreferencialController =
       TextEditingController(text: 'pt-BR');
-  final TextEditingController _fusoHorarioController = TextEditingController(
-    text: 'America/Sao_Paulo',
-  );
   final TextEditingController _statusController = TextEditingController(
     text: 'ATIVO',
   );
@@ -276,7 +273,6 @@ class _CadastroColaboradorWebBodyState
       _comissaoVendasController,
       _comissaoAssistenciaController,
       _idiomaPreferencialController,
-      _fusoHorarioController,
       _statusController,
       _idColaboradorAtualizacaoController,
       _departamentoController,
@@ -783,7 +779,6 @@ class _CadastroColaboradorWebBodyState
         idUnicoDoUsuario: _idUnicoDoUsuarioController.text.trim(),
         dataCadastro: _dataCadastroController.text.trim(),
         idiomaPreferencial: _idiomaPreferencialController.text.trim(),
-        fusoHorario: _fusoHorarioController.text.trim(),
         status: _statusController.text.trim(),
       ),
       objDadosFuncionais: ColaboradorDadosFuncionais(
@@ -1311,17 +1306,6 @@ class _CadastroColaboradorWebBodyState
                   label: 'Idioma (locale)',
                   icon: Icons.language_outlined,
                   hintText: 'pt-BR / en-US',
-                  requiredField: true,
-                ),
-              ),
-              SizedBox(
-                width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
-                child: _buildTextField(
-                  context: context,
-                  controller: _fusoHorarioController,
-                  label: 'Fuso horário',
-                  icon: Icons.public_outlined,
-                  hintText: 'America/Sao_Paulo',
                   requiredField: true,
                 ),
               ),

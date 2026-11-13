@@ -279,7 +279,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       _periodoSelecionado == _periodoIntervaloPersonalizado;
 
   DateTime _hojeNormalizado() {
-    final DateTime agora = DateTime.now();
+    final DateTime agora = context.read<LocaleSettingsProvider>().nowInCompany;
     return DateTime(agora.year, agora.month, agora.day);
   }
 
@@ -354,7 +354,9 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       context: context,
       initialDate: atual,
       firstDate: firstDate,
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: context.read<LocaleSettingsProvider>().nowInCompany.add(
+        const Duration(days: 365),
+      ),
       helpText: _text(
         context,
         inicial ? 'sales.query.customStartDate' : 'sales.query.customEndDate',
@@ -931,7 +933,10 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(Icons.filter_alt_outlined, color: Theme.of(context).colorScheme.primary),
+                  Icon(
+                    Icons.filter_alt_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1597,7 +1602,11 @@ class _DateFilterButton extends StatelessWidget {
         onPressed: onPressed,
         child: Row(
           children: <Widget>[
-            Icon(Icons.calendar_today_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 9),
             Expanded(
               child: Column(
@@ -2447,7 +2456,8 @@ class _VendaDetalheDialogState extends State<_VendaDetalheDialog> {
                                   ),
                                   child: Icon(
                                     Icons.receipt_long_outlined,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                                 const SizedBox(width: 14),
