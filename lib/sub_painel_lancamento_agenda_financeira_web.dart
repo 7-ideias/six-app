@@ -417,6 +417,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         _espacoEscolhido = true;
         _pagamentoEscolhido = true;
         _etapa = 2;
+        _detalhesVisitados = true;
         _alterado = true;
       }
     }
