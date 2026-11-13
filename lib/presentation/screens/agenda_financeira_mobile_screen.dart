@@ -2417,7 +2417,7 @@ class _AgendaFinanceiraMobileScreenState
             icon: Icon(_resumoExpandido ? Icons.expand_less_rounded : Icons.expand_more_rounded,
               color: _accentColor)),
         ]),
-        AnimatedSize(duration: duration, alignment: Alignment.topCenter,
+        _animarResumo(duration: duration,
           child: !_resumoExpandido
             ? _resumoTotal(totalKey, total)
             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -2482,6 +2482,10 @@ class _AgendaFinanceiraMobileScreenState
       ],
     );
   }
+
+  Widget _animarResumo({required Duration duration, required Widget child}) =>
+      duration == Duration.zero ? child : AnimatedSize(
+        duration: duration, alignment: Alignment.topCenter, child: child);
 
   Widget _resumoValor(String id, double value, {double fontSize = 18}) =>
     TweenAnimationBuilder<double>(
