@@ -2452,7 +2452,7 @@ class _AgendaFinanceiraMobileScreenState
                     )),
                 ]),
                 const SizedBox(height: 12),
-                Text(context.t('agenda.periodSummary.${forecast ? 'forecastHint' : actual ? 'actualDates' : 'dueDates'}'),
+                Text(context.t('agenda.periodSummary.${forecast ? 'forecastHint' : actual ? 'actualDates' : 'plannedDates'}'),
                   style: TextStyle(color: _mutedTextColor, fontSize: 12)),
                 const SizedBox(height: 12),
                 AnimatedSwitcher(duration: duration, child: Column(

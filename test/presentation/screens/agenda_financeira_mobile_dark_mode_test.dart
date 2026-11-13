@@ -36,8 +36,8 @@ void main() {
   });
 
   for (final brightness in [Brightness.light, Brightness.dark]) {
-    testWidgets('eventos pagos aparecem no dia efetivo sem somar o valor original', (tester) async {
-    await _pumpAgenda(tester, service: _FakeAgendaService(agendaPayload: {
+    testWidgets('eventos pagos aparecem no dia efetivo sem somar o valor original em $brightness', (tester) async {
+    await _pumpAgenda(tester, brightness: brightness, service: _FakeAgendaService(agendaPayload: {
       'gruposAgenda': [
         {'titulo': 'Confirmados', 'itens': [
           {..._agendaItem('evento1', 'RECEBER', 'Recebimento antecipado', 'RECEBIDO', 100),
