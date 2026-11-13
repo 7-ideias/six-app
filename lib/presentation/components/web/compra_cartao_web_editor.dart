@@ -13,7 +13,7 @@ import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class CompraCartaoWebEditor extends StatefulWidget {
-  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onLocked,this.onError,this.onSaved,this.compraInicial,this.faturaInicial,this.duplicarCompra});
+  const CompraCartaoWebEditor({super.key,required this.client,this.cartoes,this.cartaoInicial,this.configuracoes,this.embedded=false,this.descricaoController,this.valorController,this.categoriaController,this.onBusy,this.onAvailabilityChanged,this.onLocked,this.onError,this.onSaved,this.compraInicial,this.faturaInicial,this.duplicarCompra});
   final CartaoCreditoApiClient client;
   final List<CartaoCredito>? cartoes;
   final bool embedded;
@@ -22,6 +22,7 @@ class CompraCartaoWebEditor extends StatefulWidget {
   final FaturaCartao? faturaInicial;
   final TextEditingController? descricaoController,valorController,categoriaController;
   final ValueChanged<bool>? onBusy,onLocked;
+  final ValueChanged<bool>? onAvailabilityChanged;
   final ValueChanged<String?>? onError;
   final ValueChanged<FaturaCartao>? onSaved;
   final String? cartaoInicial;
@@ -56,7 +57,14 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   bool _carregando=true,_prevendo=false,_salvando=false,_cadastrandoCartao=false;
   final _valorFocus=FocusNode();
   int _seq=0;
-  bool _preenchido=false;
+  bool _preenchido=false,_dadosCarregados=false;
+  bool get _temCartaoDisponivel => _cartoes.any((c) => c.ativo || (_parcelaExistente && c.id == _cartao));
+  bool get _podePreencher => !_carregando && _dadosCarregados && _permitido && _temCartaoDisponivel;
+  void _notificarDisponibilidade() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onAvailabilityChanged?.call(_podePreencher);
+    });
+  }
   bool get _bloqueado=>_salvando||_tentativa!=null||_calculando||_cadastrandoCartao;
   @override void initState(){super.initState();_valorFocus.addListener(_normalizarValor);_cartao=widget.cartaoInicial;
     if(!_parcelaExistente&&widget.cartoes!=null&&!widget.cartoes!.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
@@ -74,7 +82,8 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
   }
   @override void dispose(){_valorFocus.removeListener(_normalizarValor);_valorFocus.dispose();_quantidade.dispose();if(widget.descricaoController==null)_descricao.dispose();if(widget.valorController==null)_valor.dispose();if(widget.configuracoes==null)_config.dispose();super.dispose();}
   Future<void> _carregar() async {
-    setState((){_carregando=true;_erro=null;_previa=null;_permitido=false;});
+    setState((){_carregando=true;_dadosCarregados=false;_erro=null;_previa=null;_permitido=false;});
+    _notificarDisponibilidade();
     try {
       // Read the current permission even when a caller supplied cached cards.
       final cards=await widget.client.listar();
@@ -83,11 +92,11 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if(!_parcelaExistente&&!_cartoes.any((c)=>c.id==_cartao&&c.ativo))_cartao=null;
       final cats=await _config.listar('CATEGORIAS').timeout(const Duration(seconds:20));
       if(!mounted)return;
-      setState(()=>_categorias=cats.where((c)=>c.ativo&&c.tipo!='RECEITA').toList());
+      setState((){_categorias=cats.where((c)=>c.ativo&&c.tipo!='RECEITA').toList();_dadosCarregados=true;});
       syncCategory();
-      await _prever();
-    }catch(_){if(mounted)setState(()=>_erro='cards.error.connection');}
-    finally{if(mounted)setState(()=>_carregando=false);}
+      if (_permitido && _temCartaoDisponivel) await _prever();
+    }catch(e){if(mounted)setState(()=>_erro=e is CartaoCreditoApiException?e.messageKey:'cards.error.connection');}
+    finally{if(mounted){setState(()=>_carregando=false);_notificarDisponibilidade();}}
   }
   Future<void> _prever() async {
     final seq=++_seq;
@@ -110,6 +119,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     for(final c in _categorias){if(c.nome==name){_categoria=c.id;break;}}
   }
   bool validate(){
+    if (!_podePreencher || _cadastrandoCartao) return false;
     syncCategory();
     final valid=_form.currentState?.validate()??false;
     return valid&&(!_parcelada||(_plano!=null&&_planoValor==_valorNumerico()&&_planoQuantidade==int.tryParse(_quantidade.text)&&!_plano!.any((p)=>p.paga)))&&(!_configuraSerie||_fim==null||!_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))&&!_carregando&&!_prevendo&&!_cadastrandoCartao&&_permitido&&_previa!=null&&!_previa!.paga;
@@ -210,6 +220,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if (mounted) {
         setState(() => _cadastrandoCartao = false);
         widget.onBusy?.call(false);
+        _notificarDisponibilidade();
       }
     }
   }
@@ -244,8 +255,11 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     );
     if (options.isEmpty && canCreate) {
       final tokens = WebThemeTokens.of(context);
-      return Container(
-        padding: const EdgeInsets.all(16),
+      return Semantics(
+        key: const ValueKey('purchase-card-required'),
+        container: true, liveRegion: true,
+        child: Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: tokens.surface,
           border: Border.all(color: tokens.cardBorder),
@@ -255,19 +269,24 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.t('invoices.addCardHere'),
+              context.t('invoices.cardRequiredTitle'),
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 4),
             Text(
-              context.t('invoices.keepPurchaseDraft'),
+              context.t('invoices.cardRequiredHint'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            add,
+            FilledButton.icon(
+              key: const ValueKey('purchase-add-card'),
+              onPressed: _bloqueado ? null : _adicionarCartao,
+              icon: const Icon(Icons.add_card_outlined, size: 20),
+              label: Text(context.t('cards.new')),
+            ),
           ],
         ),
-      );
+      ));
     }
     final field = DropdownButtonFormField<String>(
       key: ValueKey('purchase-card-${_cartao ?? 'none'}'),
@@ -426,6 +445,13 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
     return PopScope(canPop:!_salvando&&!_cadastrandoCartao,child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Form(key:_form,child:Column(
       mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.stretch,children:[
       if(!widget.embedded)Text(context.t(widget.compraInicial==null?'invoices.newPurchase':'invoices.editPurchase'),style:Theme.of(context).textTheme.titleLarge),
+      if (_carregando)
+        SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.title'))
+      else if (_dadosCarregados && !_permitido)
+        Semantics(liveRegion:true,child:Padding(padding:const EdgeInsets.symmetric(vertical:20),child:Text(context.t('invoices.cardPermissionHint'))))
+      else if (_dadosCarregados && !_temCartaoDisponivel)
+        _seletorCartao(),
+      if (_podePreencher) ...[
       const SizedBox(height:8),Text(context.t('invoices.purchaseHint')),
       const SizedBox(height:20),
       if(widget.compraInicial==null)...[
@@ -462,8 +488,6 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
         if(_fim!=null&&_fim!.isBefore(DateTime(_data.year,_data.month,_data.day)))Text(context.t('invoices.recurring.invalidEnd'),style:TextStyle(color:Theme.of(context).colorScheme.error)),
         const SizedBox(height:16),
       ],
-      if(!_carregando&&!_permitido)Text(context.t('cards.error.permission')),
-      if(_carregando) SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('invoices.title')) else ...[
         _seletorCartao(),
         const SizedBox(height:16),TextFormField(controller:_descricao,enabled:!_bloqueado,maxLength:255,
           decoration:InputDecoration(labelText:context.t('invoices.description')),
@@ -495,7 +519,7 @@ class CompraCartaoWebEditorState extends State<CompraCartaoWebEditor> {
       if(_tentativa!=null&&!_salvando)Padding(padding:const EdgeInsets.symmetric(vertical:12),child:Text(context.t('invoices.uncertain'))),
       if(!widget.embedded)...[const SizedBox(height:24),Wrap(alignment:WrapAlignment.end,spacing:12,runSpacing:8,children:[
         TextButton(onPressed:_salvando?null:()=>Navigator.of(context).pop(),child:Text(context.t('common.close'))),
-        FilledButton(onPressed:_salvando||_carregando||_prevendo||(_tentativa==null&&(_previa==null||_previa!.paga))?null:submit,
+        if (_podePreencher) FilledButton(onPressed:_salvando||_carregando||_prevendo||(_tentativa==null&&(_previa==null||_previa!.paga))?null:submit,
           child:Text(context.t(_salvando?'invoices.saving':_tentativa!=null?'space.retry':widget.compraInicial==null?'invoices.savePurchase':'invoices.saveChanges'))),
       ])]
     ]))));

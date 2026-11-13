@@ -31,15 +31,18 @@ const existing = CartaoCredito(
 
 class _Api extends CartaoCreditoApiClient {
   _Api() : super(espaco: 'PESSOAL');
-  bool allowed = true, failSave = false;
+  bool allowed = true, failSave = false, failRead = false;
   List<CartaoCredito> cards = [];
   final saves = <CartaoCreditoRequest>[];
   final purchases = <CompraCartaoRequest>[];
   final previews = <String>[];
   Completer<CartaoCredito>? pending;
   @override
-  Future<CartoesCreditoResponse> listar() async =>
-      CartoesCreditoResponse(podeEditar: allowed, cartoes: cards);
+  Future<CartoesCreditoResponse> listar() async {
+    if (failRead) throw const CartaoCreditoApiException('connection');
+    return CartoesCreditoResponse(podeEditar: allowed, cartoes: cards);
+  }
+
   @override
   Future<CartaoCredito> salvar(CartaoCreditoRequest request) async {
     saves.add(request);
@@ -118,6 +121,7 @@ class _Draft {
   final amount = TextEditingController(text: '108,99');
   final category = TextEditingController(text: 'Assinaturas');
   final busy = <bool>[];
+  final availability = <bool>[];
   void dispose() {
     description.dispose();
     amount.dispose();
@@ -162,6 +166,7 @@ Future<_Draft> _open(
             valorController: draft.amount,
             categoriaController: draft.category,
             onBusy: draft.busy.add,
+            onAvailabilityChanged: draft.availability.add,
             onSaved: (_) {},
           ),
         ),
@@ -198,10 +203,63 @@ Finder get saveCard => find.byKey(const ValueKey('cards-save'));
 Finder get amount => find.byKey(const ValueKey('purchase-amount'));
 
 void main() {
+  for (final state in ['empty', 'inactive', 'error', 'readOnly']) {
+    testWidgets('web bloqueia detalhes antes do cartão: $state', (
+      tester,
+    ) async {
+      final api =
+          _Api()
+            ..failRead = state == 'error'
+            ..allowed = state != 'readOnly';
+      if (state == 'inactive')
+        api.cards = const [
+          CartaoCredito(
+            id: 'inactive',
+            nome: 'Antigo',
+            instituicao: 'Banco',
+            diaFechamento: 3,
+            diaVencimento: 10,
+            ativo: false,
+            versao: 0,
+          ),
+        ];
+      final draft = await _open(tester, api);
+      expect(amount, findsNothing);
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(draft.availability.last, isFalse);
+      expect(draft.key.currentState!.validate(), isFalse);
+      if (state == 'empty' || state == 'inactive') {
+        expect(
+          find.byKey(const ValueKey('purchase-card-required')),
+          findsOneWidget,
+        );
+        expect(tester.widget<FilledButton>(addCard).onPressed, isNotNull);
+        await tap(tester, addCard);
+        await tap(tester, find.widgetWithText(TextButton, 'Cancelar'));
+        expect(amount, findsNothing);
+        expect(draft.availability.last, isFalse);
+        await tap(tester, addCard);
+        await fillCard(tester);
+        await tap(tester, saveCard);
+        expect(amount, findsOneWidget);
+        expect(draft.availability.last, isTrue);
+        expect(draft.description.text, 'Hostinger');
+        expect(draft.key.currentState!.validate(), isTrue);
+      } else {
+        expect(addCard, findsNothing);
+        expect(
+          find.byKey(const ValueKey('purchase-card-required')),
+          findsNothing,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets(
     'cadastra na compra mensal, seleciona retorno confirmado e preserva rascunho',
     (tester) async {
-      final api = _Api();
+      final api = _Api()..cards = [existing];
       final draft = await _open(tester, api);
       await tap(tester, find.text('Mensal'));
       await tap(tester, addCard);
