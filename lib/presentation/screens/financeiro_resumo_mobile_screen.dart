@@ -1,3 +1,4 @@
+import '../components/mobile/finance_context_mobile.dart';
 import 'cartoes_credito_mobile_screen.dart';
 import 'gastos_categorias_mobile_screen.dart';
 import 'package:flutter/material.dart';
@@ -363,101 +364,16 @@ class _FinanceiroResumoMobileScreenState
     ),
   );
 
-  Widget _contextSelector() {
-    final c = context.sixMobileColors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final selectedColor = _pessoal
-        ? (dark ? const Color(0xFF594C32) : const Color(0xFFF4E8CC))
-        : c.softAccentSurface;
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: AnimatedAlign(
-                duration: _motionDuration,
-                curve: Curves.easeInOutCubic,
-                alignment: _pessoal
-                    ? AlignmentDirectional.centerEnd
-                    : AlignmentDirectional.centerStart,
-                child: FractionallySizedBox(
-                  widthFactor: .5,
-                  heightFactor: 1,
-                  child: AnimatedContainer(
-                    duration: _motionDuration,
-                    decoration: BoxDecoration(
-                      color: selectedColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: c.border),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                for (final space in ['EMPRESA', 'PESSOAL'])
-                  Expanded(
-                    child: Semantics(
-                      selected: _espaco == space,
-                      button: true,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          if (space == _espaco) return;
-                          setState(() {
-                            _contextSelected = true;
-                            _espaco = space;
-                          });
-                          _load();
-                        },
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 10,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  space == 'EMPRESA'
-                                      ? Icons.storefront_outlined
-                                      : Icons.person_outline,
-                                  size: 19,
-                                  color: c.titleText,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    context.t('space.$space'),
-                                    style: TextStyle(
-                                      color: c.titleText,
-                                      fontSize: 14,
-                                      fontWeight: _espaco == space
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _contextSelector() => FinanceContextSelectorMobile(
+    space: _espaco,
+    onChanged: (space) {
+      setState(() {
+        _contextSelected = true;
+        _espaco = space;
+      });
+      _load();
+    },
+  );
 
   Widget _acesso(
     String title,
@@ -529,8 +445,7 @@ class _FinanceiroResumoMobileScreenState
   Widget build(BuildContext context) {
     final c = context.sixMobileColors;
     final regional = context.watch<LocaleSettingsProvider>();
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final topColor = _pessoal ? const Color(0xFF39352D) : c.primary;
+    final topColor = financeContextTopColor(context, _espaco);
     final title = context.t(
       _pessoal ? 'finance.mobile.personalTitle' : 'finance.mobile.companyTitle',
     );
@@ -545,33 +460,8 @@ class _FinanceiroResumoMobileScreenState
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
-      backgroundBuilder: (_, child) => AnimatedContainer(
-        duration: _motionDuration,
-        curve: Curves.easeInOutCubic,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: const [0, .18, .44, .72, 1],
-            colors: _pessoal
-                ? [
-                    topColor,
-                    dark ? const Color(0xFF514730) : const Color(0xFFA99B7A),
-                    dark ? const Color(0xFF302C23) : const Color(0xFFF0E5CD),
-                    c.background,
-                    c.background,
-                  ]
-                : [
-                    c.primary,
-                    Color.lerp(c.primary, c.secondary, .5)!,
-                    Color.lerp(c.secondary, c.background, .7)!,
-                    c.background,
-                    c.background,
-                  ],
-          ),
-        ),
-        child: child,
-      ),
+      backgroundBuilder: (_, child) =>
+          FinanceContextBackgroundMobile(space: _espaco, child: child),
       backgroundColor: c.background,
       primaryColor: topColor,
       secondaryColor: c.secondary,
