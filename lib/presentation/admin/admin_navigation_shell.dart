@@ -1,3 +1,4 @@
+import '../../l10n/push_campaign_texts.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
@@ -58,8 +59,8 @@ class AdminNavigationShell extends StatelessWidget {
             backgroundColor: AdminPalette.background,
             drawer: Drawer(width: sidebarWidth, child: sidebar),
             body: Builder(
-              builder:
-                  (BuildContext scaffoldContext) => _AdminNavigationMainArea(
+              builder: (BuildContext scaffoldContext) =>
+                  _AdminNavigationMainArea(
                     texts: texts,
                     compact: true,
                     pageTitle: pageTitle,
@@ -197,56 +198,53 @@ class _AdminNavigationMainArea extends StatelessWidget {
                 IconButton(
                   tooltip: texts.refresh,
                   onPressed: refreshing ? null : onRefresh,
-                  icon:
-                      refreshing
-                          ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.refresh_rounded),
+                  icon: refreshing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
                 ),
                 const SizedBox(width: 6),
                 IconButton(
                   tooltip: texts.logout,
                   onPressed: loggingOut ? null : onLogout,
-                  icon:
-                      loggingOut
-                          ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.logout_rounded),
+                  icon: loggingOut
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.logout_rounded),
                 ),
               ],
             ),
           ),
           Expanded(
-            child:
-                standardPageSpacing
-                    ? SixWebPageShell(
-                      child: SingleChildScrollView(
-                        padding: SixWebPageShell.scrollPadding,
+            child: standardPageSpacing
+                ? SixWebPageShell(
+                    child: SingleChildScrollView(
+                      padding: SixWebPageShell.scrollPadding,
+                      child: child,
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? AdminSpacing.lg : AdminSpacing.xl,
+                      AdminSpacing.lg,
+                      compact ? AdminSpacing.lg : AdminSpacing.xl,
+                      AdminSpacing.xl,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: AdminNavigationShell.maxContentWidth,
+                        ),
                         child: child,
                       ),
-                    )
-                    : SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        compact ? AdminSpacing.lg : AdminSpacing.xl,
-                        AdminSpacing.lg,
-                        compact ? AdminSpacing.lg : AdminSpacing.xl,
-                        AdminSpacing.xl,
-                      ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: AdminNavigationShell.maxContentWidth,
-                          ),
-                          child: child,
-                        ),
-                      ),
                     ),
+                  ),
           ),
         ],
       ),
@@ -368,6 +366,13 @@ class _AdminNavigationSidebar extends StatelessWidget {
               )) ...<Widget>[
                 const SizedBox(height: 6),
                 AdminNavItem(
+                  icon: Icons.campaign_outlined,
+                  label: campaignText(context, 'title'),
+                  selected: currentRoute == '/admin/campanhas-push',
+                  onTap: () => _navigate(context, '/admin/campanhas-push'),
+                ),
+                const SizedBox(height: 6),
+                AdminNavItem(
                   icon: Icons.image_search_rounded,
                   label: navigationTexts.visualAssets,
                   selected: currentRoute == '/admin/imagens-contextuais',
@@ -428,14 +433,13 @@ class _AdminNavigationSidebar extends StatelessWidget {
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: loggingOut ? null : onLogout,
-                icon:
-                    loggingOut
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.logout_rounded, size: 18),
+                icon: loggingOut
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.logout_rounded, size: 18),
                 label: Text(texts.logout),
               ),
             ],
@@ -461,12 +465,11 @@ class _AdminNavigationSidebar extends StatelessWidget {
   }
 
   String _initials(String value) {
-    final List<String> parts =
-        value
-            .trim()
-            .split(RegExp(r'\s+'))
-            .where((String part) => part.isNotEmpty)
-            .toList();
+    final List<String> parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String part) => part.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return 'S';
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return '${parts.first.characters.first}${parts.last.characters.first}'

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 
+String? paymentRequiredCampaignId;
 final paymentRequiredCompany = ValueNotifier<String?>(null);
 Future<String?> Function()? billingCompanyResolver;
 
@@ -43,6 +44,8 @@ class BillingHttpClient extends http.BaseClient {
         response.statusCode == 402 &&
         company != null &&
         company == await billingCompanyResolver?.call()) {
+      if (paymentRequiredCompany.value != company)
+        paymentRequiredCampaignId = null;
       paymentRequiredCompany.value = company;
     }
     return response;

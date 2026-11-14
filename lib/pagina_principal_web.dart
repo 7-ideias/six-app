@@ -1,3 +1,5 @@
+import 'core/services/push_navigation_service.dart';
+import 'core/services/push_destination_resolver.dart';
 import 'l10n/billing_texts.dart';
 import 'dart:async';
 
@@ -263,9 +265,19 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   //   });
   // }
 
+  late final PushNavigationExecutor _campaignPushExecutor = (navigation) async {
+    if (!mounted || navigation.destination != PushNavigationDestination.subscription) return;
+    final campaignId = navigation.payload['campaignId']?.toString();
+    if (campaignId == null || campaignId.isEmpty) return;
+    await Navigator.of(context).pushNamed(Uri(path: '/app/assinatura', queryParameters: {'campaignId': campaignId}).toString());
+  };
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) PushNavigationService().bindExecutor(_campaignPushExecutor);
+    });
 
     _webNavigationResolver = WebNavigationDestinationResolver(
       actions: PaginaPrincipalWebNavigationActions(
@@ -336,6 +348,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   @override
   void dispose() {
+    PushNavigationService().unbindExecutor(_campaignPushExecutor);
     _iaPulseController.dispose();
     _themeResolver.removeListener(_onThemeChanged);
     onMensagemRecebida = null;

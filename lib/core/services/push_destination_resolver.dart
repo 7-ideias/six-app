@@ -11,6 +11,7 @@ enum PushNavigationShellTab { dash, management, service }
 
 enum PushNavigationDestination {
   notificationsInbox,
+  subscription,
   supportChat,
   salesPending,
   technicalOrders,
@@ -169,6 +170,8 @@ class PushDestinationResolver {
   PushNavigationDestination? _explicitDestinationFor(String? value) {
     final String normalized = (value ?? '').trim().toLowerCase();
     switch (normalized) {
+      case 'billing.subscription':
+        return PushNavigationDestination.subscription;
       case 'notifications.inbox':
         return PushNavigationDestination.notificationsInbox;
       case 'support.chat':
@@ -186,6 +189,8 @@ class PushDestinationResolver {
 
   String _destinationKey(PushNavigationDestination destination) {
     switch (destination) {
+      case PushNavigationDestination.subscription:
+        return 'billing.subscription';
       case PushNavigationDestination.notificationsInbox:
         return 'notifications.inbox';
       case PushNavigationDestination.supportChat:
@@ -201,6 +206,7 @@ class PushDestinationResolver {
 
   PushNavigationShellTab? _shellTabFor(PushNavigationDestination destination) {
     switch (destination) {
+      case PushNavigationDestination.subscription:
       case PushNavigationDestination.notificationsInbox:
       case PushNavigationDestination.supportChat:
         return null;

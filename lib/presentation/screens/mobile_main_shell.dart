@@ -1,3 +1,4 @@
+import '../../core/services/billing_http_client.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -282,6 +283,18 @@ class _MobileMainShellState extends State<MobileMainShell>
       throw StateError('Mobile shell indisponivel para push.');
     }
 
+    if (navigation.destination == PushNavigationDestination.subscription &&
+        paymentRequiredCompany.value != null) {
+      final company = navigation.payload['idUnicoDaEmpresa']?.toString();
+      final campaign = navigation.payload['campaignId']?.toString();
+      if (company != null && campaign != null) {
+        paymentRequiredCampaignId = campaign;
+        paymentRequiredCompany.value = null;
+        paymentRequiredCompany.value = company;
+        return;
+      }
+    }
+
     final PushNavigationShellTab? shellTab = navigation.shellTab;
     if (shellTab != null) {
       final int targetIndex = _tabIndexFor(shellTab);
@@ -318,6 +331,11 @@ class _MobileMainShellState extends State<MobileMainShell>
 
   Widget _pageForNavigation(ResolvedPushNavigation navigation) {
     switch (navigation.destination) {
+      case PushNavigationDestination.subscription:
+        return SubscriptionMobileScreen(
+          companyId: navigation.payload['idUnicoDaEmpresa']?.toString(),
+          campaignId: navigation.payload['campaignId']?.toString(),
+        );
       case PushNavigationDestination.notificationsInbox:
         return const NotificacoesMobileScreen();
       case PushNavigationDestination.supportChat:
@@ -355,23 +373,19 @@ class _MobileMainShellState extends State<MobileMainShell>
 
     return MobileNavigationScope(
       controller: _navigationController,
-      child:
-          reduceMotion
-              ? _buildIndexedPages()
-              : AnimatedBuilder(
-                animation: _entryAnimation,
-                child: _buildIndexedPages(),
-                builder: (BuildContext context, Widget? child) {
-                  final double progress = _entryAnimation.value;
-                  final double dx =
-                      (1 - progress) * _slideDistance * _transitionDirection;
+      child: reduceMotion
+          ? _buildIndexedPages()
+          : AnimatedBuilder(
+              animation: _entryAnimation,
+              child: _buildIndexedPages(),
+              builder: (BuildContext context, Widget? child) {
+                final double progress = _entryAnimation.value;
+                final double dx =
+                    (1 - progress) * _slideDistance * _transitionDirection;
 
-                  return Transform.translate(
-                    offset: Offset(dx, 0),
-                    child: child,
-                  );
-                },
-              ),
+                return Transform.translate(offset: Offset(dx, 0), child: child);
+              },
+            ),
     );
   }
 
