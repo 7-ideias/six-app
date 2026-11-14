@@ -52,7 +52,8 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
 }
 
 class CartaoCreditoMobileEditor extends StatefulWidget {
-  const CartaoCreditoMobileEditor({super.key,required this.client,this.card,this.configuracoes});
+  const CartaoCreditoMobileEditor({super.key,required this.client,this.card,this.configuracoes,this.onSaved});
+  final ValueChanged<CartaoCredito>? onSaved;
   final CartaoCreditoApiClient client; final CartaoCredito? card; final ConfiguracaoFinanceiraService? configuracoes;
   @override State<CartaoCreditoMobileEditor> createState()=>_EditorState();
 }
@@ -81,7 +82,7 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
     if(attempt==null){if(!form.currentState!.validate())return;
       attempt=CartaoCreditoRequest(id:widget.card?.id??id,nome:name.text,instituicao:bank.text,diaFechamento:int.parse(closing.text),diaVencimento:int.parse(due.text),ativo:active,contaPrevistaId:account,versao:widget.card?.versao);}
     setState((){saving=true;error=null;});
-    try{await widget.client.salvar(attempt!);if(mounted)Navigator.pop(context,true);}
+    try{final saved=await widget.client.salvar(attempt!);if(mounted){widget.onSaved?.call(saved);Navigator.pop(context,true);}}
     catch(e){if(mounted)setState((){error=erroCartaoMobile(e);if(rejeicaoCartaoDefinitiva(e)){attempt=null;conflict=e is CartaoCreditoApiException&&(e.statusCode==409||acessoCartaoNegado(e));}});}
     finally{if(mounted)setState(()=>saving=false);}
   }

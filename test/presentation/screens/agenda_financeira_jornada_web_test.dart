@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sixpos/presentation/components/web/agenda_resumo_periodo_web.dart';
 import 'dart:async';
 
@@ -156,6 +157,94 @@ Future<void> _fill(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('cartão obrigatório bloqueia Continuar e libera após cadastro', (
+    tester,
+  ) async {
+    int savedCards = 0;
+    // The parent shows progress while its nested card editor is open.
+    // Pump finite frames so an intentional indeterminate indicator can run.
+    Future<void> pumpFrames() async {
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+    Future<void> tap(Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.tap(finder);
+      await pumpFrames();
+    }
+    await http.runWithClient(
+      () async {
+        await _open(tester, _Calls(), dark: true);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', 'test-token');
+        await prefs.setString(
+          'accessTokenExpiresAt',
+          DateTime.now().add(const Duration(days: 2)).toIso8601String(),
+        );
+        await tap(_choice('pay'));
+        await tap(_next);
+        await tap(_choice('personal'));
+        await tap(_next);
+        await tap(_choice('credit-card'));
+        expect(
+          find.byKey(const ValueKey('purchase-card-required')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('purchase-amount')), findsNothing);
+        expect(tester.widget<FilledButton>(_next).onPressed, isNull);
+        await tap(find.byKey(const ValueKey('purchase-add-card')));
+        for (final entry
+            in {
+              'cards-name': 'Viagens',
+              'cards-institution': 'Banco',
+              'cards.closing': '3',
+              'cards.due': '10',
+            }.entries) {
+          final field = find.byKey(ValueKey(entry.key));
+          await tester.ensureVisible(field);
+          await tester.enterText(field, entry.value);
+        }
+        await tap(find.byKey(const ValueKey('cards-save')));
+        expect(savedCards, 1);
+        expect(find.byKey(const ValueKey('purchase-amount')), findsOneWidget);
+        expect(tester.widget<FilledButton>(_next).onPressed, isNotNull);
+        await tap(_next);
+        expect(
+          find.text(
+            'Confira os campos destacados e os avisos da compra para continuar.',
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      },
+      () => MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/cartoes') && request.method == 'POST') {
+          savedCards++;
+          return http.Response(
+            jsonEncode({
+              ...jsonDecode(request.body) as Map<String, dynamic>,
+              'versao': 0,
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/cartoes'))
+          return http.Response('{"podeEditar":true,"cartoes":[]}', 200);
+        if (path.endsWith('/previa'))
+          return http.Response(
+            '{"fechamento":"2026-12-03","vencimento":"2026-12-10","versaoCartao":0,"paga":false}',
+            200,
+          );
+        return http.Response('[]', 200);
+      }),
+    );
+  });
+
+
   testWidgets('duplicar abre revisão e salva como novo pendente', (tester) async {
     final calls = _Calls();
     final copy = AgendaFinanceiraLancamentoDetalhe.fromJson({
