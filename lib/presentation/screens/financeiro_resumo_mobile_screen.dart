@@ -1,3 +1,4 @@
+import '../components/mobile/finance_context_mobile.dart';
 import 'cartoes_credito_mobile_screen.dart';
 import 'gastos_categorias_mobile_screen.dart';
 import 'package:flutter/material.dart';
@@ -35,10 +36,18 @@ class FinanceiroResumoMobileScreen extends StatefulWidget {
 class _FinanceiroResumoMobileScreenState
     extends State<FinanceiroResumoMobileScreen> {
   late final _provider =
-      widget.overviewProvider ?? ManagementOverviewProvider(
-        companyNow: () => context.read<LocaleSettingsProvider>().calendarNow,);
+      widget.overviewProvider ??
+      ManagementOverviewProvider(
+        companyNow: () => context.read<LocaleSettingsProvider>().calendarNow,
+      );
   String _espaco = 'EMPRESA';
   int _periodo = 1;
+  bool _contextSelected = false;
+
+  bool get _pessoal => _espaco == 'PESSOAL';
+  Duration get _motionDuration => MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : const Duration(milliseconds: 350);
   late DateTime _inicio, _fim;
   bool _loading = true;
   bool _error = false;
@@ -61,7 +70,7 @@ class _FinanceiroResumoMobileScreenState
     try {
       final prefs = await UsuarioService()
           .carregarPreferenciasIndividuaisDoCache();
-      if (!mounted) return;
+      if (!mounted || _contextSelected) return;
       _espaco =
           prefs?.agendaFinanceiraFiltrosMobile.espacoFinanceiro ?? 'EMPRESA';
     } catch (_) {}
@@ -107,6 +116,7 @@ class _FinanceiroResumoMobileScreenState
       _loading = true;
       _error = false;
       _data = null;
+      _updated = null;
     });
     final result = await _provider.consultarFinanceiro(
       espaco: _espaco,
@@ -164,7 +174,7 @@ class _FinanceiroResumoMobileScreenState
               ListTile(
                 title: Text(ctx.t('finance.mobile.period.$i')),
                 trailing: _periodo == i
-                    ? Icon(Icons.check, color: ctx.sixMobileColors.accent,)
+                    ? Icon(Icons.check, color: ctx.sixMobileColors.accent)
                     : null,
                 onTap: () => Navigator.pop(ctx, i),
               ),
@@ -217,7 +227,7 @@ class _FinanceiroResumoMobileScreenState
     final c = context.sixMobileColors;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(22),
@@ -227,24 +237,17 @@ class _FinanceiroResumoMobileScreenState
     );
   }
 
-  Widget _numero(double value, {bool moeda = true}) {
+  Widget _numero(double value) {
     final regional = context.watch<LocaleSettingsProvider>();
-    return TweenAnimationBuilder<double>(
-      key: ValueKey('$moeda-$value'),
-      tween: Tween(begin: 0, end: value),
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 350),
-      builder: (_, n, __) => Text(
-        moeda ? regional.formatCurrency(n) : n.round().toString(),
-        maxLines: moeda ? null : 1,
-        softWrap: true,
-        overflow: TextOverflow.visible,
-        style: TextStyle(
-          fontSize: 25,
-          fontWeight: FontWeight.w800,
-          color: context.sixMobileColors.titleText,
-        ),
+    // Keep the complete localized amount; allow wrapping instead of shrinking
+    // the user's text scale or abbreviating large international currencies.
+    return Text(
+      regional.formatCurrency(value),
+      softWrap: true,
+      style: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: context.sixMobileColors.titleText,
       ),
     );
   }
@@ -256,6 +259,15 @@ class _FinanceiroResumoMobileScreenState
       context,
       receber,
     );
+    final countLabel = context
+        .t(
+          'finance.mobile.${receber ? 'receipts' : 'payments'}.${count == 0
+              ? 'zero'
+              : count == 1
+              ? 'one'
+              : 'many'}',
+        )
+        .replaceAll('{count}', '$count');
     return InkWell(
       onTap: () => _abrirAgenda(
         contas: receber ? AgendaContasMobile.receber : AgendaContasMobile.pagar,
@@ -275,35 +287,32 @@ class _FinanceiroResumoMobileScreenState
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    context.t(
-                      receber
-                          ? 'gestao.finance.metric.receivableEvents'
-                          : 'gestao.finance.metric.payableEvents',
-                    ),
-                    style: TextStyle(
-                      color: c.titleText,
-                      fontWeight: FontWeight.w600,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: context.t(
+                            receber
+                                ? 'gestao.finance.metric.receivableEvents'
+                                : 'gestao.finance.metric.payableEvents',
+                          ),
+                          style: TextStyle(
+                            color: c.titleText,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' · $countLabel',
+                          style: TextStyle(color: c.mutedText),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             _numero(receber ? data.totalReceber : data.totalPagar),
-            const SizedBox(height: 5),
-            Text(
-              context
-                  .t(
-                    'finance.mobile.${receber ? 'receipts' : 'payments'}.${count == 0
-                        ? 'zero'
-                        : count == 1
-                        ? 'one'
-                        : 'many'}',
-                  )
-                  .replaceAll('{count}', '$count'),
-              style: TextStyle(color: c.mutedText),
-            ),
           ],
         ),
       ),
@@ -317,37 +326,53 @@ class _FinanceiroResumoMobileScreenState
         Text(
           context.t('gestao.finance.summaryTitle'),
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 17,
             fontWeight: FontWeight.w800,
             color: context.sixMobileColors.titleText,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          context.t('finance.mobile.openPeriod'),
-          style: TextStyle(color: context.sixMobileColors.mutedText),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Icon(Icons.event_outlined, color: context.sixMobileColors.accent),
-            const SizedBox(width: 10),
-            _numero(data.totalEvents.toDouble(), moeda: false),
-            const SizedBox(width: 8),
-            Expanded(child: Text(context.t('gestao.finance.metric.events'))),
-            IconButton(
-              tooltip: context.t('finance.mobile.viewAgenda'),
-              onPressed: _abrirAgenda,
-              icon: const Icon(Icons.chevron_right),
-            ),
-          ],
-        ),
-        const Divider(height: 28),
+        const SizedBox(height: 6),
         _valor(true, data),
-        const Divider(height: 24),
+        const Divider(height: 12),
         _valor(false, data),
+        const Divider(height: 12),
+        InkWell(
+          onTap: _abrirAgenda,
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.event_outlined,
+                  size: 20,
+                  color: context.sixMobileColors.accent,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${data.totalEvents} ${context.t('gestao.finance.metric.events')}',
+                    style: TextStyle(color: context.sixMobileColors.titleText),
+                  ),
+                ),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
+          ),
+        ),
       ],
     ),
+  );
+
+  Widget _contextSelector() => FinanceContextSelectorMobile(
+    space: _espaco,
+    onChanged: (space) {
+      setState(() {
+        _contextSelected = true;
+        _espaco = space;
+      });
+      _load();
+    },
   );
 
   Widget _acesso(
@@ -371,11 +396,11 @@ class _FinanceiroResumoMobileScreenState
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: c.border),
             ),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(9),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: .12),
                     borderRadius: BorderRadius.circular(14),
@@ -420,13 +445,29 @@ class _FinanceiroResumoMobileScreenState
   Widget build(BuildContext context) {
     final c = context.sixMobileColors;
     final regional = context.watch<LocaleSettingsProvider>();
+    final topColor = financeContextTopColor(context, _espaco);
+    final title = context.t(
+      _pessoal ? 'finance.mobile.personalTitle' : 'finance.mobile.companyTitle',
+    );
     return SixMobilePageShell(
-      title: context.t('gestao.finance.title'),
+      title: title,
+      titleWidget: AnimatedSwitcher(
+        duration: _motionDuration,
+        child: Text(
+          title,
+          key: ValueKey(_espaco),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
+      backgroundBuilder: (_, child) =>
+          FinanceContextBackgroundMobile(space: _espaco, child: child),
       backgroundColor: c.background,
-      primaryColor: c.primary,
+      primaryColor: topColor,
       secondaryColor: c.secondary,
       accentColor: c.accent,
       enableAnimatedBackground: false,
+      appBarAnimationDuration: _motionDuration,
       actions: [
         IconButton(
           tooltip: context.t('common.refresh'),
@@ -449,40 +490,8 @@ class _FinanceiroResumoMobileScreenState
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, inset + 10, 16, 24),
           children: [
-            Row(
-              children: [
-                for (final espaco in ['EMPRESA', 'PESSOAL'])
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: ChoiceChip(
-                        label: SizedBox(
-                          width: double.infinity,
-                          child: Text(
-                            context.t('space.$espaco'),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        labelStyle: TextStyle(
-                          color: _espaco == espaco ? c.accent : c.titleText,
-                          fontWeight: _espaco == espaco ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                        selected: _espaco == espaco,
-                        showCheckmark: false,
-                        selectedColor: c.softAccentSurface,
-                        backgroundColor: c.surface,
-                        onSelected: _loading
-                            ? null
-                            : (_) {
-                                setState(() => _espaco = espaco);
-                                _load();
-                              },
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
+            _contextSelector(),
+            const SizedBox(height: 12),
             Material(
               color: c.surface,
               borderRadius: BorderRadius.circular(18),
@@ -500,7 +509,7 @@ class _FinanceiroResumoMobileScreenState
                 onTap: _loading ? null : _selecionarPeriodo,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             if (_loading)
               SixBackendLoading(
                 title: context.t('finance.mobile.loading'),
@@ -526,15 +535,22 @@ class _FinanceiroResumoMobileScreenState
                 ),
               )
             else if (_data != null) ...[
-              _resumo(_data!),
+              TweenAnimationBuilder<double>(
+                key: ValueKey('summary-$_espaco-$_request'),
+                tween: Tween(begin: 0, end: 1),
+                duration: _motionDuration,
+                builder: (_, opacity, child) =>
+                    Opacity(opacity: opacity, child: child),
+                child: _resumo(_data!),
+              ),
               if (_updated != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     context
                         .t('agenda.mobile.updated')
-                        .replaceAll('{time}', regional.formatTime(_updated!),),
-                    textAlign: TextAlign.center,
+                        .replaceAll('{time}', regional.formatTime(_updated!)),
+                    textAlign: TextAlign.end,
                     style: TextStyle(color: c.mutedText, fontSize: 12),
                   ),
                 ),
@@ -561,7 +577,7 @@ class _FinanceiroResumoMobileScreenState
             const SizedBox(height: 10),
             Text(
               context.t('finance.mobile.shortcuts'),
-              style: TextStyle(color: c.mutedText, fontWeight: FontWeight.w600,),
+              style: TextStyle(color: c.mutedText, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             _acesso(
@@ -575,7 +591,7 @@ class _FinanceiroResumoMobileScreenState
               'gestao.finance.receivable',
               'gestao.finance.receivableDesc',
               Icons.south_west,
-              AgendaFinanceiraLancamentoCardMobile.corNatureza(context, true,),
+              AgendaFinanceiraLancamentoCardMobile.corNatureza(context, true),
               () => _abrirAgenda(contas: AgendaContasMobile.receber),
             ),
             _acesso(
@@ -585,10 +601,38 @@ class _FinanceiroResumoMobileScreenState
               c.error,
               () => _abrirAgenda(contas: AgendaContasMobile.pagar),
             ),
-            _acesso('cards.title', 'invoices.title', Icons.credit_card_outlined, c.accent,
-              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CartoesCreditoMobileScreen(espaco: _espaco),),); if (mounted) _load(); },),
-            _acesso('gastos.title', 'mobile.cards.categoryHint', Icons.pie_chart_outline, c.accent,
-              () async { await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GastosCategoriasMobileScreen(espaco: _espaco, inicio: _inicio, fim: _fim,),),); if (mounted) _load(); },),
+            _acesso(
+              'cards.title',
+              'invoices.title',
+              Icons.credit_card_outlined,
+              c.accent,
+              () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CartoesCreditoMobileScreen(espaco: _espaco),
+                  ),
+                );
+                if (mounted) _load();
+              },
+            ),
+            _acesso(
+              'gastos.title',
+              'mobile.cards.categoryHint',
+              Icons.pie_chart_outline,
+              c.accent,
+              () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GastosCategoriasMobileScreen(
+                      espaco: _espaco,
+                      inicio: _inicio,
+                      fim: _fim,
+                    ),
+                  ),
+                );
+                if (mounted) _load();
+              },
+            ),
             _acesso(
               'gestao.finance.paymentMethods',
               'gestao.finance.paymentMethodsDesc',

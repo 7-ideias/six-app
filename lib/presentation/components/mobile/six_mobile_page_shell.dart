@@ -22,6 +22,7 @@ class SixMobilePageShell extends StatefulWidget {
   const SixMobilePageShell({
     super.key,
     required this.title,
+    this.titleWidget,
     required this.bodyBuilder,
     required this.backgroundColor,
     required this.primaryColor,
@@ -50,6 +51,7 @@ class SixMobilePageShell extends StatefulWidget {
   });
 
   final String title;
+  final Widget? titleWidget;
   final Widget? drawer;
   final Widget? leading;
   final List<Widget> actions;
@@ -243,6 +245,7 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
       backgroundColor: backgroundColor,
       appBar: _SixMobileScrollableAppBar(
         title: widget.title,
+        titleWidget: widget.titleWidget,
         leading: leading,
         actions: widget.actions,
         titleTextStyle: widget.titleTextStyle,
@@ -302,6 +305,7 @@ class _SixMobileScrollableAppBar extends StatelessWidget
     implements PreferredSizeWidget {
   const _SixMobileScrollableAppBar({
     required this.title,
+    this.titleWidget,
     required this.actions,
     required this.scrollProgress,
     required this.topBackgroundColor,
@@ -317,6 +321,7 @@ class _SixMobileScrollableAppBar extends StatelessWidget
   });
 
   final String title;
+  final Widget? titleWidget;
   final Widget? leading;
   final List<Widget> actions;
   final TextStyle? titleTextStyle;
@@ -361,7 +366,7 @@ class _SixMobileScrollableAppBar extends StatelessWidget
               automaticallyImplyLeading: automaticallyImplyLeading,
               leading: leading,
               centerTitle: centerTitle,
-              title: Text(
+              title: titleWidget ?? Text(
                 title,
                 style: baseTitleStyle
                     .copyWith(

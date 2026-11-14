@@ -1,3 +1,4 @@
+import '../components/mobile/finance_context_mobile.dart';
 import 'faturas_cartao_mobile_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -192,33 +193,12 @@ class _AgendaFinanceiraMobileScreenState
 
   Widget _seletorEspaco() => Row(
     children: [
-      for (final tipo in ['EMPRESA', 'PESSOAL'])
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: ChoiceChip(
-              label: Text(
-                context.t('space.$tipo'),
-                overflow: TextOverflow.ellipsis,
-              ),
-              selected: _service.espacoFinanceiro == tipo,
-              showCheckmark: false,
-              onSelected: _ocupado ? null : (_) => _trocarEspaco(tipo),
-              selectedColor: _softBlueColor,
-              backgroundColor: _softSurfaceColor,
-              checkmarkColor: _accentColor,
-              side: BorderSide(
-                color: _service.espacoFinanceiro == tipo
-                    ? _accentColor
-                    : _borderColor,
-              ),
-              labelStyle: TextStyle(
-                color: _titleTextColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+      Expanded(
+        child: FinanceContextSelectorMobile(
+          space: _service.espacoFinanceiro,
+          onChanged: _ocupado ? null : _trocarEspaco,
         ),
+      ),
       if (_service.espacoFinanceiro == 'EMPRESA')
         IconButton(
           tooltip: context.t('machine.receivables'),
@@ -1527,16 +1507,42 @@ class _AgendaFinanceiraMobileScreenState
 
   @override
   Widget build(BuildContext context) {
+    final title = context.t(
+      _visaoContas
+          ? (widget.contas == AgendaContasMobile.receber
+                ? 'gestao.finance.receivable'
+                : 'gestao.finance.payable')
+          : 'agenda.mobile.title',
+    );
+    final space = _service.espacoFinanceiro;
     return SixMobilePageShell(
-      title: context.t(
-        _visaoContas
-            ? (widget.contas == AgendaContasMobile.receber
-                  ? 'gestao.finance.receivable'
-                  : 'gestao.finance.payable')
-            : 'agenda.mobile.title',
+      title: title,
+      titleWidget: AnimatedSwitcher(
+        duration: financeContextDuration(context),
+        child: Column(
+          key: ValueKey('$title-$space'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            Text(
+              context.t(
+                space == 'PESSOAL'
+                    ? 'finance.mobile.personalTitle'
+                    : 'finance.mobile.companyTitle',
+              ),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       ),
+      backgroundBuilder: (_, child) =>
+          FinanceContextBackgroundMobile(space: space, child: child),
+      appBarAnimationDuration: financeContextDuration(context),
       backgroundColor: _backgroundColor,
-      primaryColor: _primaryColor,
+      primaryColor: financeContextTopColor(context, space),
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
       enableAnimatedBackground: false,
@@ -1771,7 +1777,7 @@ class _AgendaFinanceiraMobileScreenState
     final filtros = _filtrosAtivos;
     return Container(
       key: const ValueKey('agenda-mobile-filters'),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
