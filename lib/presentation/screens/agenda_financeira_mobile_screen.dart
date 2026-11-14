@@ -1777,7 +1777,7 @@ class _AgendaFinanceiraMobileScreenState
     final filtros = _filtrosAtivos;
     return Container(
       key: const ValueKey('agenda-mobile-filters'),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
