@@ -94,6 +94,7 @@ enum WebNavigationDestination {
   peoplePerformance,
   visualAssets,
   adminPlans,
+  pushCampaigns,
   cash,
   financialAgenda,
   settings,
@@ -118,6 +119,7 @@ enum WebNavigationPermission {
   podeAcessarUsuariosSixo,
   podeAcessarImagensContextuais,
   podeGerenciarPlanos,
+  podeEnviarCampanhasPush,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }

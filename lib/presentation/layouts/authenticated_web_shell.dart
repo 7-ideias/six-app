@@ -15,6 +15,7 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
 import '../screens/admin_planos_web_page.dart';
+import '../screens/admin_push_campaigns_web_page.dart';
 import 'web_header.dart';
 
 class AuthenticatedWebShell extends StatefulWidget {
@@ -92,6 +93,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         const DevolucoesProdutosWebPage(),
       WebNavigationDestination.peopleSixoUsers => const UsuariosSixoWebPage(),
       WebNavigationDestination.adminPlans => const AdminPlanosWebPage(),
+      WebNavigationDestination.pushCampaigns => const AdminPushCampaignsWebPage(
+        embeddedInMainShell: true,
+      ),
       WebNavigationDestination.visualAssets => const AdminVisualAssetsWebPage(
         embeddedInMainShell: true,
       ),
@@ -106,10 +110,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
           final bool forceCollapsed =
               constraints.maxWidth <= _compactSidebarBreakpoint;
           final bool expanded = _sidebarExpanded && !forceCollapsed;
-          final double sidebarWidth =
-              expanded
-                  ? WebSidebarNavigation.expandedWidth
-                  : WebSidebarNavigation.collapsedWidth;
+          final double sidebarWidth = expanded
+              ? WebSidebarNavigation.expandedWidth
+              : WebSidebarNavigation.collapsedWidth;
 
           return AnimatedContainer(
             key: const Key('web-shell-workspace'),
@@ -183,6 +186,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
           WebNavigationDestination.catalogLabels => WebNavigationIds.catalog,
           WebNavigationDestination.peopleSixoUsers => WebNavigationIds.people,
           WebNavigationDestination.adminPlans => WebNavigationIds.adminPlans,
+          WebNavigationDestination.pushCampaigns =>
+            WebNavigationIds.pushCampaigns,
           WebNavigationDestination.visualAssets =>
             WebNavigationIds.visualAssets,
           _ => WebNavigationIds.operations,
@@ -223,7 +228,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         destination == WebNavigationDestination.operationsReturns ||
         destination == WebNavigationDestination.peopleSixoUsers ||
         destination == WebNavigationDestination.visualAssets ||
-        destination == WebNavigationDestination.adminPlans;
+        destination == WebNavigationDestination.adminPlans ||
+        destination == WebNavigationDestination.pushCampaigns;
   }
 
   Future<void> _abrirDevolucoesDaVenda(String identificador) async {
@@ -320,4 +326,3 @@ String _shellText(BuildContext context, String key, String fallback) {
   final String resolved = context.t(key);
   return resolved == key ? fallback : resolved;
 }
-

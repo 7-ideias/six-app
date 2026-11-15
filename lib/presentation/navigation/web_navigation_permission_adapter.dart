@@ -9,10 +9,12 @@ abstract final class WebNavigationPermissionAdapter {
       return const <WebNavigationPermission>{};
     }
     if (provider.ehAdministrador) {
-      final Set<WebNavigationPermission> permissions =
-          WebNavigationPermission.values.toSet();
+      final Set<WebNavigationPermission> permissions = WebNavigationPermission
+          .values
+          .toSet();
       if (!provider.ehSuperUsuario) {
         permissions.remove(WebNavigationPermission.podeGerenciarPlanos);
+        permissions.remove(WebNavigationPermission.podeEnviarCampanhasPush);
         permissions.remove(WebNavigationPermission.podeAcessarUsuariosSixo);
         permissions.remove(
           WebNavigationPermission.podeAcessarImagensContextuais,
@@ -48,6 +50,7 @@ abstract final class WebNavigationPermissionAdapter {
         WebNavigationPermission.podeGerenciarDesempenho,
       if (provider.ehSuperUsuario) ...<WebNavigationPermission>[
         WebNavigationPermission.podeGerenciarPlanos,
+        WebNavigationPermission.podeEnviarCampanhasPush,
         WebNavigationPermission.podeAcessarUsuariosSixo,
         WebNavigationPermission.podeAcessarImagensContextuais,
       ],
@@ -70,4 +73,3 @@ abstract final class WebNavigationPermissionAdapter {
     ColaboradorAutorizacoesProvider provider,
   ) => provider.ehAdministrador || provider.autorizacoesCarregadasComSucesso;
 }
-
