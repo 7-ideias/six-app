@@ -112,12 +112,10 @@ void main() {
       );
     });
 
-    test(
-      'Catalogo com cadastro de produto libera o hub centralizado',
-      () {
-        final List<WebNavigationItem> visible = _visibleItemsFor(
-          _FakeAutorizacoesProvider(podeCadastrarProduto: true),
-        );
+    test('Catalogo com cadastro de produto libera o hub centralizado', () {
+      final List<WebNavigationItem> visible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(podeCadastrarProduto: true),
+      );
 
       expect(
         _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
@@ -197,6 +195,27 @@ void main() {
         ),
         isNull,
       );
+    });
+
+    test('Campanhas aparece apos Planos somente para SUPER', () {
+      final ids = _topLevelIds(
+        _visibleItemsFor(
+          _FakeAutorizacoesProvider(admin: true, superUser: true),
+        ),
+      );
+      expect(
+        ids.indexOf(WebNavigationIds.pushCampaigns),
+        ids.indexOf(WebNavigationIds.adminPlans) + 1,
+      );
+      for (final provider in [
+        _FakeAutorizacoesProvider(admin: true),
+        _FakeAutorizacoesProvider(),
+      ]) {
+        expect(
+          _findItem(_visibleItemsFor(provider), WebNavigationIds.pushCampaigns),
+          isNull,
+        );
+      }
     });
 
     test('somente SUPER enxerga o painel de Imagens', () {
@@ -408,4 +427,3 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
   @override
   bool get autorizacoesCarregadasComSucesso => loaded;
 }
-

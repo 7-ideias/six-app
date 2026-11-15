@@ -1,6 +1,6 @@
 # Painel de campanhas de push
 
-Acesso: portal web do SUPER → Campanhas de push (`/admin/campanhas-push`).
+Acesso principal: `/app` → Campanhas de push (abaixo de Planos), exclusivo do SUPER. Link direto: `/app/campanhas-push`. O acesso legado em `/admin/campanhas-push` continua disponível.
 
 Fluxo: público filtrado e seleção múltipla → texto por idioma → prévia → revisão no backend → confirmação → histórico. O SUPER escreve todas as versões. A confirmação informa quantidade de ADMINs, ausência de dispositivos e empresa/idioma de destino. Um teste é uma campanha para exatamente um ADMIN, com identificação no histórico.
 

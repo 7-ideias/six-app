@@ -25,6 +25,7 @@ abstract final class WebNavigationIds {
   static const String peopleCollaborators = 'people.collaborators';
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
+  static const String pushCampaigns = 'admin.push_campaigns';
   static const String adminPlans = 'admin.plans';
   static const String visualAssets = 'visual.assets';
   static const String cash = 'cash';
@@ -262,6 +263,16 @@ abstract final class WebNavigationRegistry {
         WebNavigationPermission.podeGerenciarPlanos,
       ]),
       destination: WebNavigationDestination.adminPlans,
+    ),
+    WebNavigationItem(
+      id: WebNavigationIds.pushCampaigns,
+      labelKey: 'web.navigation.pushCampaigns',
+      labelFallback: 'Campanhas de push',
+      icon: Icons.campaign_outlined,
+      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+        WebNavigationPermission.podeEnviarCampanhasPush,
+      ]),
+      destination: WebNavigationDestination.pushCampaigns,
     ),
     WebNavigationItem(
       id: WebNavigationIds.settings,

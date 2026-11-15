@@ -10,9 +10,15 @@ import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
+import '../layouts/six_web_page_shell.dart';
 
 class AdminPushCampaignsWebPage extends StatefulWidget {
-  const AdminPushCampaignsWebPage({super.key, this.service});
+  const AdminPushCampaignsWebPage({
+    super.key,
+    this.service,
+    this.embeddedInMainShell = false,
+  });
+  final bool embeddedInMainShell;
   final PushCampaignService? service;
   @override
   State<AdminPushCampaignsWebPage> createState() => _CampaignState();
@@ -93,17 +99,16 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
     }
   }
 
-  List<CampaignRecipient> get _filtered =>
-      _audience
-          .where(
-            (d) =>
-                (_language.isEmpty || d.language == _language) &&
-                (_status.isEmpty || d.subscription == _status) &&
-                '${d.name} ${d.email} ${d.company}'.toLowerCase().contains(
-                  _search.text.trim().toLowerCase(),
-                ),
-          )
-          .toList();
+  List<CampaignRecipient> get _filtered => _audience
+      .where(
+        (d) =>
+            (_language.isEmpty || d.language == _language) &&
+            (_status.isEmpty || d.subscription == _status) &&
+            '${d.name} ${d.email} ${d.company}'.toLowerCase().contains(
+              _search.text.trim().toLowerCase(),
+            ),
+      )
+      .toList();
   List<CampaignRecipient> get _chosen =>
       _audience.where((d) => _selected.contains(d.key)).toList();
   List<String> get _languages =>
@@ -207,8 +212,70 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
   );
   @override
   Widget build(BuildContext context) {
-    final profile =
-        context.watch<ColaboradorAutorizacoesProvider>().tipoPerfilUnificado;
+    final profile = context
+        .watch<ColaboradorAutorizacoesProvider>()
+        .tipoPerfilUnificado;
+    final Widget content = profile != 'SUPER'
+        ? Center(child: Text(t('access')))
+        : _loading
+        ? const SixBackendLoading.messages()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(t('intro')),
+              const SizedBox(height: 16),
+              if (_error != null)
+                _section(t('title'), [
+                  Text(
+                    t(_error!),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ]),
+              if (_notice != null) _section(t('title'), [Text(t(_notice!))]),
+              if (!_editing)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.icon(
+                    onPressed: () => setState(() {
+                      _editing = true;
+                      _notice = null;
+                      _error = null;
+                      _reviewed = null;
+                    }),
+                    icon: const Icon(Icons.campaign_outlined),
+                    label: Text(t('new')),
+                  ),
+                ),
+              if (_editing && _reviewed == null) ..._editor(),
+              if (_reviewed != null) ..._confirmation(),
+              const SizedBox(height: 20),
+              ..._historyView(),
+            ],
+          );
+    if (widget.embeddedInMainShell) {
+      return SixWebPageShell(
+        child: SingleChildScrollView(
+          padding: SixWebPageShell.scrollPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (profile == 'SUPER')
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    tooltip: t('refresh'),
+                    onPressed: _busy || _loading ? null : _load,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ),
+              content,
+            ],
+          ),
+        ),
+      );
+    }
     return AdminNavigationShell(
       texts: AdminPortalTexts.of(context),
       userInfo: AdminPortalUserInfo(profileType: profile),
@@ -223,48 +290,7 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
       onRefresh: _busy ? () {} : _load,
       refreshing: _loading,
       loggingOut: false,
-      child:
-          profile != 'SUPER'
-              ? Center(child: Text(t('access')))
-              : _loading
-              ? const SixBackendLoading.messages()
-              : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(t('intro')),
-                  const SizedBox(height: 16),
-                  if (_error != null)
-                    _section(t('title'), [
-                      Text(
-                        t(_error!),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ]),
-                  if (_notice != null)
-                    _section(t('title'), [Text(t(_notice!))]),
-                  if (!_editing)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.icon(
-                        onPressed:
-                            () => setState(() {
-                              _editing = true;
-                              _notice = null;
-                              _error = null;
-                              _reviewed = null;
-                            }),
-                        icon: const Icon(Icons.campaign_outlined),
-                        label: Text(t('new')),
-                      ),
-                    ),
-                  if (_editing && _reviewed == null) ..._editor(),
-                  if (_reviewed != null) ..._confirmation(),
-                  const SizedBox(height: 20),
-                  ..._historyView(),
-                ],
-              ),
+      child: content,
     );
   }
 
@@ -311,10 +337,8 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
             onChanged: (v) => setState(() => _status = v!),
           ),
           TextButton(
-            onPressed:
-                () => setState(
-                  () => _selected.addAll(_filtered.map((d) => d.key)),
-                ),
+            onPressed: () =>
+                setState(() => _selected.addAll(_filtered.map((d) => d.key))),
             child: Text(t('all')),
           ),
           TextButton(
@@ -327,35 +351,33 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
       const SizedBox(height: 8),
       SizedBox(
         height: 280,
-        child:
-            _filtered.isEmpty
-                ? Center(child: Text(t('empty')))
-                : ListView.builder(
-                  itemCount: _filtered.length,
-                  itemBuilder: (_, i) {
-                    final d = _filtered[i];
-                    return CheckboxListTile(
-                      value: _selected.contains(d.key),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(
-                        '${d.name} · ${d.company}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${d.email} · ${d.language.toUpperCase()} · ${t(d.subscription)} · ${d.devices == 0 ? t('noDevice') : '${t('devices')}: ${d.devices}'}',
-                      ),
-                      onChanged:
-                          (v) => setState(() {
-                            if (v == true) {
-                              _selected.add(d.key);
-                            } else {
-                              _selected.remove(d.key);
-                            }
-                          }),
-                    );
-                  },
-                ),
+        child: _filtered.isEmpty
+            ? Center(child: Text(t('empty')))
+            : ListView.builder(
+                itemCount: _filtered.length,
+                itemBuilder: (_, i) {
+                  final d = _filtered[i];
+                  return CheckboxListTile(
+                    value: _selected.contains(d.key),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(
+                      '${d.name} · ${d.company}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${d.email} · ${d.language.toUpperCase()} · ${t(d.subscription)} · ${d.devices == 0 ? t('noDevice') : '${t('devices')}: ${d.devices}'}',
+                    ),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _selected.add(d.key);
+                      } else {
+                        _selected.remove(d.key);
+                      }
+                    }),
+                  );
+                },
+              ),
       ),
     ]),
     _section(t('body'), [
@@ -415,8 +437,9 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
             child: Text(t('review')),
           ),
           OutlinedButton(
-            onPressed:
-                _busy || _chosen.length != 1 ? null : () => _review(test: true),
+            onPressed: _busy || _chosen.length != 1
+                ? null
+                : () => _review(test: true),
             child: Text(t('test')),
           ),
         ],
@@ -454,13 +477,12 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
             label: Text(t('send')),
           ),
           TextButton(
-            onPressed:
-                _busy
-                    ? null
-                    : () => setState(() {
-                      _reviewed = null;
-                      _id = const Uuid().v4();
-                    }),
+            onPressed: _busy
+                ? null
+                : () => setState(() {
+                    _reviewed = null;
+                    _id = const Uuid().v4();
+                  }),
             child: Text(t('back')),
           ),
         ],
@@ -510,23 +532,21 @@ class _CampaignState extends State<AdminPushCampaignsWebPage> {
         spacing: 12,
         children: [
           TextButton(
-            onPressed:
-                _page == 0
-                    ? null
-                    : () {
-                      setState(() => _page--);
-                      _load();
-                    },
+            onPressed: _page == 0
+                ? null
+                : () {
+                    setState(() => _page--);
+                    _load();
+                  },
             child: Text(t('previous')),
           ),
           TextButton(
-            onPressed:
-                _history.length < 20
-                    ? null
-                    : () {
-                      setState(() => _page++);
-                      _load();
-                    },
+            onPressed: _history.length < 20
+                ? null
+                : () {
+                    setState(() => _page++);
+                    _load();
+                  },
             child: Text(t('next')),
           ),
           TextButton(onPressed: _load, child: Text(t('refresh'))),

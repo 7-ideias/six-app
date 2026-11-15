@@ -13,6 +13,7 @@ void main() {
         WebNavigationIds.visualAssets,
         WebNavigationIds.financial,
         WebNavigationIds.adminPlans,
+        WebNavigationIds.pushCampaigns,
         WebNavigationIds.settings,
       ]);
 
