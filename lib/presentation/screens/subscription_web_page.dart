@@ -25,7 +25,11 @@ class SubscriptionWebPage extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1152),
-              child: SubscriptionWebPanel(selection: selection),
+              child: SubscriptionWebPanel(
+                selection: selection,
+                companyId: selection?.queryParameters['companyId'],
+                campaignId: selection?.queryParameters['campaignId'],
+              ),
             ),
           ),
         ),
@@ -162,7 +166,13 @@ class SubscriptionOfferWebCard extends StatelessWidget {
 }
 
 class SubscriptionWebPanel extends StatefulWidget {
-  const SubscriptionWebPanel({super.key, this.companyId, this.selection});
+  const SubscriptionWebPanel({
+    super.key,
+    this.companyId,
+    this.selection,
+    this.campaignId,
+  });
+  final String? campaignId;
   final Uri? selection;
   final String? companyId;
   @override
@@ -172,6 +182,7 @@ class SubscriptionWebPanel extends StatefulWidget {
 class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
+    campaignId: widget.campaignId,
     selection: widget.selection,
   );
   @override

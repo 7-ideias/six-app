@@ -1,3 +1,4 @@
+import 'presentation/screens/admin_push_campaigns_web_page.dart';
 import 'dart:async';
 
 import 'core/services/auth_service.dart';
@@ -161,6 +162,12 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const AdminPortalWebPage(),
+      );
+    }
+    if (routeUri.path == '/admin/campanhas-push') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AdminPushCampaignsWebPage(),
       );
     }
     if (routeUri.path == '/admin/usuarios') {
@@ -463,12 +470,14 @@ class MyApp extends StatelessWidget {
                 Positioned.fill(
                   child: kIsWeb
                       ? BillingAccessWebPage(
-                          key: ValueKey(company),
+                          key: ValueKey('$company:$paymentRequiredCampaignId'),
+                          campaignId: paymentRequiredCampaignId,
                           companyId: company,
                           onExit: _exitBilling,
                         )
                       : BillingAccessMobileScreen(
-                          key: ValueKey(company),
+                          key: ValueKey('$company:$paymentRequiredCampaignId'),
+                          campaignId: paymentRequiredCampaignId,
                           companyId: company,
                           onExit: _exitBilling,
                         ),

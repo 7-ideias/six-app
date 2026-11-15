@@ -15,7 +15,13 @@ import '../components/mobile/six_mobile_page_shell.dart';
 import '../controllers/subscription_billing_controller.dart';
 
 class SubscriptionMobileScreen extends StatelessWidget {
-  const SubscriptionMobileScreen({super.key, this.initialReturn});
+  const SubscriptionMobileScreen({
+    super.key,
+    this.initialReturn,
+    this.companyId,
+    this.campaignId,
+  });
+  final String? companyId, campaignId;
   final BillingReturn? initialReturn;
   @override
   Widget build(BuildContext context) {
@@ -29,7 +35,13 @@ class SubscriptionMobileScreen extends StatelessWidget {
       bodyBuilder: (context, scroll, topInset) => ListView(
         controller: scroll,
         padding: EdgeInsets.fromLTRB(20, topInset + 20, 20, 32),
-        children: [SubscriptionMobilePanel(initialReturn: initialReturn)],
+        children: [
+          SubscriptionMobilePanel(
+            initialReturn: initialReturn,
+            companyId: companyId,
+            campaignId: campaignId,
+          ),
+        ],
       ),
     );
   }
@@ -163,9 +175,11 @@ class SubscriptionMobilePanel extends StatefulWidget {
   const SubscriptionMobilePanel({
     super.key,
     this.companyId,
+    this.campaignId,
     this.initialReturn,
   });
   final String? companyId;
+  final String? campaignId;
   final BillingReturn? initialReturn;
   @override
   State<SubscriptionMobilePanel> createState() =>
@@ -175,6 +189,7 @@ class SubscriptionMobilePanel extends StatefulWidget {
 class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
+    campaignId: widget.campaignId,
     initialReturn: widget.initialReturn,
   );
   @override

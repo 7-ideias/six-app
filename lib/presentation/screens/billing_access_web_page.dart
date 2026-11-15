@@ -38,8 +38,10 @@ class BillingAccessWebPage extends StatefulWidget {
     this.companyName = '',
     this.admin = false,
     this.onExit,
+    this.campaignId,
   });
   final String companyId;
+  final String? campaignId;
   final String companyName;
   final bool admin;
   final Future<void> Function()? onExit;
@@ -171,7 +173,10 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                     ),
                   if (!widget.admin) ...[
                     const SizedBox(height: 24),
-                    SubscriptionWebPanel(companyId: widget.companyId),
+                    SubscriptionWebPanel(
+                      companyId: widget.companyId,
+                      campaignId: widget.campaignId,
+                    ),
                   ],
                   if (widget.admin) ...[
                     const SizedBox(height: 20),

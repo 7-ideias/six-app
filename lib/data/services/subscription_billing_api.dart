@@ -51,6 +51,9 @@ class SubscriptionBillingApi {
     return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> campaignContext(String id) =>
+      _request('', 'campanha?id=${Uri.encodeQueryComponent(id)}');
+
   Future<SubscriptionSummary> summary(
     String company, {
     bool sync = false,

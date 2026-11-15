@@ -15,6 +15,7 @@ class SubscriptionBillingController extends ChangeNotifier
     with WidgetsBindingObserver {
   SubscriptionBillingController({
     String? companyId,
+    this.campaignId,
     Uri? selection,
     BillingReturn? initialReturn,
     SubscriptionBillingApi? api,
@@ -34,6 +35,12 @@ class SubscriptionBillingController extends ChangeNotifier
       _onReturn();
     }
   }
+  static String _campaignLocale(String language) => switch (language) {
+    'en' => 'en-US',
+    'es' => 'es-ES',
+    _ => 'pt-BR',
+  };
+  final String? campaignId;
   String? _company;
   String? selectedPlanId, selectedInterval;
   String currency = 'BRL', locale = 'pt-BR';
@@ -61,10 +68,11 @@ class SubscriptionBillingController extends ChangeNotifier
     return offers.where((offer) => offer.interval == selectedInterval).toList();
   }
 
-  List<String> get intervals => (value?.offers ?? const <BillingOffer>[])
-      .map((offer) => offer.interval)
-      .toSet()
-      .toList();
+  List<String> get intervals =>
+      (value?.offers ?? const <BillingOffer>[])
+          .map((offer) => offer.interval)
+          .toSet()
+          .toList();
   void selectInterval(String interval) {
     selectedInterval = interval;
     _notify();
@@ -93,6 +101,12 @@ class SubscriptionBillingController extends ChangeNotifier
     final result = _pendingReturn;
     _pendingReturn = null;
     try {
+      if (campaignId != null) {
+        final target = await _api.campaignContext(campaignId!);
+        _company = target['companyId'] as String;
+        locale = _campaignLocale(target['languageCode'] as String);
+        currency = target['currency'] as String;
+      }
       _company ??= await AuthService().getEmpresaId();
       if (_disposed) return;
       if (result != null && result.company != _company) {
@@ -103,11 +117,12 @@ class SubscriptionBillingController extends ChangeNotifier
       final portal =
           result?.outcome == 'portal' || (result == null && !_checkoutOpened);
       if (result != null) _checkoutOpened = !canceled && !portal;
-      returnMessage = canceled
-          ? 'checkoutCanceled'
-          : portal
-          ? null
-          : 'paymentConfirming';
+      returnMessage =
+          canceled
+              ? 'checkoutCanceled'
+              : portal
+              ? null
+              : 'paymentConfirming';
       _notify();
       for (var attempt = 0; attempt < (canceled || portal ? 1 : 6); attempt++) {
         if (_disposed || !_foreground) return;
@@ -148,11 +163,18 @@ class SubscriptionBillingController extends ChangeNotifier
   Future<void> load({bool sync = false}) async {
     if (_busy || _disposed) return;
     _reloadPending = false;
-    final requestedLocale = locale;
+    var requestedLocale = locale;
     _busy = true;
     error = null;
     _notify();
     try {
+      if (campaignId != null) {
+        final target = await _api.campaignContext(campaignId!);
+        _company = target['companyId'] as String;
+        locale =
+            requestedLocale = _campaignLocale(target['languageCode'] as String);
+        currency = target['currency'] as String;
+      }
       _company ??= await AuthService().getEmpresaId();
       if (_company == null || _company!.isEmpty)
         throw const BillingAccessException('selectCompany');
@@ -201,14 +223,15 @@ class SubscriptionBillingController extends ChangeNotifier
     error = null;
     _notify();
     try {
-      final uri = offer == null
-          ? await _api.portal(_company!, mobile: !kIsWeb)
-          : await _api.checkout(
-              _company!,
-              offer,
-              locale: locale,
-              mobile: !kIsWeb,
-            );
+      final uri =
+          offer == null
+              ? await _api.portal(_company!, mobile: !kIsWeb)
+              : await _api.checkout(
+                _company!,
+                offer,
+                locale: locale,
+                mobile: !kIsWeb,
+              );
       if (_disposed) return;
       _checkoutOpened = offer != null;
       returnMessage = null;
