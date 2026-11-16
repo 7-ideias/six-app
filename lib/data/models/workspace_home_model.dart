@@ -1,3 +1,15 @@
+enum WorkspaceHomeSection {
+  financial('FINANCIAL', 'financial'),
+  technicalServices('TECHNICAL_SERVICES', 'technicalServices'),
+  cash('CASH', 'cash'),
+  stock('STOCK', 'stock'),
+  reservations('RESERVATIONS', 'reservations');
+
+  const WorkspaceHomeSection(this.path, this.jsonKey);
+  final String path;
+  final String jsonKey;
+}
+
 class WorkspaceHomeModel {
   const WorkspaceHomeModel({
     required this.date,
@@ -6,6 +18,7 @@ class WorkspaceHomeModel {
     required this.technicalServices,
     required this.financial,
     required this.stock,
+    this.reservations = const WorkspaceHomeReservations(available: false),
   });
 
   factory WorkspaceHomeModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +31,9 @@ class WorkspaceHomeModel {
       ),
       financial: WorkspaceHomeFinancial.fromJson(_asMap(json['financial'])),
       stock: WorkspaceHomeStock.fromJson(_asMap(json['stock'])),
+      reservations: WorkspaceHomeReservations.fromJson(
+        _asMap(json['reservations']),
+      ),
     );
   }
 
@@ -27,6 +43,7 @@ class WorkspaceHomeModel {
   final WorkspaceHomeTechnicalServices technicalServices;
   final WorkspaceHomeFinancial financial;
   final WorkspaceHomeStock stock;
+  final WorkspaceHomeReservations reservations;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -36,6 +53,7 @@ class WorkspaceHomeModel {
       'technicalServices': technicalServices.toJson(),
       'financial': financial.toJson(),
       'stock': stock.toJson(),
+      'reservations': reservations.toJson(),
     };
   }
 }
@@ -284,4 +302,26 @@ double _asDouble(dynamic value) {
     return value.toDouble();
   }
   return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+class WorkspaceHomeReservations {
+  const WorkspaceHomeReservations({
+    required this.available,
+    this.received,
+    this.inReview,
+  });
+  factory WorkspaceHomeReservations.fromJson(Map<String, dynamic> json) =>
+      WorkspaceHomeReservations(
+        available: _asBool(json['available']),
+        received: _asNullableInt(json['received']),
+        inReview: _asNullableInt(json['inReview']),
+      );
+  final bool available;
+  final int? received;
+  final int? inReview;
+  Map<String, dynamic> toJson() => {
+    'available': available,
+    'received': received,
+    'inReview': inReview,
+  };
 }

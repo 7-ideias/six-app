@@ -1,4 +1,6 @@
-import 'package:provider/provider.dart';import 'package:flutter/material.dart';
+import '../six_backend_loading.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
 
 import '../../../data/models/catalogo_reserva_model.dart';
 import '../../../data/models/consulta_vendas_models.dart';
@@ -38,14 +40,16 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    if (!provider.hasLoaded) {
+    if (!provider.hasLoaded &&
+        !provider.salesLoaded &&
+        !provider.servicesLoaded &&
+        !provider.reservationsLoaded) {
       return _OperationalLoading(
         showSales: showSales,
         showServices: showServices,
         showReservations: showReservations,
       );
     }
-
     if (provider.globalErrorCode != null) {
       return _OperationalError(onRetry: onRetry);
     }
@@ -53,25 +57,29 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SixWebEntry(
-          order: 0,
-          child: _AttentionOverview(
-            provider: provider,
-            regionalizacao: regionalizacao,
-            showSales: showSales,
-            showServices: showServices,
-            showReservations: showReservations,
+        if (provider.hasLoaded)
+          SixWebEntry(
+            order: 0,
+            child: _AttentionOverview(
+              provider: provider,
+              regionalizacao: regionalizacao,
+              showSales: showSales,
+              showServices: showServices,
+              showReservations: showReservations,
+            ),
           ),
-        ),
         if (showSales) ...<Widget>[
           SixWebPageShell.sectionGap,
           SixWebEntry(
             order: 1,
-            child: _SalesOverview(
-              provider: provider,
-              regionalizacao: regionalizacao,
-              onRetry: onRetry,
-            ),
+            child:
+                !provider.salesLoaded
+                    ? const _BlockLoading()
+                    : _SalesOverview(
+                      provider: provider,
+                      regionalizacao: regionalizacao,
+                      onRetry: onRetry,
+                    ),
           ),
         ],
         if (showServices || showReservations) ...<Widget>[
@@ -82,18 +90,24 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
                   constraints.maxWidth < 920 ||
                   !showServices ||
                   !showReservations;
-              final Widget services = _ServicesOverview(
-                provider: provider,
-                regionalizacao: regionalizacao,
-                onRetry: onRetry,
-                onOpen: onOpenServices,
-              );
-              final Widget reservations = _ReservationsOverview(
-                provider: provider,
-                regionalizacao: regionalizacao,
-                onRetry: onRetry,
-                onOpen: onOpenReservations,
-              );
+              final Widget services =
+                  !provider.servicesLoaded
+                      ? const _BlockLoading()
+                      : _ServicesOverview(
+                        provider: provider,
+                        regionalizacao: regionalizacao,
+                        onRetry: onRetry,
+                        onOpen: onOpenServices,
+                      );
+              final Widget reservations =
+                  !provider.reservationsLoaded
+                      ? const _BlockLoading()
+                      : _ReservationsOverview(
+                        provider: provider,
+                        regionalizacao: regionalizacao,
+                        onRetry: onRetry,
+                        onOpen: onOpenReservations,
+                      );
 
               if (stack) {
                 return Column(
@@ -1093,13 +1107,17 @@ class _SalesOverview extends StatelessWidget {
         )
         .replaceAll(
           '{start}',
-          regionalizacao.formatDate(provider.periodoInicio ??
-                context.read<LocaleSettingsProvider>().calendarNow,),
+          regionalizacao.formatDate(
+            provider.periodoInicio ??
+                context.read<LocaleSettingsProvider>().calendarNow,
+          ),
         )
         .replaceAll(
           '{end}',
-          regionalizacao.formatDate(provider.periodoFim ??
-                context.read<LocaleSettingsProvider>().calendarNow,),
+          regionalizacao.formatDate(
+            provider.periodoFim ??
+                context.read<LocaleSettingsProvider>().calendarNow,
+          ),
         );
 
     return SixWebSectionCard(
@@ -2298,4 +2316,15 @@ String _serviceStatusLabel(
   return status.i18nKey.trim().isEmpty
       ? safeFallback
       : context.t(status.i18nKey.trim(), fallback: safeFallback);
+}
+
+class _BlockLoading extends StatelessWidget {
+  const _BlockLoading();
+  @override
+  Widget build(BuildContext context) => SixBackendLoading(
+    title: context.t('homeToday.loading'),
+    subtitle: context.t('homeToday.loadingHint'),
+    animation: SixBackendLoadingAnimation.skeletonPulse,
+    compact: true,
+  );
 }

@@ -1,4 +1,17 @@
-import '../../providers/locale_settings_provider.dart';import 'dart:async';
+import 'package:sixpos/providers/workspace_home_provider.dart';
+import 'package:sixpos/data/models/workspace_home_model.dart';
+import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
+import 'package:sixpos/presentation/components/mobile/workspace_today_mobile.dart';
+import 'agenda_financeira_mobile_screen.dart';
+import 'atendimento_tecnico_mobile_screen.dart';
+import 'atendimentos_tecnicos_mobile_screen.dart';
+import 'estoque_mobile_screen.dart';
+import 'operacoes_caixa_mobile_screen.dart';
+import 'receber_mobile_screen.dart';
+import 'pdv_mobile_screen.dart';
+import '../../providers/locale_settings_provider.dart';
+import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -86,7 +99,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final NumberFormat _compactFmt = NumberFormat.compactCurrency(
     locale: 'pt_BR',
     symbol: 'R\$',
-    decimalDigits: 1,);
+    decimalDigits: 1,
+  );
 
   final ImagePicker _picker = ImagePicker();
   final AuthService _authService = AuthService();
@@ -99,6 +113,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
     initialPeriod: DashboardPeriod.last30Days,
   );
   final HomeBannersProvider _homeBannersProvider = HomeBannersProvider();
+  final WorkspaceHomeProvider _todayProvider = WorkspaceHomeProvider();
+  final OperationalProcedureFlowCoordinator _todayProcedureCoordinator =
+      OperationalProcedureFlowCoordinator();
+  String? _todayScope;
+  bool _openingTodayAction = false;
   late final DesempenhoColaboradorHomeProvider _desempenhoProvider;
   late final bool _ownsDesempenhoProvider;
   late final ColaboradorHomeOperacionalProvider _operacionalProvider;
@@ -183,6 +202,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _homeScrollController.dispose();
     _profileAvatarScrollProgress.dispose();
     _dashboardProvider.dispose();
+    _todayProvider.dispose();
     _homeBannersProvider.dispose();
     if (_ownsDesempenhoProvider) {
       _desempenhoProvider.dispose();
@@ -324,6 +344,62 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
+  Future<void> _openTodayPage(
+    Widget page,
+    Set<WorkspaceHomeSection> sections, {
+    ProcedureOperationPoint? procedure,
+  }) async {
+    if (_openingTodayAction) return;
+    _openingTodayAction = true;
+    try {
+      if (procedure != null) {
+        final result = await _todayProcedureCoordinator.execute(
+          context: context,
+          operationPoint: procedure,
+        );
+        if (!mounted || !result.shouldContinue) return;
+      }
+      if (!mounted) return;
+      await Navigator.of(
+        context,
+      ).push<Object?>(MaterialPageRoute<Object?>(builder: (_) => page));
+      if (mounted) await _todayProvider.load(sections: sections);
+    } finally {
+      _openingTodayAction = false;
+    }
+  }
+
+  void _openTodaySection(WorkspaceHomeSection section) {
+    switch (section) {
+      case WorkspaceHomeSection.financial:
+        unawaited(
+          _openTodayPage(
+            const AgendaFinanceiraMobileScreen(espacoInicial: 'EMPRESA'),
+            {section, WorkspaceHomeSection.cash},
+          ),
+        );
+      case WorkspaceHomeSection.technicalServices:
+        unawaited(
+          _openTodayPage(const AtendimentosTecnicosMobileScreen(), {
+            section,
+            WorkspaceHomeSection.financial,
+          }),
+        );
+      case WorkspaceHomeSection.stock:
+        unawaited(_openTodayPage(const EstoqueMobileScreen(), {section}));
+      case WorkspaceHomeSection.cash:
+        unawaited(
+          _openTodayPage(
+            const OperacoesCaixaMobileScreen(),
+            {section},
+            procedure: ProcedureOperationPoint.cashRegisterStartBefore,
+          ),
+        );
+      case WorkspaceHomeSection.reservations:
+        break;
+    }
+  }
+
   void _onEmpresaChanged() {
     if (!mounted) return;
     _homeBannersProvider.invalidar();
@@ -444,6 +520,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       tasks.add(_desempenhoProvider.reload());
     } else if (autorizacoes.ehAdministrador) {
       tasks.add(_dashboardProvider.reload());
+      if (!autorizacoes.ehSuperUsuario) tasks.add(_todayProvider.reload());
     } else if (autorizacoes.ehColaborador) {
       if (podeCarregarPainelOperacional) {
         tasks.add(_reloadOperational(autorizacoes));
@@ -713,6 +790,20 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final bool ehSuper = autorizacoes.ehSuperUsuario;
     final bool ehAdmin = autorizacoes.ehAdministrador;
     final bool ehColaborador = autorizacoes.ehColaborador;
+    final String todayScope =
+        '${autorizacoes.idUnicoDoUsuarioCarregado}|${autorizacoes.empresaIdCarregada}|${autorizacoes.tipoPerfilUnificado}';
+    if (_todayScope != todayScope) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _todayScope == todayScope) return;
+        _todayProvider.clear();
+        _operacionalProvider.clear();
+        setState(() => _todayScope = todayScope);
+        _scheduleOperationalLoad(autorizacoes);
+        if (ehAdmin && !ehSuper && autorizacoes.empresaIdCarregada != null) {
+          unawaited(_todayProvider.load());
+        }
+      });
+    }
     final bool canAccessSales =
         ehColaborador && autorizacoes.podeVerQuantoVendeu;
     final bool canAccessServices =
@@ -721,6 +812,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         ehColaborador && autorizacoes.podeFazerVenda;
     final bool hasOperationalAccess =
         canAccessSales || canAccessServices || canAccessReservations;
+    if (_todayScope == todayScope) _scheduleOperationalLoad(autorizacoes);
 
     return SafeArea(
       top: false,
@@ -779,7 +871,70 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ],
             if (ehAdmin &&
+                !ehSuper &&
+                !_carregandoTrocaDeComercio &&
+                _todayScope == todayScope &&
                 _dashboardView == _HomeDashboardView.operational) ...[
+              const SizedBox(height: 16),
+              WorkspaceTodayMobile(
+                provider: _todayProvider,
+                companyName:
+                    _empresaProvider.empresa?.nomeFantasia.isNotEmpty == true
+                        ? _empresaProvider.empresa!.nomeFantasia
+                        : _empresaProvider.empresa?.nomeEmpresa ?? '',
+                onOpen: _openTodaySection,
+                onSale:
+                    () => _openTodayPage(
+                      const PdvMobileScreen(),
+                      {
+                        WorkspaceHomeSection.financial,
+                        WorkspaceHomeSection.stock,
+                        WorkspaceHomeSection.cash,
+                      },
+                      procedure: ProcedureOperationPoint.saleStartBefore,
+                    ),
+                onService:
+                    () => _openTodayPage(
+                      const AtendimentoTecnicoMobileScreen(),
+                      {WorkspaceHomeSection.technicalServices},
+                      procedure:
+                          ProcedureOperationPoint.technicalServiceStartBefore,
+                    ),
+                onReceive:
+                    () => _openTodayPage(ReceberMobileScreen(), {
+                      WorkspaceHomeSection.financial,
+                      WorkspaceHomeSection.cash,
+                    }),
+              ),
+            ],
+            if (ehAdmin &&
+                _dashboardView == _HomeDashboardView.operational) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _softSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.t('homeToday.demo'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _titleTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.t('homeToday.demoHint'),
+                      style: TextStyle(color: _mutedTextColor),
+                    ),
+                  ],
+                ),
+              ),
               SizedBox(height: 16),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: ehSuper ? 150 : 80),
@@ -3430,7 +3585,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  context.read<LocaleSettingsProvider>().formatDate(item.dataPrevista,),
+                  context.read<LocaleSettingsProvider>().formatDate(
+                    item.dataPrevista,
+                  ),
                   style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],

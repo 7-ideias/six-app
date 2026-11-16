@@ -54,6 +54,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   String? get erro => _erro;
   Object? get ultimaFalha => _ultimaFalha;
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
+  String? get empresaIdCarregada => _empresaIdCarregada;
   String get tipoPerfilUsuario => _tipoPerfilUsuario;
   TipoUsuarioEnum? get tipoUsuario => _tipoUsuario;
   String get tipoPerfilUnificado {
