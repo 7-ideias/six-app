@@ -520,11 +520,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
       tasks.add(_desempenhoProvider.reload());
     } else if (autorizacoes.ehAdministrador) {
       tasks.add(_dashboardProvider.reload());
-      if (!autorizacoes.ehSuperUsuario) tasks.add(_todayProvider.reload());
     } else if (autorizacoes.ehColaborador) {
       if (podeCarregarPainelOperacional) {
         tasks.add(_reloadOperational(autorizacoes));
       }
+    }
+    if (_dashboardView == _HomeDashboardView.operational &&
+        (autorizacoes.ehAdministrador || autorizacoes.ehSuperUsuario)) {
+      tasks.add(_todayProvider.reload());
     }
     if (autorizacoes.ehSuperUsuario) {
       tasks.add(_carregarInfraestrutura());
@@ -799,7 +802,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         _operacionalProvider.clear();
         setState(() => _todayScope = todayScope);
         _scheduleOperationalLoad(autorizacoes);
-        if (ehAdmin && !ehSuper && autorizacoes.empresaIdCarregada != null) {
+        if ((ehAdmin || ehSuper) && autorizacoes.empresaIdCarregada != null) {
           unawaited(_todayProvider.load());
         }
       });
@@ -870,8 +873,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 child: _buildHomeViewSwitch(context),
               ),
             ],
-            if (ehAdmin &&
-                !ehSuper &&
+            if ((ehAdmin || ehSuper) &&
                 !_carregandoTrocaDeComercio &&
                 _todayScope == todayScope &&
                 _dashboardView == _HomeDashboardView.operational) ...[

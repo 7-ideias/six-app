@@ -64,7 +64,7 @@ class WorkspaceHomeWeb extends StatelessWidget {
           create: (_) {
             final WorkspaceHomeProvider provider = WorkspaceHomeProvider(
               service: service,
-              segmented: !access.ehSuperUsuario,
+              segmented: access.ehAdministrador || access.ehSuperUsuario,
             );
             if (!isCollaborator) provider.load();
             return provider;
@@ -352,8 +352,7 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                           ),
                           SixWebPageShell.sectionGap,
                         ],
-                        if (isAdminUser &&
-                            !isSuperUser &&
+                        if ((isAdminUser || isSuperUser) &&
                             _selectedView ==
                                 _WorkspaceHomeView.operational) ...<Widget>[
                           WorkspaceTodayWeb(
