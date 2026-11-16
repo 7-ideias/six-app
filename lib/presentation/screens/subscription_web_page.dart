@@ -20,15 +20,32 @@ class SubscriptionWebPage extends StatelessWidget {
     child: Builder(
       builder: (context) => Scaffold(
         appBar: AppBar(title: Text(billingText(context, 'plans'))),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1152),
-              child: SubscriptionWebPanel(
-                selection: selection,
-                companyId: selection?.queryParameters['companyId'],
-                campaignId: selection?.queryParameters['campaignId'],
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.topCenter,
+              radius: 1.2,
+              colors: [
+                SubscriptionVisuals.highlightedSurface,
+                SubscriptionVisuals.background,
+              ],
+            ),
+          ),
+          child: SizedBox.expand(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
+                vertical: 48,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1152),
+                  child: SubscriptionWebPanel(
+                    selection: selection,
+                    companyId: selection?.queryParameters['companyId'],
+                    campaignId: selection?.queryParameters['campaignId'],
+                  ),
+                ),
               ),
             ),
           ),
@@ -180,6 +197,7 @@ class SubscriptionWebPanel extends StatefulWidget {
 }
 
 class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
+  bool _hovered = false;
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
     campaignId: widget.campaignId,
@@ -204,14 +222,66 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
     return Theme(
       data: SubscriptionVisuals.theme(context),
       child: Builder(
-        builder: (context) => Material(
-          color: SubscriptionVisuals.background,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: _content(context),
-          ),
-        ),
+        builder: (context) {
+          final reducedMotion = MediaQuery.disableAnimationsOf(context);
+          final duration = reducedMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 220);
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: reducedMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _hovered = true),
+              onExit: (_) => setState(() => _hovered = false),
+              child: AnimatedContainer(
+                duration: duration,
+                curve: Curves.easeOutCubic,
+                transform: Matrix4.translationValues(
+                  0,
+                  _hovered && !reducedMotion ? -3 : 0,
+                  0,
+                ),
+                decoration: BoxDecoration(
+                  color: SubscriptionVisuals.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _hovered
+                        ? SubscriptionVisuals.cyan.withValues(alpha: 0.4)
+                        : SubscriptionVisuals.border,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.32),
+                      blurRadius: _hovered ? 48 : 36,
+                      offset: Offset(0, _hovered ? 22 : 16),
+                      spreadRadius: -8,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                      MediaQuery.sizeOf(context).width < 600 ? 20 : 32,
+                    ),
+                    child: _content(context),
+                  ),
+                ),
+              ),
+            ),
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 12 * (1 - value)),
+                child: child,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

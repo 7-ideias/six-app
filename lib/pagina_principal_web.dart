@@ -1029,74 +1029,93 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               }
             },
             itemBuilder:
-                (BuildContext context,) =>
-                    <PopupMenuEntry<_WebHeaderUserAction>>[
-                      PopupMenuItem<_WebHeaderUserAction>(
-                        value: _WebHeaderUserAction.profile,
-                        child: Row(
-                          children: <Widget>[
-                            Icon(
-                              Icons.person_outline_rounded,
-                              size: 18,
-                              color: accent,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              context.t(
-                                'web.header.myProfile',
-                                fallback: 'Meu perfil',
-                              ),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.primaryText,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                (
+                  BuildContext context,
+                ) => <PopupMenuEntry<_WebHeaderUserAction>>[
+                  PopupMenuItem<_WebHeaderUserAction>(
+                    value: _WebHeaderUserAction.profile,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.person_outline_rounded,
+                          size: 18,
+                          color: accent,
                         ),
-                      ),
-                      if (podeAcessarSuporte)
-                        PopupMenuItem<_WebHeaderUserAction>(
-                          value: _WebHeaderUserAction.support,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.support_agent_rounded,
-                                size: 18,
-                                color: accent,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                context.t(
-                                  'chatSupport.title',
-                                  fallback: 'Suporte'
-                                ),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: tokens.primaryText,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(width: 10),
+                        Text(
+                          context.t(
+                            'web.header.myProfile',
+                            fallback: 'Meu perfil',
+                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: tokens.primaryText,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      PopupMenuItem<_WebHeaderUserAction>(value: _WebHeaderUserAction.subscription, child: Text(billingText(context, 'plans')),),
-                      const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
-                      PopupMenuItem<_WebHeaderUserAction>(
-                        value: _WebHeaderUserAction.logout,
-                        child: Row(
-                          children: <Widget>[
-                            Icon(Icons.logout_rounded, size: 18, color: accent),
-                            const SizedBox(width: 10),
-                            Text(
-                              context.t('web.header.logout', fallback: 'Sair'),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.primaryText,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      ],
+                    ),
+                  ),
+                  if (podeAcessarSuporte)
+                    PopupMenuItem<_WebHeaderUserAction>(
+                      value: _WebHeaderUserAction.support,
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.support_agent_rounded,
+                            size: 18,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            context.t('chatSupport.title', fallback: 'Suporte'),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  PopupMenuItem<_WebHeaderUserAction>(
+                    value: _WebHeaderUserAction.subscription,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.credit_card_rounded,
+                          size: 18,
+                          color: accent,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            billingText(context, 'plans'),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
+                  PopupMenuItem<_WebHeaderUserAction>(
+                    value: _WebHeaderUserAction.logout,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(Icons.logout_rounded, size: 18, color: accent),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.t('web.header.logout', fallback: 'Sair'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: tokens.primaryText,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
             child: AnimatedContainer(
               key: const Key('web-header-user-action'),
               duration: WebThemeTokens.transitionDuration,
