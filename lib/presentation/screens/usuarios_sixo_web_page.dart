@@ -386,18 +386,33 @@ class _WebSixoUserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String name = user.nomeExibicao.trim().isEmpty
-        ? context.t('usuariosSixo.userFallback', fallback: 'Usuário do Sixo')
-        : user.nomeExibicao.trim();
+    final String name =
+        user.nomeExibicao.trim().isEmpty
+            ? context.t(
+              'usuariosSixo.userFallback',
+              fallback: 'Usuário do Sixo',
+            )
+            : user.nomeExibicao.trim();
     return Semantics(
       container: true,
       button: true,
       label: '$name, $roleLabel',
       child: Material(
-        color: tokens.cardBackground,
+        color:
+            user.planoPago
+                ? Color.alphaBlend(
+                  tokens.success.withValues(alpha: 0.07),
+                  tokens.cardBackground,
+                )
+                : tokens.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: tokens.cardBorder),
+          side: BorderSide(
+            color:
+                user.planoPago
+                    ? tokens.success.withValues(alpha: 0.35)
+                    : tokens.cardBorder,
+          ),
         ),
         child: InkWell(
           onTap: onTap,
@@ -446,6 +461,44 @@ class _WebSixoUserCard extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 8,
                     children: <Widget>[
+                      if (user.planoPago)
+                        Tooltip(
+                          message: context.t('usuariosSixo.paidPlanHint'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: tokens.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: tokens.success.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_outlined,
+                                  size: 15,
+                                  color: tokens.success,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    context.t('usuariosSixo.paidPlan'),
+                                    style: TextStyle(
+                                      color: tokens.success,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       UltimoLoginPill(
                         ultimoLoginEm: user.ultimoLoginEm,
                         hojeColor: tokens.success,
@@ -455,21 +508,23 @@ class _WebSixoUserCard extends StatelessWidget {
                       ),
                       _WebMetadataChip(
                         icon: Icons.mail_outline_rounded,
-                        value: user.email.trim().isEmpty
-                            ? context.t(
-                                'usuariosSixo.noEmail',
-                                fallback: 'E-mail não informado',
-                              )
-                            : user.email.trim(),
+                        value:
+                            user.email.trim().isEmpty
+                                ? context.t(
+                                  'usuariosSixo.noEmail',
+                                  fallback: 'E-mail não informado',
+                                )
+                                : user.email.trim(),
                       ),
                       _WebMetadataChip(
                         icon: Icons.phone_outlined,
-                        value: user.celular.trim().isEmpty
-                            ? context.t(
-                                'usuariosSixo.noPhone',
-                                fallback: 'Celular não informado',
-                              )
-                            : user.celular.trim(),
+                        value:
+                            user.celular.trim().isEmpty
+                                ? context.t(
+                                  'usuariosSixo.noPhone',
+                                  fallback: 'Celular não informado',
+                                )
+                                : user.celular.trim(),
                       ),
                     ],
                   ),

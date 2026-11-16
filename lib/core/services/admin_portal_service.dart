@@ -245,6 +245,7 @@ class AdminUsuarioEmpresaAtiva {
     required this.dataCadastro,
     required this.fezOnboardingInicial,
     this.ultimoLoginEm,
+    this.planoPago = false,
   });
 
   final String idUnicoDoUsuario;
@@ -258,6 +259,7 @@ class AdminUsuarioEmpresaAtiva {
   final DateTime? dataCadastro;
   final bool fezOnboardingInicial;
   final DateTime? ultimoLoginEm;
+  final bool planoPago;
 
   String get nomeExibicao {
     if (nome.trim().isNotEmpty) return nome.trim();
@@ -279,6 +281,7 @@ class AdminUsuarioEmpresaAtiva {
       status: json['status']?.toString() ?? '',
       dataCadastro: _parseDate(json['dataCadastro']),
       ultimoLoginEm: _parseDate(json['ultimoLoginEm']),
+      planoPago: json['planoPago'] == true,
       fezOnboardingInicial: json['fezOnboardingInicial'] == true,
     );
   }

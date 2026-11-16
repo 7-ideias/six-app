@@ -6,13 +6,56 @@ String campaignText(BuildContext context, String key) {
   return values == null
       ? key
       : values[language == 'en'
-            ? 1
-            : language == 'es'
-            ? 2
-            : 0];
+          ? 1
+          : language == 'es'
+          ? 2
+          : 0];
 }
 
 const _texts = <String, List<String>>{
+  'acceptedCount': ['Aceitos', 'Accepted', 'Aceptados'],
+  'failedCount': ['Falhas', 'Failures', 'Errores'],
+  'authorId': ['ID do autor', 'Author ID', 'ID del autor'],
+  'language_pt': ['Português', 'Portuguese', 'Portugués'],
+  'language_en': ['Inglês', 'English', 'Inglés'],
+  'language_es': ['Espanhol', 'Spanish', 'Español'],
+  'reviewStage': ['Revisão', 'Review', 'Revisión'],
+  'journeyIntro': [
+    'Prepare sua campanha em três etapas.',
+    'Prepare your campaign in three steps.',
+    'Prepara tu campaña en tres pasos.',
+  ],
+  'resume': ['Continuar campanha', 'Resume campaign', 'Continuar campaña'],
+  'continueMessage': [
+    'Continuar para mensagem',
+    'Continue to message',
+    'Continuar al mensaje',
+  ],
+  'backAudience': [
+    'Voltar aos destinatários',
+    'Back to recipients',
+    'Volver a destinatarios',
+  ],
+  'audienceRequired': [
+    'Selecione ao menos um destinatário para continuar.',
+    'Select at least one recipient to continue.',
+    'Selecciona al menos un destinatario para continuar.',
+  ],
+  'audienceStep': [
+    'Escolha quem vai receber a campanha.',
+    'Choose who will receive the campaign.',
+    'Elige quién recibirá la campaña.',
+  ],
+  'messageStep': [
+    'Dê um nome à campanha e escreva a mensagem em cada idioma.',
+    'Name your campaign and write the message in each language.',
+    'Nombra tu campaña y escribe el mensaje en cada idioma.',
+  ],
+  'reviewStep': [
+    'Confira as mensagens e os destinatários antes de confirmar o envio.',
+    'Check messages and recipients before confirming the send.',
+    'Revisa los mensajes y destinatarios antes de confirmar el envío.',
+  ],
   'title': ['Campanhas de push', 'Push campaigns', 'Campañas push'],
   'intro': [
     'Envie mensagens aos ADMINs no idioma de cada empresa.',
@@ -59,6 +102,16 @@ const _texts = <String, List<String>>{
     'Título de notificación',
   ],
   'body': ['Mensagem', 'Message', 'Mensaje'],
+  'previewTitle': [
+    'O título aparecerá aqui',
+    'The title will appear here',
+    'El título aparecerá aquí',
+  ],
+  'previewBody': [
+    'Escreva a mensagem para visualizar a notificação.',
+    'Write a message to preview the notification.',
+    'Escribe el mensaje para ver la notificación.',
+  ],
   'preview': ['Prévia da notificação', 'Notification preview', 'Vista previa'],
   'review': ['Revisar envio', 'Review sending', 'Revisar envío'],
   'send': ['Confirmar envio', 'Confirm sending', 'Confirmar envío'],
