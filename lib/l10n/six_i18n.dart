@@ -458,6 +458,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'suppliers.web.inactive': 'Inativo',
     'suppliers.web.edit': 'Editar',
     'suppliers.web.view': 'Consultar',
+    'usuariosSixo.paidPlan': 'Plano pago',
+    'usuariosSixo.paidPlanHint': 'Dono de empresa com plano pago vigente.',
     'usuariosSixo.lastLogin.label': 'Última entrada',
     'usuariosSixo.lastLogin.noRecord': 'Sem registro',
     'usuariosSixo.lastLogin.noRecordHint':
@@ -3719,6 +3721,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'suppliers.web.inactive': 'Inactive',
     'suppliers.web.edit': 'Edit',
     'suppliers.web.view': 'View',
+    'usuariosSixo.paidPlan': 'Paid plan',
+    'usuariosSixo.paidPlanHint': 'Owner of a company with a current paid plan.',
     'usuariosSixo.lastLogin.label': 'Last sign-in',
     'usuariosSixo.lastLogin.noRecord': 'No record',
     'usuariosSixo.lastLogin.noRecordHint':
@@ -6767,6 +6771,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'suppliers.web.inactive': 'Inactivo',
     'suppliers.web.edit': 'Editar',
     'suppliers.web.view': 'Consultar',
+    'usuariosSixo.paidPlan': 'Plan pagado',
+    'usuariosSixo.paidPlanHint': 'Propietario de una empresa con un plan pagado vigente.',
     'usuariosSixo.lastLogin.label': 'Último acceso',
     'usuariosSixo.lastLogin.noRecord': 'Sin registro',
     'usuariosSixo.lastLogin.noRecordHint':

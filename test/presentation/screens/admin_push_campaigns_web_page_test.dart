@@ -73,8 +73,22 @@ void main() {
           );
           await tester.tap(find.text('Nova campanha'));
           await tester.pumpAndSettle();
+          expect(find.byType(TextField), findsOneWidget);
+          final next = find.text('Continuar para mensagem');
+          await tester.ensureVisible(next);
+          await tester.tap(next);
+          await tester.pumpAndSettle();
+          expect(
+            find.text('Selecione ao menos um destinatário para continuar.'),
+            findsOneWidget,
+          );
+          await tester.ensureVisible(find.byType(CheckboxListTile));
           await tester.tap(find.byType(CheckboxListTile));
           await tester.pumpAndSettle();
+          await tester.ensureVisible(next);
+          await tester.tap(next);
+          await tester.pumpAndSettle();
+          expect(find.byType(CheckboxListTile), findsNothing);
           final name = find.widgetWithText(
             TextField,
             'Nome interno da campanha',
@@ -88,6 +102,36 @@ void main() {
           await tester.ensureVisible(body);
           await tester.enterText(body, 'Conoce los planes');
           await tester.pumpAndSettle();
+          final history = find.text('Histórico de envios');
+          await tester.ensureVisible(history);
+          await tester.tap(history);
+          await tester.pumpAndSettle();
+          expect(find.byType(TextField), findsNothing);
+          final resume = find.text('Continuar campanha');
+          await tester.ensureVisible(resume);
+          await tester.tap(resume);
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(name).controller!.text,
+            'Campanha teste',
+          );
+          final back = find.text('Voltar aos destinatários');
+          await tester.ensureVisible(back);
+          await tester.tap(back);
+          await tester.pumpAndSettle();
+          expect(
+            tester
+                .widget<CheckboxListTile>(find.byType(CheckboxListTile))
+                .value,
+            isTrue,
+          );
+          await tester.ensureVisible(next);
+          await tester.tap(next);
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(name).controller!.text,
+            'Campanha teste',
+          );
           final review = find.text('Revisar envio');
           await tester.ensureVisible(review);
           await tester.pumpAndSettle();
@@ -96,12 +140,25 @@ void main() {
           expect(service.sends, 0);
           expect(find.text('Confirmar envio'), findsOneWidget);
           expect(tester.takeException(), isNull);
+          final edit = find.text('Voltar à edição');
+          await tester.ensureVisible(edit);
+          await tester.tap(edit);
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(body).controller!.text,
+            'Conoce los planes',
+          );
+          await tester.ensureVisible(review);
+          await tester.tap(review);
+          await tester.pumpAndSettle();
           final send = find.text('Confirmar envio');
           await tester.ensureVisible(send);
           await tester.pumpAndSettle();
           await tester.tap(send);
           await tester.pumpAndSettle();
           expect(service.sends, 1);
+          expect(find.text('Nova campanha'), findsOneWidget);
+          expect(find.byType(TextField), findsNothing);
           expect(
             find.text(
               'Campanha registrada. Acompanhe o processamento no histórico.',
