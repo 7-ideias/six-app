@@ -91,7 +91,7 @@ void main(){
   await t.pumpAndSettle();
   await t.enterText(field('Dia do fechamento'),'10');
   await t.enterText(field('Dia do vencimento'),'20');
-  await tap(t,find.widgetWithText(FilledButton,'Salvar'));
+  await tap(t,find.byType(FilledButton).last);
   expect(api.saves.single.instituicao,'Nubank');
   expect(api.saves.single.marcaOpenFinanceId,'marca-nu');
   expect(t.takeException(),isNull);
