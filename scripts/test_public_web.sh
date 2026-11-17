@@ -13,6 +13,7 @@ NODE_BIN="$(resolve_node)"
   scripts/tests/admin_login_regression_test.mjs \
   scripts/tests/build_web_api_base_url_test.mjs \
   scripts/tests/public_login_core_test.mjs \
+  scripts/tests/public_home_session_test.mjs \
   scripts/tests/public_register_core_test.mjs \
   scripts/tests/public_forgot_password_core_test.mjs \
   scripts/tests/public_onboarding_core_test.mjs \
