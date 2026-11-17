@@ -66,7 +66,7 @@ class CatalogoInstituicoesBrasil {
 
     // Compatibilidade exclusiva com um nome antigo já usado no Sixo.
     // Não se faz busca parcial entre bancos para evitar atribuir marca errada.
-    if (nome == 'nu' || nome == 'nu pagamentos') {
+    if (nome == 'nu' || nome == 'nupagamentos') {
       for (final item in instituicoes) {
         if (_normalizar(item.nome) == 'nubank') return item.logotipoUrl;
       }
