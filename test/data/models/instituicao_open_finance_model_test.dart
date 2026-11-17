@@ -23,14 +23,15 @@ void main() {
     final catalogo = CatalogoInstituicoesBrasil.fromJson({
       'habilitado': true,
       'instituicoes': [
-        {'nome': 'Nubank', 'logotipoUrl': 'https://example.com/nu.svg'},
+        {'nome': 'Nubank', 'marcaOpenFinanceId': 'auth-nu', 'logotipoUrl': 'https://example.com/99pay.svg'},
         {'nome': 'Banco Inter', 'logotipoUrl': 'https://example.com/inter.svg'},
         {'nome': 'Inseguro', 'logotipoUrl': 'http://example.com/unsafe.svg'},
       ],
     });
     expect(catalogo.instituicoes.length, 2);
-    expect(catalogo.logotipoDe('Nu'), 'https://example.com/nu.svg');
-    expect(catalogo.logotipoDe('Nu Pagamentos'), 'https://example.com/nu.svg');
+    expect(catalogo.logotipoDe('Nu'), 'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg');
+    expect(catalogo.logotipoDe('Nu Pagamentos'), 'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg');
+    expect(catalogo.logotipoDe('Nubank', marcaOpenFinanceId: 'auth-nu'), 'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg');
     expect(catalogo.logotipoDe('Banco Inter'), 'https://example.com/inter.svg');
     expect(catalogo.logotipoDe('Banco'), isNull);
     expect(catalogo.logotipoDe('Outra instituição'), isNull);
@@ -65,6 +66,6 @@ void main() {
     expect(headers['/private/api/agenda-financeira/cartoes'], isNull);
     expect(headers['/private/api/agenda-financeira/cartoes/instituicoes'], 'empresa-ativa');
     expect(catalogo.habilitado, isTrue);
-    expect(catalogo.logotipoDe('Nubank'), 'https://example.com/nu.svg');
+    expect(catalogo.logotipoDe('Nubank'), 'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg');
   });
 }
