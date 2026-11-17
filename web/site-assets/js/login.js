@@ -9,6 +9,7 @@ import {
   LOGIN_TIMEOUT_MS,
   loginErrorKeyFromError,
   performPublicLogin,
+  restorePublicLoginSession,
   resolvePublicApiConfig,
   resolvePublicLoginRedirect,
   shouldBlockPublicLoginOnMobile,
@@ -371,6 +372,35 @@ import {
     return Object.values(elements).every(Boolean);
   }
 
+  let sessionCheck = null;
+
+  async function checkExistingSession(elements) {
+    if (state.mobileBlocked || !state.apiConfig || sessionCheck) return;
+    const panel = document.querySelector('[data-session-check]');
+    const message = document.querySelector('[data-session-message]');
+    const retry = document.querySelector('[data-session-retry]');
+    elements.card.hidden = true;
+    panel.hidden = false;
+    retry.hidden = true;
+    message.textContent = copy('session.checking');
+    sessionCheck = restorePublicLoginSession({ apiBaseUrl: state.apiConfig.apiBaseUrl });
+    try {
+      if (await sessionCheck) {
+        window.location.replace(destination());
+        return;
+      }
+      panel.hidden = true;
+      elements.card.hidden = false;
+      setLoading(elements, false);
+      void renderGoogle(elements);
+    } catch (error) {
+      message.textContent = copy(loginErrorKeyFromError(error));
+      retry.hidden = false;
+    } finally {
+      sessionCheck = null;
+    }
+  }
+
   function initialize() {
     const selectionRedirect = resolvePublicLoginRedirect(window.location.search, window.location.origin);
     if (selectionRedirect.startsWith('/app/assinatura')) {
@@ -435,9 +465,17 @@ import {
       }
     }
 
+    document.documentElement.classList.remove('session-pending');
     setLoading(elements, false);
     elements.form.addEventListener('submit', (event) => handleSubmit(elements, event));
-    void renderGoogle(elements);
+    document.querySelector('[data-session-retry]').addEventListener('click', () => {
+      void checkExistingSession(elements);
+    });
+    // A cached login document must revalidate when restored with Back/Forward.
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) void checkExistingSession(elements);
+    });
+    void checkExistingSession(elements);
     cleanupLegacyFlutterWorker();
   }
 

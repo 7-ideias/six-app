@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sixpos/core/utils/browser_device.dart';
 import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
@@ -13,15 +14,66 @@ import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
 import '../services/web_authenticated_bootstrap_service.dart';
+import '../components/six_web_splash_scene.dart';
+import 'web_auth_gate.dart';
 
-class LoginPageWeb extends StatefulWidget {
+class LoginPageWeb extends StatelessWidget {
   const LoginPageWeb({super.key});
 
   @override
-  State<LoginPageWeb> createState() => _LoginPageWebState();
+  Widget build(BuildContext context) {
+    final route = Uri.parse(
+      ModalRoute.of(context)?.settings.name ?? '/login/flutter',
+    );
+    if (!kIsWeb || isPhoneBrowser() || route.path == '/admin') {
+      return const _LoginFormWeb();
+    }
+    final destination =
+        sanitizeAuthenticatedWebRedirect(route.queryParameters['redirect']) ??
+        '/app';
+    return WebAuthGate(
+      requestedLocation: destination,
+      unauthenticatedChild: const _LoginFormWeb(),
+      child: _AuthenticatedLoginRedirect(destination: destination),
+    );
+  }
 }
 
-class _LoginPageWebState extends State<LoginPageWeb> {
+class _AuthenticatedLoginRedirect extends StatefulWidget {
+  const _AuthenticatedLoginRedirect({required this.destination});
+  final String destination;
+
+  @override
+  State<_AuthenticatedLoginRedirect> createState() =>
+      _AuthenticatedLoginRedirectState();
+}
+
+class _AuthenticatedLoginRedirectState
+    extends State<_AuthenticatedLoginRedirect> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || replaceBrowserLocation(widget.destination)) return;
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(widget.destination, (_) => false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: SixWebSplashScene());
+}
+
+class _LoginFormWeb extends StatefulWidget {
+  const _LoginFormWeb();
+
+  @override
+  State<_LoginFormWeb> createState() => _LoginPageWebState();
+}
+
+class _LoginPageWebState extends State<_LoginFormWeb> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
@@ -171,6 +223,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   void _navigateToAuthenticatedRoute() {
     final String nextRoute = _redirectAfterLogin() ?? '/app';
+    if (replaceBrowserLocation(nextRoute)) return;
     Navigator.of(
       context,
     ).pushNamedAndRemoveUntil(nextRoute, (Route<dynamic> route) => false);

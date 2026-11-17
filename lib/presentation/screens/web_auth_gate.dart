@@ -17,9 +17,11 @@ class WebAuthGate extends StatefulWidget {
     required this.child,
     this.requestedLocation,
     this.controller,
+    this.unauthenticatedChild,
   });
 
   final Widget child;
+  final Widget? unauthenticatedChild;
   final String? requestedLocation;
   final WebAuthGateController? controller;
 
@@ -130,7 +132,8 @@ class _WebAuthGateState extends State<WebAuthGate> {
       return;
     }
 
-    if (_activeController.status == WebAuthGateStatus.unauthenticated) {
+    if (_activeController.status == WebAuthGateStatus.unauthenticated &&
+        widget.unauthenticatedChild == null) {
       _scheduleLoginRedirect();
       return;
     }
@@ -170,7 +173,13 @@ class _WebAuthGateState extends State<WebAuthGate> {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: switch (status) {
-        WebAuthGateStatus.authenticated => _authenticatedContent(),
+        WebAuthGateStatus.authenticated =>
+          widget.unauthenticatedChild != null
+              ? widget.child
+              : _authenticatedContent(),
+        WebAuthGateStatus.unauthenticated
+            when widget.unauthenticatedChild != null =>
+          widget.unauthenticatedChild!,
         WebAuthGateStatus.temporaryError => _WebAuthGateTemporaryError(
           key: const ValueKey<String>('web-auth-gate-temporary-error'),
           onRetry: _activeController.retry,
@@ -193,8 +202,8 @@ class _WebAuthGateState extends State<WebAuthGate> {
   }
 
   Widget _authenticatedContent() {
-    final OnboardingInicialProvider onboarding = context
-        .watch<OnboardingInicialProvider>();
+    final OnboardingInicialProvider onboarding =
+        context.watch<OnboardingInicialProvider>();
     if (onboarding.precisaFazerOnboarding) {
       return OnboardingInicialWebPage(
         key: const ValueKey<String>('initial-onboarding-web'),

@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <script>document.documentElement.classList.add('session-pending');</script>
+  <style>.session-pending [data-login-card] { display: none; } [data-session-check][hidden], [data-login-card][hidden] { display: none; }</style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="sixapp-entrypoint" content="public-login">
@@ -57,6 +59,10 @@
           <p class="auth-context-lead" data-i18n="context.body">Entre para acompanhar vendas, atendimentos, clientes, equipe e financeiro em um só lugar.</p>
         </section>
 
+        <section data-session-check role="status" aria-live="polite" hidden>
+          <p data-session-message data-i18n="session.checking">Validando sua sessão...</p>
+          <button type="button" class="login-submit" data-session-retry data-i18n="session.retry" hidden>Tentar novamente</button>
+        </section>
         <section class="login-card auth-card" aria-labelledby="login-title" data-login-card>
           <div class="login-card-header auth-card-header">
             <h2 id="login-title" data-i18n="form.title">Entrar no SixoApp</h2>
