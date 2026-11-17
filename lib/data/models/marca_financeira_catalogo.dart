@@ -42,13 +42,19 @@ abstract final class MarcaFinanceiraCatalogo {
       operadoras.map((item) => item.paraSelecao()).toList(growable: false);
 
   static OperadoraMaquininha? operadoraDe(String? id, String nome) {
+    final normalizado = InstituicaoOpenFinance.normalizarNome(nome);
     if (id != null && id.startsWith('OPERADORA:')) {
       final codigo = id.substring('OPERADORA:'.length);
       for (final item in operadoras) {
-        if (item.codigo == codigo) return item;
+        if (item.codigo == codigo &&
+            (InstituicaoOpenFinance.normalizarNome(item.nome) == normalizado ||
+                (codigo == 'PAGBANK' && normalizado == 'pagseguro'))) {
+          return item;
+        }
       }
+      // Uma referência antiga divergente não pode mostrar a marca errada.
+      return null;
     }
-    final normalizado = InstituicaoOpenFinance.normalizarNome(nome);
     for (final item in operadoras) {
       if (InstituicaoOpenFinance.normalizarNome(item.nome) == normalizado) {
         return item;
