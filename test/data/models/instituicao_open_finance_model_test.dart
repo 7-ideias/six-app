@@ -37,6 +37,31 @@ void main() {
     expect(catalogo.logotipoDe('Outra instituição'), isNull);
   });
 
+  test('Itaucard usa marca Itaú mesmo que Open Finance informe logo 99Pay', () {
+    final catalogo = CatalogoInstituicoesBrasil.fromJson({
+      'habilitado': true,
+      'instituicoes': [
+        {
+          'nome': 'Itaucard',
+          'marcaOpenFinanceId': 'itau-auth',
+          'logotipoUrl': 'https://example.com/99pay.svg',
+        },
+      ],
+    });
+    const logoItau =
+        'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/60701190.svg';
+    expect(catalogo.instituicoes.single.logotipoUrl, logoItau);
+    expect(catalogo.logotipoDe('Itaucard', marcaOpenFinanceId: 'itau-auth'), logoItau);
+    expect(catalogo.logotipoDe('Itaú'), logoItau);
+    expect(catalogo.logotipoDe('itau card'), logoItau);
+    // Um ID de marca não deve roubar a imagem de uma instituição diferente.
+    expect(catalogo.logotipoDe('ItaúBank', marcaOpenFinanceId: 'itau-auth'), isNull);
+    expect(InstituicaoOpenFinance(
+      nome: 'Itaucard', logotipoUrl: 'https://example.com/99pay.svg',
+    ).logotipoExibicao, logoItau);
+    expect(CatalogoInstituicoesBrasil.vazio.logotipoDe('Itaucard'), isNull);
+  });
+
   test('espaço pessoal envia a empresa selecionada somente para o catálogo', () async {
     final headers = <String, String?>{};
     final client = CartaoCreditoApiClient(
