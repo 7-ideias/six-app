@@ -159,7 +159,14 @@ class _MyAppState extends State<MyApp> {
     if (routeUri.path == '/' || routeUri.path == '/home') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const WebRootPage(),
+        builder: (_) => const WebAuthGate(
+          requestedLocation: '/app',
+          unauthenticatedChild: WebRootPage(),
+          child: _BrowserLocationRedirectPage(
+            location: '/app',
+            fallbackRoute: '/app',
+          ),
+        ),
       );
     }
     if (routeUri.path == '/login') {
