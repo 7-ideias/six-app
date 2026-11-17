@@ -1,6 +1,9 @@
 import 'presentation/screens/admin_push_campaigns_web_page.dart';
 import 'dart:async';
 
+import 'presentation/navigation/web_app_router.dart';
+import 'presentation/navigation/web_destination_routes.dart';
+
 import 'core/services/auth_service.dart';
 import 'core/services/billing_http_client.dart';
 import 'core/services/billing_return_service.dart';
@@ -116,22 +119,42 @@ Future<SharedPreferences?> _loadSharedPreferences() async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  String _resolveInitialWebRoute() {
-    final Uri currentUri = Uri.base;
-    final String path = currentUri.path.isEmpty ? '/' : currentUri.path;
-    final String query = currentUri.hasQuery ? '?${currentUri.query}' : '';
-    final String fragment = currentUri.hasFragment
-        ? '#${currentUri.fragment}'
-        : '';
-    return '$path$query$fragment';
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final WebAppRouter _webRouter = WebAppRouter(
+    navigatorKey: PushNavigationService.navigatorKey,
+    routeFactory: _onGenerateWebRoute,
+  );
+  final _webBackButtonDispatcher = RootBackButtonDispatcher();
+  late final _webRouteInformationProvider = PlatformRouteInformationProvider(
+    initialRouteInformation: RouteInformation(uri: Uri.base),
+  );
+
+  @override
+  void dispose() {
+    if (kIsWeb) {
+      _webRouter.dispose();
+      _webRouteInformationProvider.dispose();
+    }
+    super.dispose();
   }
 
   Route<dynamic> _onGenerateWebRoute(RouteSettings settings) {
     final String routeName = settings.name ?? '/';
     final Uri routeUri = Uri.parse(routeName);
+    final destination = webDestinationForUri(routeUri);
+    if (destination != null) {
+      return _authenticatedWebRoute(
+        settings: settings,
+        page: PaginaPrincipalWeb(initialDestination: destination),
+      );
+    }
 
     if (routeUri.path == '/' || routeUri.path == '/home') {
       return MaterialPageRoute<void>(
@@ -452,7 +475,7 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleSettingsProvider>();
 
     return MaterialApp(
-      navigatorKey: PushNavigationService.navigatorKey,
+      navigatorKey: kIsWeb ? null : PushNavigationService.navigatorKey,
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
       onGenerateTitle: (context) =>
           AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
@@ -465,7 +488,14 @@ class MyApp extends StatelessWidget {
           : const Duration(milliseconds: 320),
       themeAnimationCurve: kIsWeb ? Curves.linear : Curves.easeOutCubic,
       builder: (BuildContext context, Widget? child) {
-        final Widget resolvedChild = child ?? const SizedBox.shrink();
+        final Widget resolvedChild = kIsWeb
+            ? Router<Uri>(
+                routerDelegate: _webRouter,
+                routeInformationProvider: _webRouteInformationProvider,
+                routeInformationParser: const WebAppRouteParser(),
+                backButtonDispatcher: _webBackButtonDispatcher,
+              )
+            : child ?? const SizedBox.shrink();
         return ValueListenableBuilder<String?>(
           valueListenable: paymentRequiredCompany,
           builder: (context, company, _) => Stack(
@@ -511,13 +541,7 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: kIsWeb ? null : const SplashScreen(),
-      initialRoute: kIsWeb ? _resolveInitialWebRoute() : '/',
-      onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
-      onGenerateInitialRoutes: kIsWeb
-          ? (String initialRoute) => <Route<dynamic>>[
-              _onGenerateWebRoute(RouteSettings(name: initialRoute)),
-            ]
-          : null,
+      initialRoute: kIsWeb ? null : '/',
     );
   }
 }
