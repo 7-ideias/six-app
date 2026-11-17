@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -91,6 +92,89 @@ void main() {
     await tap(tester, find.byKey(const ValueKey('cards-create')));
     expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsOneWidget);
     expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
+  testWidgets('seletor de bancos Web abre janela elevada e Esc retorna ao formulário', (tester) async {
+    final api = _Api()..catalogo = const CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: [
+        InstituicaoOpenFinance(
+          nome: 'Banco de Teste',
+          logotipoUrl: 'url-invalida-sem-http',
+          marcaOpenFinanceId: 'auth-teste',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+
+    final modal = find.byKey(const ValueKey('openfinance-web-dialog'));
+    expect(modal, findsOneWidget);
+    expect(find.byKey(const ValueKey('openfinance-web-search')), findsOneWidget);
+    expect(find.byType(BackdropFilter), findsWidgets);
+    final tamanho = tester.getSize(modal);
+    expect(tamanho.width, lessThan(700));
+    expect(tamanho.height, lessThan(700));
+    expect(tamanho.width, lessThan(1100));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(modal, findsNothing);
+    expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('seletor Web filtra sem acentos e preserva identificador selecionado', (tester) async {
+    final api = _Api()..catalogo = const CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: [
+        InstituicaoOpenFinance(
+          nome: 'Árvore Financeira',
+          logotipoUrl: 'url-invalida-sem-http',
+          marcaOpenFinanceId: 'auth-arvore',
+        ),
+        InstituicaoOpenFinance(
+          nome: 'Outro Banco',
+          logotipoUrl: 'url-invalida-sem-http',
+          marcaOpenFinanceId: 'auth-outro',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+    await tester.enterText(find.byKey(const ValueKey('openfinance-web-search')), 'arvore');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Árvore Financeira'), findsOneWidget);
+    expect(find.text('Outro Banco'), findsNothing);
+    await tap(tester, find.text('Árvore Financeira'));
+    expect(find.byKey(const ValueKey('openfinance-web-dialog')), findsNothing);
+    expect(tester.widget<TextFormField>(
+      find.byKey(const ValueKey('cards-institution')),
+    ).controller?.text, 'Árvore Financeira');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('seletor Web respeita largura compacta e botão de fechar', (tester) async {
+    final api = _Api()..catalogo = const CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: [
+        InstituicaoOpenFinance(
+          nome: 'Instituição de Teste',
+          logotipoUrl: 'url-invalida-sem-http',
+        ),
+      ],
+    );
+    await open(tester, api, width: 390);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+    final modal = find.byKey(const ValueKey('openfinance-web-dialog'));
+    expect(tester.getSize(modal).width, lessThanOrEqualTo(390));
+    await tap(tester, find.byKey(const ValueKey('openfinance-web-close')));
+    expect(modal, findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('empresa fora do Brasil continua com campo livre sem catalogo', (tester) async {
