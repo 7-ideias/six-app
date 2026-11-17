@@ -1,3 +1,4 @@
+import '../../l10n/super_panel_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
@@ -851,6 +852,9 @@ class _SidebarVersionPill extends StatelessWidget {
 }
 
 String _navigationLabel(BuildContext context, WebNavigationItem item) {
+  if (item.destination == WebNavigationDestination.superPanel) {
+    return superPanelText(context, 'title');
+  }
   return _navigationText(context, item.labelKey, item.labelFallback);
 }
 

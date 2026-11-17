@@ -164,6 +164,14 @@ class MyApp extends StatelessWidget {
         builder: (_) => const AdminPortalWebPage(),
       );
     }
+    if (routeUri.path == '/app/painel-super') {
+      return _authenticatedWebRoute(
+        settings: settings,
+        page: const PaginaPrincipalWeb(
+          initialDestination: WebNavigationDestination.superPanel,
+        ),
+      );
+    }
     if (routeUri.path == '/app/campanhas-push') {
       return _authenticatedWebRoute(
         settings: settings,

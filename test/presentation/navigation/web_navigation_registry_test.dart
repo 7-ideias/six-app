@@ -14,6 +14,7 @@ void main() {
         WebNavigationIds.financial,
         WebNavigationIds.adminPlans,
         WebNavigationIds.pushCampaigns,
+        WebNavigationIds.superPanel,
         WebNavigationIds.settings,
       ]);
 
@@ -254,4 +255,3 @@ String _normalizedLabel(String label) {
       .replaceAll(RegExp(r'[^a-z0-9]+'), '.')
       .replaceAll(RegExp(r'^\.+|\.+$'), '');
 }
-

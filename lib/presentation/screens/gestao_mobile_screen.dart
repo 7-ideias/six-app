@@ -1,3 +1,5 @@
+import '../../l10n/super_panel_texts.dart';
+import 'super_panel_mobile_screen.dart';
 import '../../providers/locale_settings_provider.dart';import 'financeiro_resumo_mobile_screen.dart';
 import 'dart:async';
 
@@ -405,6 +407,63 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
           ),
           const SizedBox(height: 22),
+          if (context
+              .watch<ColaboradorAutorizacoesProvider>()
+              .ehSuperUsuario) ...[
+            Material(
+              color: colors.softAccentSurface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(color: colors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                key: const Key('gestao-super-panel'),
+                onTap: () =>
+                    _navigateTo(context, const SuperPanelMobileScreen()),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.admin_panel_settings_outlined,
+                        color: colors.accent,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              superPanelText(context, 'title'),
+                              style: TextStyle(
+                                color: colors.titleText,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              superPanelText(context, 'subtitle'),
+                              style: TextStyle(color: colors.mutedText),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Chip(
+                        label: Text(
+                          'SUPER',
+                          style: TextStyle(color: colors.accent),
+                        ),
+                        backgroundColor: colors.surface,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints gridConstraints) {
               const double gap = 12;
