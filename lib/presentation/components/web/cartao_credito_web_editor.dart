@@ -3,16 +3,19 @@ import 'package:flutter/services.dart';
 import 'package:sixpos/core/utils/uuid_v4.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_picker.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 
 class CartaoCreditoWebEditor extends StatefulWidget {
-  const CartaoCreditoWebEditor({super.key, required this.espaco, required this.client, this.item, this.contasService});
+  const CartaoCreditoWebEditor({super.key, required this.espaco, required this.client, this.item, this.contasService, this.catalogo = CatalogoInstituicoesBrasil.vazio});
   final String espaco;
   final CartaoCreditoApiClient client;
   final CartaoCredito? item;
   final ConfiguracaoFinanceiraService? contasService;
+  final CatalogoInstituicoesBrasil catalogo;
   @override
   State<CartaoCreditoWebEditor> createState() => _CartaoCreditoWebEditorState();
 }
@@ -83,6 +86,15 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
     }
   }
 
+  Future<void> _escolherInstituicao() async {
+    final selecionada = await selecionarInstituicaoOpenFinance(
+      context, widget.catalogo.instituicoes,
+    );
+    if (mounted && selecionada != null) {
+      setState(() => _instituicao.text = selecionada.nome);
+    }
+  }
+
   String? _required(String? value) => value == null || value.trim().isEmpty ? context.t('space.required') : null;
   Widget _dayField(TextEditingController controller, String key) => TextFormField(
     key: ValueKey(key), controller: controller,
@@ -114,6 +126,20 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
           const SizedBox(height: 12),
           TextFormField(key: const ValueKey('cards-institution'), controller: _instituicao, enabled: enabled,
             maxLength: 120, decoration: InputDecoration(labelText: context.t('cards.institution')), validator: _required),
+          if (widget.catalogo.habilitado && widget.catalogo.instituicoes.isNotEmpty) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const ValueKey('cards-openfinance-pick'),
+                onPressed: enabled ? _escolherInstituicao : null,
+                icon: const Icon(Icons.account_balance_outlined),
+                label: Text(context.t('cards.catalogSelect')),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(context.t('cards.catalogHint'), style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+          ],
           const SizedBox(height: 12),
           LayoutBuilder(builder: (context, constraints) {
             final fields = [_dayField(_fechamento, 'cards.closing'), _dayField(_vencimento, 'cards.due')];

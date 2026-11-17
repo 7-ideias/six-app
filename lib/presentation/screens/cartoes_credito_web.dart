@@ -2,6 +2,8 @@ import 'package:sixpos/presentation/screens/faturas_cartao_web.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
@@ -22,12 +24,14 @@ class CartoesCreditoWeb extends StatefulWidget {
 class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
   late CartaoCreditoApiClient _client = widget.client ?? CartaoCreditoApiClient(espaco: widget.espaco);
   List<CartaoCredito> _items = [];
+  CatalogoInstituicoesBrasil _catalogo = CatalogoInstituicoesBrasil.vazio;
   bool _loading = true, _canEdit = false, _editing = false;
   String? _error;
   int _request = 0;
+  int _catalogoRequest = 0;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() { super.initState(); _load(); _loadCatalogo(); }
 
   @override
   void didUpdateWidget(covariant CartoesCreditoWeb oldWidget) {
@@ -37,7 +41,9 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
       _client = widget.client ?? CartaoCreditoApiClient(espaco: widget.espaco);
       _items = [];
       _canEdit = false;
+      _catalogo = CatalogoInstituicoesBrasil.vazio;
       _load();
+      _loadCatalogo();
     }
   }
 
@@ -45,6 +51,26 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
   void dispose() {
     if (widget.client == null) _client.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCatalogo() async {
+    final request = ++_catalogoRequest;
+    try {
+      final catalogo = await _client.listarInstituicoesBrasileiras();
+      if (mounted && request == _catalogoRequest) {
+        setState(() => _catalogo = catalogo);
+      }
+    } catch (_) {
+      // A indisponibilidade do diretório não bloqueia as operações com cartões.
+      if (mounted && request == _catalogoRequest) {
+        setState(() => _catalogo = CatalogoInstituicoesBrasil.vazio);
+      }
+    }
+  }
+
+  void _refresh() {
+    _load();
+    _loadCatalogo();
   }
 
   Future<void> _load() async {
@@ -79,6 +105,7 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
           child: CartaoCreditoWebEditor(
             espaco: widget.espaco, client: _client, item: item,
             contasService: widget.contasService,
+            catalogo: _catalogo,
           ),
         ),
       ),
@@ -105,7 +132,11 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(Icons.credit_card_rounded, color: tokens.info, size: 28),
+          InstituicaoOpenFinanceLogo(
+            url: _catalogo.logotipoDe(item.instituicao),
+            size: 40,
+            color: tokens.info,
+          ),
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(item.nome, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
@@ -146,7 +177,7 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
           subtitle: '${context.t('space.${widget.espaco}')} · ${context.t('cards.subtitle')}',
           onBack: () => Navigator.of(context).pop(),
           actions: [
-            OutlinedButton.icon(onPressed: _loading || _editing ? null : _load,
+            OutlinedButton.icon(onPressed: _loading || _editing ? null : _refresh,
               icon: const Icon(Icons.refresh), label: Text(context.t('cards.refresh'))),
             if (_canEdit && _error == null)
               FilledButton.icon(key: const ValueKey('cards-create'),

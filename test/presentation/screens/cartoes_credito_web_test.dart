@@ -5,12 +5,15 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/presentation/screens/cartoes_credito_web.dart';
 
 class _Api extends CartaoCreditoApiClient {
   _Api() : super(espaco: 'PESSOAL', client: MockClient((_) async => http.Response('{}', 200)));
   bool failLoad = false, failSave = false, canEdit = true;
+  CatalogoInstituicoesBrasil catalogo = CatalogoInstituicoesBrasil.vazio;
+  @override Future<CatalogoInstituicoesBrasil> listarInstituicoesBrasileiras() async => catalogo;
   String saveError = 'connection';
   final requests = <CartaoCreditoRequest>[];
   List<CartaoCredito> items = [];
@@ -70,6 +73,29 @@ void main() {
     await tap(tester, find.widgetWithIcon(OutlinedButton, Icons.refresh).last);
     expect(find.byKey(const ValueKey('cards-create')), findsOneWidget);
     expect(find.textContaining('Nenhum cartão'), findsOneWidget);
+  });
+
+  testWidgets('empresa BR oferece escolha de banco sem impedir digitacao manual', (tester) async {
+    final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: const [
+        InstituicaoOpenFinance(
+          nome: 'Nubank',
+          logotipoUrl: 'https://example.com/nu.svg',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsOneWidget);
+    expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
+  testWidgets('empresa fora do Brasil continua com campo livre sem catalogo', (tester) async {
+    await open(tester, _Api()..catalogo = CatalogoInstituicoesBrasil.vazio);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsNothing);
+    expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
   });
 
   testWidgets('leitura sem escrita esconde criacao', (tester) async {

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/data/models/fatura_cartao_model.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
@@ -17,6 +18,7 @@ FaturaCartao invoice()=>FaturaCartao.fromJson({'id':'invoice','cartaoId':'card',
 class Api extends CartaoCreditoApiClient {
  Api():super(espaco:'PESSOAL');
  bool failRead=false,editable=true;final purchases=<CompraCartaoRequest>[];final payments=<PagarFaturaCartaoRequest>[];
+ @override Future<CatalogoInstituicoesBrasil> listarInstituicoesBrasileiras()async=>CatalogoInstituicoesBrasil.vazio;
  @override Future<CartoesCreditoResponse> listar()async{
   if(failRead)throw const CartaoCreditoApiException('connection');
   return CartoesCreditoResponse(podeEditar:editable,cartoes:const[CartaoCredito(id:'card',nome:'Nubank',instituicao:'Nu',diaFechamento:3,diaVencimento:10,ativo:true,versao:0)]);
