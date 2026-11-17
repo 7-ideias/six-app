@@ -85,10 +85,19 @@ void main(){
     client:api,configuracoes:config,catalogo:api.catalogo));
   await t.enterText(field('Nome'),'Nubank pessoal');
   await tap(t,find.byKey(const ValueKey('cards-openfinance-pick')));
-  await tap(t,find.text('Nubank').last);
+  // Simula a escolha feita no SearchDelegate sem depender do item virtualizado.
+  Navigator.of(t.element(find.byType(TextField).last))
+      .pop(api.catalogo.instituicoes.single);
+  await t.pumpAndSettle();
   await t.enterText(field('Dia do fechamento'),'10');
   await t.enterText(field('Dia do vencimento'),'20');
-  await tap(t,find.widgetWithText(FilledButton,'Salvar'));
+  // O formulário usa ListView lazy: o botão fica fora do viewport de 390 px.
+  await t.scrollUntilVisible(
+    find.byType(FilledButton),
+    280,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tap(t,find.byType(FilledButton).last);
   expect(api.saves.single.instituicao,'Nubank');
   expect(api.saves.single.marcaOpenFinanceId,'marca-nu');
   expect(t.takeException(),isNull);
