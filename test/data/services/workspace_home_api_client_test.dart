@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:sixpos/data/models/workspace_home_model.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +8,33 @@ import 'package:http/testing.dart';
 import 'package:sixpos/data/services/workspace_home/workspace_home_api_client.dart';
 
 void main() {
+  test(
+    'section request includes captured tenant and discards a late response',
+    () async {
+      var company = 'company-a';
+      final response = Completer<http.Response>();
+      final started = Completer<void>();
+      final client = HttpWorkspaceHomeApiClient(
+        accessTokenProvider: () async => 'token-test',
+        empresaIdProvider: () async => company,
+        userIdProvider: () async => 'user',
+        httpClient: MockClient((request) {
+          expect(request.url.path, '/private/api/workspace/home/STOCK');
+          expect(request.headers['idUnicoDaEmpresa'], 'company-a');
+          started.complete();
+          return response.future;
+        }),
+      );
+      final scope = await client.currentScope();
+      final result = client.buscarSecao(WorkspaceHomeSection.stock, scope);
+      final rejected = expectLater(result, throwsStateError);
+      await started.future;
+      company = 'company-b';
+      response.complete(_jsonResponse(_workspaceHomeJson));
+      await rejected;
+    },
+  );
+
   test('buscarHome consulta endpoint agregado com empresa e token', () async {
     late http.Request capturedRequest;
     final client = HttpWorkspaceHomeApiClient(

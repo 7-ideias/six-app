@@ -5,11 +5,37 @@ abstract class WorkspaceHomeService {
   Future<WorkspaceHomeModel> buscarHome();
 }
 
-class DefaultWorkspaceHomeService implements WorkspaceHomeService {
+abstract class WorkspaceHomeSectionsService {
+  bool get supportsSections;
+  Future<String> currentScope();
+  Future<WorkspaceHomeModel> buscarSecao(
+    WorkspaceHomeSection section,
+    String scope,
+  );
+}
+
+class DefaultWorkspaceHomeService
+    implements WorkspaceHomeService, WorkspaceHomeSectionsService {
   DefaultWorkspaceHomeService({WorkspaceHomeApiClient? apiClient})
     : _apiClient = apiClient ?? HttpWorkspaceHomeApiClient();
 
   final WorkspaceHomeApiClient _apiClient;
+
+  @override
+  bool get supportsSections => _apiClient is WorkspaceHomeSectionsApiClient;
+
+  @override
+  Future<String> currentScope() =>
+      (_apiClient as WorkspaceHomeSectionsApiClient).currentScope();
+
+  @override
+  Future<WorkspaceHomeModel> buscarSecao(
+    WorkspaceHomeSection section,
+    String scope,
+  ) => (_apiClient as WorkspaceHomeSectionsApiClient).buscarSecao(
+    section,
+    scope,
+  );
 
   @override
   Future<WorkspaceHomeModel> buscarHome() {

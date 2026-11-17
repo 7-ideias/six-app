@@ -17,6 +17,7 @@ import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/components/web/workspace_today_web.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -49,6 +50,42 @@ void main() {
   });
 
   group('WorkspaceHomeWeb', () {
+    for (final role in [
+      (admin: true, superUser: true),
+      (admin: true, superUser: false),
+      (admin: false, superUser: true),
+      (admin: false, superUser: false),
+    ]) {
+      testWidgets(
+        'Meu dia respeita acesso ADMIN=${role.admin} SUPER=${role.superUser}',
+        (tester) async {
+          await _pumpHome(
+            tester,
+            service: _FakeWorkspaceHomeService(_home()),
+            permissions: _FakeAutorizacoesProvider(
+              admin: role.admin,
+              superUser: role.superUser,
+            ),
+          );
+          expect(
+            find.byType(WorkspaceTodayWeb),
+            role.admin || role.superUser ? findsOneWidget : findsNothing,
+          );
+          expect(find.text('Bloco SUPER'), findsNothing);
+          expect(
+            find.text('Bloco ADMIN'),
+            role.admin ? findsOneWidget : findsNothing,
+          );
+          if (role.admin || role.superUser) {
+            final panel = tester.widget<WorkspaceTodayWeb>(
+              find.byType(WorkspaceTodayWeb),
+            );
+            expect(panel.provider.segmented, isTrue);
+          }
+        },
+      );
+    }
+
     testWidgets(
       'renderiza dados reais disponíveis e omite blocos indisponíveis',
       (WidgetTester tester) async {
@@ -779,10 +816,15 @@ class _FakeRegionalizacaoApiClient implements RegionalizacaoApiClient {
 class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
   _FakeAutorizacoesProvider({
     this.admin = false,
+    this.superUser = false,
     this.podeLancarAssistenciaTecnica = false,
   });
 
   final bool admin;
+  final bool superUser;
+
+  @override
+  bool get ehSuperUsuario => superUser;
 
   @override
   bool get podeFazerVenda => false;

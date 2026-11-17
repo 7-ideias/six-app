@@ -47,6 +47,15 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
       const <CatalogoReservaStatus, int>{};
 
   bool _loading = false;
+  int _generation = 0;
+  bool _disposed = false;
+  bool _salesLoaded = false;
+  bool get salesLoaded => _salesLoaded;
+  bool _servicesLoaded = false;
+  bool get servicesLoaded => _servicesLoaded;
+  bool _reservationsLoaded = false;
+  bool get reservationsLoaded => _reservationsLoaded;
+  bool _isCurrent(int generation) => !_disposed && generation == _generation;
   bool _hasLoaded = false;
   String? _accessKey;
   String? _globalErrorCode;
@@ -100,6 +109,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
     );
     if (_loading || (!force && _hasLoaded && _accessKey == accessKey)) return;
 
+    final int generation = _generation;
     final bool accessChanged = _accessKey != accessKey;
     _accessKey = accessKey;
     _loading = true;
@@ -119,6 +129,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
 
     try {
       final String idColaborador = _normalizeId(await _userIdProvider());
+      if (!_isCurrent(generation)) return;
       if (idColaborador.isEmpty) {
         _globalErrorCode = 'collaboratorHome.error.user';
         return;
@@ -129,15 +140,69 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
       _periodoFim = DateTime(now.year, now.month, now.day);
 
       await Future.wait<void>(<Future<void>>[
-        if (canAccessSales) _loadSales(idColaborador: idColaborador, now: now),
-        if (canAccessServices) _loadServices(idColaborador: idColaborador),
-        if (canAccessReservations) _loadReservations(),
+        if (canAccessSales)
+          _completeBlock(
+            _loadSales(idColaborador: idColaborador, now: now),
+            generation,
+            () => _salesLoaded = true,
+          ),
+        if (canAccessServices)
+          _completeBlock(
+            _loadServices(idColaborador: idColaborador),
+            generation,
+            () => _servicesLoaded = true,
+          ),
+        if (canAccessReservations)
+          _completeBlock(
+            _loadReservations(),
+            generation,
+            () => _reservationsLoaded = true,
+          ),
       ]);
+    } catch (_) {
+      if (_isCurrent(generation)) {
+        _globalErrorCode = 'collaboratorHome.error.user';
+      }
     } finally {
-      _hasLoaded = true;
-      _loading = false;
-      notifyListeners();
+      if (_isCurrent(generation)) {
+        _hasLoaded = true;
+        _loading = false;
+        notifyListeners();
+      }
     }
+  }
+
+  Future<void> _completeBlock(
+    Future<void> task,
+    int generation,
+    VoidCallback complete,
+  ) async {
+    await task;
+    if (!_isCurrent(generation)) return;
+    complete();
+    notifyListeners();
+  }
+
+  void clear() {
+    _generation++;
+    _loading = false;
+    _hasLoaded = false;
+    _accessKey = null;
+    _globalErrorCode = null;
+    _salesLoaded = _servicesLoaded = _reservationsLoaded = false;
+    _clearDisabledData(
+      canAccessSales: false,
+      canAccessServices: false,
+      canAccessReservations: false,
+    );
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _generation++;
+    super.dispose();
   }
 
   Future<void> reload({
@@ -167,8 +232,9 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
     required String idColaborador,
     required DateTime now,
   }) async {
+    final generation = _generation;
     try {
-      _vendasMes = await _consultaVendasApiClient.consultar(
+      final result = await _consultaVendasApiClient.consultar(
         ConsultaVendasFiltro(
           dataInicial: DateTime(now.year, now.month),
           dataFinal: DateTime(now.year, now.month, now.day),
@@ -177,15 +243,20 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
           tamanho: 5,
         ),
       );
+      if (!_isCurrent(generation)) return;
+      _vendasMes = result;
     } catch (_) {
+      if (!_isCurrent(generation)) return;
       _vendasMesErrorCode = 'collaboratorHome.sales.loadError';
     }
   }
 
   Future<void> _loadOpenSales({required String idColaborador}) async {
+    final generation = _generation;
     try {
       final List<VendaNaoLiquidadaModel> response =
           await _vendaNaoLiquidadaApiClient.listar();
+      if (!_isCurrent(generation)) return;
       final List<VendaNaoLiquidadaModel> personal = response
           .where(
             (VendaNaoLiquidadaModel venda) =>
@@ -195,23 +266,26 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
       personal.sort(_compareOpenSales);
       _vendasEmAberto = List<VendaNaoLiquidadaModel>.unmodifiable(personal);
     } catch (_) {
+      if (!_isCurrent(generation)) return;
       _vendasEmAbertoErrorCode = 'collaboratorHome.openSales.loadError';
     }
   }
 
   Future<void> _loadServices({required String idColaborador}) async {
+    final generation = _generation;
     try {
       final List<Object> response = await Future.wait<Object>(<Future<Object>>[
         _atendimentoTecnicoService.listar(),
         _loadServiceDomainsSafely(),
       ]);
-      final List<AtendimentoTecnicoModel> personal =
-          (response[0] as List<AtendimentoTecnicoModel>)
-              .where(
-                (AtendimentoTecnicoModel atendimento) =>
-                    _serviceBelongsToCollaborator(atendimento, idColaborador),
-              )
-              .toList(growable: false);
+      if (!_isCurrent(generation)) return;
+      final List<AtendimentoTecnicoModel> personal = (response[0]
+              as List<AtendimentoTecnicoModel>)
+          .where(
+            (AtendimentoTecnicoModel atendimento) =>
+                _serviceBelongsToCollaborator(atendimento, idColaborador),
+          )
+          .toList(growable: false);
       final List<DominioOpcaoModel> domains =
           response[1] as List<DominioOpcaoModel>;
       _servicos = List<AtendimentoTecnicoModel>.unmodifiable(personal);
@@ -219,6 +293,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
         _groupServicesByStatus(personal, domains),
       );
     } catch (_) {
+      if (!_isCurrent(generation)) return;
       _servicosErrorCode = 'collaboratorHome.services.loadError';
     }
   }
@@ -234,6 +309,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
   }
 
   Future<void> _loadReservations() async {
+    final generation = _generation;
     try {
       const List<CatalogoReservaStatus> statuses = <CatalogoReservaStatus>[
         CatalogoReservaStatus.recebida,
@@ -251,6 +327,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
               ),
             ),
           );
+      if (!_isCurrent(generation)) return;
       _reservasPorStatus = Map<CatalogoReservaStatus, int>.unmodifiable(
         <CatalogoReservaStatus, int>{
           for (int index = 0; index < statuses.length; index++)
@@ -258,6 +335,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
         },
       );
     } catch (_) {
+      if (!_isCurrent(generation)) return;
       _reservasErrorCode = 'collaboratorHome.reservations.loadError';
     }
   }
@@ -271,11 +349,12 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
     for (final AtendimentoTecnicoModel service in services) {
       final DominioOpcaoModel? domain = _findStatusDomain(service, domains);
       final String code = service.statusCodigo.trim().toUpperCase();
-      final String key = service.statusId > 0
-          ? 'id:${service.statusId}'
-          : code.isNotEmpty
-          ? 'code:$code'
-          : 'unknown';
+      final String key =
+          service.statusId > 0
+              ? 'id:${service.statusId}'
+              : code.isNotEmpty
+              ? 'code:$code'
+              : 'unknown';
       final _MutableServiceStatus? current = grouped[key];
       if (current != null) {
         current.count += 1;
@@ -311,9 +390,7 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
     }
 
     final List<ColaboradorServicoStatusResumo> result = grouped.values
-        .map(
-          (_MutableServiceStatus status) => status.toImmutable(),
-        )
+        .map((_MutableServiceStatus status) => status.toImmutable())
         .toList(growable: false);
     result.sort((
       ColaboradorServicoStatusResumo a,
@@ -426,9 +503,10 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
 
   bool _isServiceFinalized(AtendimentoTecnicoModel service) {
     for (final ColaboradorServicoStatusResumo status in _servicosPorStatus) {
-      final String serviceKey = service.statusId > 0
-          ? 'id:${service.statusId}'
-          : 'code:${service.statusCodigo.trim().toUpperCase()}';
+      final String serviceKey =
+          service.statusId > 0
+              ? 'id:${service.statusId}'
+              : 'code:${service.statusCodigo.trim().toUpperCase()}';
       if (status.key == serviceKey) return status.finalizer;
     }
     return _knownFinalStatus(service.statusCodigo);

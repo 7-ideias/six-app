@@ -22,6 +22,7 @@ import '../components/six_backend_loading.dart';
 import '../components/web/business_context_home_carousel_web.dart';
 import '../components/web/collaborator_operational_home_dashboard.dart';
 import '../components/web/performance_home_web_dashboard.dart';
+import '../components/web/workspace_today_web.dart';
 import '../components/web/six_managed_web_hero.dart';
 import '../layouts/six_web_page_shell.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
@@ -50,14 +51,18 @@ class WorkspaceHomeWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCollaborator =
-        context.read<ColaboradorAutorizacoesProvider>().ehColaborador;
+    final access = context.watch<ColaboradorAutorizacoesProvider>();
+    final bool isCollaborator = access.ehColaborador;
     return MultiProvider(
+      key: ValueKey(
+        '${access.idUnicoDoUsuarioCarregado}|${access.empresaIdCarregada}|${access.tipoPerfilUnificado}',
+      ),
       providers: <ChangeNotifierProvider<dynamic>>[
         ChangeNotifierProvider<WorkspaceHomeProvider>(
           create: (_) {
             final WorkspaceHomeProvider provider = WorkspaceHomeProvider(
               service: service,
+              segmented: access.ehAdministrador || access.ehSuperUsuario,
             );
             if (!isCollaborator) provider.load();
             return provider;
@@ -327,6 +332,33 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                                 value == _WorkspaceHomeView.performance,
                               );
                             },
+                          ),
+                          SixWebPageShell.sectionGap,
+                        ],
+                        if ((isAdminUser || isSuperUser) &&
+                            _selectedView ==
+                                _WorkspaceHomeView.operational) ...<Widget>[
+                          WorkspaceTodayWeb(
+                            provider: provider,
+                            companyName: _resolveCompanyName(context, empresa),
+                            onOpen:
+                                (section) => _resolve(
+                                  context,
+                                  switch (section) {
+                                    WorkspaceHomeSection.financial =>
+                                      WebNavigationDestination.financialAgenda,
+                                    WorkspaceHomeSection.technicalServices =>
+                                      WebNavigationDestination
+                                          .operationsTechnicalServices,
+                                    WorkspaceHomeSection.cash =>
+                                      WebNavigationDestination.cash,
+                                    WorkspaceHomeSection.stock =>
+                                      WebNavigationDestination.catalogStock,
+                                    WorkspaceHomeSection.reservations =>
+                                      WebNavigationDestination
+                                          .operationsReservations,
+                                  },
+                                ),
                           ),
                           SixWebPageShell.sectionGap,
                         ],
@@ -628,7 +660,10 @@ class _WorkspaceHomeViewButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? Theme.of(context).colorScheme.primary : tokens.secondaryText,
+                color:
+                    selected
+                        ? Theme.of(context).colorScheme.primary
+                        : tokens.secondaryText,
               ),
               const SizedBox(width: 8),
               Text(
@@ -923,7 +958,11 @@ class _WorkspaceHomeSection extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19,),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 19,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -977,7 +1016,11 @@ class _WorkspaceHomeRoleHeader extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20,),
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1182,7 +1225,7 @@ class _TodaySituationGrid extends StatelessWidget {
   }
 
   String _formatCashOpenedAt(BuildContext context, DateTime openedAt) {
-    final DateTime localOpenedAt = regionalizacao.dateTimeForDisplay( openedAt);
+    final DateTime localOpenedAt = regionalizacao.dateTimeForDisplay(openedAt);
     final bool sameOperationalDay =
         localOpenedAt.year == home.date.year &&
         localOpenedAt.month == home.date.month &&
@@ -1886,9 +1929,10 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle style = action.primary
-        ? SixWebActionStyles.primary(context)
-        : SixWebActionStyles.secondary(context);
+    final ButtonStyle style =
+        action.primary
+            ? SixWebActionStyles.primary(context)
+            : SixWebActionStyles.secondary(context);
 
     if (action.primary) {
       return FilledButton.icon(
@@ -2046,9 +2090,11 @@ _HomeTone _stockSituationTone({
   return _HomeTone.success;
 }
 
-ButtonStyle _homeOutlinedButtonStyle({required BuildContext context}) => SixWebActionStyles.secondary(context);
+ButtonStyle _homeOutlinedButtonStyle({required BuildContext context}) =>
+    SixWebActionStyles.secondary(context);
 
-ButtonStyle _homeTextButtonStyle({required BuildContext context}) => SixWebActionStyles.text(context);
+ButtonStyle _homeTextButtonStyle({required BuildContext context}) =>
+    SixWebActionStyles.text(context);
 
 class _ResponsiveCardGrid extends StatelessWidget {
   const _ResponsiveCardGrid({required this.children});

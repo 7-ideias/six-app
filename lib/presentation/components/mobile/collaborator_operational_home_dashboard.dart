@@ -1,3 +1,4 @@
+import '../six_backend_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,7 +37,7 @@ class CollaboratorOperationalHomeMobileDashboard extends StatelessWidget {
         MediaQuery.accessibleNavigationOf(context);
     final LocaleSettingsProvider regionalizacao = context
         .watch<LocaleSettingsProvider>();
-    final Widget content = !provider.hasLoaded
+    final Widget content = !provider.hasLoaded && !provider.salesLoaded && !provider.servicesLoaded && !provider.reservationsLoaded
         ? const _OperationalMobileLoading(
             key: ValueKey<String>('operational-mobile-loading'),
           )
@@ -98,7 +99,7 @@ class _OperationalMobileContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        _AttentionMobileCard(
+        if (provider.hasLoaded) _AttentionMobileCard(
           provider: provider,
           regionalizacao: regionalizacao,
           showSales: showSales,
@@ -107,7 +108,14 @@ class _OperationalMobileContent extends StatelessWidget {
         ),
         if (showSales) ...<Widget>[
           const SizedBox(height: 12),
-          _SalesMobileCard(
+          if (!provider.salesLoaded)
+            SixBackendLoading(
+              title: context.t('homeToday.loading'),
+              subtitle: context.t('homeToday.loadingHint'),
+              animation: SixBackendLoadingAnimation.skeletonPulse,
+              compact: true,
+            )
+          else _SalesMobileCard(
             provider: provider,
             regionalizacao: regionalizacao,
             onRetry: onRetry,
@@ -115,7 +123,14 @@ class _OperationalMobileContent extends StatelessWidget {
         ],
         if (showServices) ...<Widget>[
           const SizedBox(height: 12),
-          _ServicesMobileCard(
+          if (!provider.servicesLoaded)
+            SixBackendLoading(
+              title: context.t('homeToday.loading'),
+              subtitle: context.t('homeToday.loadingHint'),
+              animation: SixBackendLoadingAnimation.skeletonPulse,
+              compact: true,
+            )
+          else _ServicesMobileCard(
             provider: provider,
             regionalizacao: regionalizacao,
             onRetry: onRetry,
@@ -123,7 +138,14 @@ class _OperationalMobileContent extends StatelessWidget {
         ],
         if (showReservations) ...<Widget>[
           const SizedBox(height: 12),
-          _ReservationsMobileCard(
+          if (!provider.reservationsLoaded)
+            SixBackendLoading(
+              title: context.t('homeToday.loading'),
+              subtitle: context.t('homeToday.loadingHint'),
+              animation: SixBackendLoadingAnimation.skeletonPulse,
+              compact: true,
+            )
+          else _ReservationsMobileCard(
             provider: provider,
             regionalizacao: regionalizacao,
             onRetry: onRetry,
