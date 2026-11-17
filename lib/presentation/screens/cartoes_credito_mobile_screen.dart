@@ -63,7 +63,7 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
         if(data!.cartoes.isEmpty)Padding(padding:const EdgeInsets.all(24),child:Text(context.t('cards.empty'))),
       ],
       for(final c in data?.cartoes??<CartaoCredito>[])Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-        Row(children:[InstituicaoOpenFinanceLogo(url:catalogo.logotipoDe(c.instituicao),size:48,color:context.sixMobileColors.accent),const SizedBox(width:12),Expanded(child:Text(c.nome,style:Theme.of(context).textTheme.titleMedium)),if(data!.podeEditar)IconButton(onPressed:loading||error!=null?null:()=>edit(c),tooltip:context.t('cards.edit'),icon:const Icon(Icons.edit_outlined))]),
+        Row(children:[InstituicaoOpenFinanceLogo(url:catalogo.logotipoDe(c.instituicao,marcaOpenFinanceId:c.marcaOpenFinanceId),nome:catalogo.habilitado?c.instituicao:null,size:48,color:context.sixMobileColors.accent),const SizedBox(width:12),Expanded(child:Text(c.nome,style:Theme.of(context).textTheme.titleMedium)),if(data!.podeEditar)IconButton(onPressed:loading||error!=null?null:()=>edit(c),tooltip:context.t('cards.edit'),icon:const Icon(Icons.edit_outlined))]),
         Text('${c.instituicao} · ${context.t(c.ativo?'space.active':'space.inactive')}'),const SizedBox(height:12),
         Text('${context.t('cards.closing')}: ${c.diaFechamento} · ${context.t('cards.due')}: ${c.diaVencimento}'),
         if(c.contaPrevistaNome!=null)Text('${context.t('cards.account')}: ${c.contaPrevistaNome}'),
@@ -84,6 +84,7 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
   final form=GlobalKey<FormState>(); final id=gerarUuidV4();
   late final name=TextEditingController(text:widget.card?.nome??'');
   late final bank=TextEditingController(text:widget.card?.instituicao??'');
+  late String? marcaOpenFinanceId = widget.card?.marcaOpenFinanceId;
   late final closing=TextEditingController(text:widget.card?.diaFechamento.toString()??'');
   late final due=TextEditingController(text:widget.card?.diaVencimento.toString()??'');
   late final config=widget.configuracoes??ConfiguracaoFinanceiraService(widget.client.espaco);
@@ -103,7 +104,7 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
   Future<void> save()async{
     if(saving||conflict)return;
     if(attempt==null){if(!form.currentState!.validate())return;
-      attempt=CartaoCreditoRequest(id:widget.card?.id??id,nome:name.text,instituicao:bank.text,diaFechamento:int.parse(closing.text),diaVencimento:int.parse(due.text),ativo:active,contaPrevistaId:account,versao:widget.card?.versao);}
+      attempt=CartaoCreditoRequest(id:widget.card?.id??id,nome:name.text,instituicao:bank.text,diaFechamento:int.parse(closing.text),diaVencimento:int.parse(due.text),ativo:active,contaPrevistaId:account,versao:widget.card?.versao,marcaOpenFinanceId:marcaOpenFinanceId);}
     setState((){saving=true;error=null;});
     try{final saved=await widget.client.salvar(attempt!);if(mounted){widget.onSaved?.call(saved);Navigator.pop(context,true);}}
     catch(e){if(mounted)setState((){error=erroCartaoMobile(e);if(rejeicaoCartaoDefinitiva(e)){attempt=null;conflict=e is CartaoCreditoApiException&&(e.statusCode==409||acessoCartaoNegado(e));}});}
@@ -114,12 +115,12 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
       context, widget.catalogo.instituicoes,
     );
     if (mounted && selecionada != null) {
-      setState(() => bank.text = selecionada.nome);
+      setState(() {bank.text = selecionada.nome;marcaOpenFinanceId = selecionada.marcaOpenFinanceId;});
     }
   }
-  Widget field(TextEditingController c,String label,{bool day=false})=>Padding(padding:const EdgeInsets.only(bottom:16),child:TextFormField(controller:c,enabled:!locked&&!conflict,decoration:InputDecoration(labelText:context.t(label)),keyboardType:day?TextInputType.number:TextInputType.text,maxLength:day?2:120,validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
+  Widget field(TextEditingController c,String label,{bool day=false,ValueChanged<String>? onChanged})=>Padding(padding:const EdgeInsets.only(bottom:16),child:TextFormField(controller:c,enabled:!locked&&!conflict,onChanged:onChanged,decoration:InputDecoration(labelText:context.t(label)),keyboardType:day?TextInputType.number:TextInputType.text,maxLength:day?2:120,validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
   @override Widget build(BuildContext context)=>PopScope(canPop:!saving,child:CartaoMobilePage(title:context.t(widget.card==null?'cards.new':'cards.edit'),canPop:!saving,bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:Form(key:form,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
-    field(name,'space.name'),field(bank,'cards.institution'),
+    field(name,'space.name'),field(bank,'cards.institution',onChanged:(_)=>marcaOpenFinanceId=null),
     if(widget.catalogo.habilitado&&widget.catalogo.instituicoes.isNotEmpty)...[
       OutlinedButton.icon(
         key:const ValueKey('cards-openfinance-pick'),
