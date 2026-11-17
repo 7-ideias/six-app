@@ -118,9 +118,36 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
       setState(() {bank.text = selecionada.nome;marcaOpenFinanceId = selecionada.marcaOpenFinanceId;});
     }
   }
-  Widget field(TextEditingController c,String label,{bool day=false,ValueChanged<String>? onChanged})=>Padding(padding:const EdgeInsets.only(bottom:16),child:TextFormField(controller:c,enabled:!locked&&!conflict,onChanged:onChanged,decoration:InputDecoration(labelText:context.t(label)),keyboardType:day?TextInputType.number:TextInputType.text,maxLength:day?2:120,validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
+  Widget field(TextEditingController c,String label,{
+    bool day=false,ValueChanged<String>? onChanged,Widget? prefixIcon,
+  })=>Padding(padding:const EdgeInsets.only(bottom:16),
+    child:TextFormField(
+      controller:c,enabled:!locked&&!conflict,onChanged:onChanged,
+      decoration:InputDecoration(labelText:context.t(label),prefixIcon:prefixIcon),
+      keyboardType:day?TextInputType.number:TextInputType.text,
+      maxLength:day?2:120,
+      validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;},
+    ),
+  );
+
+  Widget instituicaoField() {
+    final logo = widget.catalogo.logotipoDe(
+      bank.text, marcaOpenFinanceId:marcaOpenFinanceId,
+    );
+    return field(
+      bank,'cards.institution',
+      onChanged:(_)=>setState(()=>marcaOpenFinanceId=null),
+      prefixIcon:logo==null?null:Padding(
+        padding:const EdgeInsets.all(8),
+        child:InstituicaoOpenFinanceLogo(
+          key:const ValueKey('cards-institution-logo'),
+          url:logo,nome:bank.text,size:36,
+        ),
+      ),
+    );
+  }
   @override Widget build(BuildContext context)=>PopScope(canPop:!saving,child:CartaoMobilePage(title:context.t(widget.card==null?'cards.new':'cards.edit'),canPop:!saving,bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:Form(key:form,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
-    field(name,'space.name'),field(bank,'cards.institution',onChanged:(_)=>marcaOpenFinanceId=null),
+    field(name,'space.name'),instituicaoField(),
     if(widget.catalogo.habilitado&&widget.catalogo.instituicoes.isNotEmpty)...[
       OutlinedButton.icon(
         key:const ValueKey('cards-openfinance-pick'),

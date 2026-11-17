@@ -13,18 +13,51 @@ class InstituicaoOpenFinance {
   final String? idParticipante;
   final String? marcaOpenFinanceId;
 
+  /// Usa a marca conhecida mesmo para instâncias montadas sem desserialização.
+  String get logotipoExibicao => logoRevisado(nome) ?? logotipoUrl;
+
   static const String _logoNubank =
       'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg';
+  static const String _logoItau =
+      'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/60701190.svg';
+
+  /// Associação revisada por ISPB. Usada também enquanto o cache do backend
+  /// ainda estiver servindo URLs incorretas de parceiros do Open Finance.
+  static String? logoRevisado(String nome) {
+    switch (normalizarNome(nome)) {
+      case 'nubank':
+        return _logoNubank;
+      case 'itau':
+      case 'itaucard':
+      case 'bancoitaucard':
+      case 'bancoitaucardsa':
+      case 'itauunibanco':
+      case 'itauunibancosa':
+      case 'bancoitauunibanco':
+      case 'bancoitauunibancosa':
+        return _logoItau;
+      default:
+        return null;
+    }
+  }
+
+  static String normalizarNome(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[áàâãä]'), 'a')
+      .replaceAll(RegExp(r'[éèêë]'), 'e')
+      .replaceAll(RegExp(r'[íìîï]'), 'i')
+      .replaceAll(RegExp(r'[óòôõö]'), 'o')
+      .replaceAll(RegExp(r'[úùûü]'), 'u')
+      .replaceAll('ç', 'c')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '');
 
   static InstituicaoOpenFinance? fromJson(Map<String, dynamic> json) {
     final nome = json['nome'];
+    if (nome is! String || nome.trim().isEmpty) return null;
     final logo = json['logotipoUrl'];
-    if (nome is! String || nome.trim().isEmpty || logo is! String) {
-      return null;
-    }
-    // Proteção contra versões antigas da API e inconsistências de catálogo:
-    // jamais mostrar a marca de outro banco no lugar de Nubank.
-    final url = _normalizar(nome) == 'nubank' ? _logoNubank : logo;
+    final url = logoRevisado(nome) ?? (logo is String ? logo : null);
+    if (url == null) return null;
     final uri = Uri.tryParse(url);
     if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
       return null;
@@ -36,11 +69,6 @@ class InstituicaoOpenFinance {
       marcaOpenFinanceId: json['marcaOpenFinanceId'] as String?,
     );
   }
-
-  static String _normalizar(String value) => value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]'), '');
 }
 
 /// A elegibilidade vem da regionalização persistida da empresa no backend,
@@ -76,31 +104,31 @@ class CatalogoInstituicoesBrasil {
   }
 
   String? logotipoDe(String instituicao, {String? marcaOpenFinanceId}) {
-    if (!habilitado) return null;
+    if (!habilitado || instituicao.trim().isEmpty) return null;
+    // Nunca usamos uma URI errada do diretório para uma marca auditada.
+    final logoRevisado = InstituicaoOpenFinance.logoRevisado(instituicao);
+    if (logoRevisado != null) return logoRevisado;
+    final nome = InstituicaoOpenFinance.normalizarNome(instituicao);
     if (marcaOpenFinanceId != null && marcaOpenFinanceId.isNotEmpty) {
       for (final item in instituicoes) {
-        if (item.marcaOpenFinanceId == marcaOpenFinanceId) {
-          return item.logotipoUrl;
+        if (item.marcaOpenFinanceId == marcaOpenFinanceId &&
+            InstituicaoOpenFinance.normalizarNome(item.nome) == nome) {
+          return item.logotipoExibicao;
         }
       }
     }
-    if (instituicao.trim().isEmpty) return null;
-    final nome = _normalizar(instituicao);
     for (final item in instituicoes) {
-      if (_normalizar(item.nome) == nome) return item.logotipoUrl;
+      if (InstituicaoOpenFinance.normalizarNome(item.nome) == nome) {
+        return item.logotipoExibicao;
+      }
     }
 
     // Compatibilidade com os registros antigos que só guardavam "Nu".
     if (nome == 'nu' || nome == 'nupagamentos') {
       for (final item in instituicoes) {
-        if (_normalizar(item.nome) == 'nubank') return item.logotipoUrl;
+        if (InstituicaoOpenFinance.normalizarNome(item.nome) == 'nubank') return item.logotipoExibicao;
       }
     }
     return null;
   }
-
-  static String _normalizar(String value) => value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]'), '');
 }

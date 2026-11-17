@@ -5,6 +5,7 @@ import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
 import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/presentation/components/instituicao_open_finance_picker.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
@@ -100,6 +101,12 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
     }
   }
 
+  /// Fonte única para o ícone da prévia e para a lista de cartões.
+  String? get _logoInstituicao => widget.catalogo.logotipoDe(
+        _instituicao.text,
+        marcaOpenFinanceId: _marcaOpenFinanceId,
+      );
+
   String? _required(String? value) => value == null || value.trim().isEmpty ? context.t('space.required') : null;
   Widget _dayField(TextEditingController controller, String key) => TextFormField(
     key: ValueKey(key), controller: controller,
@@ -117,6 +124,7 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
   Widget build(BuildContext context) {
     final enabled = !_saving && _uncertainRequest == null;
     final options = _contas.where((c) => c.ativo || c.id == _contaId).toList();
+    final logoInstituicao = _logoInstituicao;
     return PopScope(
       canPop: !_saving,
       child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: Form(
@@ -129,9 +137,28 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
           TextFormField(key: const ValueKey('cards-name'), controller: _nome, enabled: enabled,
             autofocus: true, maxLength: 120, decoration: InputDecoration(labelText: context.t('space.name')), validator: _required),
           const SizedBox(height: 12),
-          TextFormField(key: const ValueKey('cards-institution'), controller: _instituicao, enabled: enabled,
-            onChanged: (_) => _marcaOpenFinanceId = null,
-            maxLength: 120, decoration: InputDecoration(labelText: context.t('cards.institution')), validator: _required),
+          TextFormField(
+            key: const ValueKey('cards-institution'),
+            controller: _instituicao,
+            enabled: enabled,
+            onChanged: (_) => setState(() => _marcaOpenFinanceId = null),
+            maxLength: 120,
+            decoration: InputDecoration(
+              labelText: context.t('cards.institution'),
+              prefixIcon: logoInstituicao == null
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: InstituicaoOpenFinanceLogo(
+                        key: const ValueKey('cards-institution-logo'),
+                        url: logoInstituicao,
+                        nome: _instituicao.text,
+                        size: 36,
+                      ),
+                    ),
+            ),
+            validator: _required,
+          ),
           if (widget.catalogo.habilitado && widget.catalogo.instituicoes.isNotEmpty) ...[
             Align(
               alignment: Alignment.centerLeft,

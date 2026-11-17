@@ -22,7 +22,28 @@ class InstituicaoOpenFinanceLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNu = nome?.trim().toLowerCase() == 'nubank' ||
         nome?.trim().toLowerCase() == 'nu';
-    final fallback = isNu
+    final normalizedName = nome?.trim().toLowerCase().replaceAll('ú', 'u') ?? '';
+    final isItau = const <String>{
+      'itau', 'itaucard', 'itau unibanco', 'itau unibanco s.a.',
+    }.contains(normalizedName);
+    final fallback = isItau
+        ? DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6D00),
+              borderRadius: BorderRadius.circular(size * 0.22),
+            ),
+            child: Center(
+              child: Text(
+                'itaú',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size * 0.27,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          )
+        : isNu
         ? DecoratedBox(
             decoration: BoxDecoration(
               color: const Color(0xFF820AD1),

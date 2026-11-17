@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
 import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/presentation/screens/cartoes_credito_web.dart';
 
@@ -99,30 +100,55 @@ void main() {
     expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
   });
 
-  testWidgets('seleciona Nu, salva o ID da marca e exibe na lista', (tester) async {
-    final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
+  testWidgets('web exibe logo no formulário depois de escolher o banco', (tester) async {
+    final api = _Api()..catalogo = const CatalogoInstituicoesBrasil(
       habilitado: true,
-      instituicoes: const [
+      instituicoes: [
         InstituicaoOpenFinance(
-          nome: 'Nubank',
-          logotipoUrl: 'arquivo-indisponivel-no-ambiente-de-testes',
-          marcaOpenFinanceId: 'nu-auth-server',
+          nome: 'Banco de Teste',
+          logotipoUrl: 'asset-de-teste-sem-requisicao-externa',
+          marcaOpenFinanceId: 'marca-banco-teste',
         ),
       ],
     );
     await open(tester, api);
     await tap(tester, find.byKey(const ValueKey('cards-create')));
-    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Nubank pessoal');
+    expect(find.byKey(const ValueKey('cards-institution-logo')), findsNothing);
     await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
-    await tap(tester, find.text('Nubank').last);
+    await tap(tester, find.text('Banco de Teste').last);
+    final logo = tester.widget<InstituicaoOpenFinanceLogo>(
+      find.byKey(const ValueKey('cards-institution-logo')),
+    );
+    expect(logo.url, 'asset-de-teste-sem-requisicao-externa');
+    await tester.enterText(find.byKey(const ValueKey('cards-institution')), 'Banco Manual');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('cards-institution-logo')), findsNothing);
+  });
+
+  testWidgets('seleciona instituição, salva ID da marca e exibe na lista', (tester) async {
+    final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: const [
+        InstituicaoOpenFinance(
+          nome: 'Banco de Teste',
+          logotipoUrl: 'arquivo-indisponivel-no-ambiente-de-testes',
+          marcaOpenFinanceId: 'marca-banco-teste',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Cartão do banco teste');
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+    await tap(tester, find.text('Banco de Teste').last);
     await tester.enterText(find.byKey(const ValueKey('cards.closing')), '10');
     await tester.enterText(find.byKey(const ValueKey('cards.due')), '20');
     await tap(tester, find.byKey(const ValueKey('cards-save')));
 
-    expect(api.requests.single.instituicao, 'Nubank');
-    expect(api.requests.single.marcaOpenFinanceId, 'nu-auth-server');
-    expect(api.items.single.marcaOpenFinanceId, 'nu-auth-server');
-    expect(find.text('Nubank pessoal'), findsOneWidget);
+    expect(api.requests.single.instituicao, 'Banco de Teste');
+    expect(api.requests.single.marcaOpenFinanceId, 'marca-banco-teste');
+    expect(api.items.single.marcaOpenFinanceId, 'marca-banco-teste');
+    expect(find.text('Cartão do banco teste'), findsOneWidget);
   });
 
   testWidgets('leitura sem escrita esconde criacao', (tester) async {
