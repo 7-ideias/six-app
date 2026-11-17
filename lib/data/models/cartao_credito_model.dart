@@ -9,12 +9,14 @@ class CartaoCredito {
     required this.versao,
     this.contaPrevistaId,
     this.contaPrevistaNome,
+    this.marcaOpenFinanceId,
   });
 
   final String id, nome, instituicao;
   final int diaFechamento, diaVencimento, versao;
   final bool ativo;
   final String? contaPrevistaId, contaPrevistaNome;
+  final String? marcaOpenFinanceId;
 
   factory CartaoCredito.fromJson(Map<String, dynamic> json) {
     final card = CartaoCredito(
@@ -27,6 +29,7 @@ class CartaoCredito {
       versao: json['versao'] as int,
       contaPrevistaId: json['contaPrevistaId'] as String?,
       contaPrevistaNome: json['contaPrevistaNome'] as String?,
+      marcaOpenFinanceId: json['marcaOpenFinanceId'] as String?,
     );
     if (card.id.isEmpty || card.nome.trim().isEmpty ||
         card.diaFechamento < 1 || card.diaFechamento > 31 ||
@@ -61,11 +64,13 @@ class CartaoCreditoRequest {
     required this.ativo,
     this.contaPrevistaId,
     this.versao,
+    this.marcaOpenFinanceId,
   });
   final String id, nome, instituicao;
   final int diaFechamento, diaVencimento;
   final bool ativo;
   final String? contaPrevistaId;
+  final String? marcaOpenFinanceId;
   final int? versao;
 
   Map<String, dynamic> toJson() => {
@@ -77,5 +82,6 @@ class CartaoCreditoRequest {
     'contaPrevistaId': contaPrevistaId,
     'ativo': ativo,
     'versao': versao,
+    'marcaOpenFinanceId': marcaOpenFinanceId,
   };
 }
