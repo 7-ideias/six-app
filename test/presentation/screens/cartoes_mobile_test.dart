@@ -72,34 +72,27 @@ void main(){
   await tap(t,find.byIcon(Icons.refresh).first);
   expect(find.text('Nubank'),findsOneWidget);expect(find.byType(FloatingActionButton),findsNothing);expect(find.byIcon(Icons.edit_outlined),findsNothing);expect(t.takeException(),isNull);
  });
- testWidgets('mobile preserva id da marca ao escolher instituição e salvar',(t)async{
+ testWidgets('mobile exibe prévia da marca na edição do cartão',(t)async{
   final api=Api(),config=Config();
   addTearDown(api.dispose);addTearDown(config.dispose);
   api.catalogo=const CatalogoInstituicoesBrasil(habilitado:true,instituicoes:[
     InstituicaoOpenFinance(
-      nome:'Nubank',
-      logotipoUrl:'arquivo-indisponivel-no-ambiente-de-testes',
-      marcaOpenFinanceId:'marca-nu'),
+      nome:'Banco de Teste',
+      logotipoUrl:'asset-de-teste-sem-requisicao-externa',
+      marcaOpenFinanceId:'marca-teste',
+    ),
   ]);
-  await open(t,CartaoCreditoMobileEditor(
-    client:api,configuracoes:config,catalogo:api.catalogo));
-  await t.enterText(field('Nome'),'Nubank pessoal');
-  await tap(t,find.byKey(const ValueKey('cards-openfinance-pick')));
-  // Simula a escolha feita no SearchDelegate sem depender do item virtualizado.
-  Navigator.of(t.element(find.byType(TextField).last))
-      .pop(api.catalogo.instituicoes.single);
-  await t.pumpAndSettle();
-  await t.enterText(field('Dia do fechamento'),'10');
-  await t.enterText(field('Dia do vencimento'),'20');
-  // O formulário usa ListView lazy: o botão fica fora do viewport de 390 px.
-  await t.scrollUntilVisible(
-    find.byType(FilledButton),
-    280,
-    scrollable: find.byType(Scrollable).last,
+  const card=CartaoCredito(
+    id:'card',nome:'Cartão pessoal',instituicao:'Banco de Teste',
+    diaFechamento:10,diaVencimento:20,ativo:true,versao:0,
+    marcaOpenFinanceId:'marca-teste',
   );
-  await tap(t,find.byType(FilledButton).last);
-  expect(api.saves.single.instituicao,'Nubank');
-  expect(api.saves.single.marcaOpenFinanceId,'marca-nu');
+  await open(t,CartaoCreditoMobileEditor(
+    client:api,card:card,configuracoes:config,catalogo:api.catalogo));
+  expect(find.byKey(const ValueKey('cards-institution-logo')),findsOneWidget);
+  await t.enterText(field('Instituição'),'Banco Manual');
+  await t.pump();
+  expect(find.byKey(const ValueKey('cards-institution-logo')),findsNothing);
   expect(t.takeException(),isNull);
  });
  testWidgets('mobile purchase reviews and retries the same request',(t)async{
