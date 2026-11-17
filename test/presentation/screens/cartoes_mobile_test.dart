@@ -78,7 +78,7 @@ void main(){
   api.catalogo=const CatalogoInstituicoesBrasil(habilitado:true,instituicoes:[
     InstituicaoOpenFinance(
       nome:'Nubank',
-      logotipoUrl:'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg',
+      logotipoUrl:'arquivo-indisponivel-no-ambiente-de-testes',
       marcaOpenFinanceId:'marca-nu'),
   ]);
   await open(t,CartaoCreditoMobileEditor(
