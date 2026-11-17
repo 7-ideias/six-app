@@ -91,6 +91,12 @@ void main(){
   await t.pumpAndSettle();
   await t.enterText(field('Dia do fechamento'),'10');
   await t.enterText(field('Dia do vencimento'),'20');
+  // O formulário usa ListView lazy: o botão fica fora do viewport de 390 px.
+  await t.scrollUntilVisible(
+    find.byType(FilledButton),
+    280,
+    scrollable: find.byType(Scrollable).last,
+  );
   await tap(t,find.byType(FilledButton).last);
   expect(api.saves.single.instituicao,'Nubank');
   expect(api.saves.single.marcaOpenFinanceId,'marca-nu');
