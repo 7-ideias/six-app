@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
 import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/presentation/screens/cartoes_credito_web.dart';
 
@@ -97,6 +98,31 @@ void main() {
     await tap(tester, find.byKey(const ValueKey('cards-create')));
     expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsNothing);
     expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
+  testWidgets('web exibe logo no formulário depois de escolher o banco', (tester) async {
+    final api = _Api()..catalogo = const CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: [
+        InstituicaoOpenFinance(
+          nome: 'Banco de Teste',
+          logotipoUrl: 'asset-de-teste-sem-requisicao-externa',
+          marcaOpenFinanceId: 'marca-banco-teste',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    expect(find.byKey(const ValueKey('cards-institution-logo')), findsNothing);
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+    await tap(tester, find.text('Banco de Teste').last);
+    final logo = tester.widget<InstituicaoOpenFinanceLogo>(
+      find.byKey(const ValueKey('cards-institution-logo')),
+    );
+    expect(logo.url, 'asset-de-teste-sem-requisicao-externa');
+    await tester.enterText(find.byKey(const ValueKey('cards-institution')), 'Banco Manual');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('cards-institution-logo')), findsNothing);
   });
 
   testWidgets('seleciona Nu, salva o ID da marca e exibe na lista', (tester) async {
