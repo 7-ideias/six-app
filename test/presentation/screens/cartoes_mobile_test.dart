@@ -18,7 +18,15 @@ FaturaCartao invoice()=>FaturaCartao.fromJson({'id':'invoice','cartaoId':'card',
 class Api extends CartaoCreditoApiClient {
  Api():super(espaco:'PESSOAL');
  bool failRead=false,editable=true;final purchases=<CompraCartaoRequest>[];final payments=<PagarFaturaCartaoRequest>[];
- @override Future<CatalogoInstituicoesBrasil> listarInstituicoesBrasileiras()async=>CatalogoInstituicoesBrasil.vazio;
+ final saves=<CartaoCreditoRequest>[];
+ CatalogoInstituicoesBrasil catalogo=CatalogoInstituicoesBrasil.vazio;
+ @override Future<CatalogoInstituicoesBrasil> listarInstituicoesBrasileiras()async=>catalogo;
+ @override Future<CartaoCredito> salvar(CartaoCreditoRequest r)async{
+  saves.add(r);
+  return CartaoCredito(id:r.id,nome:r.nome,instituicao:r.instituicao,
+    diaFechamento:r.diaFechamento,diaVencimento:r.diaVencimento,
+    ativo:r.ativo,versao:0,marcaOpenFinanceId:r.marcaOpenFinanceId);
+ }
  @override Future<CartoesCreditoResponse> listar()async{
   if(failRead)throw const CartaoCreditoApiException('connection');
   return CartoesCreditoResponse(podeEditar:editable,cartoes:const[CartaoCredito(id:'card',nome:'Nubank',instituicao:'Nu',diaFechamento:3,diaVencimento:10,ativo:true,versao:0)]);
@@ -63,6 +71,27 @@ void main(){
   api.failRead=false;api.editable=false;
   await tap(t,find.byIcon(Icons.refresh).first);
   expect(find.text('Nubank'),findsOneWidget);expect(find.byType(FloatingActionButton),findsNothing);expect(find.byIcon(Icons.edit_outlined),findsNothing);expect(t.takeException(),isNull);
+ });
+ testWidgets('mobile preserva id da marca ao escolher instituição e salvar',(t)async{
+  final api=Api(),config=Config();
+  addTearDown(api.dispose);addTearDown(config.dispose);
+  api.catalogo=const CatalogoInstituicoesBrasil(habilitado:true,instituicoes:[
+    InstituicaoOpenFinance(
+      nome:'Nubank',
+      logotipoUrl:'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg',
+      marcaOpenFinanceId:'marca-nu'),
+  ]);
+  await open(t,CartaoCreditoMobileEditor(
+    client:api,configuracoes:config,catalogo:api.catalogo));
+  await t.enterText(field('Nome'),'Nubank pessoal');
+  await tap(t,find.byKey(const ValueKey('cards-openfinance-pick')));
+  await tap(t,find.text('Nubank').last);
+  await t.enterText(field('Dia do fechamento'),'10');
+  await t.enterText(field('Dia do vencimento'),'20');
+  await tap(t,find.widgetWithText(FilledButton,'Salvar'));
+  expect(api.saves.single.instituicao,'Nubank');
+  expect(api.saves.single.marcaOpenFinanceId,'marca-nu');
+  expect(t.takeException(),isNull);
  });
  testWidgets('mobile purchase reviews and retries the same request',(t)async{
   final api=Api(),config=Config();addTearDown(api.dispose);addTearDown(config.dispose);
