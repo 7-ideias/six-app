@@ -105,7 +105,7 @@ void main() {
       instituicoes: const [
         InstituicaoOpenFinance(
           nome: 'Nubank',
-          logotipoUrl: 'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg',
+          logotipoUrl: 'arquivo-indisponivel-no-ambiente-de-testes',
           marcaOpenFinanceId: 'nu-auth-server',
         ),
       ],
