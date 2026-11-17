@@ -75,6 +75,29 @@ void main() {
     expect(find.textContaining('Nenhum cartão'), findsOneWidget);
   });
 
+  testWidgets('empresa BR oferece escolha de banco sem impedir digitacao manual', (tester) async {
+    final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: const [
+        InstituicaoOpenFinance(
+          nome: 'Nubank',
+          logotipoUrl: 'https://example.com/nu.svg',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsOneWidget);
+    expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
+  testWidgets('empresa fora do Brasil continua com campo livre sem catalogo', (tester) async {
+    await open(tester, _Api()..catalogo = CatalogoInstituicoesBrasil.vazio);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsNothing);
+    expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
   testWidgets('leitura sem escrita esconde criacao', (tester) async {
     await open(tester, _Api()..canEdit = false);
     expect(find.byKey(const ValueKey('cards-create')), findsNothing);
