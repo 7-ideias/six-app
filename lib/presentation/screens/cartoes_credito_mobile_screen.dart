@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/core/utils/uuid_v4.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
+import 'package:sixpos/presentation/components/instituicao_open_finance_picker.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -17,7 +20,9 @@ class CartoesCreditoMobileScreen extends StatefulWidget {
 class _CartoesState extends State<CartoesCreditoMobileScreen> {
   late final api=widget.client??CartaoCreditoApiClient(espaco:widget.espaco);
   CartoesCreditoResponse? data; String? error; bool loading=true;
-  @override void initState(){super.initState();load();}
+  CatalogoInstituicoesBrasil catalogo = CatalogoInstituicoesBrasil.vazio;
+  int catalogoRequest = 0;
+  @override void initState(){super.initState();load();loadCatalogo();}
   @override void dispose(){if(widget.client==null)api.dispose();super.dispose();}
   Future<void> load()async{
     setState((){loading=true;error=null;});
@@ -25,14 +30,31 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
     catch(e){if(mounted)setState((){error=erroCartaoMobile(e);if(acessoCartaoNegado(e))data=null;});}
     finally {if(mounted)setState(()=>loading=false);}
   }
+  Future<void> loadCatalogo() async {
+    final request = ++catalogoRequest;
+    try {
+      final resultado = await api.listarInstituicoesBrasileiras();
+      if (mounted && request == catalogoRequest) {
+        setState(() => catalogo = resultado);
+      }
+    } catch (_) {
+      if (mounted && request == catalogoRequest) {
+        setState(() => catalogo = CatalogoInstituicoesBrasil.vazio);
+      }
+    }
+  }
+  Future<void> refresh() async {
+    loadCatalogo();
+    await load();
+  }
   Future<void> edit([CartaoCredito? card])async{
-    await Navigator.push(context,MaterialPageRoute<bool>(builder:(_)=>CartaoCreditoMobileEditor(client:api,card:card)));
-    if(mounted)await load();
+    await Navigator.push(context,MaterialPageRoute<bool>(builder:(_)=>CartaoCreditoMobileEditor(client:api,card:card,catalogo:catalogo)));
+    if(mounted)await refresh();
   }
   @override Widget build(BuildContext context)=>CartaoMobilePage(
-    title:context.t('cards.title'),actions:[IconButton(onPressed:loading?null:load,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))],
+    title:context.t('cards.title'),actions:[IconButton(onPressed:loading?null:refresh,tooltip:context.t('cards.refresh'),icon:const Icon(Icons.refresh))],
     floatingActionButton:!loading&&error==null&&data?.podeEditar==true?FloatingActionButton.extended(onPressed:()=>edit(),icon:const Icon(Icons.add),label:Text(context.t('cards.new'))):null,
-    bodyBuilder:(context,scroll,topInset)=>RefreshIndicator(onRefresh:load,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,100),physics:const AlwaysScrollableScrollPhysics(),children:[
+    bodyBuilder:(context,scroll,topInset)=>RefreshIndicator(onRefresh:refresh,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,100),physics:const AlwaysScrollableScrollPhysics(),children:[
       Text(context.t('space.${widget.espaco}'),style:Theme.of(context).textTheme.titleMedium),const SizedBox(height:12),
       if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.title')),
       if(error!=null)CartaoMobileError(error!,retry:loading?null:load,stale:data!=null),
@@ -41,7 +63,7 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
         if(data!.cartoes.isEmpty)Padding(padding:const EdgeInsets.all(24),child:Text(context.t('cards.empty'))),
       ],
       for(final c in data?.cartoes??<CartaoCredito>[])Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-        Row(children:[Icon(Icons.credit_card,color:context.sixMobileColors.accent),const SizedBox(width:12),Expanded(child:Text(c.nome,style:Theme.of(context).textTheme.titleMedium)),if(data!.podeEditar)IconButton(onPressed:loading||error!=null?null:()=>edit(c),tooltip:context.t('cards.edit'),icon:const Icon(Icons.edit_outlined))]),
+        Row(children:[InstituicaoOpenFinanceLogo(url:catalogo.logotipoDe(c.instituicao),size:48,color:context.sixMobileColors.accent),const SizedBox(width:12),Expanded(child:Text(c.nome,style:Theme.of(context).textTheme.titleMedium)),if(data!.podeEditar)IconButton(onPressed:loading||error!=null?null:()=>edit(c),tooltip:context.t('cards.edit'),icon:const Icon(Icons.edit_outlined))]),
         Text('${c.instituicao} · ${context.t(c.ativo?'space.active':'space.inactive')}'),const SizedBox(height:12),
         Text('${context.t('cards.closing')}: ${c.diaFechamento} · ${context.t('cards.due')}: ${c.diaVencimento}'),
         if(c.contaPrevistaNome!=null)Text('${context.t('cards.account')}: ${c.contaPrevistaNome}'),
@@ -52,9 +74,10 @@ class _CartoesState extends State<CartoesCreditoMobileScreen> {
 }
 
 class CartaoCreditoMobileEditor extends StatefulWidget {
-  const CartaoCreditoMobileEditor({super.key,required this.client,this.card,this.configuracoes,this.onSaved});
+  const CartaoCreditoMobileEditor({super.key,required this.client,this.card,this.configuracoes,this.onSaved,this.catalogo = CatalogoInstituicoesBrasil.vazio});
   final ValueChanged<CartaoCredito>? onSaved;
   final CartaoCreditoApiClient client; final CartaoCredito? card; final ConfiguracaoFinanceiraService? configuracoes;
+  final CatalogoInstituicoesBrasil catalogo;
   @override State<CartaoCreditoMobileEditor> createState()=>_EditorState();
 }
 class _EditorState extends State<CartaoCreditoMobileEditor> {
@@ -86,9 +109,29 @@ class _EditorState extends State<CartaoCreditoMobileEditor> {
     catch(e){if(mounted)setState((){error=erroCartaoMobile(e);if(rejeicaoCartaoDefinitiva(e)){attempt=null;conflict=e is CartaoCreditoApiException&&(e.statusCode==409||acessoCartaoNegado(e));}});}
     finally{if(mounted)setState(()=>saving=false);}
   }
+  Future<void> escolherInstituicao() async {
+    final selecionada = await selecionarInstituicaoOpenFinance(
+      context, widget.catalogo.instituicoes,
+    );
+    if (mounted && selecionada != null) {
+      setState(() => bank.text = selecionada.nome);
+    }
+  }
   Widget field(TextEditingController c,String label,{bool day=false})=>Padding(padding:const EdgeInsets.only(bottom:16),child:TextFormField(controller:c,enabled:!locked&&!conflict,decoration:InputDecoration(labelText:context.t(label)),keyboardType:day?TextInputType.number:TextInputType.text,maxLength:day?2:120,validator:(v){if(day){final n=int.tryParse(v??'');return n==null||n<1||n>31?context.t('cards.dayValidation'):null;}return v==null||v.trim().isEmpty?context.t('invoices.required'):null;}));
   @override Widget build(BuildContext context)=>PopScope(canPop:!saving,child:CartaoMobilePage(title:context.t(widget.card==null?'cards.new':'cards.edit'),canPop:!saving,bodyBuilder:(context,scroll,topInset)=>SafeArea(top:false,child:Form(key:form,child:ListView(controller:scroll,padding:EdgeInsets.fromLTRB(16,topInset+12,16,24),children:[
-    field(name,'space.name'),field(bank,'cards.institution'),field(closing,'cards.closing',day:true),field(due,'cards.due',day:true),Text(context.t('cards.daysHint')),const SizedBox(height:16),
+    field(name,'space.name'),field(bank,'cards.institution'),
+    if(widget.catalogo.habilitado&&widget.catalogo.instituicoes.isNotEmpty)...[
+      OutlinedButton.icon(
+        key:const ValueKey('cards-openfinance-pick'),
+        onPressed:locked||conflict?null:escolherInstituicao,
+        icon:const Icon(Icons.account_balance_outlined),
+        label:Text(context.t('cards.catalogSelect')),
+      ),
+      const SizedBox(height:6),
+      Text(context.t('cards.catalogHint'),style:Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height:12),
+    ],
+    field(closing,'cards.closing',day:true),field(due,'cards.due',day:true),Text(context.t('cards.daysHint')),const SizedBox(height:16),
     if(loading)SixBackendLoading(title:context.t('space.loading'),subtitle:context.t('cards.account')),
     CartaoMobileField(label:'cards.account',value:accounts.where((a)=>a.id==account).map((a)=>a.nome).firstOrNull??widget.card?.contaPrevistaNome??'',onTap:locked||loading||error!=null||conflict?null:()async{
       final v=await escolherCartaoOpcao(context,'cards.account',{'':context.t('space.none'),for(final a in accounts)a.id:a.nome},account);if(v!=null&&mounted)setState(()=>account=v.isEmpty?null:v);
