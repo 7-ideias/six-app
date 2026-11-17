@@ -52,7 +52,7 @@ jobs:
       - name: Analyze financial branding on both platforms
         run: dart analyze lib/data/models/marca_financeira_catalogo.dart lib/core/services/configuracao_financeira_service.dart lib/presentation/components/marca_financeira_avatar.dart lib/presentation/components/web/configuracao_financeira_marca_card.dart lib/presentation/components/web/configuracao_financeira_web_editor.dart lib/presentation/screens/configuracoes_espaco_web.dart lib/presentation/components/mobile/marca_financeira_mobile_selector.dart lib/presentation/components/mobile/configuracao_financeira_mobile_editor.dart lib/presentation/screens/configuracoes_espaco_mobile.dart test/data/models/marca_financeira_catalogo_test.dart test/presentation/screens/configuracoes_espaco_branding_test.dart test/presentation/screens/configuracoes_espaco_mobile_test.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart test/presentation/components/web/agenda_categoria_web_test.dart
       - name: Test financial branding and configurations
-        run: flutter test test/data/models/marca_financeira_catalogo_test.dart test/presentation/screens/configuracoes_espaco_branding_test.dart test/presentation/screens/financeiro_fluxos_test.dart test/presentation/screens/configuracoes_espaco_mobile_test.dart test/presentation/components/web/agenda_categoria_web_test.dart
+        run: flutter test test/data/models/marca_financeira_catalogo_test.dart test/presentation/screens/configuracoes_espaco_branding_test.dart test/presentation/screens/configuracoes_espaco_mobile_test.dart test/presentation/screens/configuracoes_espaco_web_dialog_test.dart test/presentation/components/web/agenda_categoria_web_test.dart
       - name: Build Web
         run: flutter build web --release
 
