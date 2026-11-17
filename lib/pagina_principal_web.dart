@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'presentation/navigation/web_app_router.dart';
+import 'presentation/navigation/web_destination_routes.dart';
 import 'core/services/push_navigation_service.dart';
 import 'core/services/push_destination_resolver.dart';
 import 'l10n/billing_texts.dart';
@@ -140,6 +143,60 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       OperationalProcedureFlowCoordinator();
 
   late final WebNavigationDestinationResolver _webNavigationResolver;
+  WebAppRouter? _browserRouter;
+  Route<dynamic>? _browserShellRoute;
+  WebNavigationDestination? _routeDestination;
+  bool _initialWebRouteApplied = false;
+  int _webRouteRevision = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = WebAppRouter.maybeOf(context);
+    final route = ModalRoute.of(context);
+    if (router != null && route != null) {
+      _browserRouter = router;
+      _browserShellRoute = route;
+      router.registerShell(route, _restoreWebDestination);
+    }
+  }
+
+  Future<void> _restoreWebDestination(
+    WebNavigationDestination destination,
+  ) async {
+    if (!mounted) return;
+    final permissions = context.read<ColaboradorAutorizacoesProvider>();
+    if (WebNavigationPermissionAdapter.canApplySidebarFiltering(permissions) &&
+        destination != WebNavigationDestination.home &&
+        !_navigationItemsContainDestination(
+          _webNavigationItemsPermitidos(permissions),
+          destination,
+        )) {
+      destination = WebNavigationDestination.home;
+    }
+    final module = webModuleForDestination(destination);
+    if (destination == WebNavigationDestination.cash) {
+      await _abrirOperacoesCaixa();
+      if (!mounted) return;
+      if (_moduloAtual != ModuloCentralPDV.operacoesCaixa) {
+        setState(() => _initialWebRouteApplied = true);
+        return;
+      }
+    } else if (destination == WebNavigationDestination.operationsPointOfSale) {
+      await _iniciarVenda();
+    } else {
+      setState(() {
+        _moduloRetornoOperacoesCaixa = null;
+        _moduloAtual = module ?? ModuloCentralPDV.seletor;
+      });
+    }
+    if (!mounted) return;
+    setState(() {
+      _webRouteRevision++;
+      _routeDestination = destination;
+      _initialWebRouteApplied = true;
+    });
+  }
 
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
   ModuloCentralPDV? _moduloRetornoOperacoesCaixa;
@@ -266,10 +323,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   // }
 
   late final PushNavigationExecutor _campaignPushExecutor = (navigation) async {
-    if (!mounted || navigation.destination != PushNavigationDestination.subscription) return;
+    if (!mounted ||
+        navigation.destination != PushNavigationDestination.subscription) {
+      return;
+    }
     final campaignId = navigation.payload['campaignId']?.toString();
     if (campaignId == null || campaignId.isEmpty) return;
-    await Navigator.of(context).pushNamed(Uri(path: '/app/assinatura', queryParameters: {'campaignId': campaignId}).toString());
+    await Navigator.of(context).pushNamed(
+      Uri(
+        path: '/app/assinatura',
+        queryParameters: {'campaignId': campaignId},
+      ).toString(),
+    );
   };
 
   @override
@@ -277,6 +342,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PushNavigationService().bindExecutor(_campaignPushExecutor);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _restoreWebDestination(
+          widget.initialDestination ?? WebNavigationDestination.home,
+        );
+      }
     });
 
     _webNavigationResolver = WebNavigationDestinationResolver(
@@ -348,6 +421,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   @override
   void dispose() {
+    final shellRoute = _browserShellRoute;
+    if (shellRoute != null) _browserRouter?.unregisterShell(shellRoute);
     PushNavigationService().unbindExecutor(_campaignPushExecutor);
     _iaPulseController.dispose();
     _themeResolver.removeListener(_onThemeChanged);
@@ -708,9 +783,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         context.read<ColaboradorAutorizacoesProvider>();
     final bool ehSuper = autorizacoes.ehSuperUsuario;
     final bool podeAcessarSuporte =
-        ehSuper ||
-        autorizacoes.ehAdministrador ||
-        autorizacoes.ehColaborador;
+        ehSuper || autorizacoes.ehAdministrador || autorizacoes.ehColaborador;
 
     if (_assistenteIAMinimizado) {
       setState(() => _assistenteIAMinimizado = false);
@@ -795,9 +868,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     setState(() => _assistenteIAMinimizado = minimizarSolicitado);
     if (abrirSuporteSolicitado) {
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => const ChatSuporteWebPage()
-        ),
+        MaterialPageRoute<void>(builder: (_) => const ChatSuporteWebPage()),
       );
     }
   }
@@ -1601,11 +1672,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   void _abrirModuloCentralPelaNavegacaoWeb(ModuloCentralPDV modulo) {
     if (!mounted) {
-      return;
-    }
-
-    if (modulo == ModuloCentralPDV.configuracoes) {
-      showConfiguracoesSixWebDialog(context);
       return;
     }
 
@@ -3068,10 +3134,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       case ModuloCentralPDV.fornecedoresList:
         return Expanded(
-          child: FornecedoresWebPage(
-            embedded: true,
-            onBack: voltarParaInicio
-          ),
+          child: FornecedoresWebPage(embedded: true, onBack: voltarParaInicio),
         );
 
       case ModuloCentralPDV.clientesList:
@@ -3555,7 +3618,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     if (modoExpandidoAtivo) {
       return PopScope(
-        canPop: false,
+        canPop: kIsWeb,
         child: Scaffold(
           backgroundColor: _pdvTheme.backgroundPage,
           body: _buildModoExpandidoFrenteCaixaWeb(total),
@@ -3575,7 +3638,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
 
     final Widget webShell = AuthenticatedWebShell(
-      initialDestination: widget.initialDestination,
+      initialDestination: _routeDestination,
+      routeRevision: _webRouteRevision,
+      syncBrowserLocation: _initialWebRouteApplied,
       navigationItems: webNavigationItems,
       resolver: _webNavigationResolver,
       activeDestination: webNavigationDestinationForModuloCentralPdv(
@@ -3588,7 +3653,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
 
     return PopScope(
-      canPop: false,
+      canPop: kIsWeb,
       child: Scaffold(
         backgroundColor: webTokens.workspaceBackground,
         body: Stack(

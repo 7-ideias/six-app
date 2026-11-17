@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../navigation/web_app_router.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -30,6 +31,8 @@ class AuthenticatedWebShell extends StatefulWidget {
     required this.appVersion,
     this.currentCommerceName,
     this.initialDestination,
+    this.syncBrowserLocation = false,
+    this.routeRevision = 0,
     this.headerActions = const <Widget>[],
   });
 
@@ -40,6 +43,8 @@ class AuthenticatedWebShell extends StatefulWidget {
   final String appVersion;
   final String? currentCommerceName;
   final WebNavigationDestination? initialDestination;
+  final bool syncBrowserLocation;
+  final int routeRevision;
   final List<Widget> headerActions;
 
   @override
@@ -63,7 +68,18 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   @override
   void didUpdateWidget(covariant AuthenticatedWebShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.activeDestination != widget.activeDestination) {
+    if (oldWidget.initialDestination != widget.initialDestination ||
+        oldWidget.routeRevision != widget.routeRevision) {
+      final destination = widget.initialDestination;
+      _shellManagedDestination =
+          destination != null && _isShellManaged(destination)
+              ? destination
+              : null;
+      _expandedGroupIds = <String>{
+        ..._expandedGroupIds,
+        ..._groupIdsForDestination(destination),
+      };
+    } else if (oldWidget.activeDestination != widget.activeDestination) {
       _shellManagedDestination = null;
       _expandedGroupIds = <String>{
         ..._expandedGroupIds,
@@ -83,12 +99,23 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         );
     final WebNavigationDestination? effectiveDestination =
         _shellManagedDestination ?? widget.activeDestination;
+    if (widget.syncBrowserLocation && effectiveDestination != null) {
+      final route = ModalRoute.of(context);
+      final router = WebAppRouter.maybeOf(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && route != null) {
+          router?.reportDestination(route, effectiveDestination);
+        }
+      });
+    }
     final String activeTitle = _activeTitle(context, effectiveDestination);
     final Widget effectiveChild = switch (effectiveDestination) {
       WebNavigationDestination.catalogLabels => const EtiquetasWebPage(),
       WebNavigationDestination.operationsSales => ConsultaVendasWebPage(
-        onNovaVenda: () =>
-            _resolveDestination(WebNavigationDestination.operationsPointOfSale),
+        onNovaVenda:
+            () => _resolveDestination(
+              WebNavigationDestination.operationsPointOfSale,
+            ),
         onAbrirDevolucoes: _abrirDevolucoesDaVenda,
       ),
       WebNavigationDestination.operationsReturns =>
@@ -113,9 +140,10 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
           final bool forceCollapsed =
               constraints.maxWidth <= _compactSidebarBreakpoint;
           final bool expanded = _sidebarExpanded && !forceCollapsed;
-          final double sidebarWidth = expanded
-              ? WebSidebarNavigation.expandedWidth
-              : WebSidebarNavigation.collapsedWidth;
+          final double sidebarWidth =
+              expanded
+                  ? WebSidebarNavigation.expandedWidth
+                  : WebSidebarNavigation.collapsedWidth;
 
           return AnimatedContainer(
             key: const Key('web-shell-workspace'),
