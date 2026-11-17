@@ -280,9 +280,9 @@ class _ConfiguracoesEspacoMobileState extends State<ConfiguracoesEspacoMobile> {
                             maxLines: 1, overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: colors.mutedText)),
-                          if (_destino(item, context) case final detalhe?) ...[
+                          if (_grupo == 'MAQUININHAS') ...[
                             const SizedBox(height: 4),
-                            Text(detalhe, maxLines: 1,
+                            Text(_destino(item, context) ?? '', maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: colors.mutedText)),
