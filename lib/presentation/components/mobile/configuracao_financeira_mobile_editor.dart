@@ -86,7 +86,8 @@ class _ConfiguracaoFinanceiraMobileEditorState
 
   bool get _podeEscolherMarca =>
       widget.catalogo.habilitado &&
-      ((widget.grupo == 'CONTAS' && _tipo == 'BANCO') ||
+      ((widget.grupo == 'CONTAS' && _tipo == 'BANCO' &&
+          widget.catalogo.instituicoes.isNotEmpty) ||
           widget.grupo == 'MAQUININHAS');
 
   String? get _logoAtual {
