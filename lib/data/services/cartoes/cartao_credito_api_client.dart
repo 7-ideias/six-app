@@ -7,6 +7,7 @@ import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 
 class CartaoCreditoApiException implements Exception {
   const CartaoCreditoApiException(this.kind, {this.statusCode});
@@ -36,13 +37,13 @@ class CartaoCreditoApiClient {
 
   void dispose() => _client.close();
 
-  Future<Map<String, dynamic>> _request(String method, {Map<String,dynamic>? input, String path = '', String resource = 'cartoes'}) async {
+  Future<Map<String, dynamic>> _request(String method, {Map<String,dynamic>? input, String path = '', String resource = 'cartoes', bool incluirEmpresaNoPessoal = false}) async {
     try {
       final token = await _tokenProvider().timeout(timeout);
       if (token == null || token.isEmpty) {
         throw const CartaoCreditoApiException('session', statusCode: 401);
       }
-      final empresa = espaco == 'PESSOAL'
+      final empresa = espaco == 'PESSOAL' && !incluirEmpresaNoPessoal
           ? null
           : (_empresa ??= await _empresaProvider().timeout(timeout));
       final headers = {
@@ -94,6 +95,12 @@ class CartaoCreditoApiClient {
       throw const CartaoCreditoApiException('invalidResponse');
     }
   }
+
+  /// O backend valida país e vínculo com a empresa, inclusive no espaço PESSOAL.
+  Future<CatalogoInstituicoesBrasil> listarInstituicoesBrasileiras() => _decode(
+    _request('GET', path: '/instituicoes', incluirEmpresaNoPessoal: true),
+    CatalogoInstituicoesBrasil.fromJson,
+  );
 
   Future<CartaoCredito> salvar(CartaoCreditoRequest input) async {
     final data = await _request(input.versao == null ? 'POST' : 'PUT', input: input.toJson(), path: input.versao == null ? '' : '/${Uri.encodeComponent(input.id)}');
