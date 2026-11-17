@@ -6,6 +6,9 @@ import 'package:sixpos/presentation/components/web/configuracao_financeira_web_e
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/data/models/marca_financeira_catalogo.dart';
+import 'package:sixpos/presentation/components/web/configuracao_financeira_marca_card.dart';
 
 class ConfiguracoesEspacoWeb extends StatefulWidget {
   const ConfiguracoesEspacoWeb({super.key, required this.espaco, this.service});
@@ -22,10 +25,28 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
   bool _loading = true;
   bool _error = false;
   List<ConfiguracaoFinanceira> _items = [];
+  List<ConfiguracaoFinanceira> _contasDestino = [];
+  CatalogoInstituicoesBrasil _catalogo = CatalogoInstituicoesBrasil.vazio;
+  int _catalogoRequest = 0;
   @override
   void initState() {
     super.initState();
     _load();
+    _loadCatalogo();
+  }
+
+  Future<void> _loadCatalogo() async {
+    final request = ++_catalogoRequest;
+    try {
+      final resposta = await _service.catalogoBrasileiro();
+      if (mounted && request == _catalogoRequest) {
+        setState(() => _catalogo = resposta);
+      }
+    } catch (_) {
+      if (mounted && request == _catalogoRequest) {
+        setState(() => _catalogo = CatalogoInstituicoesBrasil.vazio);
+      }
+    }
   }
 
   @override
@@ -44,8 +65,11 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
       if (oldWidget.service == null) _service.dispose();
       _service = widget.service ?? ConfiguracaoFinanceiraService(widget.espaco);
       _items = [];
+      _contasDestino = [];
+      _catalogo = CatalogoInstituicoesBrasil.vazio;
       _grupo = 'CONTAS';
       _load();
+      _loadCatalogo();
     }
   }
 
@@ -56,8 +80,17 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
       _error = false;
     });
     try {
-      final items = await _service.listar(_grupo);
-      if (mounted && request == _request) setState(() => _items = items);
+      final grupo = _grupo;
+      final consultas = await Future.wait([
+        _service.listar(grupo),
+        if (grupo == 'MAQUININHAS') _service.listar('CONTAS'),
+      ]);
+      if (mounted && request == _request) {
+        setState(() {
+          _items = consultas.first;
+          _contasDestino = consultas.length > 1 ? consultas[1] : [];
+        });
+      }
     } catch (_) {
       if (mounted && request == _request) setState(() => _error = true);
     } finally {
@@ -70,6 +103,7 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
       service: _service,
       grupo: _grupo,
       item: item,
+      catalogo: _catalogo,
     );
     await showDialog<void>(
       context: context,
@@ -85,9 +119,78 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
     if (mounted) await _load();
   }
 
+  String _descricao(ConfiguracaoFinanceira item, BuildContext context) {
+    if (_grupo == 'MAQUININHAS') {
+      return item.instituicao.isEmpty
+          ? context.t('financialBrand.terminal') : item.instituicao;
+    }
+    final tipo = switch (item.tipo) {
+      'BANCO' => context.t('financialBrand.bank'),
+      'CARTEIRA' => context.t('financialBrand.wallet'),
+      'CAIXA' => context.t('financialBrand.cash'),
+      _ => context.t('space.${item.tipo}'),
+    };
+    if (item.instituicao.isEmpty) return tipo;
+    return '$tipo · ${item.instituicao}';
+  }
+
+  String? _detalhe(ConfiguracaoFinanceira item, BuildContext context) {
+    if (_grupo != 'MAQUININHAS') return null;
+    String destino = context.t('financialBrand.noDestination');
+    for (final conta in _contasDestino) {
+      if (conta.id == item.contaDestinoId) {
+        destino = conta.nome;
+        break;
+      }
+    }
+    return '${context.t('financialBrand.paymentDestination')}: $destino';
+  }
+
+  Widget _vazio(BuildContext context) {
+    final contas = _grupo == 'CONTAS';
+    final maquininhas = _grupo == 'MAQUININHAS';
+    if (!contas && !maquininhas) return Text(context.t('space.empty'));
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
+        child: Card(
+          margin: const EdgeInsets.symmetric(vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(contas ? Icons.account_balance_outlined
+                  : Icons.point_of_sale_outlined, size: 38,
+                  color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 14),
+              Text(context.t(contas
+                  ? 'financialBrand.emptyAccountsTitle'
+                  : 'financialBrand.emptyMachinesTitle'),
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text(context.t(contas
+                  ? 'financialBrand.emptyAccountsText'
+                  : 'financialBrand.emptyMachinesText'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                key: const ValueKey('financial-brand-first-web'),
+                onPressed: () => _edit(),
+                icon: const Icon(Icons.add),
+                label: Text(context.t(contas
+                    ? 'financialBrand.firstAccount'
+                    : 'financialBrand.firstMachine')),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final content = <Widget>[
       Wrap(
         spacing: 8,
@@ -130,46 +233,22 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
       else if (_error)
         TextButton(onPressed: _load, child: Text(context.t('space.retry')))
       else if (_items.isEmpty)
-        Text(context.t('space.empty'))
+        _vazio(context)
       else
         for (final item in _items)
-          Card(
-            color: colors.surface,
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.nome,
-                          style: TextStyle(
-                            color: colors.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          [
-                            item.instituicao,
-                            context.t(
-                              item.ativo ? 'space.active' : 'space.inactive',
-                            ),
-                          ].where((s) => s.isNotEmpty).join(' · '),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: context.t('space.edit'),
-                    onPressed: () => _edit(item),
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                ],
-              ),
+          ConfiguracaoFinanceiraMarcaCard(
+            key: ValueKey('financial-brand-web-${item.id}'),
+            nome: item.nome,
+            descricao: _descricao(item, context),
+            detalhe: _detalhe(item, context),
+            tipo: _grupo == 'MAQUININHAS' ? 'MAQUININHA' : item.tipo,
+            ativo: item.ativo,
+            textoStatus: context.t(item.ativo ? 'space.active' : 'space.inactive'),
+            tooltipEditar: context.t('space.edit'),
+            logotipoUrl: MarcaFinanceiraCatalogo.logoDaConfiguracao(
+              item, _grupo, _catalogo,
             ),
+            onEdit: () => _edit(item),
           ),
     ];
     return Scaffold(
@@ -181,11 +260,13 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
             subtitle: context.t('space.' + widget.espaco),
             onBack: () => Navigator.of(context).maybePop(),
             actions: [
-              FilledButton.icon(
-                onPressed: _loading ? null : () => _edit(),
-                icon: const Icon(Icons.add),
-                label: Text(context.t('space.add')),
-              ),
+              if (!(!_loading && !_error && _items.isEmpty &&
+                  (_grupo == 'CONTAS' || _grupo == 'MAQUININHAS')))
+                FilledButton.icon(
+                  onPressed: _loading ? null : () => _edit(),
+                  icon: const Icon(Icons.add),
+                  label: Text(context.t('space.add')),
+                ),
             ],
           ),
           Expanded(
