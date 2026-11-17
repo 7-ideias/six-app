@@ -98,7 +98,10 @@ class _InstituicaoOpenFinanceWebDialogState
           child: Semantics(
             namesRoute: true,
             label: titulo,
-            child: Dialog(
+            child: SizedBox(
+              width: largura,
+              height: altura,
+              child: Dialog(
               key: const ValueKey('openfinance-web-dialog'),
               insetPadding: EdgeInsets.zero,
               elevation: 20,
@@ -110,10 +113,7 @@ class _InstituicaoOpenFinanceWebDialogState
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(color: tokens.cardBorder),
               ),
-              child: SizedBox(
-                width: largura,
-                height: altura,
-                child: Column(
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
