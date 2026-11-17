@@ -4,7 +4,7 @@ import 'package:sixpos/core/utils/uuid_v4.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/data/models/cartao_credito_model.dart';
 import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
-import 'package:sixpos/presentation/components/instituicao_open_finance_picker.dart';
+import 'instituicao_open_finance_web_dialog.dart';
 import 'package:sixpos/presentation/components/instituicao_open_finance_logo.dart';
 import 'package:sixpos/data/services/cartoes/cartao_credito_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -90,7 +90,7 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
   }
 
   Future<void> _escolherInstituicao() async {
-    final selecionada = await selecionarInstituicaoOpenFinance(
+    final selecionada = await selecionarInstituicaoOpenFinanceWeb(
       context, widget.catalogo.instituicoes,
     );
     if (mounted && selecionada != null) {
