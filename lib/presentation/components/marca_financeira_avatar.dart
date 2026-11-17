@@ -49,7 +49,18 @@ class MarcaFinanceiraAvatar extends StatelessWidget {
                   size: size - 10,
                 ),
               )
-            : Icon(icon, size: size * 0.46, color: colors.primary),
+            : tipo == 'MAQUININHA' && nome.trim().isNotEmpty
+                ? Text(
+                    nome.trim().length > 2
+                        ? nome.trim().substring(0, 2).toUpperCase()
+                        : nome.trim().toUpperCase(),
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontSize: size * 0.25,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  )
+                : Icon(icon, size: size * 0.46, color: colors.primary),
       ),
     );
   }
