@@ -125,30 +125,30 @@ void main() {
     expect(find.byKey(const ValueKey('cards-institution-logo')), findsNothing);
   });
 
-  testWidgets('seleciona Nu, salva o ID da marca e exibe na lista', (tester) async {
+  testWidgets('seleciona instituição, salva ID da marca e exibe na lista', (tester) async {
     final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
       habilitado: true,
       instituicoes: const [
         InstituicaoOpenFinance(
-          nome: 'Nubank',
+          nome: 'Banco de Teste',
           logotipoUrl: 'arquivo-indisponivel-no-ambiente-de-testes',
-          marcaOpenFinanceId: 'nu-auth-server',
+          marcaOpenFinanceId: 'marca-banco-teste',
         ),
       ],
     );
     await open(tester, api);
     await tap(tester, find.byKey(const ValueKey('cards-create')));
-    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Nubank pessoal');
+    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Cartão do banco teste');
     await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
-    await tap(tester, find.text('Nubank').last);
+    await tap(tester, find.text('Banco de Teste').last);
     await tester.enterText(find.byKey(const ValueKey('cards.closing')), '10');
     await tester.enterText(find.byKey(const ValueKey('cards.due')), '20');
     await tap(tester, find.byKey(const ValueKey('cards-save')));
 
-    expect(api.requests.single.instituicao, 'Nubank');
-    expect(api.requests.single.marcaOpenFinanceId, 'nu-auth-server');
-    expect(api.items.single.marcaOpenFinanceId, 'nu-auth-server');
-    expect(find.text('Nubank pessoal'), findsOneWidget);
+    expect(api.requests.single.instituicao, 'Banco de Teste');
+    expect(api.requests.single.marcaOpenFinanceId, 'marca-banco-teste');
+    expect(api.items.single.marcaOpenFinanceId, 'marca-banco-teste');
+    expect(find.text('Cartão do banco teste'), findsOneWidget);
   });
 
   testWidgets('leitura sem escrita esconde criacao', (tester) async {
