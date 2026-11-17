@@ -67,6 +67,7 @@ class _InstituicaoSearchDelegate extends SearchDelegate<InstituicaoOpenFinance?>
         return ListTile(
           leading: InstituicaoOpenFinanceLogo(
             url: instituicao.logotipoUrl,
+            nome: instituicao.nome,
             size: 48,
           ),
           title: Text(instituicao.nome),
