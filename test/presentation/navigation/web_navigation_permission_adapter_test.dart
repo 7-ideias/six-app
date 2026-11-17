@@ -197,6 +197,27 @@ void main() {
       );
     });
 
+    test('Painel SUPER aparece apos Campanhas somente para SUPER', () {
+      for (final admin in [false, true]) {
+        final ids = _topLevelIds(
+          _visibleItemsFor(
+            _FakeAutorizacoesProvider(admin: admin, superUser: true),
+          ),
+        );
+        expect(
+          ids.indexOf(WebNavigationIds.superPanel),
+          ids.indexOf(WebNavigationIds.pushCampaigns) + 1,
+        );
+        expect(
+          _findItem(
+            _visibleItemsFor(_FakeAutorizacoesProvider(admin: admin)),
+            WebNavigationIds.superPanel,
+          ),
+          isNull,
+        );
+      }
+    });
+
     test('Campanhas aparece apos Planos somente para SUPER', () {
       final ids = _topLevelIds(
         _visibleItemsFor(

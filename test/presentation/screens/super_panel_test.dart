@@ -1,0 +1,234 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/admin_portal_service.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/presentation/screens/super_panel_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/super_panel_web_page.dart';
+import 'package:sixpos/presentation/controllers/super_panel_controller.dart';
+
+const _summary = AdminPortalResumo(
+  totalEmpresasCadastradas: 1,
+  totalEmpresasAtivas: 1,
+  bancosDeDados: [
+    AdminBancoDadosResumo(
+      nome: 'database-private',
+      tamanhoDadosBytes: 512,
+      tamanhoArmazenadoBytes: 1024,
+      tamanhoIndicesBytes: 128,
+      tamanhoTotalBytes: 2048,
+      quantidadeColecoes: 2,
+      quantidadeObjetos: 8,
+    ),
+  ],
+  requestsHttp: AdminRequestStatusResumo(
+    status200: 7,
+    status400: 1,
+    status500: 0,
+    janelaValor: 15,
+    janelaUnidade: AdminRequestWindowUnit.minutes,
+  ),
+);
+
+class _Service implements AdminPortalService {
+  int calls = 0;
+  int? window;
+  AdminRequestWindowUnit? unit;
+  Completer<AdminPortalResumo>? pending;
+  bool fail = false;
+  @override
+  Future<AdminPortalResumo> buscarResumo({
+    int? janelaValor,
+    AdminRequestWindowUnit? janelaUnidade,
+  }) async {
+    calls++;
+    window = janelaValor;
+    unit = janelaUnidade;
+    if (fail) throw StateError('private backend error');
+    return pending == null ? _summary : pending!.future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Permissions extends ColaboradorAutorizacoesProvider {
+  _Permissions(this.allowed, {this.admin = false});
+  bool allowed;
+  final bool admin;
+  @override
+  bool get ehSuperUsuario => allowed;
+  @override
+  bool get ehAdministrador => admin;
+  void revoke() {
+    allowed = false;
+    notifyListeners();
+  }
+}
+
+class _Locale extends ChangeNotifier implements LocaleSettingsProvider {
+  @override
+  Locale get currentLocale => const Locale('pt', 'BR');
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+void main() {
+  test(
+    'controller does not query without SUPER, and ignores late responses after revocation',
+    () async {
+      final service = _Service()..pending = Completer<AdminPortalResumo>();
+      final controller = SuperPanelController(service: service);
+      await controller.reload();
+      expect(service.calls, 0);
+      controller.setAuthorized(true);
+      expect(service.calls, 1);
+      controller.setAuthorized(false);
+      service.pending!.complete(_summary);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.resumo, isNull);
+      expect(controller.loading, isFalse);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'controller preserves window, reports refresh errors and supports retry',
+    () async {
+      final service = _Service();
+      final controller = SuperPanelController(service: service);
+      controller.setAuthorized(true);
+      await Future<void>.delayed(Duration.zero);
+      service.fail = true;
+      await controller.changeWindow(2, AdminRequestWindowUnit.hours);
+      expect(service.window, 2);
+      expect(service.unit, AdminRequestWindowUnit.hours);
+      expect(controller.hasError, isTrue);
+      expect(controller.resumo, isNull);
+      service.fail = false;
+      await controller.reload();
+      expect(controller.hasError, isFalse);
+      controller.dispose();
+    },
+  );
+
+  for (final mobile in [false, true]) {
+    for (final admin in [false, true]) {
+      testWidgets(
+        '${mobile ? 'Mobile' : 'Web'} blocks direct entry for non-SUPER, admin=$admin',
+        (tester) async {
+          final service = _Service();
+          final permissions = _Permissions(false, admin: admin);
+          await _pump(tester, mobile, service, permissions);
+          expect(
+            find.byKey(const Key('super-panel-restricted')),
+            findsOneWidget,
+          );
+          expect(service.calls, 0);
+          expect(find.text('database-private'), findsNothing);
+        },
+      );
+    }
+    testWidgets(
+      '${mobile ? 'Mobile' : 'Web'} loads for SUPER and hides data when permission is revoked',
+      (tester) async {
+        final service = _Service();
+        final permissions = _Permissions(true);
+        await _pump(tester, mobile, service, permissions);
+        expect(service.calls, 1);
+        expect(find.text('database-private'), findsOneWidget);
+        permissions.revoke();
+        await tester.pump();
+        expect(find.byKey(const Key('super-panel-restricted')), findsOneWidget);
+        expect(find.text('database-private'), findsNothing);
+        expect(service.calls, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'Mobile preserves the request window selector and cancel does not reload',
+    (tester) async {
+      final service = _Service();
+      await _pump(tester, true, service, _Permissions(true));
+      final filter = find.byIcon(Icons.schedule_rounded);
+      await tester.ensureVisible(filter);
+      await tester.tap(filter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.enterText(find.byType(TextField), '2');
+      await tester.ensureVisible(find.text('Horas'));
+      await tester.tap(find.text('Horas'));
+      await tester.ensureVisible(find.text('Aplicar janela'));
+      await tester.tap(find.text('Aplicar janela'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(service.calls, 2);
+      expect(service.window, 2);
+      expect(service.unit, AdminRequestWindowUnit.hours);
+      expect(tester.takeException(), isNull);
+      await tester.ensureVisible(filter);
+      await tester.tap(filter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.ensureVisible(find.text('Cancelar'));
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(service.calls, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Mobile dark mode keeps semantic surfaces and expandable details',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await _pump(tester, true, _Service(), _Permissions(true), dark: true);
+      expect(find.byType(ExpansionTile), findsWidgets);
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+        SixMobileColorScheme.dark.background,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+}
+
+Future<void> _pump(
+  WidgetTester tester,
+  bool mobile,
+  _Service service,
+  _Permissions permissions, {
+  bool dark = false,
+}) async {
+  final locale = _Locale();
+  addTearDown(locale.dispose);
+  addTearDown(permissions.dispose);
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+          value: permissions,
+        ),
+        ChangeNotifierProvider<LocaleSettingsProvider>.value(value: locale),
+      ],
+      child: MaterialApp(
+        theme: dark ? ThemeData.dark() : ThemeData.light(),
+        home:
+            mobile
+                ? SuperPanelMobileScreen(service: service)
+                : Scaffold(body: SuperPanelWebPage(service: service)),
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 300));
+}

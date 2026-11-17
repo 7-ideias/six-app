@@ -95,6 +95,7 @@ enum WebNavigationDestination {
   visualAssets,
   adminPlans,
   pushCampaigns,
+  superPanel,
   cash,
   financialAgenda,
   settings,
@@ -120,6 +121,7 @@ enum WebNavigationPermission {
   podeAcessarImagensContextuais,
   podeGerenciarPlanos,
   podeEnviarCampanhasPush,
+  podeAcessarPainelSuper,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }
@@ -158,4 +160,3 @@ class WebNavigationVisibilityRule {
     }
   }
 }
-

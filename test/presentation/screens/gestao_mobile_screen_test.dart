@@ -179,6 +179,26 @@ void main() {
     expect(find.text('Desempenho do colaborador'), findsNothing);
   });
 
+  testWidgets(
+    'Painel SUPER fica no hub e abre tela propria somente para SUPER',
+    (tester) async {
+      final navigations = <String>[];
+      await _pumpGestao(
+        tester,
+        area: null,
+        navigations: navigations,
+        colaboradorProvider: _SuperProvider(),
+      );
+      final access = find.byKey(const Key('gestao-super-panel'));
+      expect(access, findsOneWidget);
+      await tester.tap(access);
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(navigations, contains('SuperPanelMobileScreen'));
+      await _pumpGestao(tester, area: null);
+      expect(access, findsNothing);
+    },
+  );
+
   testWidgets('exibe Usuarios do Sixo apenas para SUPER', (
     WidgetTester tester,
   ) async {
@@ -357,10 +377,12 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Nenhuma conta em aberto neste período.'),
         200,
-        scrollable: find.descendant(
-          of: find.byType(ListView),
-          matching: find.byType(Scrollable),
-        ).first,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       expect(
         find.text('Nenhuma conta em aberto neste período.'),

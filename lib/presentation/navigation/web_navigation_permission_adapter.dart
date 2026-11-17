@@ -15,6 +15,7 @@ abstract final class WebNavigationPermissionAdapter {
       if (!provider.ehSuperUsuario) {
         permissions.remove(WebNavigationPermission.podeGerenciarPlanos);
         permissions.remove(WebNavigationPermission.podeEnviarCampanhasPush);
+        permissions.remove(WebNavigationPermission.podeAcessarPainelSuper);
         permissions.remove(WebNavigationPermission.podeAcessarUsuariosSixo);
         permissions.remove(
           WebNavigationPermission.podeAcessarImagensContextuais,
@@ -51,6 +52,7 @@ abstract final class WebNavigationPermissionAdapter {
       if (provider.ehSuperUsuario) ...<WebNavigationPermission>[
         WebNavigationPermission.podeGerenciarPlanos,
         WebNavigationPermission.podeEnviarCampanhasPush,
+        WebNavigationPermission.podeAcessarPainelSuper,
         WebNavigationPermission.podeAcessarUsuariosSixo,
         WebNavigationPermission.podeAcessarImagensContextuais,
       ],
