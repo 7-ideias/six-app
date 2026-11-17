@@ -133,7 +133,8 @@ class _CartoesCreditoWebState extends State<CartoesCreditoWeb> {
         padding: const EdgeInsets.all(20),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InstituicaoOpenFinanceLogo(
-            url: _catalogo.logotipoDe(item.instituicao),
+            url: _catalogo.logotipoDe(item.instituicao, marcaOpenFinanceId: item.marcaOpenFinanceId),
+            nome: _catalogo.habilitado ? item.instituicao : null,
             size: 40,
             color: tokens.info,
           ),

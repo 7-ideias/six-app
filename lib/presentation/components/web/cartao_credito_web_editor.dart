@@ -25,6 +25,7 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
   late final _id = widget.item?.id ?? gerarUuidV4();
   late final _nome = TextEditingController(text: widget.item?.nome ?? '');
   late final _instituicao = TextEditingController(text: widget.item?.instituicao ?? '');
+  late String? _marcaOpenFinanceId = widget.item?.marcaOpenFinanceId;
   late final _fechamento = TextEditingController(text: widget.item?.diaFechamento.toString() ?? '');
   late final _vencimento = TextEditingController(text: widget.item?.diaVencimento.toString() ?? '');
   late final _contasService = widget.contasService ?? ConfiguracaoFinanceiraService(widget.espaco);
@@ -63,6 +64,7 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
       id: _id, nome: _nome.text, instituicao: _instituicao.text,
       diaFechamento: int.parse(_fechamento.text), diaVencimento: int.parse(_vencimento.text),
       contaPrevistaId: _contaId, ativo: _ativo, versao: widget.item?.versao,
+      marcaOpenFinanceId: _marcaOpenFinanceId,
     );
     setState(() { _saving = true; _error = null; });
     try {
@@ -91,7 +93,10 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
       context, widget.catalogo.instituicoes,
     );
     if (mounted && selecionada != null) {
-      setState(() => _instituicao.text = selecionada.nome);
+      setState(() {
+        _instituicao.text = selecionada.nome;
+        _marcaOpenFinanceId = selecionada.marcaOpenFinanceId;
+      });
     }
   }
 
@@ -125,6 +130,7 @@ class _CartaoCreditoWebEditorState extends State<CartaoCreditoWebEditor> {
             autofocus: true, maxLength: 120, decoration: InputDecoration(labelText: context.t('space.name')), validator: _required),
           const SizedBox(height: 12),
           TextFormField(key: const ValueKey('cards-institution'), controller: _instituicao, enabled: enabled,
+            onChanged: (_) => _marcaOpenFinanceId = null,
             maxLength: 120, decoration: InputDecoration(labelText: context.t('cards.institution')), validator: _required),
           if (widget.catalogo.habilitado && widget.catalogo.instituicoes.isNotEmpty) ...[
             Align(

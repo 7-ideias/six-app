@@ -60,6 +60,26 @@ void main() {
     expect(jsonDecode(payloads[1])['nome'], 'Nubank');
   });
 
+  test('identificador da marca vai no JSON e retorna na resposta do cartão', () async {
+    const selecionado = CartaoCreditoRequest(
+      id: '4a24e962-e2c1-43de-a4b6-09c19edecaf2',
+      nome: 'Nubank pessoal',
+      instituicao: 'Nubank',
+      diaFechamento: 10,
+      diaVencimento: 20,
+      ativo: true,
+      marcaOpenFinanceId: 'auth-nu',
+    );
+    final api = client(MockClient((request) async {
+      final body = jsonDecode(request.body);
+      expect(body['marcaOpenFinanceId'], 'auth-nu');
+      return http.Response(jsonEncode({...selecionado.toJson(), 'versao': 0}), 200);
+    }));
+    addTearDown(api.dispose);
+    final result = await api.salvar(selecionado);
+    expect(result.marcaOpenFinanceId, 'auth-nu');
+  });
+
   test('edicao envia versao por PUT e preserva conta nula explicita', () async {
     final api = client(MockClient((request) async {
       expect(request.method, 'PUT');

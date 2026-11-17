@@ -28,7 +28,8 @@ class _Api extends CartaoCreditoApiClient {
     if (failSave) throw CartaoCreditoApiException(saveError);
     final card = CartaoCredito(id: input.id, nome: input.nome, instituicao: input.instituicao,
       diaFechamento: input.diaFechamento, diaVencimento: input.diaVencimento, ativo: input.ativo,
-      versao: (input.versao ?? -1) + 1, contaPrevistaId: input.contaPrevistaId);
+      versao: (input.versao ?? -1) + 1, contaPrevistaId: input.contaPrevistaId,
+      marcaOpenFinanceId: input.marcaOpenFinanceId);
     items = [card];
     return card;
   }
@@ -96,6 +97,32 @@ void main() {
     await tap(tester, find.byKey(const ValueKey('cards-create')));
     expect(find.byKey(const ValueKey('cards-openfinance-pick')), findsNothing);
     expect(find.byKey(const ValueKey('cards-institution')), findsOneWidget);
+  });
+
+  testWidgets('seleciona Nu, salva o ID da marca e exibe na lista', (tester) async {
+    final api = _Api()..catalogo = CatalogoInstituicoesBrasil(
+      habilitado: true,
+      instituicoes: const [
+        InstituicaoOpenFinance(
+          nome: 'Nubank',
+          logotipoUrl: 'arquivo-indisponivel-no-ambiente-de-testes',
+          marcaOpenFinanceId: 'nu-auth-server',
+        ),
+      ],
+    );
+    await open(tester, api);
+    await tap(tester, find.byKey(const ValueKey('cards-create')));
+    await tester.enterText(find.byKey(const ValueKey('cards-name')), 'Nubank pessoal');
+    await tap(tester, find.byKey(const ValueKey('cards-openfinance-pick')));
+    await tap(tester, find.text('Nubank').last);
+    await tester.enterText(find.byKey(const ValueKey('cards.closing')), '10');
+    await tester.enterText(find.byKey(const ValueKey('cards.due')), '20');
+    await tap(tester, find.byKey(const ValueKey('cards-save')));
+
+    expect(api.requests.single.instituicao, 'Nubank');
+    expect(api.requests.single.marcaOpenFinanceId, 'nu-auth-server');
+    expect(api.items.single.marcaOpenFinanceId, 'nu-auth-server');
+    expect(find.text('Nubank pessoal'), findsOneWidget);
   });
 
   testWidgets('leitura sem escrita esconde criacao', (tester) async {
