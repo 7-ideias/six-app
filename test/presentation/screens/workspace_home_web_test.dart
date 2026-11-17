@@ -71,10 +71,7 @@ void main() {
             find.byType(WorkspaceTodayWeb),
             role.admin || role.superUser ? findsOneWidget : findsNothing,
           );
-          expect(
-            find.text('Bloco SUPER'),
-            role.superUser ? findsOneWidget : findsNothing,
-          );
+          expect(find.text('Bloco SUPER'), findsNothing);
           expect(
             find.text('Bloco ADMIN'),
             role.admin ? findsOneWidget : findsNothing,

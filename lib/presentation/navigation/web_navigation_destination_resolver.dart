@@ -122,6 +122,7 @@ class WebNavigationDestinationResolver {
         );
       case WebNavigationDestination.peoplePerformance:
         return actions.openPeoplePerformance();
+      case WebNavigationDestination.superPanel:
       case WebNavigationDestination.pushCampaigns:
       case WebNavigationDestination.adminPlans:
       case WebNavigationDestination.visualAssets:
@@ -143,4 +144,3 @@ class WebNavigationDestinationResolver {
     }
   }
 }
-

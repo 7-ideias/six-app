@@ -14,6 +14,8 @@ import 'package:sixpos/presentation/screens/admin_visual_assets_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
+import '../screens/super_panel_web_page.dart';
+import '../../l10n/super_panel_texts.dart';
 import '../screens/admin_planos_web_page.dart';
 import '../screens/admin_push_campaigns_web_page.dart';
 import 'web_header.dart';
@@ -92,6 +94,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
       WebNavigationDestination.operationsReturns =>
         const DevolucoesProdutosWebPage(),
       WebNavigationDestination.peopleSixoUsers => const UsuariosSixoWebPage(),
+      WebNavigationDestination.superPanel => const SuperPanelWebPage(),
       WebNavigationDestination.adminPlans => const AdminPlanosWebPage(),
       WebNavigationDestination.pushCampaigns => const AdminPushCampaignsWebPage(
         embeddedInMainShell: true,
@@ -185,6 +188,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         _expandedGroupIds.add(switch (destination) {
           WebNavigationDestination.catalogLabels => WebNavigationIds.catalog,
           WebNavigationDestination.peopleSixoUsers => WebNavigationIds.people,
+          WebNavigationDestination.superPanel => WebNavigationIds.superPanel,
           WebNavigationDestination.adminPlans => WebNavigationIds.adminPlans,
           WebNavigationDestination.pushCampaigns =>
             WebNavigationIds.pushCampaigns,
@@ -229,7 +233,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         destination == WebNavigationDestination.peopleSixoUsers ||
         destination == WebNavigationDestination.visualAssets ||
         destination == WebNavigationDestination.adminPlans ||
-        destination == WebNavigationDestination.pushCampaigns;
+        destination == WebNavigationDestination.pushCampaigns ||
+        destination == WebNavigationDestination.superPanel;
   }
 
   Future<void> _abrirDevolucoesDaVenda(String identificador) async {
@@ -266,6 +271,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     BuildContext context,
     WebNavigationDestination? destination,
   ) {
+    if (destination == WebNavigationDestination.superPanel) {
+      return superPanelText(context, 'title');
+    }
     final WebNavigationItem? activeItem = _findItemByDestination(destination);
     if (activeItem == null) {
       return _shellText(

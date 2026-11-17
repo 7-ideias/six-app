@@ -26,6 +26,7 @@ abstract final class WebNavigationIds {
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
   static const String pushCampaigns = 'admin.push_campaigns';
+  static const String superPanel = 'admin.super_panel';
   static const String adminPlans = 'admin.plans';
   static const String visualAssets = 'visual.assets';
   static const String cash = 'cash';
@@ -275,6 +276,16 @@ abstract final class WebNavigationRegistry {
       destination: WebNavigationDestination.pushCampaigns,
     ),
     WebNavigationItem(
+      id: WebNavigationIds.superPanel,
+      labelKey: 'superPanel.title',
+      labelFallback: 'Painel SUPER',
+      icon: Icons.admin_panel_settings_outlined,
+      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+        WebNavigationPermission.podeAcessarPainelSuper,
+      ]),
+      destination: WebNavigationDestination.superPanel,
+    ),
+    WebNavigationItem(
       id: WebNavigationIds.settings,
       labelKey: 'web.navigation.settings',
       labelFallback: 'Configurações',
@@ -375,4 +386,3 @@ abstract final class WebNavigationRegistry {
     return null;
   }
 }
-

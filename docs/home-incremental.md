@@ -2,8 +2,9 @@
 
 A home ganha o painel **Meu dia**, com dados do comércio ativo. Os banners,
 seções operacionais, filtros, gráficos, ações e a aba Desempenho existentes
-continuam disponíveis. O painel de infraestrutura SUPER mantém sua integração
-anterior. O usuário SUPER também tem acesso ao Meu dia do comércio ativo, com
+continuam disponíveis. O painel de infraestrutura SUPER permanece na área exclusiva
+introduzida na main, com sua navegação própria na web e no mobile.
+O usuário SUPER também tem acesso ao Meu dia do comércio ativo, com
 as mesmas consultas segmentadas da home do administrador.
 
 ## Experiência
@@ -62,8 +63,8 @@ locais. Datas, números e moedas seguem `LocaleSettingsProvider`.
    substituir o contexto atual.
 4. Abrir venda/serviço/recebimento no mobile e voltar: os grupos relacionados
    devem ser atualizados.
-5. Conferir colaboradores com permissões diferentes e o SUPER com Meu dia e
-   os blocos de infraestrutura preservados.
+5. Conferir colaboradores com permissões diferentes e o SUPER com Meu dia na home
+   e os blocos de infraestrutura preservados no painel exclusivo.
 6. Conferir tema escuro, texto ampliado e idiomas/moedas diferentes.
 
 ## Validação realizada
@@ -91,3 +92,13 @@ Foram adicionados quatro cenários de regressão de exibição (ADMIN/SUPER) à 
 web. A execução desta correção ficou pendente porque o SDK Flutter não está
 mais disponível no ambiente; os resultados anteriores acima se referem ao
 incremento original.
+
+## Integração com o painel SUPER separado
+
+A branch incorpora a main `f1f941a`, que moveu a infraestrutura para um painel
+exclusivo. O refresh da home mobile continua atualizando o Meu dia para ADMIN
+ou SUPER, sem consultar a infraestrutura nessa tela. O teste de acesso web
+verifica a presença do Meu dia e a ausência do antigo Bloco SUPER na home.
+O diff foi revisado e validado com `git diff --check`; análise estática, formatação
+automática e testes Flutter desta integração permanecem pendentes por ausência
+do SDK no ambiente.
