@@ -77,6 +77,15 @@ class _ConfiguracoesEspacoMobileState extends State<ConfiguracoesEspacoMobile> {
     }
   }
 
+  Future<List<ConfiguracaoFinanceira>> _contasDestinoSeguras() async {
+    try {
+      return await _service.listar('CONTAS');
+    } catch (_) {
+      // Uma falha secundária não pode esconder as maquininhas cadastradas.
+      return const [];
+    }
+  }
+
   Future<void> _load() async {
     final request = ++_request;
     setState(() {
@@ -87,7 +96,7 @@ class _ConfiguracoesEspacoMobileState extends State<ConfiguracoesEspacoMobile> {
       final grupo = _grupo;
       final consultas = await Future.wait([
         _service.listar(grupo),
-        if (grupo == 'MAQUININHAS') _service.listar('CONTAS'),
+        if (grupo == 'MAQUININHAS') _contasDestinoSeguras(),
       ]);
       if (mounted && request == _request) {
         setState(() {
@@ -139,8 +148,10 @@ class _ConfiguracoesEspacoMobileState extends State<ConfiguracoesEspacoMobile> {
     final nome = _contasDestino
         .where((conta) => conta.id == item.contaDestinoId)
         .map((conta) => conta.nome).firstOrNull;
-    return '${context.t('financialBrand.paymentDestination')}: '
-        '${nome ?? context.t('financialBrand.noDestination')}';
+    final destino = nome ?? (item.contaDestinoId == null
+        ? context.t('financialBrand.noDestination')
+        : context.t('cards.linkedAccount'));
+    return '${context.t('financialBrand.paymentDestination')}: $destino';
   }
 
   Widget _emptyState(BuildContext context) {
