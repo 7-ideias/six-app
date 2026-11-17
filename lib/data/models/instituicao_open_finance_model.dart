@@ -13,6 +13,9 @@ class InstituicaoOpenFinance {
   final String? idParticipante;
   final String? marcaOpenFinanceId;
 
+  /// Usa a marca conhecida mesmo para instâncias montadas sem desserialização.
+  String get logotipoExibicao => logoRevisado(nome) ?? logotipoUrl;
+
   static const String _logoNubank =
       'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg';
   static const String _logoItau =
@@ -66,7 +69,6 @@ class InstituicaoOpenFinance {
       marcaOpenFinanceId: json['marcaOpenFinanceId'] as String?,
     );
   }
-
 }
 
 /// A elegibilidade vem da regionalização persistida da empresa no backend,
@@ -111,23 +113,22 @@ class CatalogoInstituicoesBrasil {
       for (final item in instituicoes) {
         if (item.marcaOpenFinanceId == marcaOpenFinanceId &&
             InstituicaoOpenFinance.normalizarNome(item.nome) == nome) {
-          return item.logotipoUrl;
+          return item.logotipoExibicao;
         }
       }
     }
     for (final item in instituicoes) {
       if (InstituicaoOpenFinance.normalizarNome(item.nome) == nome) {
-        return item.logotipoUrl;
+        return item.logotipoExibicao;
       }
     }
 
     // Compatibilidade com os registros antigos que só guardavam "Nu".
     if (nome == 'nu' || nome == 'nupagamentos') {
       for (final item in instituicoes) {
-        if (InstituicaoOpenFinance.normalizarNome(item.nome) == 'nubank') return item.logotipoUrl;
+        if (InstituicaoOpenFinance.normalizarNome(item.nome) == 'nubank') return item.logotipoExibicao;
       }
     }
     return null;
   }
-
 }
