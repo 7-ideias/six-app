@@ -13,22 +13,25 @@ import 'six_web_animated_dialog.dart';
 /// Preserva a instância escolhida, incluindo marcaOpenFinanceId e logo.
 Future<InstituicaoOpenFinance?> selecionarInstituicaoOpenFinanceWeb(
   BuildContext context,
-  List<InstituicaoOpenFinance> instituicoes,
-) {
+  List<InstituicaoOpenFinance> instituicoes, {
+  String? titulo,
+}) {
   return showSixWebAnimatedDialog<InstituicaoOpenFinance>(
     context: context,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     padding: const EdgeInsets.all(16),
     builder: (_) => _InstituicaoOpenFinanceWebDialog(
       instituicoes: instituicoes,
+      titulo: titulo,
     ),
   );
 }
 
 class _InstituicaoOpenFinanceWebDialog extends StatefulWidget {
-  const _InstituicaoOpenFinanceWebDialog({required this.instituicoes});
+  const _InstituicaoOpenFinanceWebDialog({required this.instituicoes, this.titulo});
 
   final List<InstituicaoOpenFinance> instituicoes;
+  final String? titulo;
 
   @override
   State<_InstituicaoOpenFinanceWebDialog> createState() =>
@@ -77,7 +80,7 @@ class _InstituicaoOpenFinanceWebDialogState
     final tamanho = MediaQuery.sizeOf(context);
     final largura = math.min(620.0, tamanho.width - 48);
     final altura = math.min(620.0, tamanho.height - 64);
-    final titulo = context.t('cards.catalogSearch');
+    final titulo = widget.titulo ?? context.t('cards.catalogSearch');
     final resultados = _resultados;
 
     return Shortcuts(
