@@ -73,6 +73,15 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
     }
   }
 
+  Future<List<ConfiguracaoFinanceira>> _contasDestinoSeguras() async {
+    try {
+      return await _service.listar('CONTAS');
+    } catch (_) {
+      // Uma falha secundária não pode esconder as maquininhas cadastradas.
+      return const [];
+    }
+  }
+
   Future<void> _load() async {
     final request = ++_request;
     setState(() {
@@ -83,7 +92,7 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
       final grupo = _grupo;
       final consultas = await Future.wait([
         _service.listar(grupo),
-        if (grupo == 'MAQUININHAS') _service.listar('CONTAS'),
+        if (grupo == 'MAQUININHAS') _contasDestinoSeguras(),
       ]);
       if (mounted && request == _request) {
         setState(() {
@@ -136,7 +145,9 @@ class _ConfiguracoesEspacoWebState extends State<ConfiguracoesEspacoWeb> {
 
   String? _detalhe(ConfiguracaoFinanceira item, BuildContext context) {
     if (_grupo != 'MAQUININHAS') return null;
-    String destino = context.t('financialBrand.noDestination');
+    String destino = item.contaDestinoId == null
+        ? context.t('financialBrand.noDestination')
+        : context.t('cards.linkedAccount');
     for (final conta in _contasDestino) {
       if (conta.id == item.contaDestinoId) {
         destino = conta.nome;
