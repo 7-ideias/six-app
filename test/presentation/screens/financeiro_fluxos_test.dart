@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/core/services/recebivel_venda_service.dart';
 import 'package:sixpos/data/models/recebimento_forma_input.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
@@ -62,6 +63,7 @@ void _canSave(WidgetTester tester, bool enabled) => expect(
 
 class _Settings extends ConfiguracaoFinanceiraService {
   _Settings([String espaco = 'EMPRESA']) : super(espaco);
+  @override Future<CatalogoInstituicoesBrasil> catalogoBrasileiro() async => CatalogoInstituicoesBrasil.vazio;
   final groups = <String>[];
   final saves = <Map<String, dynamic>>[];
   @override
@@ -73,6 +75,7 @@ class _Settings extends ConfiguracaoFinanceiraService {
     required String instituicao,
     required bool ativo,
     String? contaDestinoId,
+    String? marcaId,
   }) async {
     saves.add({
       'espaco': espaco,
@@ -82,6 +85,7 @@ class _Settings extends ConfiguracaoFinanceiraService {
       'instituicao': instituicao,
       'ativo': ativo,
       'contaDestinoId': contaDestinoId,
+      if (marcaId != null) 'marcaId': marcaId,
     });
   }
 
@@ -131,6 +135,7 @@ class _Accounts extends _Settings {
     required String nome,
     required String tipo,
     required String instituicao,
+    String? marcaId,
   }) async {
     createCalls++;
     if (saving != null) await saving!.future;
@@ -140,6 +145,7 @@ class _Accounts extends _Settings {
       nome: nome.trim(),
       tipo: tipo,
       instituicao: instituicao.trim(),
+      marcaId: marcaId,
     );
     created.add(conta);
     return conta;
