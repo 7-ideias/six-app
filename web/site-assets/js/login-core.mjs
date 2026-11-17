@@ -5,6 +5,8 @@ const MOBILE_PHONE_USER_AGENT_PATTERN =
 
 export const LOGIN_DICTIONARY = Object.freeze({
   pt: Object.freeze({
+    'session.checking': 'Validando sua sessão...',
+    'session.retry': 'Tentar novamente',
     title: 'SixoApp - Entrar',
     description: 'Acesse sua operação no SixoApp para acompanhar vendas, atendimentos, clientes, equipe e financeiro.',
     ogTitle: 'SixoApp - Entrar',
@@ -56,6 +58,8 @@ export const LOGIN_DICTIONARY = Object.freeze({
     'error.pending': 'Aguarde a tentativa atual terminar.'
   }),
   en: Object.freeze({
+    'session.checking': 'Checking your session...',
+    'session.retry': 'Try again',
     title: 'SixoApp - Sign In',
     description: 'Access your SixoApp operation to follow sales, service, customers, team and finance.',
     ogTitle: 'SixoApp - Sign In',
@@ -107,6 +111,8 @@ export const LOGIN_DICTIONARY = Object.freeze({
     'error.pending': 'Wait for the current attempt to finish.'
   }),
   es: Object.freeze({
+    'session.checking': 'Validando tu sesión...',
+    'session.retry': 'Intentar de nuevo',
     title: 'SixoApp - Entrar',
     description: 'Accede a tu operación en SixoApp para acompañar ventas, atención, clientes, equipo y finanzas.',
     ogTitle: 'SixoApp - Entrar',
@@ -398,11 +404,38 @@ export async function performPublicLogin({
   timeoutMs = LOGIN_TIMEOUT_MS,
   AbortControllerClass = globalThis.AbortController,
 } = {}) {
+  const request = buildLoginRequest({ apiBaseUrl, login, senha });
+  return performLoginRequest({ request, fetchImpl, timeoutMs, AbortControllerClass });
+}
+
+// The HttpOnly refresh cookie is the authority; never infer a session from storage.
+export async function restorePublicLoginSession({
+  apiBaseUrl,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = LOGIN_TIMEOUT_MS,
+  AbortControllerClass = globalThis.AbortController,
+} = {}) {
+  const request = {
+    endpoint: `${normalizeApiBaseUrl(apiBaseUrl)}/auth/web/refresh`,
+    options: {
+      method: 'POST', credentials: 'include', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    },
+  };
+  try {
+    await performLoginRequest({ request, fetchImpl, timeoutMs, AbortControllerClass });
+    return true;
+  } catch (error) {
+    if (error instanceof PublicLoginHttpError && error.status === 401) return false;
+    throw error;
+  }
+}
+
+async function performLoginRequest({ request, fetchImpl, timeoutMs, AbortControllerClass }) {
   if (typeof fetchImpl !== 'function') {
     throw new PublicLoginNetworkError();
   }
 
-  const request = buildLoginRequest({ apiBaseUrl, login, senha });
   const timeoutDuration =
     Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : LOGIN_TIMEOUT_MS;
   const controller =

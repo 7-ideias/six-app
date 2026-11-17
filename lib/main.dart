@@ -513,6 +513,11 @@ class MyApp extends StatelessWidget {
       home: kIsWeb ? null : const SplashScreen(),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : '/',
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
+      onGenerateInitialRoutes: kIsWeb
+          ? (String initialRoute) => <Route<dynamic>>[
+              _onGenerateWebRoute(RouteSettings(name: initialRoute)),
+            ]
+          : null,
     );
   }
 }
