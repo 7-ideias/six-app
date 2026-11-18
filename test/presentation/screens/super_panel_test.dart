@@ -35,6 +35,7 @@ const _summary = AdminPortalResumo(
 );
 
 class _Service implements AdminPortalService {
+  AdminPortalResumo summary = _summary;
   int calls = 0;
   int? window;
   AdminRequestWindowUnit? unit;
@@ -49,7 +50,7 @@ class _Service implements AdminPortalService {
     window = janelaValor;
     unit = janelaUnidade;
     if (fail) throw StateError('private backend error');
-    return pending == null ? _summary : pending!.future;
+    return pending == null ? summary : pending!.future;
   }
 
   @override
@@ -113,6 +114,61 @@ void main() {
       await controller.reload();
       expect(controller.hasError, isFalse);
       controller.dispose();
+    },
+  );
+
+  testWidgets(
+    'Web renders observed metrics, restart and an unavailable database',
+    (tester) async {
+      final service =
+          _Service()
+            ..summary = AdminPortalResumo.fromJson({
+              'bancosDeDados': [
+                {'nome': 'MongoDB', 'available': false},
+              ],
+              'cockpit': {
+                'startedAt': 90000,
+                'collectedAt': 145000,
+                'observedMs': 55000,
+                'total': 2,
+                'serverErrors': 1,
+                'p95': 200,
+                'points': [
+                  {
+                    'time': 0,
+                    'observedMs': 0,
+                    'total': 0,
+                    'clientErrors': 0,
+                    'serverErrors': 0,
+                  },
+                  {
+                    'time': 60000,
+                    'observedMs': 30000,
+                    'total': 2,
+                    'clientErrors': 0,
+                    'serverErrors': 1,
+                    'p50': 40,
+                    'p95': 200,
+                  },
+                  {
+                    'time': 120000,
+                    'observedMs': 25000,
+                    'total': 0,
+                    'clientErrors': 0,
+                    'serverErrors': 0,
+                  },
+                ],
+                'events': [
+                  {'time': 90000, 'type': 'START'},
+                ],
+              },
+            });
+      await _pump(tester, false, service, _Permissions(true));
+      expect(find.text('1 · 50%'), findsOneWidget);
+      expect(find.text('≈ 200 ms'), findsOneWidget);
+      expect(find.textContaining('Backend iniciado'), findsOneWidget);
+      expect(find.text('Indisponível'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 
