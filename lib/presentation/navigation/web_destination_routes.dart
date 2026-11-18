@@ -25,6 +25,7 @@ const webDestinationRoutes = <WebNavigationDestination, String>{
   WebNavigationDestination.adminPlans: '/app/admin/planos',
   WebNavigationDestination.pushCampaigns: '/app/campanhas-push',
   WebNavigationDestination.superPanel: '/app/painel-super',
+  WebNavigationDestination.productIdeas: '/app/novas-ideias',
   WebNavigationDestination.cash: '/app/caixa',
   WebNavigationDestination.financialAgenda: '/app/agenda-financeira',
   WebNavigationDestination.settings: '/app/configuracoes',

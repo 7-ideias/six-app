@@ -122,6 +122,7 @@ class WebNavigationDestinationResolver {
         );
       case WebNavigationDestination.peoplePerformance:
         return actions.openPeoplePerformance();
+      case WebNavigationDestination.productIdeas:
       case WebNavigationDestination.superPanel:
       case WebNavigationDestination.pushCampaigns:
       case WebNavigationDestination.adminPlans:
