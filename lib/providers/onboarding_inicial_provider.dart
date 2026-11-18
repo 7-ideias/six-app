@@ -21,6 +21,9 @@ class OnboardingInicialProvider extends ChangeNotifier {
   bool get precisaFazerOnboarding =>
       _estado != null && !_estado!.fezOnboardingInicial;
 
+  String? get idiomaDaJornadaPendente =>
+      precisaFazerOnboarding ? _estado!.idiomaPreferencial : null;
+
   Future<OnboardingInicialModel> carregar({bool force = false}) async {
     if (!force && _estado != null) return _estado!;
     _carregando = true;

@@ -135,12 +135,14 @@ class WebAuthenticatedBootstrapService {
       final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
       await localeProvider.applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboardingProvider.idiomaDaJornadaPendente,
         regionalizacao: regionalizacao,
       );
     } catch (e) {
       debugPrint('Erro ao aplicar idioma/regionalização no login web: $e');
       await localeProvider.applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboardingProvider.idiomaDaJornadaPendente,
       );
     }
 

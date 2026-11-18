@@ -202,11 +202,13 @@ class LocaleSettingsProvider extends ChangeNotifier {
   }
 
   /// Aplica a ordem de decisão do idioma para usuário autenticado:
-  /// 1. preferência individual, quando diferente de DEFAULT;
-  /// 2. regionalização da empresa;
-  /// 3. pt-BR (o idioma público/navegador não substitui a configuração).
+  /// 1. idioma da jornada inicial pendente, quando disponível;
+  /// 2. preferência individual, quando diferente de DEFAULT;
+  /// 3. regionalização da empresa;
+  /// 4. pt-BR (o idioma público/navegador não substitui a configuração).
   Future<void> applyAuthenticatedLocale({
     String? idiomaDePreferencia,
+    String? idiomaDaJornada,
     ConfiguracaoRegionalizacaoResponse? regionalizacao,
   }) async {
     if (regionalizacao != null) {
@@ -220,9 +222,8 @@ class LocaleSettingsProvider extends ChangeNotifier {
       );
     }
 
-    final preferenceLocale = _localeFromIdiomaDePreferencia(
-      idiomaDePreferencia,
-    );
+    final preferenceLocale = _localeFromIdiomaDePreferencia(idiomaDaJornada) ??
+        _localeFromIdiomaDePreferencia(idiomaDePreferencia);
 
     if (preferenceLocale != null) {
       await setUserLocale(preferenceLocale);

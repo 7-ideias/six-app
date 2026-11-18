@@ -304,6 +304,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
 
   Future<void> _applyAuthenticatedLocale() async {
     String? idiomaDePreferencia;
+    final onboarding = context.read<OnboardingInicialProvider>();
     try {
       idiomaDePreferencia = await _usuarioService
           .buscarDadosDoUsuario_atualizaProviders()
@@ -320,6 +321,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
 
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboarding.idiomaDaJornadaPendente,
         regionalizacao: regionalizacao,
       ).timeout(const Duration(seconds: 8));
     } catch (error) {
@@ -329,6 +331,7 @@ class _AuthGateMobileState extends State<AuthGateMobile>
       if (!mounted) return;
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboarding.idiomaDaJornadaPendente,
       );
     }
   }

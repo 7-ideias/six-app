@@ -77,7 +77,8 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
     await context
         .read<ColaboradorAutorizacoesProvider>()
         .carregarAutorizacoesDoUsuarioLogado(force: true);
-    await context.read<OnboardingInicialProvider>().carregar(force: true);
+    final onboarding = context.read<OnboardingInicialProvider>();
+    await onboarding.carregar(force: true);
 
     try {
       final regionalizacaoService = RegionalizacaoService(
@@ -87,6 +88,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
       if (!mounted) return;
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboarding.idiomaDaJornadaPendente,
         regionalizacao: regionalizacao,
       );
     } catch (error) {
@@ -96,6 +98,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
       if (!mounted) return;
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
         idiomaDePreferencia: idiomaDePreferencia,
+        idiomaDaJornada: onboarding.idiomaDaJornadaPendente,
       );
     }
   }
