@@ -8,9 +8,16 @@ import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
 import '../layouts/six_web_page_shell.dart';
+import '../theme/web_theme_tokens.dart';
 
 class AdminNovasIdeiasWebPage extends StatefulWidget {
-  const AdminNovasIdeiasWebPage({super.key, this.embeddedInMainShell = false});
+  const AdminNovasIdeiasWebPage({
+    super.key,
+    this.embeddedInMainShell = false,
+    this.service,
+  });
+
+  final AdminIdeasService? service;
 
   final bool embeddedInMainShell;
 
@@ -20,7 +27,7 @@ class AdminNovasIdeiasWebPage extends StatefulWidget {
 }
 
 class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
-  final AdminIdeasService _service = AdminIdeasService();
+  late final AdminIdeasService _service = widget.service ?? AdminIdeasService();
   final AuthService _authService = AuthService();
   final TextEditingController _filtroController = TextEditingController();
 
@@ -185,11 +192,15 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
       onRefresh: _carregar,
       refreshing: _carregando,
       loggingOut: _saindo,
-      child: AnimatedSwitcher(
-        duration: AdminMotion.medium,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        child: _buildContent(texts),
+      child: Theme(
+        // The legacy admin shell has a fixed light background.
+        data: WebThemeTokens.applyTo(ThemeData.light()),
+        child: AnimatedSwitcher(
+          duration: AdminMotion.medium,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: _buildContent(texts),
+        ),
       ),
     );
   }
@@ -263,31 +274,32 @@ class _IdeasHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 680;
         final Widget counter = Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AdminPalette.activeGreen,
+            color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(AdminRadius.md),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.lightbulb_rounded,
                 size: 18,
-                color: AdminPalette.dark,
+                color: tokens.primaryText,
               ),
               const SizedBox(width: 8),
               Text(
                 visible == total
                     ? '$total ${texts.records}'
                     : '$visible ${texts.ofLabel} $total',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: AdminPalette.dark,
+                  color: tokens.primaryText,
                 ),
               ),
             ],
@@ -299,8 +311,8 @@ class _IdeasHeader extends StatelessWidget {
           children: <Widget>[
             Text(
               texts.eyebrow,
-              style: const TextStyle(
-                color: AdminPalette.mutedText,
+              style: TextStyle(
+                color: tokens.mutedText,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -309,15 +321,15 @@ class _IdeasHeader extends StatelessWidget {
               texts.title,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: AdminPalette.dark,
+                color: tokens.primaryText,
                 letterSpacing: -0.8,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               texts.subtitle,
-              style: const TextStyle(
-                color: AdminPalette.bodyText,
+              style: TextStyle(
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),
@@ -360,18 +372,23 @@ class _IdeasFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(AdminSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
+        style: TextStyle(color: tokens.primaryText),
         decoration: InputDecoration(
           hintText: hint,
+          hintStyle: TextStyle(color: tokens.mutedText),
+          prefixIconColor: tokens.secondaryText,
+          suffixIconColor: tokens.secondaryText,
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon:
               controller.text.isEmpty
@@ -383,14 +400,14 @@ class _IdeasFilter extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded),
                   ),
           filled: true,
-          fillColor: AdminPalette.softSurface,
-          border: OutlineInputBorder(
+          fillColor: tokens.inputBackground,
+          focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AdminRadius.md),
-            borderSide: BorderSide.none,
+            borderSide: BorderSide(color: tokens.selectedBorder, width: 2),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AdminRadius.md),
-            borderSide: const BorderSide(color: AdminPalette.border),
+            borderSide: BorderSide(color: tokens.cardBorder),
           ),
         ),
       ),
@@ -406,17 +423,18 @@ class _IdeaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(color: tokens.cardBorder),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x09000000),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.04),
             blurRadius: 18,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -431,12 +449,12 @@ class _IdeaCard extends StatelessWidget {
                 height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: AdminPalette.activeGreen,
+                  color: tokens.selectedBackground,
                   borderRadius: BorderRadius.circular(AdminRadius.md),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.lightbulb_outline_rounded,
-                  color: AdminPalette.dark,
+                  color: tokens.primaryText,
                 ),
               ),
               const SizedBox(width: 14),
@@ -445,7 +463,7 @@ class _IdeaCard extends StatelessWidget {
                   idea.descricao,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: AdminPalette.dark,
+                    color: tokens.primaryText,
                     height: 1.35,
                   ),
                 ),
@@ -455,7 +473,7 @@ class _IdeaCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Divider(height: 1, color: AdminPalette.border),
+          Divider(height: 1, color: tokens.divider),
           const SizedBox(height: 16),
           Wrap(
             spacing: 10,
@@ -512,21 +530,22 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     final String normalized =
         status.trim().isEmpty ? 'RECEBIDA' : status.trim();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Text(
         normalized.replaceAll('_', ' '),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w900,
-          color: AdminPalette.dark,
+          color: tokens.primaryText,
         ),
       ),
     );
@@ -546,30 +565,31 @@ class _InfoTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
-        color: AdminPalette.softSurface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(AdminRadius.md),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: AdminPalette.mutedText),
+          Icon(icon, size: 16, color: tokens.mutedText),
           const SizedBox(width: 7),
           Text(
             '$label: ',
-            style: const TextStyle(
-              color: AdminPalette.mutedText,
+            style: TextStyle(
+              color: tokens.mutedText,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
           ),
           Text(
             value.trim().isEmpty ? '-' : value,
-            style: const TextStyle(
-              color: AdminPalette.dark,
+            style: TextStyle(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w800,
               fontSize: 12,
             ),
@@ -587,18 +607,19 @@ class _IdeasLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80),
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const CircularProgressIndicator(),
+          CircularProgressIndicator(color: tokens.info),
           const SizedBox(height: 16),
           Text(
             texts.loading,
-            style: const TextStyle(
-              color: AdminPalette.bodyText,
+            style: TextStyle(
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -622,26 +643,27 @@ class _IdeasErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.error_outline_rounded,
             size: 42,
-            color: AdminPalette.mutedText,
+            color: tokens.danger,
           ),
           const SizedBox(height: 14),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AdminPalette.bodyText),
+            style: TextStyle(color: tokens.secondaryText),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -663,12 +685,13 @@ class _IdeasEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 58),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(AdminRadius.lg),
-        border: Border.all(color: AdminPalette.border),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -678,14 +701,14 @@ class _IdeasEmptyState extends StatelessWidget {
             height: 58,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AdminPalette.activeGreen,
+              color: tokens.selectedBackground,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               hasFilter
                   ? Icons.search_off_rounded
                   : Icons.lightbulb_outline_rounded,
-              color: AdminPalette.dark,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: 16),
@@ -694,15 +717,15 @@ class _IdeasEmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: AdminPalette.dark,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             hasFilter ? texts.noResultsHint : texts.emptyHint,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AdminPalette.bodyText,
+            style: TextStyle(
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w600,
             ),
           ),
