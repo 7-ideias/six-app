@@ -1,20 +1,17 @@
 ---
 name: sixapp-web-colors
 description: >
-  Use quando o pedido mencionar cor, cores, dark mode, contraste, fundo,
-  background, surface, modal web muito homogêneo, card sem hierarquia visual,
-  input com fill incorreto, borda fraca, texto com contraste ruim ou qualquer
-  correção de paleta na versão Flutter Web do SixApp. Aplique
-  `WebThemeTokens`, preserve a hierarquia entre `surface`, `surfaceMuted`,
-  `surfaceElevated`, `inputBackground` e estados selecionados, elimine
-  hardcodes incompatíveis com dark mode e valide com teste web relacionado.
+  Aplicar os tokens e validar contraste nos temas claro e escuro em toda
+  criação, alteração ou revisão de UI Web do SixApp, inclusive telas,
+  modais, campos, filtros, cards, ações e estados. Usar WebThemeTokens
+  conforme o contexto do componente.
 ---
 
 # SixApp - Cores web
 
-Use esta skill para corrigir inconsistências de cor na experiência web do SixApp sem alterar a versão mobile.
+Confira a hierarquia de superfícies e o contraste no tema claro e no escuro em cada mudança visual Web.
 
-## Acione esta skill quando o pedido envolver
+## Exemplos de pontos a revisar
 
 - dark mode web com telas, modais ou subpainéis no mesmo tom;
 - cards, inputs, dropdowns, chips, badges ou rodapés sem separação visual;

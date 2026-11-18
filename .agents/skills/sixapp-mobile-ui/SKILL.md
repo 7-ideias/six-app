@@ -235,25 +235,9 @@ conteúdo; a superfície deve parecer intencional e ocupada.
 
 Avalie contraste, tamanho de toque, `Semantics`, labels de ícones, foco quando aplicável, ordem de leitura, conteúdo dinâmico, `liveRegion`, redução de movimento, escala de texto e overflow. Não dependa somente de cor para erro, sucesso ou seleção.
 
-### Padrão obrigatório para seletores e dropdowns mobile
+### Seletores no fluxo alterado
 
-Em telas mobile novas, e em telas mobile existentes quando a alteração tocar seleção de entidade, data, filtro, status, forma de pagamento, categoria ou opção equivalente, trate o uso direto de `DropdownButtonFormField`, `DropdownMenu`, `showDatePicker`, `DatePickerDialog` ou dialogs genéricos de seleção como padrão legado.
-
-O padrão default deve ser:
-
-- campo visual read-only/clicável na tela base, com ícone semântico, label, valor selecionado com `TextOverflow.ellipsis`, borda/superfície coerente com `SixMobilePalette`, área de toque confortável e sem deslocar o layout;
-- `showModalBottomSheet` customizado com `SafeArea`, cantos superiores arredondados, transição suave, título claro, ação de cancelar previsível e conteúdo em pt-BR ou i18n existente;
-- busca local quando a lista já estiver carregada e houver lista média/grande de clientes, fornecedores, produtos, serviços, técnicos, categorias, formas de pagamento ou similares;
-- itens confortáveis com avatar/ícone quando fizer sentido, título, subtítulo opcional, estado selecionado destacado e sem depender apenas de cor;
-- fechamento imediato após seleção simples quando a ação for reversível e clara; botão `Aplicar` quando houver multi-seleção, intervalo de data, filtros combinados ou mudança que não deve alterar o estado antes da confirmação;
-- preservação do valor original até confirmação em seletores de data, período, filtros e multi-seleção;
-- `Semantics`, labels de botões/ícones, foco previsível, suporte a texto maior e respeito a `MediaQuery.disableAnimations`/`accessibleNavigation` quando houver movimento.
-
-Ao editar tela existente, audite os seletores visíveis no fluxo alterado. Se o seletor legado fizer parte do fluxo tocado ou do mesmo bloco visual, migre para este padrão no mesmo patch. Se a tela tiver vários seletores legados fora do escopo direto, não faça refatoração ampla automática; registre o resíduo no relato final.
-
-Antes de criar um novo componente, procure padrão reutilizável em `lib/presentation/components/mobile/` ou tela mobile equivalente. Quando houver repetição clara, crie componente próprio reutilizável, como `ClienteSelectorMobileBottomSheet`, `ProdutoSelectorMobileBottomSheet`, `DateSelectorMobileBottomSheet`, `EntitySelectorMobileBottomSheet` ou `QuickDateSelectorMobileBottomSheet`.
-
-Esse padrão é mobile. Não aplique esta regra a arquivos `*_web.dart`, `*_web_page.dart` ou `*_web_dialog.dart`; seletores web devem seguir padrão web próprio e pedido explícito.
+Consulte o [padrão de seleção](../sixapp-dropdown-pattern/SKILL.md) para selecionar entidades, status, formas de pagamento, categorias, datas e filtros. Ao editar uma tela existente, revise os seletores do bloco alterado e migre os que ainda usam o padrão legado. Registre os demais casos encontrados fora do escopo.
 
 ## Proibições
 
