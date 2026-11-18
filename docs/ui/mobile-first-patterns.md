@@ -17,49 +17,9 @@ O layout mobile deve transmitir:
 - baixa fricção;
 - consistência com a identidade do Six.
 
-## Seletores de entidade
+## Seletores de entidade e data
 
-Entidades como cliente, fornecedor, produto, serviço, colaborador, técnico, categoria e forma de pagamento não devem usar dropdown padrão quando a lista puder crescer ou quando a abertura da lista quebrar o card atual.
-
-### Padrão recomendado
-
-Usar campo read-only/clicável na tela principal e abrir a seleção em Bottom Sheet.
-
-O campo deve conter:
-
-- label;
-- ícone à esquerda;
-- valor selecionado ou placeholder;
-- ícone de ação à direita;
-- aparência de input do sistema.
-
-O Bottom Sheet deve conter:
-
-- handle superior;
-- título claro;
-- campo de busca;
-- lista confortável;
-- destaque do item selecionado;
-- estado vazio elegante;
-- fechamento ao selecionar.
-
-## Seletores de data
-
-Evitar uso direto de `showDatePicker` padrão em telas mobile com layout customizado.
-
-### Padrão recomendado
-
-Usar Bottom Sheet customizado com:
-
-- título;
-- data selecionada em formato brasileiro;
-- dia da semana;
-- atalhos rápidos;
-- calendário compacto;
-- ação de aplicar;
-- ação de cancelar.
-
-A data original só deve ser alterada após confirmação do usuário.
+Consulte a [skill de seleção](../../.agents/skills/sixapp-dropdown-pattern/SKILL.md) para escolher o campo, a lista ou o calendário e definir quando confirmar o valor.
 
 ## Bottom Sheets
 
@@ -94,26 +54,11 @@ Sempre que uma busca ou lista não tiver resultado, exibir estado vazio com:
 
 ## Idioma
 
-Todos os textos visíveis ao usuário devem estar em pt-BR, salvo telas já internacionalizadas por mecanismo próprio.
-
-Evitar textos nativos em inglês vindos de componentes padrão, como:
-
-- Cancel;
-- OK;
-- Tue, Jul 14;
-- Search;
-- No results.
+Use o mecanismo de i18n do app para títulos, ações, busca, estados vazios e rótulos de calendário. Exiba datas conforme o idioma e o formato configurados para a empresa. Use português como fallback quando faltar tradução ou configuração.
 
 ## Reutilização
 
-Antes de implementar um seletor novo, verificar se já existe componente equivalente.
-
-Preferir componentes genéricos e reutilizáveis quando possível:
-
-- `EntitySelectorMobileBottomSheet`;
-- `DateSelectorMobileBottomSheet`;
-- `QuickActionBottomSheet`;
-- `MobileSearchableSelector`.
+Consulte os componentes Flutter indicados na skill de seleção antes de introduzir um novo seletor.
 
 Evitar duplicação de lógica visual dentro de telas grandes quando o componente for pequeno, neutro e claramente mobile. Não extrair uma tela inteira ou formulário principal para ser compartilhado com Web. Para funcionalidades que existem nas duas plataformas, crie telas e composições separadas consumindo a mesma camada de backend/domínio.
 

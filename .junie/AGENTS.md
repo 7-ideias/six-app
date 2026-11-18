@@ -1,6 +1,6 @@
 # AGENTS.md - SixApp Flutter
 
-Este arquivo deve orientar respostas rápidas e eficientes no frontend Flutter do SixApp. Os detalhes vivos ficam nas skills locais em `.agents/skills`; este arquivo serve como roteador e checklist curto.
+Este arquivo deve orientar respostas rápidas e eficientes no frontend Flutter do SixApp. Os detalhes vivos ficam nas skills locais em `.agents/skills`; a tabela de consulta fica no AGENTS.md da raiz.
 
 ## Contexto
 
@@ -8,21 +8,9 @@ SixApp e o frontend Flutter do Six, usado em Web, Android e iOS. O backend princ
 
 O app atende comercios de assistencia tecnica, vendas, orcamentos, estoque, financeiro, atendimento, configuracoes e relatorios. O frontend melhora a experiencia, mas o backend continua sendo a fonte de verdade para regras sensiveis, permissoes, tenant, status, financeiro, autenticacao e contratos.
 
-## Skills obrigatorias
+## Skills aplicáveis
 
-Leia a skill certa antes de implementar. Nao copie todo o conteudo para ca; use a skill como fonte de verdade.
-
-- Mobile visual: `.agents/skills/sixapp-mobile-ui/SKILL.md`
-- Web visual: `.agents/skills/sixapp-web-ui/SKILL.md`
-- Backend compartilhado Flutter: `.agents/skills/sixapp-shared-backend-integration/SKILL.md`
-- Textos, idioma, moeda, datas e numeros: `.agents/skills/sixapp-regionalization/SKILL.md`
-
-Use combinacoes quando o pedido tocar mais de uma area:
-
-- Tela mobile com endpoint, service, DTO, provider ou chamada HTTP: `sixapp-mobile-ui` + `sixapp-shared-backend-integration`.
-- Tela web com endpoint, service, DTO, provider ou chamada HTTP: `sixapp-web-ui` + `sixapp-shared-backend-integration`.
-- Qualquer UI com textos, mensagens, status, moeda, data, hora, numero, percentual ou configuracao de comercio: adicione `sixapp-regionalization`.
-- Pedido com arquivo mobile e arquivo web: use as skills de Web e Mobile, mas compartilhe somente backend, dominio, models, mappers, services e providers sem responsabilidade visual.
+Consulte a [tabela de skills na raiz](../AGENTS.md#skills-aplicáveis) antes de editar. Combine as linhas que correspondem aos componentes e plataformas envolvidos.
 
 ## Regra principal
 

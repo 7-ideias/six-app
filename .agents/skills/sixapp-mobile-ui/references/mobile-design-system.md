@@ -211,7 +211,7 @@ Para seleção mobile:
 - `isScrollControlled: true` quando necessário;
 - `DraggableScrollableSheet` para lista/calendário;
 - handle, título claro, seleção destacada, estado vazio e fechamento previsível;
-- pt-BR ou `AppLocalizations`.
+- rótulos e datas no idioma da empresa pelo mecanismo de regionalização do app.
 
 Evite `DropdownButtonFormField`, `DropdownMenu`, `showDatePicker` e dialogs grandes quando destoarem da experiência customizada.
 

@@ -18,6 +18,7 @@ Antes de qualquer ajuste, implementação ou refactor Web, valide explicitamente
 Para tarefa visual Web, leia:
 
 - `AGENTS.md`;
+- [Cores Web](../sixapp-web-colors/SKILL.md) para toda alteração visual, inclusive em uma tela ou modal novo;
 - `.junie/AGENTS.md`, se existir no workspace;
 - a tela, componente ou subpainel alvo;
 - providers, controllers, services, DTOs e clients consumidos pelo fluxo;
@@ -94,7 +95,7 @@ Em KPIs, cards de resumo, totalizadores e dashboards Web, valores numéricos imp
 
 Formulários Web devem preservar leitura, validação clara, labels/placeholder via i18n quando forem texto do app, botões proporcionais e layout que degrade bem em largura compacta.
 
-Para dropdowns/selects Web em formulários, filtros e barras de ação importantes, prefira o padrão visual elegante já usado na navegação de `pagina_principal_web.dart`/`TopNavigationBarWeb`: campo clicável com `InkWell` + `AnimatedContainer`, `showMenu`, cantos de 16-18, borda sutil, estado hover/aberto, chevron animado e itens `PopupMenuItem` customizados com ícone ou check do selecionado. Evite `DropdownButtonFormField` cru quando ele deixar o subpainel com aparência genérica; se o padrão se repetir em mais de uma tela, extraia para componente Web reutilizável mantendo labels, tooltip, vazio/erro/desabilitado e responsividade via i18n.
+Ao criar ou editar um filtro com opções, campo de seleção ou combobox, siga o [padrão de seleção](../sixapp-dropdown-pattern/SKILL.md). Para confirmações críticas ou encerramentos com feedback de operação, consulte também [diálogos de impacto](../six-web-impact-dialogs/SKILL.md).
 
 Tabelas, filtros e listas devem favorecer escaneabilidade: busca e filtros agrupados, chips discretos de metadados, ações alinhadas, valores importantes em blocos compactos e layout alternativo em telas estreitas.
 

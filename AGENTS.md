@@ -1,5 +1,22 @@
 # Instruções para desenvolvimento assistido por IA — Six Frontend
 
+## Skills aplicáveis
+
+Antes de editar, identifique as plataformas e os componentes envolvidos. Abra as skills de todas as linhas aplicáveis na branch em uso. Se durante a implementação surgir um seletor, modal ou outro componente, consulte a linha correspondente antes de construí-lo.
+
+| Alteração | Skills a consultar |
+| --- | --- |
+| Tela, modal, painel ou componente visual Web | [sixapp-web-ui](.agents/skills/sixapp-web-ui/SKILL.md) e [sixapp-web-colors](.agents/skills/sixapp-web-colors/SKILL.md) |
+| Tela, bottom sheet ou componente visual Android/iOS | [sixapp-mobile-ui](.agents/skills/sixapp-mobile-ui/SKILL.md) e [sixapp-mobile-colors](.agents/skills/sixapp-mobile-colors/SKILL.md) |
+| Seleção de valor, entidade, categoria, período ou filtro com opções | [sixapp-dropdown-pattern](.agents/skills/sixapp-dropdown-pattern/SKILL.md) |
+| Confirmação Web de ação crítica, encerramento ou conclusão com feedback | [six-web-impact-dialogs](.agents/skills/six-web-impact-dialogs/SKILL.md) |
+| Texto visível, mensagem de domínio, moeda, número, data, hora ou idioma | [sixapp-regionalization](.agents/skills/sixapp-regionalization/SKILL.md) |
+| Consumo de API, contrato, DTO, parsing, service ou estado ligado ao backend | [sixapp-shared-backend-integration](.agents/skills/sixapp-shared-backend-integration/SKILL.md) |
+| Persistência de preferência individual, como filtros ou visualização | [sixapp-user-preferences](.agents/skills/sixapp-user-preferences/SKILL.md) |
+| Navegação por notificação, payload de push ou destino de deep link de push | [sixapp-push-navigation](.agents/skills/sixapp-push-navigation/SKILL.md) |
+
+Procure primeiro o componente indicado pela skill. Ao concluir, informe o componente ou padrão usado e as verificações executadas. Em mudanças visuais, confira os estados alterados nos temas claro e escuro e indique se a verificação foi por teste de widget ou inspeção visual. Registre o que ficou sem validar.
+
 ## Contexto do projeto
 
 Este projeto faz parte do app Six, um CRM Freemium para comércios de assistência técnica, vendas, orçamento, estoque, financeiro e atendimento.
@@ -58,7 +75,7 @@ Backend:
   - metadados em chips discretos;
   - valores importantes em pequenos blocos;
   - ação principal à direita no desktop e abaixo no layout compacto.
-- Usar bordas sutis, sombras leves, cantos arredondados e fundo claro.
+- Usar bordas sutis, sombras leves, cantos arredondados e fundo definido pelos tokens do tema Web ativo.
 - Evitar aparência de tabela improvisada ou lista “crua” com `ListTile` simples quando a tela for um subpainel web importante.
 - Quando houver imagem do item, usar thumbnail discreto; quando não houver, usar ícone dentro de bloco visual neutro.
 - Botões flutuantes só devem ser usados quando fizerem sentido na experiência. Em subpainéis web, preferir botões fixos e bem integrados ao layout.
@@ -115,36 +132,7 @@ Toda alteração em telas mobile deve seguir uma abordagem mobile-first real, se
 
 ### Componentes de seleção no mobile
 
-Em telas mobile, evitar o uso direto de componentes padrão que abrem listas ou modais com aparência genérica de Android/Material quando isso causar quebra visual ou experiência ruim.
-
-Evitar, salvo justificativa técnica clara:
-
-- DropdownButtonFormField para listas médias/grandes;
-- DropdownMenu padrão;
-- showDatePicker padrão;
-- DatePickerDialog padrão;
-- dialogs grandes para seleção simples;
-- listas sobrepostas dentro de cards;
-- componentes que desloquem ou quebrem o layout da tela base.
-
-Para seleção de entidades no mobile, como cliente, fornecedor, produto, serviço, técnico responsável, forma de pagamento ou similares, preferir:
-
-- campo visual read-only/clicável;
-- abertura em showModalBottomSheet;
-- busca local quando a lista já estiver carregada;
-- lista com item confortável, avatar/ícone, título, subtítulo quando disponível e seleção destacada;
-- fechamento suave após seleção;
-- manutenção da tela base estável, sem deslocar ou quebrar cards.
-
-Para seleção de datas no mobile, preferir:
-
-- Bottom Sheet customizado;
-- atalhos rápidos quando fizer sentido;
-- calendário compacto dentro de layout próprio;
-- textos em pt-BR;
-- botão principal claro para aplicar;
-- botão secundário para cancelar;
-- não alterar o estado original antes da confirmação do usuário.
+Ao adicionar ou editar um seletor, consulte o padrão de seleção indicado na tabela acima. Use a variante mobile de entidade, data ou período e respeite o idioma e o formato de data configurados para a empresa.
 
 ### Regra de consistência visual
 
@@ -154,15 +142,7 @@ Não aceitar aparência de componente padrão genérico quando a tela já possui
 
 ### Regra de reutilização
 
-Quando um padrão visual puder ser reutilizado, criar componente próprio em vez de duplicar código diretamente na tela.
-
-Exemplos esperados:
-
-- ClienteSelectorMobileBottomSheet;
-- ProdutoSelectorMobileBottomSheet;
-- DateSelectorMobileBottomSheet;
-- EntitySelectorMobileBottomSheet;
-- QuickDateSelectorMobileBottomSheet.
+Use o componente da plataforma indicado pela skill de seleção. Quando ele precisar de uma capacidade nova, examine os demais usos antes de estendê-lo.
 
 ### Critério obrigatório antes de finalizar
 
@@ -175,7 +155,7 @@ Antes de concluir uma alteração mobile, validar:
 - não houve criação de endpoint desnecessário;
 - componentes de seleção não quebram o layout base;
 - modais/bottom sheets usam transição suave;
-- textos visíveis ao usuário estão em pt-BR;
+- textos da interface seguem o idioma da empresa via i18n;
 - dart format foi executado;
 - git diff foi apresentado.
 
@@ -189,9 +169,8 @@ Antes de concluir uma alteração mobile, validar:
   * `Gestão`: cadastros, catálogo, financeiro, relatórios, configurações e integrações.
 * Evitar telas mobile com aparência infantil, excesso de cores fortes ou cards grandes coloridos sem hierarquia.
 * Preferir visual profissional com:
-  * fundo claro;
-  * AppBar escura;
-  * cards brancos;
+  * fundo e cards definidos pelos tokens de superfície do tema ativo;
+  * AppBar com contraste legível sobre o fundo efetivo;
   * bordas discretas;
   * sombras leves;
   * ícones pequenos e consistentes;
@@ -224,15 +203,7 @@ Antes de concluir uma alteração mobile, validar:
 * Movimento deve comunicar estado, prioridade ou feedback de ação.
 * Não usar animação que prejudique leitura, acessibilidade ou performance em aparelhos simples.
 
-## Skill de UI mobile
-
-Para criação, reformulação ou revisão de interfaces Flutter mobile, utilize a Skill local `sixapp-mobile-ui`.
-
-A Skill deve ser aplicada a tarefas envolvendo Design System mobile, AppBar, cards, estados vazios, FAB, bottom sheets, animações, Lottie, acessibilidade e consistência visual.
-
-Quando a tarefa também envolver integração com backend compartilhada entre web e mobile, utilize em conjunto a Skill `sixapp-shared-backend-integration`.
-
-Alterações solicitadas somente para mobile não devem modificar o fluxo Flutter Web nem o tema global sem autorização explícita.
+Alterações solicitadas somente para mobile devem preservar o fluxo Flutter Web e o tema global, salvo autorização explícita.
 
 ### Indicadores numéricos animados no Web e Mobile
 

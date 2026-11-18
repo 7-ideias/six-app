@@ -1,20 +1,17 @@
 ---
 name: sixapp-mobile-colors
 description: >
-  Use quando o pedido mencionar cor, cores, dark mode, modo escuro, contraste,
-  fundo, background, surface, card claro no mobile, AppBar mobile ilegível,
-  bottom sheet com cor errada, input com fill incorreto ou qualquer correção
-  visual de paleta na versão mobile do SixApp. Aplique os tokens de
-  SixMobilePalette e SixMobileColorScheme, preserve SixMobilePageShell,
-  elimine superfícies hardcoded incompatíveis com dark mode e valide com teste
-  de widget quando a tela tiver risco de regressão.
+  Aplicar os tokens e validar contraste nos temas claro e escuro em toda
+  criação, alteração ou revisão de UI Android/iOS do SixApp, inclusive telas,
+  modais, campos, filtros, cards, ações e estados. Usar context.sixMobileColors
+  conforme o contexto do componente.
 ---
 
 # SixApp - Cores mobile
 
-Use esta skill para corrigir inconsistências de cor na experiência mobile do SixApp sem alterar a versão web.
+Confira a hierarquia de superfícies e o contraste no tema claro e no escuro em cada mudança visual Android/iOS.
 
-## Acione esta skill quando o pedido envolver
+## Exemplos de pontos a revisar
 
 - fundo dark que não aplica direito;
 - cards, inputs, chips ou badges claros demais no modo escuro;

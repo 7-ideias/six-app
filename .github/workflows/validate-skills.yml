@@ -1,0 +1,54 @@
+name: Validar skills do projeto
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - '.agents/skills/**'
+      - '.github/workflows/validate-skills.yml'
+  push:
+    paths:
+      - 'AGENTS.md'
+      - '.agents/skills/**'
+      - '.github/workflows/validate-skills.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML==6.0.3
+      - name: Validar catálogo e cabeçalhos YAML
+        shell: python
+        run: |
+          import re
+          from pathlib import Path
+
+          import yaml
+
+          index = Path("AGENTS.md").read_text(encoding="utf-8")
+          linked = set(re.findall(r"\]\((\.agents/skills/[^/)]+/SKILL\.md)\)", index))
+          skills = sorted(Path(".agents/skills").glob("*/SKILL.md"))
+          found = {path.as_posix() for path in skills}
+          if not found or linked != found:
+              raise SystemExit(f"Revisar catálogo em AGENTS.md: {sorted(linked ^ found)}")
+
+          for path in skills:
+              lines = path.read_text(encoding="utf-8").splitlines()
+              if not lines or lines[0] != "---" or "---" not in lines[1:]:
+                  raise SystemExit(f"{path}: cabeçalho YAML ausente ou incompleto")
+              try:
+                  meta = yaml.safe_load("\n".join(lines[1:lines.index("---", 1)]))
+              except yaml.YAMLError as error:
+                  raise SystemExit(f"{path}: {error}")
+              if not isinstance(meta, dict) or meta.get("name") != path.parent.name:
+                  raise SystemExit(f"{path}: name deve corresponder ao diretório")
+              if not isinstance(meta.get("description"), str) or not meta["description"].strip():
+                  raise SystemExit(f"{path}: description deve conter texto")
+          print(f"{len(skills)} skills válidas.")

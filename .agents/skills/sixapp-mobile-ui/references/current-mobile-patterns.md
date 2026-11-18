@@ -14,7 +14,7 @@ Use esta referência curta antes de criar ou reformular UI mobile. Ela resume pa
 
 ## Decisões visuais recorrentes
 
-- Fundo claro com cards brancos, bordas sutis e sombras leves.
+- Fundo e cards com os tokens de superfície do tema ativo, bordas sutis e sombras leves.
 - AppBar escura ou integrada ao `SixMobilePageShell`, com contraste e status bar coerentes.
 - Ícones pequenos e consistentes, sem blocos coloridos exagerados.
 - Cards orientados a ação rápida, com título, subtítulo, estado/número e ação clara.
