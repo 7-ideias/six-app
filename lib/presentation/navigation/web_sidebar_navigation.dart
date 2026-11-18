@@ -852,6 +852,9 @@ class _SidebarVersionPill extends StatelessWidget {
 }
 
 String _navigationLabel(BuildContext context, WebNavigationItem item) {
+  if (item.destination == WebNavigationDestination.productIdeas) {
+    return superPanelText(context, 'productIdeas');
+  }
   if (item.destination == WebNavigationDestination.superPanel) {
     return superPanelText(context, 'title');
   }

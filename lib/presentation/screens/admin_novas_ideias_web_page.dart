@@ -7,9 +7,12 @@ import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
+import '../layouts/six_web_page_shell.dart';
 
 class AdminNovasIdeiasWebPage extends StatefulWidget {
-  const AdminNovasIdeiasWebPage({super.key});
+  const AdminNovasIdeiasWebPage({super.key, this.embeddedInMainShell = false});
+
+  final bool embeddedInMainShell;
 
   @override
   State<AdminNovasIdeiasWebPage> createState() =>
@@ -31,7 +34,7 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
   @override
   void initState() {
     super.initState();
-    _carregarUsuario();
+    if (!widget.embeddedInMainShell) _carregarUsuario();
     _carregar();
   }
 
@@ -67,7 +70,7 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
     } catch (e) {
       if (!mounted) return;
       final String mensagem = e.toString().replaceAll('Exception: ', '');
-      if (_erroDeSessao(mensagem)) {
+      if (!widget.embeddedInMainShell && _erroDeSessao(mensagem)) {
         Navigator.of(
           context,
         ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
@@ -139,13 +142,35 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final _IdeasTexts texts = _IdeasTexts.of(context);
+    if (widget.embeddedInMainShell) {
+      return SixWebPageShell(
+        child: SingleChildScrollView(
+          padding: SixWebPageShell.scrollPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: IconButton(
+                  tooltip: MaterialLocalizations.of(context)
+                      .refreshIndicatorSemanticLabel,
+                  onPressed: _carregando ? null : _carregar,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ),
+              _buildContent(texts),
+            ],
+          ),
+        ),
+      );
+    }
     final String profileType = context
         .select<ColaboradorAutorizacoesProvider, String>(
           (ColaboradorAutorizacoesProvider provider) =>
               provider.tipoPerfilUnificado,
         );
     final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
-    final _IdeasTexts texts = _IdeasTexts.of(context);
 
     return AdminNavigationShell(
       texts: portalTexts,
@@ -189,7 +214,7 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
     final List<AdminIdeaModel> ideas = _filtradas;
     return Column(
-      key: ValueKey<String>('ideas-${ideas.length}-${_ideias.length}'),
+      key: const ValueKey<String>('ideas-content'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _IdeasHeader(

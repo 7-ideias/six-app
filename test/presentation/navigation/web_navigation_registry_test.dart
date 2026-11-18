@@ -15,6 +15,7 @@ void main() {
         WebNavigationIds.adminPlans,
         WebNavigationIds.pushCampaigns,
         WebNavigationIds.superPanel,
+        WebNavigationIds.productIdeas,
         WebNavigationIds.settings,
       ]);
 

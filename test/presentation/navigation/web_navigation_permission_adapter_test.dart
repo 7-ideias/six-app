@@ -208,6 +208,14 @@ void main() {
           ids.indexOf(WebNavigationIds.superPanel),
           ids.indexOf(WebNavigationIds.pushCampaigns) + 1,
         );
+        expect(ids, contains(WebNavigationIds.productIdeas));
+        expect(
+          _findItem(
+            _visibleItemsFor(_FakeAutorizacoesProvider(admin: admin)),
+            WebNavigationIds.productIdeas,
+          ),
+          isNull,
+        );
         expect(
           _findItem(
             _visibleItemsFor(_FakeAutorizacoesProvider(admin: admin)),

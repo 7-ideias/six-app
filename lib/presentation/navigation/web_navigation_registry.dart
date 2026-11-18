@@ -26,6 +26,7 @@ abstract final class WebNavigationIds {
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
   static const String pushCampaigns = 'admin.push_campaigns';
+  static const String productIdeas = 'admin.product_ideas';
   static const String superPanel = 'admin.super_panel';
   static const String adminPlans = 'admin.plans';
   static const String visualAssets = 'visual.assets';
@@ -284,6 +285,16 @@ abstract final class WebNavigationRegistry {
         WebNavigationPermission.podeAcessarPainelSuper,
       ]),
       destination: WebNavigationDestination.superPanel,
+    ),
+    WebNavigationItem(
+      id: WebNavigationIds.productIdeas,
+      labelKey: 'superPanel.productIdeas',
+      labelFallback: 'Novas ideias',
+      icon: Icons.lightbulb_outline,
+      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+        WebNavigationPermission.podeAcessarPainelSuper,
+      ]),
+      destination: WebNavigationDestination.productIdeas,
     ),
     WebNavigationItem(
       id: WebNavigationIds.settings,

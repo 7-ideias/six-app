@@ -19,6 +19,7 @@ import '../screens/super_panel_web_page.dart';
 import '../../l10n/super_panel_texts.dart';
 import '../screens/admin_planos_web_page.dart';
 import '../screens/admin_push_campaigns_web_page.dart';
+import '../screens/admin_novas_ideias_web_page.dart';
 import 'web_header.dart';
 
 class AuthenticatedWebShell extends StatefulWidget {
@@ -122,6 +123,10 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         const DevolucoesProdutosWebPage(),
       WebNavigationDestination.peopleSixoUsers => const UsuariosSixoWebPage(),
       WebNavigationDestination.superPanel => const SuperPanelWebPage(),
+      WebNavigationDestination.productIdeas =>
+        isSuperUser
+            ? const AdminNovasIdeiasWebPage(embeddedInMainShell: true)
+            : Center(child: Text(superPanelText(context, 'restricted'))),
       WebNavigationDestination.adminPlans => const AdminPlanosWebPage(),
       WebNavigationDestination.pushCampaigns => const AdminPushCampaignsWebPage(
         embeddedInMainShell: true,
@@ -216,6 +221,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         _expandedGroupIds.add(switch (destination) {
           WebNavigationDestination.catalogLabels => WebNavigationIds.catalog,
           WebNavigationDestination.peopleSixoUsers => WebNavigationIds.people,
+          WebNavigationDestination.productIdeas => WebNavigationIds.productIdeas,
           WebNavigationDestination.superPanel => WebNavigationIds.superPanel,
           WebNavigationDestination.adminPlans => WebNavigationIds.adminPlans,
           WebNavigationDestination.pushCampaigns =>
@@ -262,6 +268,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         destination == WebNavigationDestination.visualAssets ||
         destination == WebNavigationDestination.adminPlans ||
         destination == WebNavigationDestination.pushCampaigns ||
+        destination == WebNavigationDestination.productIdeas ||
         destination == WebNavigationDestination.superPanel;
   }
 
@@ -299,6 +306,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     BuildContext context,
     WebNavigationDestination? destination,
   ) {
+    if (destination == WebNavigationDestination.productIdeas) {
+      return superPanelText(context, 'productIdeas');
+    }
     if (destination == WebNavigationDestination.superPanel) {
       return superPanelText(context, 'title');
     }

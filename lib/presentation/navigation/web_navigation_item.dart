@@ -96,6 +96,7 @@ enum WebNavigationDestination {
   adminPlans,
   pushCampaigns,
   superPanel,
+  productIdeas,
   cash,
   financialAgenda,
   settings,

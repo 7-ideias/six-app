@@ -6,6 +6,7 @@ import 'six_i18n.dart';
 
 const _texts = <String, List<String>>{
   'title': ['Painel SUPER', 'SUPER panel', 'Panel SUPER'],
+  'productIdeas': ['Novas ideias', 'New ideas', 'Nuevas ideas'],
   'subtitle': [
     'Monitoramento e saúde da plataforma',
     'Platform monitoring and health',
