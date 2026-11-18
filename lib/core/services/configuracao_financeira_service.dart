@@ -4,6 +4,8 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
 import 'agenda_financeira_lancamento_service.dart';
+import '../../data/services/cartoes/cartao_credito_api_client.dart';
+import '../../data/models/instituicao_open_finance_model.dart';
 
 class ConfiguracaoFinanceira {
   const ConfiguracaoFinanceira({
@@ -15,12 +17,14 @@ class ConfiguracaoFinanceira {
     this.codigo,
     this.centroPaiId,
     this.contaDestinoId,
+    this.marcaId,
   });
   final String id, nome, tipo, instituicao;
   final bool ativo;
   final String? codigo;
   final String? contaDestinoId;
   final String? centroPaiId;
+  final String? marcaId;
   factory ConfiguracaoFinanceira.fromJson(Map<String, dynamic> json) =>
       ConfiguracaoFinanceira(
         id: json['id'].toString(),
@@ -30,6 +34,7 @@ class ConfiguracaoFinanceira {
         ativo: json['ativo'] == true,
         codigo: json['codigo']?.toString(),
         contaDestinoId: json['contaDestinoId']?.toString(),
+        marcaId: json['marcaId']?.toString(),
         centroPaiId: json['centroPaiId']?.toString(),
       );
 }
@@ -39,7 +44,19 @@ class ConfiguracaoFinanceiraService {
     : _client = client ?? createHttpClient();
   final String espaco;
   final http.Client _client;
-  void dispose() => _client.close();
+  late final CartaoCreditoApiClient _catalogo = CartaoCreditoApiClient(
+    espaco: espaco,
+  );
+
+  /// Reutiliza exatamente o endpoint de catálogo de cartões, validando no
+  /// backend o país canônico da empresa ativa (inclusive no espaço PESSOAL).
+  Future<CatalogoInstituicoesBrasil> catalogoBrasileiro() =>
+      _catalogo.listarInstituicoesBrasileiras();
+
+  void dispose() {
+    _client.close();
+    _catalogo.dispose();
+  }
   Future<Map<String, String>> _headers() async {
     final auth = AuthService();
     return {
@@ -75,6 +92,7 @@ class ConfiguracaoFinanceiraService {
     required String instituicao,
     required bool ativo,
     String? contaDestinoId,
+    String? marcaId,
   }) async {
     await _persistir(
       grupo,
@@ -84,6 +102,7 @@ class ConfiguracaoFinanceiraService {
       instituicao: instituicao,
       ativo: ativo,
       contaDestinoId: contaDestinoId,
+      marcaId: marcaId,
     );
   }
 
@@ -92,6 +111,7 @@ class ConfiguracaoFinanceiraService {
     required String nome,
     required String tipo,
     required String instituicao,
+    String? marcaId,
   }) async {
     final response = await _persistir(
       'CONTAS',
@@ -99,6 +119,7 @@ class ConfiguracaoFinanceiraService {
       tipo: tipo,
       instituicao: instituicao,
       ativo: true,
+      marcaId: marcaId,
     );
     final conta = ConfiguracaoFinanceira.fromJson(
       Map<String, dynamic>.from(jsonDecode(response.body) as Map),
@@ -117,6 +138,7 @@ class ConfiguracaoFinanceiraService {
     required String instituicao,
     required bool ativo,
     String? contaDestinoId,
+    String? marcaId,
   }) async {
     final payload = {
       'nome': nome.trim(),
@@ -124,6 +146,7 @@ class ConfiguracaoFinanceiraService {
       'instituicao': instituicao.trim(),
       'ativo': ativo,
       'contaDestinoId': contaDestinoId,
+      'marcaId': marcaId,
       if (grupo == 'CENTROS') 'codigo': original?.codigo,
       if (grupo == 'CENTROS') 'centroPaiId': original?.centroPaiId,
     };

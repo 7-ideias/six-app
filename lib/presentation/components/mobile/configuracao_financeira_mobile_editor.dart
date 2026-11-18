@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'conta_financeira_mobile_field.dart';
+import 'marca_financeira_mobile_selector.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
+import 'package:sixpos/data/models/marca_financeira_catalogo.dart';
+import 'package:sixpos/presentation/components/marca_financeira_avatar.dart';
 
 class ConfiguracaoFinanceiraMobileEditor extends StatefulWidget {
   const ConfiguracaoFinanceiraMobileEditor({
@@ -10,11 +14,13 @@ class ConfiguracaoFinanceiraMobileEditor extends StatefulWidget {
     required this.grupo,
     this.item,
     this.selecionarAoCriar = false,
+    this.catalogo = CatalogoInstituicoesBrasil.vazio,
   }) : assert(!selecionarAoCriar || (grupo == 'CONTAS' && item == null));
   final ConfiguracaoFinanceiraService service;
   final String grupo;
   final ConfiguracaoFinanceira? item;
   final bool selecionarAoCriar;
+  final CatalogoInstituicoesBrasil catalogo;
   @override
   State<ConfiguracaoFinanceiraMobileEditor> createState() =>
       _ConfiguracaoFinanceiraMobileEditorState();
@@ -26,6 +32,7 @@ class _ConfiguracaoFinanceiraMobileEditorState
   late final _instituicao = TextEditingController(
     text: widget.item?.instituicao ?? '',
   );
+  late String? _marcaId = widget.item?.marcaId;
   late String _tipo =
       widget.item?.tipo ?? (widget.grupo == 'CONTAS' ? 'BANCO' : 'AMBOS');
   late bool _ativo = widget.item?.ativo ?? true;
@@ -52,6 +59,7 @@ class _ConfiguracaoFinanceiraMobileEditorState
           nome: _nome.text,
           tipo: _tipo,
           instituicao: _instituicao.text,
+          marcaId: _marcaId,
         );
         if (mounted) Navigator.of(context).pop(conta);
         return;
@@ -63,6 +71,7 @@ class _ConfiguracaoFinanceiraMobileEditorState
         tipo: widget.grupo == 'MAQUININHAS' ? 'MAQUININHA' : _tipo,
         contaDestinoId: _contaDestinoId,
         instituicao: _instituicao.text,
+        marcaId: _marcaId,
         ativo: _ativo,
       );
       if (mounted) Navigator.of(context).pop();
@@ -73,6 +82,49 @@ class _ConfiguracaoFinanceiraMobileEditorState
           _error = true;
         });
     }
+  }
+
+  bool get _podeEscolherMarca =>
+      widget.catalogo.habilitado &&
+      ((widget.grupo == 'CONTAS' && _tipo == 'BANCO' &&
+          widget.catalogo.instituicoes.isNotEmpty) ||
+          widget.grupo == 'MAQUININHAS');
+
+  String? get _logoAtual {
+    if (!_podeEscolherMarca) return null;
+    if (widget.grupo == 'MAQUININHAS') {
+      return MarcaFinanceiraCatalogo.logoOperadora(
+        _instituicao.text, _marcaId, habilitadoBrasil: true,
+      );
+    }
+    return widget.catalogo.logotipoDe(
+      _instituicao.text,
+      marcaOpenFinanceId:
+          _marcaId?.startsWith('OF:') == true ? _marcaId!.substring(3) : null,
+    );
+  }
+
+  Future<void> _escolherMarca() async {
+    if (_saving || !_podeEscolherMarca) return;
+    final maquininha = widget.grupo == 'MAQUININHAS';
+    final opcoes = maquininha
+        ? MarcaFinanceiraCatalogo.operadorasParaSelecao()
+        : widget.catalogo.instituicoes;
+    final selecionada = await selecionarMarcaFinanceiraMobile(
+      context,
+      titulo: context.t(maquininha
+          ? 'financialBrand.searchOperator'
+          : 'financialBrand.searchBank'),
+      tipo: maquininha ? 'MAQUININHA' : 'BANCO',
+      instituicoes: opcoes,
+    );
+    if (!mounted || selecionada == null) return;
+    setState(() {
+      _instituicao.text = selecionada.nome;
+      final codigo = selecionada.marcaOpenFinanceId;
+      _marcaId = codigo == null || codigo.isEmpty
+          ? null : maquininha ? codigo : 'OF:$codigo';
+    });
   }
 
   @override
@@ -116,19 +168,46 @@ class _ConfiguracaoFinanceiraMobileEditorState
                             ? context.t('space.required')
                             : null,
               ),
-              if (widget.grupo == 'CONTAS' || widget.grupo == 'MAQUININHAS')
+              if (widget.grupo == 'CONTAS' || widget.grupo == 'MAQUININHAS') ...[
                 TextField(
+                  key: const ValueKey('financial-brand-institution-mobile'),
                   controller: _instituicao,
                   enabled: !_saving,
+                  onChanged: (_) => setState(() => _marcaId = null),
                   maxLength: 120,
                   decoration: InputDecoration(
-                    labelText: context.t(
-                      widget.grupo == 'MAQUININHAS'
-                          ? 'machine.operator'
-                          : 'space.institution',
+                    prefixIcon: _logoAtual == null ? null : Padding(
+                      padding: const EdgeInsets.all(7),
+                      child: MarcaFinanceiraAvatar(
+                        key: const ValueKey('financial-brand-preview-mobile'),
+                        nome: _instituicao.text,
+                        tipo: widget.grupo == 'MAQUININHAS'
+                            ? 'MAQUININHA' : 'BANCO',
+                        logotipoUrl: _logoAtual,
+                        size: 36,
+                      ),
                     ),
+                    labelText: context.t(widget.grupo == 'MAQUININHAS'
+                        ? 'machine.operator' : 'space.institution'),
                   ),
                 ),
+                if (_podeEscolherMarca) ...[
+                  OutlinedButton.icon(
+                    key: const ValueKey('financial-brand-choose-mobile'),
+                    onPressed: _saving ? null : _escolherMarca,
+                    icon: const Icon(Icons.search_rounded),
+                    label: Text(context.t(widget.grupo == 'MAQUININHAS'
+                        ? 'financialBrand.chooseOperator'
+                        : 'financialBrand.chooseBank')),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(context.t(widget.grupo == 'MAQUININHAS'
+                      ? 'financialBrand.operatorHint'
+                      : 'financialBrand.bankHint'),
+                    style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 14),
+                ],
+              ],
               if (widget.grupo == 'MAQUININHAS')
                 ContaFinanceiraMobileField(
                   espaco: widget.service.espaco,
@@ -153,7 +232,10 @@ class _ConfiguracaoFinanceiraMobileEditorState
                         onSelected:
                             _saving
                                 ? null
-                                : (_) => setState(() => _tipo = tipo),
+                                : (_) => setState(() {
+                                  _tipo = tipo;
+                                  if (_tipo != 'BANCO') _marcaId = null;
+                                }),
                       ),
                   ],
                 ),

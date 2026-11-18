@@ -20,6 +20,8 @@ class InstituicaoOpenFinance {
       'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/18236120.svg';
   static const String _logoItau =
       'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/60701190.svg';
+  static const String _logoBtg =
+      'https://cdn.jsdelivr.net/npm/logos-bancos-br@0/logos/svg/30306294.svg';
 
   /// Associação revisada por ISPB. Usada também enquanto o cache do backend
   /// ainda estiver servindo URLs incorretas de parceiros do Open Finance.
@@ -27,6 +29,12 @@ class InstituicaoOpenFinance {
     switch (normalizarNome(nome)) {
       case 'nubank':
         return _logoNubank;
+      case 'btg':
+      case 'btgpactual':
+      case 'bancobtg':
+      case 'bancobtgpactual':
+      case 'bancobtgpactualsa':
+        return _logoBtg;
       case 'itau':
       case 'itaucard':
       case 'bancoitaucard':

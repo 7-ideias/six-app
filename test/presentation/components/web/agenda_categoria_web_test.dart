@@ -25,6 +25,7 @@ class _Service extends ConfiguracaoFinanceiraService {
     required String instituicao,
     required bool ativo,
     String? contaDestinoId,
+    String? marcaId,
   }) async {
     expect(grupo, 'CATEGORIAS');
     if (fail) throw StateError('save failed');

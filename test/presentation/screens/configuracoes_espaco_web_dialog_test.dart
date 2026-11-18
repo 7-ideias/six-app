@@ -5,11 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/presentation/components/web/financeiro_configuracao_web_dialog.dart';
 import 'package:sixpos/presentation/screens/configuracoes_espaco_web.dart';
 
 class _Contas extends ConfiguracaoFinanceiraService {
   _Contas() : super('PESSOAL', client: MockClient((_) async => http.Response('[]', 200)));
+  @override Future<CatalogoInstituicoesBrasil> catalogoBrasileiro() async => CatalogoInstituicoesBrasil.vazio;
   @override
   Future<List<ConfiguracaoFinanceira>> listar(String grupo) async => [
     const ConfiguracaoFinanceira(id: 'conta', nome: 'Conta de teste', tipo: 'BANCO'),

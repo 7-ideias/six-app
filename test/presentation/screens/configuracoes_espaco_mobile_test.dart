@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/core/services/configuracao_financeira_service.dart';
+import 'package:sixpos/data/models/instituicao_open_finance_model.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
@@ -43,6 +44,7 @@ void main() {
 
 class _FakeSettings extends ConfiguracaoFinanceiraService {
   _FakeSettings() : super('PESSOAL');
+  @override Future<CatalogoInstituicoesBrasil> catalogoBrasileiro() async => CatalogoInstituicoesBrasil.vazio;
   @override
   Future<List<ConfiguracaoFinanceira>> listar(String grupo) async => [
     const ConfiguracaoFinanceira(
