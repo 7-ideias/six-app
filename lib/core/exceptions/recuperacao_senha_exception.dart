@@ -7,6 +7,7 @@ enum RecuperacaoSenhaErrorCode {
   codigoExpirado, // PWD_003 → 410
   smtpFailure, // PWD_004 → 502
   senhaInvalida, // PWD_005 → 422
+  emailDaContaIndisponivel,
   rateLimited,
   unavailable,
   sessionsPending,
@@ -37,7 +38,9 @@ class RecuperacaoSenhaException implements Exception {
       /* Ignore unsafe or malformed provider messages. */
     }
     final codeFromStatus =
-        backendCode == 'PWD_SESSIONS_PENDING'
+        backendCode == 'PWD_EMAIL_INDISPONIVEL'
+            ? RecuperacaoSenhaErrorCode.emailDaContaIndisponivel
+            : backendCode == 'PWD_SESSIONS_PENDING'
             ? RecuperacaoSenhaErrorCode.sessionsPending
             : backendCode == 'PWD_RESTART'
             ? RecuperacaoSenhaErrorCode.restartRequired
@@ -71,6 +74,8 @@ class RecuperacaoSenhaException implements Exception {
         'Não foi possível enviar o e-mail agora. Tente novamente em instantes.',
       RecuperacaoSenhaErrorCode.senhaInvalida =>
         'A nova senha não atende aos requisitos mínimos.',
+      RecuperacaoSenhaErrorCode.emailDaContaIndisponivel =>
+        'E-mail da conta indisponível.',
       RecuperacaoSenhaErrorCode.rateLimited =>
         'Aguarde antes de tentar novamente.',
       RecuperacaoSenhaErrorCode.unavailable => 'Recuperação indisponível.',

@@ -11,8 +11,13 @@ import 'nova_senha_web.dart';
 
 class VerificarCodigoRecuperacaoWeb extends StatefulWidget {
   final String email;
+  final bool contaAutenticada;
 
-  const VerificarCodigoRecuperacaoWeb({super.key, required this.email});
+  const VerificarCodigoRecuperacaoWeb({
+    super.key,
+    required this.email,
+    this.contaAutenticada = false,
+  });
 
   @override
   State<VerificarCodigoRecuperacaoWeb> createState() =>
@@ -121,10 +126,16 @@ class _VerificarCodigoRecuperacaoWebState
     try {
       await _service.enviarCodigo(
         widget.email,
+        contaAutenticada: widget.contaAutenticada,
         languageCode: Localizations.localeOf(context).languageCode,
       );
       if (!mounted) return;
-      _showSnack(passwordRecoveryText(context, 'neutral'));
+      _showSnack(
+        passwordRecoveryText(
+          context,
+          widget.contaAutenticada ? 'proof' : 'neutral',
+        ),
+      );
       _startResendTimer();
     } on RecuperacaoSenhaException catch (e) {
       if (mounted) _showSnack(passwordRecoveryError(context, e));
@@ -183,7 +194,12 @@ class _VerificarCodigoRecuperacaoWebState
         children: [
           const WebAuthTitle(title: 'Verificar código'),
           const SizedBox(height: 10),
-          Text(passwordRecoveryText(context, 'neutral')),
+          Text(
+            passwordRecoveryText(
+              context,
+              widget.contaAutenticada ? 'proof' : 'neutral',
+            ),
+          ),
           Text(widget.email, textAlign: TextAlign.center),
           const SizedBox(height: 32),
           Row(

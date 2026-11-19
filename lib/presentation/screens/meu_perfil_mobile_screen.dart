@@ -180,7 +180,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       sobrenome: _sobrenomeController.text.trim(),
       cpf: _cpfController.text.trim(),
       registroProfissional: _registroController.text.trim(),
-      email: _emailController.text.trim(),
+      email: usuarioAtual.email,
       foto: usuarioAtual.foto,
       nomeDeGuerra: _nomeDeGuerraController.text.trim(),
       celular: _celularController.text.trim(),
@@ -410,11 +410,13 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    bool readOnly = false,
     TextInputType? keyboardType,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       enabled: !_salvando,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
@@ -657,6 +659,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     ScrollController scrollController,
     double topInset,
   ) {
+    final String emailDaConta = _usuarioProvider.usuario?.email.trim() ?? '';
     return Form(
       key: _formKey,
       child: ListView(
@@ -667,17 +670,25 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
           ListTile(
             leading: const Icon(Icons.lock_outline),
             title: Text(passwordRecoveryText(context, 'change')),
-            subtitle: Text(passwordRecoveryText(context, 'proof')),
+            subtitle: Text(
+              passwordRecoveryText(
+                context,
+                emailDaConta.isEmpty ? 'accountEmailUnavailable' : 'proof',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
+            enabled: emailDaConta.isNotEmpty,
             onTap:
-                () => Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder:
-                        (_) => EsqueceuSenhaMobile(
-                          initialEmail: _emailController.text.trim(),
-                        ),
-                  ),
-                ),
+                emailDaConta.isEmpty
+                    ? null
+                    : () => Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute<void>(
+                        builder:
+                            (_) => EsqueceuSenhaMobile.alterarSenha(
+                              emailDaConta: emailDaConta,
+                            ),
+                      ),
+                    ),
           ),
 
           _buildProfileSummary(context),
@@ -781,8 +792,8 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                 context: context,
                 controller: _emailController,
                 label: _t('perfil.email', 'E-mail'),
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
+                icon: Icons.lock_outline,
+                readOnly: true,
               ),
             ],
           ),

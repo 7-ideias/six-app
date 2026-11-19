@@ -15,6 +15,8 @@ String passwordRecoveryError(
   RecuperacaoSenhaException error,
 ) {
   final key = switch (error.code) {
+    RecuperacaoSenhaErrorCode.emailDaContaIndisponivel =>
+      'accountEmailUnavailable',
     RecuperacaoSenhaErrorCode.rateLimited => 'limit',
     RecuperacaoSenhaErrorCode.unavailable => 'unavailable',
     RecuperacaoSenhaErrorCode.sessionsPending => 'sessions',
@@ -28,6 +30,11 @@ String passwordRecoveryError(
 
 const _fallback = <String, Map<String, String>>{
   "pt": {
+    "sendToAccount":
+        "O código de verificação será enviado ao e-mail da sua conta.",
+    "sendCode": "Enviar código de verificação",
+    "accountEmailUnavailable":
+        "Não foi possível confirmar o e-mail desta conta. Entre novamente e tente outra vez.",
     "change": "Alterar senha",
     "proof":
         "Confirme o código enviado ao e-mail cadastrado para escolher uma nova senha.",
@@ -47,6 +54,10 @@ const _fallback = <String, Map<String, String>>{
     "password": "A senha não atende à política de segurança da conta.",
   },
   "en": {
+    "sendToAccount": "We’ll send the verification code to your account email.",
+    "sendCode": "Send verification code",
+    "accountEmailUnavailable":
+        "We couldn’t confirm your account email. Sign in again and try again.",
     "change": "Change password",
     "proof":
         "Confirm the code sent to your registered email to choose a new password.",
@@ -64,6 +75,11 @@ const _fallback = <String, Map<String, String>>{
     "password": "The password does not meet the account security policy.",
   },
   "es": {
+    "sendToAccount":
+        "Enviaremos el código de verificación al correo de tu cuenta.",
+    "sendCode": "Enviar código de verificación",
+    "accountEmailUnavailable":
+        "No pudimos confirmar el correo de tu cuenta. Vuelve a iniciar sesión e inténtalo de nuevo.",
     "change": "Cambiar contraseña",
     "proof":
         "Confirma el código enviado a tu correo registrado para elegir una nueva contraseña.",

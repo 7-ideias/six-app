@@ -7,8 +7,14 @@ import '../../core/services/recuperacao_senha_service.dart';
 import 'verificar_codigo_recuperacao_mobile.dart';
 
 class EsqueceuSenhaMobile extends StatefulWidget {
-  const EsqueceuSenhaMobile({super.key, this.initialEmail = ''});
-  final String initialEmail;
+  const EsqueceuSenhaMobile({super.key}) : emailDaConta = null;
+
+  const EsqueceuSenhaMobile.alterarSenha({
+    super.key,
+    required String this.emailDaConta,
+  });
+
+  final String? emailDaConta;
 
   @override
   State<EsqueceuSenhaMobile> createState() => _EsqueceuSenhaMobileState();
@@ -21,12 +27,6 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
   bool _isLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    _emailCtrl.text = widget.initialEmail;
-  }
-
-  @override
   void dispose() {
     _emailCtrl.dispose();
     super.dispose();
@@ -37,7 +37,8 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
   }
 
   Future<void> _enviarCodigo() async {
-    final email = _emailCtrl.text.trim();
+    if (_isLoading) return;
+    final email = (widget.emailDaConta ?? _emailCtrl.text).trim();
     if (email.isEmpty) {
       _showSnack('Informe seu e-mail');
       return;
@@ -47,19 +48,24 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
     try {
       await _service.enviarCodigo(
         email,
+        contaAutenticada: widget.emailDaConta != null,
         languageCode: Localizations.localeOf(context).languageCode,
       );
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => VerificarCodigoRecuperacaoMobile(email: email),
+          builder:
+              (_) => VerificarCodigoRecuperacaoMobile(
+                email: email,
+                contaAutenticada: widget.emailDaConta != null,
+              ),
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
       if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
-      _showSnack('Não foi possível enviar o código. Tente novamente.');
+      if (mounted) _showSnack(passwordRecoveryText(context, 'unavailable'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -97,7 +103,9 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Esqueceu a senha?',
+                widget.emailDaConta == null
+                    ? 'Esqueceu a senha?'
+                    : passwordRecoveryText(context, 'change'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -107,52 +115,65 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Informe seu e-mail para\nrecuperar sua senha',
+                widget.emailDaConta == null
+                    ? 'Informe seu e-mail para\nrecuperar sua senha'
+                    : passwordRecoveryText(context, 'sendToAccount'),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: labelGrey, height: 1.45),
               ),
               const SizedBox(height: 32),
 
               // ── Campo E-mail ──────────────────────────────────────────
-              TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _enviarCodigo(),
-                cursorColor: primary,
-                style: TextStyle(fontSize: 15, color: textColor),
-                decoration: InputDecoration(
-                  hintText: 'E-mail',
-                  hintStyle: TextStyle(color: labelGrey, fontSize: 15),
-                  filled: true,
-                  fillColor: fieldFill,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 14,
+              if (widget.emailDaConta case final email?)
+                Text(
+                  email,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        useAdaptiveBorder
-                            ? BorderSide(color: fieldBorder)
-                            : BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        useAdaptiveBorder
-                            ? BorderSide(color: fieldBorder)
-                            : BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: primary.withValues(alpha: 0.4),
-                      width: 1.2,
+                )
+              else
+                TextField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _enviarCodigo(),
+                  cursorColor: primary,
+                  style: TextStyle(fontSize: 15, color: textColor),
+                  decoration: InputDecoration(
+                    hintText: 'E-mail',
+                    hintStyle: TextStyle(color: labelGrey, fontSize: 15),
+                    filled: true,
+                    fillColor: fieldFill,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide:
+                          useAdaptiveBorder
+                              ? BorderSide(color: fieldBorder)
+                              : BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide:
+                          useAdaptiveBorder
+                              ? BorderSide(color: fieldBorder)
+                              : BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: primary.withValues(alpha: 0.4),
+                        width: 1.2,
+                      ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 28),
 
               // ── Botão Enviar Código ────────────────────────────────────
@@ -179,9 +200,9 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
                               strokeWidth: 2.4,
                             ),
                           )
-                          : const Text(
-                            'Enviar código de verificação',
-                            style: TextStyle(
+                          : Text(
+                            passwordRecoveryText(context, 'sendCode'),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
