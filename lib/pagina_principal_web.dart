@@ -670,10 +670,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     return Tooltip(
       message: tooltip,
-      child: AnimatedContainer(
+      child: Container(
         key: const Key('web-header-backend-status'),
-        duration: WebThemeTokens.transitionDuration,
-        curve: WebThemeTokens.transitionCurve,
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
@@ -738,10 +736,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           borderRadius: BorderRadius.circular(999),
           overlayColor: _webHeaderActionOverlay(tokens),
           onTap: _abrirAssistenteIA,
-          child: AnimatedContainer(
+          child: Container(
             key: const Key('web-header-ai-action'),
-            duration: WebThemeTokens.transitionDuration,
-            curve: WebThemeTokens.transitionCurve,
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
@@ -1190,10 +1186,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                     ),
                   ),
                 ],
-            child: AnimatedContainer(
+            child: Container(
               key: const Key('web-header-user-action'),
-              duration: WebThemeTokens.transitionDuration,
-              curve: WebThemeTokens.transitionCurve,
               height: 46,
               padding: const EdgeInsets.fromLTRB(8, 4, 9, 4),
               decoration: BoxDecoration(
@@ -1468,10 +1462,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               borderRadius: BorderRadius.circular(999),
               overlayColor: _webHeaderActionOverlay(tokens),
               onTap: _abrirPainelNotificacoes,
-              child: AnimatedContainer(
+              child: Container(
                 key: const Key('web-header-notification-action'),
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(

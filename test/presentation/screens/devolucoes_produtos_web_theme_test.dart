@@ -15,7 +15,7 @@ void main() {
 
     test('aplica WebThemeTokens no fluxo web e evita feedback hardcoded', () {
       expect(source, contains('AnimatedTheme('));
-      expect(source, contains('WebThemeTokens.applyTo(baseTheme)'));
+      expect(source, contains('WebThemeTokens.applyTo(baseTheme, palette: tokens)'));
       expect(source, contains('workspaceBackground'));
       expect(source, contains('cardBorder'));
       expect(source, contains('inputBackground'));

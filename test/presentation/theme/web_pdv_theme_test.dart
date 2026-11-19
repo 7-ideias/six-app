@@ -24,6 +24,27 @@ void main() {
       expect(pdvTheme.eventCardBackground, tokens.surfaceMuted);
     });
 
+    test('interpola as cores do PDV junto com o tema da página', () {
+      ThemeData withPdv(ThemeData theme) {
+        final tokens = WebThemeTokens.resolve(theme);
+        return theme.copyWith(
+          extensions: [tokens, WebPdvTheme.fromTheme(theme, tokens)],
+        );
+      }
+
+      final light = withPdv(ThemeData.light());
+      final dark = withPdv(ThemeData.dark());
+      final start = WebPdvTheme.resolve(light);
+      final end = WebPdvTheme.resolve(dark);
+      for (final t in [0.25, 0.5, 0.75]) {
+        final frame = ThemeData.lerp(light, dark, t);
+        final pdv = WebPdvTheme.resolve(frame);
+        expect(pdv.backgroundPage, frame.extension<WebThemeTokens>()!.workspaceBackground);
+        expect(pdv.badgeBackground, Color.lerp(start.badgeBackground, end.badgeBackground, t));
+        expect(pdv.iconColor, Color.lerp(start.iconColor, end.iconColor, t));
+      }
+    });
+
     test('mantem Light Mode proximo ao ColorScheme e tokens Web', () {
       final ThemeData theme = ThemeData.light(useMaterial3: true);
       final WebThemeTokens tokens = WebThemeTokens.resolve(theme);

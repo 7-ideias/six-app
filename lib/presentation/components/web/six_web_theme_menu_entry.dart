@@ -8,10 +8,6 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 /// Entrada interativa de tema para menus Web autenticados.
-///
-/// Diferentemente de um [PopupMenuItem], esta entrada preserva o menu durante
-/// a animação e o fecha ao final. Isso permite perceber a transição sem manter
-/// uma superfície capturada no tema anterior sobre a página já atualizada.
 class SixWebThemeMenuEntry<T> extends PopupMenuEntry<T> {
   const SixWebThemeMenuEntry({super.key});
 
@@ -70,7 +66,7 @@ class _SixWebThemeMenuEntryState<T>
       onTap:
           _switchingTheme
               ? null
-              : () => _toggleTheme(themeProvider, !isDark, reduceMotion),
+              : () => _toggleTheme(themeProvider, !isDark),
       child: ExcludeSemantics(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -85,11 +81,7 @@ class _SixWebThemeMenuEntryState<T>
               onTap:
                   _switchingTheme
                       ? null
-                      : () => _toggleTheme(
-                        themeProvider,
-                        !isDark,
-                        reduceMotion,
-                      ),
+                      : () => _toggleTheme(themeProvider, !isDark),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
@@ -146,22 +138,14 @@ class _SixWebThemeMenuEntryState<T>
     );
   }
 
-  void _toggleTheme(
-    ThemeProvider themeProvider,
-    bool isDark,
-    bool reduceMotion,
-  ) {
+  void _toggleTheme(ThemeProvider themeProvider, bool isDark) {
     if (_switchingTheme) return;
-    setState(() => _switchingTheme = true);
-    unawaited(themeProvider.toggleTheme(isDark));
-    unawaited(_closeMenuAfterTransition(reduceMotion));
-  }
-
-  Future<void> _closeMenuAfterTransition(bool reduceMotion) async {
-    if (!reduceMotion) {
-      await Future<void>.delayed(const Duration(milliseconds: 260));
+    _switchingTheme = true;
+    final route = ModalRoute.of(context);
+    // PopupMenuButton pode usar um tipo de resultado anulável para a rota.
+    if (route is PopupRoute<dynamic> && route.isCurrent) {
+      Navigator.of(context).removeRoute(route);
     }
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    unawaited(themeProvider.toggleTheme(isDark));
   }
 }

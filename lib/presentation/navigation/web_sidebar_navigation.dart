@@ -34,20 +34,15 @@ class WebSidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool brandedSidebar = _useBrandedSidebar(theme.colorScheme);
-    final Color sidebarBackground =
-        brandedSidebar ? theme.colorScheme.primary : tokens.sidebarBackground;
+    final Color sidebarBackground = tokens.navigationBackground;
     final List<WebNavigationItem> mainItems = _mainNavigationItems(items);
     final WebNavigationItem? settingsItem = _settingsNavigationItem(items);
 
     return Material(
       color: sidebarBackground,
-      child: AnimatedContainer(
+      child: Container(
         key: const Key('web-sidebar-container'),
-        duration: WebThemeTokens.transitionDuration,
-        curve: WebThemeTokens.transitionCurve,
         decoration: BoxDecoration(
           color: sidebarBackground,
           border: Border(right: BorderSide(color: tokens.sidebarBorder)),

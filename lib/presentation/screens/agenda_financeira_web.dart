@@ -1724,9 +1724,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     Navigator.of(context).maybePop();
   }
 
-  ThemeData _agendaWebTheme(ThemeData baseTheme) {
-    final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme);
-    final WebThemeTokens tokens = WebThemeTokens.resolve(webTheme);
+  ThemeData _agendaWebTheme(ThemeData baseTheme, WebThemeTokens tokens) {
+    final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme, palette: tokens);
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
       borderSide: BorderSide(color: tokens.cardBorder),
@@ -1864,8 +1863,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) {
       return const SizedBox.shrink();
     }
-    final ThemeData agendaTheme = _agendaWebTheme(Theme.of(context));
-    final WebThemeTokens tokens = WebThemeTokens.resolve(agendaTheme);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ThemeData agendaTheme = _agendaWebTheme(Theme.of(context), tokens);
 
     return Theme(
       data: agendaTheme,
@@ -3150,13 +3149,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            if (fallback) _avisoFallback(theme),
+                            if (fallback) _avisoFallback(tokens),
                             Wrap(
                               spacing: 10,
                               runSpacing: 10,
                               children: <Widget>[
                                 _chip(
-                                  theme,
+                                  tokens,
                                   _texto(
                                     detalhe['tipo'],
                                     item['tipo'] == 'pagar'
@@ -3165,18 +3164,18 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                   ),
                                 ),
                                 _chip(
-                                  theme,
+                                  tokens,
                                   _texto(detalhe['status'], item['status']),
                                 ),
                                 _chip(
-                                  theme,
+                                  tokens,
                                   agendaFormaPagamentoExibicao(
                                     detalhe,
                                     fallback: item,
                                   ),
                                 ),
                                 _chip(
-                                  theme,
+                                  tokens,
                                   codigoOperacao.isNotEmpty
                                       ? 'Operação: $codigoOperacao'
                                       : 'Operação sem código',
@@ -3196,7 +3195,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                     SizedBox(
                                       width: width,
                                       child: _valorCard(
-                                        theme,
+                                        tokens,
                                         'Valor original',
                                         formatarMoeda(valorOriginal),
                                         Icons.receipt_long_outlined,
@@ -3205,7 +3204,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                     SizedBox(
                                       width: width,
                                       child: _valorCard(
-                                        theme,
+                                        tokens,
                                         'Confirmado',
                                         formatarMoeda(valorPago),
                                         Icons.verified_outlined,
@@ -3214,7 +3213,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                     SizedBox(
                                       width: width,
                                       child: _valorCard(
-                                        theme,
+                                        tokens,
                                         'Em aberto',
                                         formatarMoeda(valorAberto),
                                         Icons.account_balance_wallet_outlined,
@@ -3228,7 +3227,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                             if (_numero(detalhe['descontoTotal'], null) > 0 ||
                                 _numero(detalhe['acrescimoTotal'], null) > 0)
                               _section(
-                                theme,
+                                tokens,
                                 context.t('agenda.adjustments.title'),
                                 Icons.tune,
                                 [
@@ -3258,7 +3257,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                 ),
                               ),
                             _section(
-                              theme,
+                              tokens,
                               'Datas',
                               Icons.calendar_month_outlined,
                               <Widget>[
@@ -3284,7 +3283,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ],
                             ),
                             _section(
-                              theme,
+                              tokens,
                               'Classificação',
                               Icons.filter_alt_outlined,
                               <Widget>[
@@ -3322,7 +3321,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ],
                             ),
                             _section(
-                              theme,
+                              tokens,
                               'Contato e responsabilidade',
                               Icons.people_alt_outlined,
                               <Widget>[
@@ -3347,7 +3346,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ],
                             ),
                             _section(
-                              theme,
+                              tokens,
                               'Observações',
                               Icons.notes_outlined,
                               <Widget>[
@@ -3365,7 +3364,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                             ),
                             if (liquidacoes.isNotEmpty)
                               _section(
-                                theme,
+                                tokens,
                                 'Confirmações e liquidações',
                                 Icons.payments_outlined,
                                 liquidacoes
@@ -3376,7 +3375,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ),
                             if (estornadas.isNotEmpty)
                               _section(
-                                theme,
+                                tokens,
                                 context.t('agenda.adjustments.reversed'),
                                 Icons.undo,
                                 estornadas
@@ -3387,7 +3386,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ),
                             if (historico.isNotEmpty)
                               _section(
-                                theme,
+                                tokens,
                                 'Histórico',
                                 Icons.history_outlined,
                                 historico
@@ -3410,7 +3409,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ),
                             if (comprovantes.isNotEmpty)
                               _section(
-                                theme,
+                                tokens,
                                 'Comprovantes',
                                 Icons.attach_file_outlined,
                                 comprovantes
@@ -3419,7 +3418,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ),
                             if (acoes.isNotEmpty)
                               _section(
-                                theme,
+                                tokens,
                                 'Ações disponíveis',
                                 Icons.touch_app_outlined,
                                 <Widget>[
@@ -3525,13 +3524,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     ),
   );
 
-  Widget _avisoFallback(ThemeData theme) => Container(
+  Widget _avisoFallback(WebThemeTokens tokens) => Container(
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: WebThemeTokens.resolve(theme).surfaceMuted,
+      color: tokens.surfaceMuted,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
+      border: Border.all(color: tokens.cardBorder),
     ),
     child: const Text(
       'Não foi possível carregar o detalhe completo do backend. Exibindo os dados disponíveis na agenda filtrada.',
@@ -3539,27 +3538,27 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     ),
   );
 
-  Widget _chip(ThemeData theme, String label) => Chip(
+  Widget _chip(WebThemeTokens tokens, String label) => Chip(
     label: Text(label),
-    backgroundColor: WebThemeTokens.resolve(theme).selectedBackground,
-    side: BorderSide(color: WebThemeTokens.resolve(theme).selectedBorder),
+    backgroundColor: tokens.selectedBackground,
+    side: BorderSide(color: tokens.selectedBorder),
   );
 
   Widget _valorCard(
-    ThemeData theme,
+    WebThemeTokens tokens,
     String titulo,
     String valor,
     IconData icon,
   ) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: WebThemeTokens.resolve(theme).surfaceMuted,
+      color: tokens.surfaceMuted,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
+      border: Border.all(color: tokens.cardBorder),
     ),
     child: Row(
       children: <Widget>[
-        Icon(icon, color: WebThemeTokens.resolve(theme).info),
+        Icon(icon, color: tokens.info),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -3582,7 +3581,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   );
 
   Widget _section(
-    ThemeData theme,
+    WebThemeTokens tokens,
     String title,
     IconData icon,
     List<Widget> children,
@@ -3591,16 +3590,16 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: WebThemeTokens.resolve(theme).cardBackground,
+      color: tokens.cardBackground,
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
+      border: Border.all(color: tokens.cardBorder),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            Icon(icon, color: WebThemeTokens.resolve(theme).info, size: 20),
+            Icon(icon, color: tokens.info, size: 20),
             const SizedBox(width: 8),
             Text(
               title,

@@ -6548,9 +6548,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final bool compactActions =
         widget.embedded && MediaQuery.of(context).size.width < 1280;
 
-    final contentWithFab = AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
+    final contentWithFab = ColoredBox(
       color: tokens.workspaceBackground,
       child: Stack(
         children: [
@@ -6566,7 +6564,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
 
     final themedContent = Theme(
-      data: WebThemeTokens.applyTo(theme),
+      data: WebThemeTokens.applyTo(theme, palette: tokens),
       child: contentWithFab,
     );
 

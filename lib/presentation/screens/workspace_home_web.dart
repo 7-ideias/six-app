@@ -163,10 +163,10 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
         context.watch<ColaboradorHomeOperacionalProvider>();
     final HomeBannersProvider homeBanners =
         context.watch<HomeBannersProvider>();
-    final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
-    final bool reduceMotion =
-        MediaQuery.disableAnimationsOf(context) ||
-        MediaQuery.accessibleNavigationOf(context);
+    final ThemeData webTheme = WebThemeTokens.applyTo(
+      Theme.of(context),
+      palette: WebThemeTokens.of(context),
+    );
 
     desempenho.configureRole(isAdmin: isAdminUser);
     desempenho.setRealtimeActive(
@@ -210,11 +210,8 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
       });
     }
 
-    return AnimatedTheme(
+    return Theme(
       data: webTheme,
-      duration:
-          reduceMotion ? Duration.zero : WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       child: Consumer<WorkspaceHomeProvider>(
         builder: (
           BuildContext context,
@@ -230,10 +227,8 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool narrow = widget.compact || constraints.maxWidth < 900;
 
-              return AnimatedContainer(
+              return Container(
                 key: const Key('workspace-home-root'),
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
                 decoration: BoxDecoration(color: tokens.workspaceBackground),
                 child: SixWebPageShell(
                   child: SingleChildScrollView(
@@ -768,9 +763,7 @@ class _WorkspaceHomeMetaChip extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
+    return Container(
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -849,10 +842,8 @@ class _WorkspaceHomeError extends StatelessWidget {
       baseBackground: tokens.cardBackground,
     );
 
-    return AnimatedContainer(
+    return Container(
       key: const Key('workspace-home-error'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -931,10 +922,8 @@ class _WorkspaceHomeSection extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    return AnimatedContainer(
+    return Container(
       key: Key('workspace-home-section-$id'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1078,10 +1067,8 @@ class _WorkspaceHomeNoData extends StatelessWidget {
       baseBackground: tokens.surfaceMuted,
     );
 
-    return AnimatedContainer(
+    return Container(
       key: Key('workspace-home-empty-$keySuffix'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       height: height,
       alignment: Alignment.center,
@@ -1360,10 +1347,8 @@ class _SituationCard extends StatelessWidget {
       baseBackground: tokens.cardBackground,
     );
 
-    return AnimatedContainer(
+    return Container(
       key: Key('workspace-home-situation-$keySuffix'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       constraints: const BoxConstraints(minHeight: 112),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1733,10 +1718,8 @@ class _AttentionCard extends StatelessWidget {
       baseBackground: tokens.cardBackground,
     );
 
-    return AnimatedContainer(
+    return Container(
       key: Key('workspace-home-attention-${entry.keySuffix}'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: tokens.cardBackground,

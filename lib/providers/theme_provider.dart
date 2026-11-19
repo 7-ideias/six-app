@@ -6,6 +6,8 @@ import '../design_system/helpers/six_theme_resolver.dart';
 import '../design_system/themes/app_theme.dart';
 import '../design_system/themes/six_mobile_typography.dart';
 import '../domain/models/aparencia_models.dart';
+import '../presentation/theme/web_pdv_theme.dart';
+import '../presentation/theme/web_theme_tokens.dart';
 
 abstract class ThemePreferenceStorage {
   Future<String?> readThemeMode();
@@ -92,7 +94,7 @@ class ThemeProvider extends ChangeNotifier {
       visualDensity: _resolver.visualDensity,
     );
 
-    return kIsWeb ? theme : SixMobileTypography.apply(theme);
+    return _platformTheme(theme);
   }
 
   ThemeData get darkTheme {
@@ -102,7 +104,19 @@ class ThemeProvider extends ChangeNotifier {
       visualDensity: _resolver.visualDensity,
     );
 
-    return kIsWeb ? theme : SixMobileTypography.apply(theme);
+    return _platformTheme(theme);
+  }
+
+  ThemeData _platformTheme(ThemeData theme) {
+    if (!kIsWeb) return SixMobileTypography.apply(theme);
+    final tokens = WebThemeTokens.resolve(theme);
+    return theme.copyWith(
+      extensions: [
+        ...theme.extensions.values,
+        tokens,
+        WebPdvTheme.fromTheme(theme, tokens),
+      ],
+    );
   }
 
   Future<void> toggleTheme(bool isDarkMode) {

@@ -409,118 +409,116 @@ class _DevolucoesProdutosJornadaState extends State<DevolucoesProdutosJornada> {
   @override
   Widget build(BuildContext context) {
     final ThemeData baseTheme = Theme.of(context);
-    final ThemeData theme =
-        widget.web
-            ? WebThemeTokens.applyTo(baseTheme).copyWith(
-              inputDecorationTheme: _buildWebInputDecorationTheme(
-                WebThemeTokens.resolve(baseTheme),
-              ),
-            )
-            : baseTheme;
     final WebThemeTokens? tokens =
-        widget.web ? WebThemeTokens.resolve(baseTheme) : null;
+        widget.web ? WebThemeTokens.of(context) : null;
     final Color background =
-        widget.web ? tokens!.workspaceBackground : theme.colorScheme.surface;
+        tokens?.workspaceBackground ?? baseTheme.colorScheme.surface;
     final EdgeInsetsGeometry padding =
         widget.padding ??
         (widget.web
             ? SixWebPageShell.scrollPadding
             : const EdgeInsets.fromLTRB(16, 18, 16, 32));
 
-    final Widget content = AnimatedTheme(
-      data: theme,
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      child: ColoredBox(
-        color: background,
-        child: RefreshIndicator(
-          onRefresh: _carregarApoio,
-          child: ListView(
-            controller: widget.scrollController,
-            padding: padding,
-            children: <Widget>[
-              Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: widget.web ? double.infinity : 1180,
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                        widget.web
-                            ? CrossAxisAlignment.stretch
-                            : CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _buildCabecalho(),
+    final Widget content = ColoredBox(
+      color: background,
+      child: RefreshIndicator(
+        onRefresh: _carregarApoio,
+        child: ListView(
+          controller: widget.scrollController,
+          padding: padding,
+          children: <Widget>[
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: widget.web ? double.infinity : 1180,
+                ),
+                child: Column(
+                  crossAxisAlignment:
+                      widget.web
+                          ? CrossAxisAlignment.stretch
+                          : CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _buildCabecalho(),
+                    SizedBox(
+                      height:
+                          widget.web ? SixWebPageShell.sectionSpacing : 16,
+                    ),
+                    if (_erro != null) ...<Widget>[
+                      _buildErro(),
                       SizedBox(
                         height:
                             widget.web ? SixWebPageShell.sectionSpacing : 16,
                       ),
-                      if (_erro != null) ...<Widget>[
-                        _buildErro(),
+                    ],
+                    if (_resultado != null) ...<Widget>[
+                      _buildResultado(),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
+                    ],
+                    _buildBuscaVenda(),
+                    if (_venda != null) ...<Widget>[
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
+                      _buildResumoVenda(),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
+                      _buildItensDevolucao(),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
+                      _buildTipoOperacao(),
+                      if (_tipo == TipoDevolucaoProduto.troca) ...<Widget>[
                         SizedBox(
                           height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
+                              widget.web
+                                  ? SixWebPageShell.sectionSpacing
+                                  : 16,
                         ),
-                      ],
-                      if (_resultado != null) ...<Widget>[
-                        _buildResultado(),
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                      ],
-                      _buildBuscaVenda(),
-                      if (_venda != null) ...<Widget>[
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                        _buildResumoVenda(),
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                        _buildItensDevolucao(),
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                        _buildTipoOperacao(),
-                        if (_tipo == TipoDevolucaoProduto.troca) ...<Widget>[
-                          SizedBox(
-                            height:
-                                widget.web
-                                    ? SixWebPageShell.sectionSpacing
-                                    : 16,
-                          ),
-                          _buildItensTroca(),
-                        ],
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                        _buildAcertoFinanceiro(),
-                        SizedBox(
-                          height:
-                              widget.web ? SixWebPageShell.sectionSpacing : 16,
-                        ),
-                        _buildConfirmacao(),
+                        _buildItensTroca(),
                       ],
                       SizedBox(
                         height:
-                            widget.web ? SixWebPageShell.sectionSpacing : 20,
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
                       ),
-                      _buildRecentes(),
+                      _buildAcertoFinanceiro(),
+                      SizedBox(
+                        height:
+                            widget.web ? SixWebPageShell.sectionSpacing : 16,
+                      ),
+                      _buildConfirmacao(),
                     ],
-                  ),
+                    SizedBox(
+                      height:
+                          widget.web ? SixWebPageShell.sectionSpacing : 20,
+                    ),
+                    _buildRecentes(),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
-    return widget.web ? SixWebPageShell(child: content) : content;
+    if (tokens != null) {
+      final theme = WebThemeTokens.applyTo(baseTheme, palette: tokens).copyWith(
+        inputDecorationTheme: _buildWebInputDecorationTheme(tokens),
+      );
+      return SixWebPageShell(child: Theme(data: theme, child: content));
+    }
+    return AnimatedTheme(
+      data: baseTheme,
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      child: content,
+    );
   }
 
   Widget _buildCabecalho() {

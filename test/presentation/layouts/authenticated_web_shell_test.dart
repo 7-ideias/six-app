@@ -275,15 +275,15 @@ void main() {
         await _pumpShell(tester, actions: actions, themeMode: themeMode);
 
         expect(
-          _animatedContainerColor(tester, const Key('web-shell-workspace')),
+          _containerColor(tester, const Key('web-shell-workspace')),
           tokens.workspaceBackground,
         );
         expect(
-          _animatedContainerColor(tester, const Key('web-sidebar-container')),
-          tokens.sidebarBackground,
+          _containerColor(tester, const Key('web-sidebar-container')),
+          tokens.navigationBackground,
         );
         expect(
-          _animatedContainerColor(tester, const Key('web-header-container')),
+          _containerColor(tester, const Key('web-header-container')),
           tokens.headerBackground,
         );
       }
@@ -367,6 +367,17 @@ void main() {
       expect(find.text('Produtos'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('toggle-theme')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      final WebThemeTokens frame = WebThemeTokens.of(
+        tester.element(find.byType(AuthenticatedWebShell)),
+      );
+      expect(_containerColor(tester, const Key('web-shell-workspace')),
+          frame.workspaceBackground);
+      expect(_containerColor(tester, const Key('web-header-container')),
+          frame.headerBackground);
+      expect(_containerColor(tester, const Key('web-sidebar-container')),
+          frame.navigationBackground);
       await tester.pumpAndSettle();
       expect(find.text('Produtos'), findsOneWidget);
       expect(childMounts, 1);
@@ -591,8 +602,8 @@ Finder _headerTitle(String text) {
   return find.descendant(of: find.byType(WebHeader), matching: find.text(text));
 }
 
-Color? _animatedContainerColor(WidgetTester tester, Key key) {
-  final AnimatedContainer container = tester.widget(find.byKey(key));
+Color? _containerColor(WidgetTester tester, Key key) {
+  final Container container = tester.widget(find.byKey(key));
   final Decoration? decoration = container.decoration;
   expect(decoration, isA<BoxDecoration>());
   return (decoration! as BoxDecoration).color;
@@ -663,8 +674,8 @@ class _ThemeSwitchingShellTestAppState
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.light(useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
+      theme: WebThemeTokens.applyTo(ThemeData.light(useMaterial3: true)),
+      darkTheme: WebThemeTokens.applyTo(ThemeData.dark(useMaterial3: true)),
       themeMode: _themeMode,
       locale: const Locale('pt'),
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
