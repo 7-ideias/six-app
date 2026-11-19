@@ -14,8 +14,14 @@ import 'verificar_codigo_recuperacao_web.dart';
 /// "Voltar" usa `pushReplacementNamed('/login')` quando não há histórico,
 /// garantindo URL correta no browser.
 class EsqueceuSenhaWeb extends StatefulWidget {
-  const EsqueceuSenhaWeb({super.key, this.initialEmail = ''});
-  final String initialEmail;
+  const EsqueceuSenhaWeb({super.key}) : emailDaConta = null;
+
+  const EsqueceuSenhaWeb.alterarSenha({
+    super.key,
+    required String this.emailDaConta,
+  });
+
+  final String? emailDaConta;
 
   @override
   State<EsqueceuSenhaWeb> createState() => _EsqueceuSenhaWebState();
@@ -29,12 +35,6 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   // Strings l10n capturadas no build para uso em callbacks assíncronos.
   late WebRootL10n _l10n;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailCtrl.text = widget.initialEmail;
-  }
 
   @override
   void dispose() {
@@ -59,7 +59,8 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
   }
 
   Future<void> _enviarCodigo() async {
-    final email = _emailCtrl.text.trim();
+    if (_isLoading) return;
+    final email = (widget.emailDaConta ?? _emailCtrl.text).trim();
     if (email.isEmpty) {
       _showSnack(_l10n.authErrEnterEmail);
       return;
@@ -69,19 +70,24 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
     try {
       await _service.enviarCodigo(
         email,
+        contaAutenticada: widget.emailDaConta != null,
         languageCode: Localizations.localeOf(context).languageCode,
       );
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => VerificarCodigoRecuperacaoWeb(email: email),
+          builder:
+              (_) => VerificarCodigoRecuperacaoWeb(
+                email: email,
+                contaAutenticada: widget.emailDaConta != null,
+              ),
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
       if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
-      _showSnack(_l10n.authErrSendCode);
+      if (mounted) _showSnack(_l10n.authErrSendCode);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -95,23 +101,41 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
         return WebAuthShell(
           showBack: true,
-          onBack: _goToLogin,
+          onBack:
+              widget.emailDaConta == null
+                  ? _goToLogin
+                  : () => Navigator.of(context).pop(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               WebAuthTitle(
-                title: _l10n.authForgotTitle,
-                subtitle: _l10n.authForgotSubtitle,
+                title:
+                    widget.emailDaConta == null
+                        ? _l10n.authForgotTitle
+                        : passwordRecoveryText(context, 'change'),
+                subtitle:
+                    widget.emailDaConta == null
+                        ? _l10n.authForgotSubtitle
+                        : passwordRecoveryText(context, 'sendToAccount'),
               ),
               const SizedBox(height: 32),
-              WebAuthTextField(
-                controller: _emailCtrl,
-                hint: _l10n.authEmailHint,
-                label: _l10n.authEmailLabel,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _enviarCodigo(),
-              ),
+              if (widget.emailDaConta case final email?)
+                Text(
+                  email,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: WebAuthShell.textDark(),
+                  ),
+                )
+              else
+                WebAuthTextField(
+                  controller: _emailCtrl,
+                  hint: _l10n.authEmailHint,
+                  label: _l10n.authEmailLabel,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _enviarCodigo(),
+                ),
               const SizedBox(height: 28),
               WebAuthPrimaryButton(
                 label: _l10n.authSendVerificationCode,

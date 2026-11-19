@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -17,6 +18,29 @@ void main() {
     );
     await service.enviarCodigo('user@example.test', languageCode: 'es');
   });
+  test(
+    'troca de senha usa o endpoint autenticado para enviar o código',
+    () async {
+      SharedPreferences.setMockInitialValues({'accessToken': 'token-teste'});
+      final service = RecuperacaoSenhaService(
+        client: MockClient((request) async {
+          expect(
+            request.url.path,
+            '/private/api/usuario/troca-senha/enviar-codigo',
+          );
+          expect(request.headers['Authorization'], 'Bearer token-teste');
+          expect(request.headers['Accept-Language'], 'en');
+          expect(jsonDecode(request.body), {'email': 'conta@example.test'});
+          return http.Response('', 204);
+        }),
+      );
+      await service.enviarCodigo(
+        'conta@example.test',
+        contaAutenticada: true,
+        languageCode: 'en',
+      );
+    },
+  );
   test(
     'password and code are transported without trimming or logging',
     () async {

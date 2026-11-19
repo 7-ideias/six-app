@@ -332,11 +332,13 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    bool readOnly = false,
     TextInputType? keyboardType,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       decoration: _inputDecoration(context, label, icon: icon),
@@ -493,7 +495,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       sobrenome: _sobrenomeController.text,
       cpf: _cpfController.text,
       registroProfissional: _registroController.text,
-      email: _emailController.text,
+      email: usuarioAtual.email,
       foto: _fotoSelecionada ?? usuarioAtual.foto,
       nomeDeGuerra: _nomeDeGuerraController.text,
       celular: _celularController.text,
@@ -786,6 +788,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   }
 
   Widget _buildFormContent(BuildContext context) {
+    final String emailDaConta = _usuarioProvider.usuario?.email.trim() ?? '';
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
@@ -793,17 +796,25 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           ListTile(
             leading: const Icon(Icons.lock_outline),
             title: Text(passwordRecoveryText(context, 'change')),
-            subtitle: Text(passwordRecoveryText(context, 'proof')),
+            subtitle: Text(
+              passwordRecoveryText(
+                context,
+                emailDaConta.isEmpty ? 'accountEmailUnavailable' : 'proof',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
+            enabled: emailDaConta.isNotEmpty,
             onTap:
-                () => Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder:
-                        (_) => EsqueceuSenhaWeb(
-                          initialEmail: _emailController.text.trim(),
-                        ),
-                  ),
-                ),
+                emailDaConta.isEmpty
+                    ? null
+                    : () => Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute<void>(
+                        builder:
+                            (_) => EsqueceuSenhaWeb.alterarSenha(
+                              emailDaConta: emailDaConta,
+                            ),
+                      ),
+                    ),
           ),
 
           Consumer<StreakProvider>(
@@ -906,9 +917,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   child: _buildTextField(
                     context: context,
                     controller: _emailController,
-                    label: 'E-mail',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
+                    label: context.t('perfil.email', fallback: 'E-mail'),
+                    icon: Icons.lock_outline,
+                    readOnly: true,
                   ),
                 ),
               ],

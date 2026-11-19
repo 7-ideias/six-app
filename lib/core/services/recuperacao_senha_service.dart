@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../exceptions/recuperacao_senha_exception.dart';
+import 'auth_service.dart';
 import 'http_client_factory.dart';
 
 class RecuperacaoSenhaService {
@@ -23,19 +24,43 @@ class RecuperacaoSenhaService {
     '${AppConfig.baseUrl}/public/api/esqueceu-senha/redefinir-senha',
   );
 
-  Future<void> enviarCodigo(String email, {String languageCode = 'pt'}) async {
+  Future<void> enviarCodigo(
+    String email, {
+    String languageCode = 'pt',
+    bool contaAutenticada = false,
+  }) async {
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept-Language': languageCode,
+    };
+    Uri destino = _enviarCodigoUri;
+    if (contaAutenticada) {
+      final token = await AuthService().getAccessToken();
+      if (token == null || token.trim().isEmpty) {
+        throw const RecuperacaoSenhaException(
+          code: RecuperacaoSenhaErrorCode.emailDaContaIndisponivel,
+          message: 'Sessão indisponível.',
+          statusCode: 401,
+        );
+      }
+      headers['Authorization'] = 'Bearer $token';
+      destino = Uri.parse(
+        '${AppConfig.baseUrl}/private/api/usuario/troca-senha/enviar-codigo',
+      );
+    }
+
     final response = await _client
-        .post(
-          _enviarCodigoUri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept-Language': languageCode,
-          },
-          body: jsonEncode({'email': email}),
-        )
+        .post(destino, headers: headers, body: jsonEncode({'email': email}))
         .timeout(const Duration(seconds: 30));
 
     if (response.statusCode >= 200 && response.statusCode < 300) return;
+    if (contaAutenticada && response.statusCode == 401) {
+      throw const RecuperacaoSenhaException(
+        code: RecuperacaoSenhaErrorCode.emailDaContaIndisponivel,
+        message: 'Sessão indisponível.',
+        statusCode: 401,
+      );
+    }
 
     throw RecuperacaoSenhaException.fromResponse(
       statusCode: response.statusCode,
