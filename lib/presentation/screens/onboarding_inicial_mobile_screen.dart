@@ -33,7 +33,6 @@ class _OnboardingInicialMobileScreenState
   bool _initialized = false;
   bool _perfilBootstrapStarted = false;
   int _step = 0;
-  String _idioma = 'pt-BR';
   String? _errorKey;
   PerfilNegocioEditorController? _perfilController;
 
@@ -48,11 +47,9 @@ class _OnboardingInicialMobileScreenState
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
     _empresaController.text = estado.nomeEmpresa;
-    _idioma = _normalizarIdioma(estado.idiomaPreferencial);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _applyLocale(_idioma);
       if (estado.podeConfigurarEmpresa) _inicializarPerfil();
     });
   }
@@ -149,11 +146,9 @@ class _OnboardingInicialMobileScreenState
                             ],
                           ),
                         ),
-                        _actions(
-                          context,
-                          estado,
-                          finalStep,
-                          provider.salvando,
+                        SafeArea(
+                          top: false,
+                          child: _actions(context, estado, finalStep, provider.salvando),
                         ),
                       ],
                     ),
@@ -257,10 +252,7 @@ class _OnboardingInicialMobileScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          context.t(
-            'initialOnboarding.languageQuestion',
-            fallback: 'Em qual idioma deseja continuar?',
-          ),
+          context.t('initialOnboarding.languageQuestion'),
           style: TextStyle(
             color: colors.titleText,
             fontSize: 24,
@@ -268,24 +260,24 @@ class _OnboardingInicialMobileScreenState
           ),
         ),
         const SizedBox(height: 18),
-        _languageTile('PT', 'Português', 'pt-BR'),
+        _languageTile('PT', 'Português', const Locale('pt', 'BR')),
         const SizedBox(height: 10),
-        _languageTile('EN', 'English', 'en-US'),
+        _languageTile('EN', 'English', const Locale('en', 'US')),
         const SizedBox(height: 10),
-        _languageTile('ES', 'Español', 'es-ES'),
+        _languageTile('ES', 'Español', const Locale('es', 'ES')),
       ],
     );
   }
 
-  Widget _languageTile(String code, String label, String value) {
+  Widget _languageTile(String code, String label, Locale locale) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    final bool selected = _idioma == value;
+    final bool selected = Localizations.localeOf(context) == locale;
     return Material(
       color: selected ? colors.softAccentSurface : colors.surfaceElevated,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _changeLanguage(value),
+        onTap: () => _changeLanguage(locale),
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
@@ -342,10 +334,7 @@ class _OnboardingInicialMobileScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          context.t(
-            'initialOnboarding.identityTitle',
-            fallback: 'Vamos começar pelo essencial',
-          ),
+          context.t('initialOnboarding.identityTitle'),
           style: TextStyle(
             color: colors.titleText,
             fontSize: 24,
@@ -354,10 +343,7 @@ class _OnboardingInicialMobileScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          context.t(
-            'initialOnboarding.identitySubtitle',
-            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
-          ),
+          context.t('initialOnboarding.identitySubtitle'),
           style: TextStyle(
             color: colors.mutedText,
             fontSize: 14,
@@ -367,20 +353,14 @@ class _OnboardingInicialMobileScreenState
         const SizedBox(height: 22),
         _field(
           controller: _nomeController,
-          label: context.t(
-            'initialOnboarding.userName',
-            fallback: 'Como podemos chamar você?',
-          ),
+          label: context.t('initialOnboarding.userName'),
           icon: Icons.person_outline_rounded,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
           const SizedBox(height: 13),
           _field(
             controller: _empresaController,
-            label: context.t(
-              'initialOnboarding.companyName',
-              fallback: 'Nome do seu negócio',
-            ),
+            label: context.t('initialOnboarding.companyName'),
             icon: Icons.storefront_outlined,
           ),
         ],
@@ -433,10 +413,7 @@ class _OnboardingInicialMobileScreenState
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              context.t(
-                _errorKey!,
-                fallback: 'Revise as informações e tente novamente.',
-              ),
+              context.t(_errorKey!),
               style: TextStyle(color: colors.titleText, fontSize: 13),
             ),
           ),
@@ -499,10 +476,7 @@ class _OnboardingInicialMobileScreenState
                     ),
               label: Text(
                 finalStep
-                    ? context.t(
-                        'initialOnboarding.start',
-                        fallback: 'Começar a usar o SixoApp',
-                      )
+                    ? context.t('initialOnboarding.start')
                     : perfilNegocioText(context, 'continue'),
               ),
             ),
@@ -553,7 +527,10 @@ class _OnboardingInicialMobileScreenState
     try {
       await context.read<OnboardingInicialProvider>().concluir(
         ConcluirOnboardingInicialRequest(
-          idiomaPreferencial: _idioma,
+          idiomaPreferencial: context
+              .read<LocaleSettingsProvider>()
+              .currentLocale
+              .toLanguageTag(),
           nomeUsuario: _nomeController.text.trim(),
           nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
@@ -592,27 +569,10 @@ class _OnboardingInicialMobileScreenState
     return true;
   }
 
-  Future<void> _changeLanguage(String value) async {
-    setState(() {
-      _idioma = value;
-      _errorKey = null;
-    });
-    await _applyLocale(value);
-  }
-
-  Future<void> _applyLocale(String value) async {
-    final Locale locale = switch (value) {
-      'en-US' => const Locale('en', 'US'),
-      'es-ES' => const Locale('es', 'ES'),
-      _ => const Locale('pt', 'BR'),
-    };
-    await context.read<LocaleSettingsProvider>().setUserLocale(locale);
-  }
-
-  String _normalizarIdioma(String value) {
-    final String normalized = value.trim().toLowerCase();
-    if (normalized.startsWith('en')) return 'en-US';
-    if (normalized.startsWith('es')) return 'es-ES';
-    return 'pt-BR';
+  Future<void> _changeLanguage(Locale locale) async {
+    final settings = context.read<LocaleSettingsProvider>();
+    if (settings.currentLocale == locale) return;
+    setState(() => _errorKey = null);
+    await settings.setUserLocale(locale);
   }
 }

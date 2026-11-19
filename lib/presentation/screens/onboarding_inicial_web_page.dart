@@ -14,14 +14,15 @@ import '../../providers/perfil_negocio_editor_controller.dart';
 import '../components/web/perfil_negocio_web_form.dart';
 import '../theme/web_theme_tokens.dart';
 
-const Color _navy = Color(0xFF061D4B);
-const Color _blue = Color(0xFF145BFF);
-const Color _cyan = Color(0xFF10D9F0);
-
 class OnboardingInicialWebPage extends StatefulWidget {
-  const OnboardingInicialWebPage({super.key, required this.onCompleted});
+  const OnboardingInicialWebPage({
+    super.key,
+    required this.onCompleted,
+    this.createPerfilService = PerfilNegocioService.new,
+  });
 
   final VoidCallback onCompleted;
+  final PerfilNegocioService Function() createPerfilService;
 
   @override
   State<OnboardingInicialWebPage> createState() =>
@@ -35,7 +36,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   bool _initialized = false;
   bool _perfilBootstrapStarted = false;
   int _step = 0;
-  String _idioma = 'pt-BR';
   String? _errorKey;
   PerfilNegocioEditorController? _perfilController;
 
@@ -50,10 +50,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
     _empresaController.text = estado.nomeEmpresa;
-    _idioma = _normalizarIdioma(
-      estado.idiomaPreferencial,
-      context.read<LocaleSettingsProvider>().currentLocale,
-    );
 
     if (estado.podeConfigurarEmpresa) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _inicializarPerfil());
@@ -61,9 +57,9 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   }
 
   Future<void> _inicializarPerfil() async {
-    if (_perfilBootstrapStarted) return;
+    if (!mounted || _perfilBootstrapStarted) return;
     _perfilBootstrapStarted = true;
-    final PerfilNegocioService service = PerfilNegocioService();
+    final PerfilNegocioService service = widget.createPerfilService();
     try {
       final String empresaId = await service.empresaAtual();
       if (!mounted) {
@@ -109,273 +105,136 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
 
     return Scaffold(
       backgroundColor: tokens.workspaceBackground,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              _blue.withValues(alpha: 0.10),
-              tokens.workspaceBackground,
-              _cyan.withValues(alpha: 0.08),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool wide = constraints.maxWidth >= 900;
-              return SingleChildScrollView(
-                padding: EdgeInsets.all(wide ? 30 : 18),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
-                    child: Container(
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: tokens.surfaceElevated,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: tokens.cardBorder),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: _navy.withValues(alpha: 0.15),
-                            blurRadius: 48,
-                            offset: const Offset(0, 22),
-                          ),
-                        ],
-                      ),
-                      child: wide
-                          ? SizedBox(
-                              height: 720,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: <Widget>[
-                                  SizedBox(
-                                    width: 340,
-                                    child: _brandPanel(context),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool compact = constraints.maxWidth < 600;
+            final double inset = compact ? 16 : 32;
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(compact ? 8 : 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 880),
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    elevation: 2,
+                    color: tokens.surfaceElevated,
+                    surfaceTintColor: Colors.transparent,
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: tokens.cardBorder),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Flexible(
+                          child: SingleChildScrollView(
+                            key: ValueKey(_step),
+                            padding: EdgeInsets.all(inset),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _header(context, totalSteps),
+                                const SizedBox(height: 24),
+                                if (_step == 0)
+                                  _identityStep(context, estado)
+                                else if (_perfilController == null)
+                                  const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                else
+                                  PerfilNegocioWebForm(
+                                    controller: _perfilController!,
+                                    etapa: _step - 1,
                                   ),
-                                  Expanded(
-                                    child: _form(
-                                      context,
-                                      estado,
-                                      totalSteps,
-                                      finalStep,
-                                      provider.salvando,
-                                      wide: true,
-                                    ),
-                                  ),
+                                if (_errorKey != null) ...[
+                                  const SizedBox(height: 16),
+                                  _error(context),
                                 ],
-                              ),
-                            )
-                          : Column(
-                              children: <Widget>[
-                                _compactHeader(context),
-                                _form(
-                                  context,
-                                  estado,
-                                  totalSteps,
-                                  finalStep,
-                                  provider.salvando,
-                                  wide: false,
-                                ),
                               ],
                             ),
+                          ),
+                        ),
+                        Divider(height: 1, thickness: 1, color: tokens.divider),
+                        ColoredBox(
+                          color: tokens.surface,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: inset,
+                              vertical: 12,
+                            ),
+                            child: _actions(
+                              context,
+                              estado,
+                              finalStep,
+                              provider.salvando,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _brandPanel(BuildContext context) {
-    final String title = _step == 0
-        ? context.t(
-            'initialOnboarding.identityTitle',
-            fallback: 'Vamos começar pelo essencial',
-          )
-        : perfilNegocioText(
-            context,
-            _step == 1
-                ? 'segmentTitle'
-                : _step == 2
-                ? 'activityTitle'
-                : 'goalTitle',
-          );
-    final String subtitle = _step == 0
-        ? context.t(
-            'initialOnboarding.identitySubtitle',
-            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
-          )
-        : perfilNegocioText(
-            context,
-            _step == 1
-                ? 'segmentSubtitle'
-                : _step == 2
-                ? 'activitySubtitle'
-                : 'goalSubtitle',
-          );
-
-    return Container(
-      padding: const EdgeInsets.all(34),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[_navy, Color(0xFF0A327D), _blue],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _brandLockup(context),
-          const Spacer(),
-          Icon(
-            _step == 0
-                ? Icons.auto_awesome_rounded
-                : Icons.storefront_rounded,
-            color: _cyan,
-            size: 42,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              height: 1.12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.74),
-              height: 1.5,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            perfilNegocioText(context, 'notice'),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.62),
-              fontSize: 11,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _compactHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 17),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: <Color>[_navy, _blue]),
-      ),
-      child: _brandLockup(context),
-    );
-  }
-
-  Widget _brandLockup(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 45,
-          height: 45,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
-        ),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Text(
-            'SixoApp',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _form(
-    BuildContext context,
-    OnboardingInicialModel estado,
-    int totalSteps,
-    bool finalStep,
-    bool saving, {
-    required bool wide,
-  }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      color: tokens.surfaceElevated,
-      padding: EdgeInsets.all(wide ? 38 : 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Text(
-                '${context.t('initialOnboarding.step', fallback: 'Etapa')} '
-                '${_step + 1} ${context.t('initialOnboarding.of', fallback: 'de')} '
-                '$totalSteps',
-                style: const TextStyle(
-                  color: _blue,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(
-                    minHeight: 5,
-                    value: (_step + 1) / totalSteps,
-                    backgroundColor: tokens.surfaceMuted,
-                    valueColor: const AlwaysStoppedAnimation<Color>(_blue),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context, int totalSteps) {
+    final tokens = WebThemeTokens.of(context);
+    final label = "${context.t('initialOnboarding.step')} ${_step + 1} "
+        "${context.t('initialOnboarding.of')} $totalSteps";
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/sixoapp_splash_symbol.png',
+                  height: 30,
+                  width: 30,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'SixoApp',
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          if (_step == 0)
-            _identityStep(context, estado)
-          else if (_perfilController == null)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            PerfilNegocioWebForm(
-              controller: _perfilController!,
-              etapa: _step - 1,
+              ],
             ),
-          if (_errorKey != null) ...<Widget>[
-            const SizedBox(height: 16),
-            _error(context),
+            Text(
+              label,
+              style: TextStyle(
+                color: tokens.secondaryText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
-          const SizedBox(height: 28),
-          Divider(color: tokens.divider),
-          const SizedBox(height: 16),
-          _actions(context, estado, finalStep, saving),
-        ],
-      ),
+        ),
+        const SizedBox(height: 14),
+        LinearProgressIndicator(
+          value: (_step + 1) / totalSteps,
+          color: tokens.info,
+          backgroundColor: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(4),
+          semanticsLabel: label,
+        ),
+      ],
     );
   }
 
@@ -385,10 +244,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          context.t(
-            'initialOnboarding.identityTitle',
-            fallback: 'Vamos começar pelo essencial',
-          ),
+          context.t('initialOnboarding.identityTitle'),
           style: TextStyle(
             color: tokens.primaryText,
             fontSize: 29,
@@ -397,18 +253,12 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          context.t(
-            'initialOnboarding.identitySubtitle',
-            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
-          ),
+          context.t('initialOnboarding.identitySubtitle'),
           style: TextStyle(color: tokens.secondaryText, height: 1.45),
         ),
         const SizedBox(height: 22),
         Text(
-          context.t(
-            'initialOnboarding.languageQuestion',
-            fallback: 'Em qual idioma deseja continuar?',
-          ),
+          context.t('initialOnboarding.languageQuestion'),
           style: TextStyle(
             color: tokens.primaryText,
             fontWeight: FontWeight.w800,
@@ -419,86 +269,48 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           spacing: 9,
           runSpacing: 9,
           children: <Widget>[
-            _language('PT', 'Português', 'pt-BR'),
-            _language('EN', 'English', 'en-US'),
-            _language('ES', 'Español', 'es-ES'),
+            _language('Português', const Locale('pt', 'BR')),
+            _language('English', const Locale('en', 'US')),
+            _language('Español', const Locale('es', 'ES')),
           ],
         ),
         const SizedBox(height: 22),
         _field(
           controller: _nomeController,
-          label: context.t(
-            'initialOnboarding.userName',
-            fallback: 'Como podemos chamar você?',
-          ),
+          label: context.t('initialOnboarding.userName'),
           icon: Icons.person_outline_rounded,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
           const SizedBox(height: 13),
           _field(
             controller: _empresaController,
-            label: context.t(
-              'initialOnboarding.companyName',
-              fallback: 'Nome do seu negócio',
-            ),
+            label: context.t('initialOnboarding.companyName'),
             icon: Icons.storefront_outlined,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            perfilNegocioText(context, 'notice'),
+            style: TextStyle(color: tokens.secondaryText, fontSize: 12),
           ),
         ],
       ],
     );
   }
 
-  Widget _language(String code, String label, String value) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool selected = _idioma == value;
-    return InkWell(
-      onTap: () => _changeLanguage(value),
-      borderRadius: BorderRadius.circular(13),
-      child: Container(
-        width: 145,
-        padding: const EdgeInsets.all(11),
-        decoration: BoxDecoration(
-          color: selected
-              ? _blue.withValues(alpha: 0.08)
-              : tokens.inputBackground,
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(
-            color: selected ? _blue : tokens.cardBorder,
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 29,
-              height: 29,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: selected ? _blue : tokens.surfaceMuted,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                code,
-                style: TextStyle(
-                  color: selected ? Colors.white : tokens.secondaryText,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
+  Widget _language(String label, Locale locale) {
+    final tokens = WebThemeTokens.of(context);
+    final selected = Localizations.localeOf(context) == locale;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => _changeLanguage(locale),
+      showCheckmark: true,
+      checkmarkColor: tokens.info,
+      selectedColor: tokens.selectedBackground,
+      backgroundColor: tokens.inputBackground,
+      labelStyle: TextStyle(color: tokens.primaryText),
+      side: BorderSide(
+        color: selected ? tokens.selectedBorder : tokens.cardBorder,
       ),
     );
   }
@@ -517,9 +329,10 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       ),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(color: tokens.secondaryText),
         filled: true,
         fillColor: tokens.inputBackground,
-        prefixIcon: Icon(icon, color: _blue),
+        prefixIcon: Icon(icon, color: tokens.info),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -527,7 +340,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: _blue, width: 1.6),
+          borderSide: BorderSide(color: tokens.info, width: 1.6),
         ),
       ),
     );
@@ -543,10 +356,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
       ),
       child: Text(
-        context.t(
-          _errorKey!,
-          fallback: 'Revise as informações e tente novamente.',
-        ),
+        context.t(_errorKey!),
         style: TextStyle(color: tokens.primaryText, fontSize: 13),
       ),
     );
@@ -558,13 +368,20 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     bool finalStep,
     bool saving,
   ) {
+    final tokens = WebThemeTokens.of(context);
     final bool profileLoading =
         _step > 0 &&
         (_perfilController == null ||
             _perfilController!.carregando ||
             _perfilController!.catalogo == null);
 
-    return Row(
+    return OverflowBar(
+      alignment: _step > 0
+          ? MainAxisAlignment.spaceBetween
+          : MainAxisAlignment.end,
+      overflowAlignment: OverflowBarAlignment.end,
+      spacing: 10,
+      overflowSpacing: 8,
       children: <Widget>[
         if (_step > 0)
           OutlinedButton.icon(
@@ -572,7 +389,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
             icon: const Icon(Icons.arrow_back_rounded),
             label: Text(perfilNegocioText(context, 'back')),
           ),
-        const Spacer(),
         FilledButton.icon(
           onPressed: saving || profileLoading
               ? null
@@ -580,16 +396,16 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
               ? () => _finish(estado)
               : () => _next(estado),
           style: FilledButton.styleFrom(
-            backgroundColor: _navy,
-            foregroundColor: Colors.white,
+            backgroundColor: tokens.info,
+            foregroundColor: tokens.onInfo,
             padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 16),
           ),
           icon: saving
-              ? const SizedBox.square(
+              ? SizedBox.square(
                   dimension: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: tokens.onInfo,
                   ),
                 )
               : Icon(
@@ -599,10 +415,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
                 ),
           label: Text(
             finalStep
-                ? context.t(
-                    'initialOnboarding.start',
-                    fallback: 'Começar a usar o SixoApp',
-                  )
+                ? context.t('initialOnboarding.start')
                 : perfilNegocioText(context, 'continue'),
           ),
         ),
@@ -643,7 +456,10 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     try {
       await context.read<OnboardingInicialProvider>().concluir(
         ConcluirOnboardingInicialRequest(
-          idiomaPreferencial: _idioma,
+          idiomaPreferencial: context
+              .read<LocaleSettingsProvider>()
+              .currentLocale
+              .toLanguageTag(),
           nomeUsuario: _nomeController.text.trim(),
           nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
@@ -682,28 +498,10 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     return true;
   }
 
-  Future<void> _changeLanguage(String value) async {
-    setState(() {
-      _idioma = value;
-      _errorKey = null;
-    });
-    final Locale locale = switch (value) {
-      'en-US' => const Locale('en', 'US'),
-      'es-ES' => const Locale('es', 'ES'),
-      _ => const Locale('pt', 'BR'),
-    };
-    await context.read<LocaleSettingsProvider>().setUserLocale(locale);
-  }
-
-  String _normalizarIdioma(String value, Locale fallback) {
-    final String normalized = value.trim().toLowerCase();
-    if (normalized.startsWith('en')) return 'en-US';
-    if (normalized.startsWith('es')) return 'es-ES';
-    if (normalized.startsWith('pt')) return 'pt-BR';
-    return fallback.languageCode == 'en'
-        ? 'en-US'
-        : fallback.languageCode == 'es'
-        ? 'es-ES'
-        : 'pt-BR';
+  Future<void> _changeLanguage(Locale locale) async {
+    final settings = context.read<LocaleSettingsProvider>();
+    if (settings.currentLocale == locale) return;
+    setState(() => _errorKey = null);
+    await settings.setUserLocale(locale);
   }
 }

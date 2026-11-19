@@ -1,0 +1,45 @@
+name: Jornada inicial web e mobile
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/presentation/screens/onboarding_inicial_*'
+      - 'lib/presentation/screens/auth_gate_mobile.dart'
+      - 'lib/presentation/screens/post_login_splash_mobile_page.dart'
+      - 'lib/presentation/services/web_authenticated_bootstrap_service.dart'
+      - 'lib/presentation/components/web/perfil_negocio_web_form.dart'
+      - 'lib/providers/locale_settings_provider.dart'
+      - 'lib/providers/onboarding_inicial_provider.dart'
+      - 'test/presentation/screens/onboarding_inicial_jornada_test.dart'
+      - '.github/workflows/onboarding-inicial-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  jornada:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analisar telas, inicialização e testes da jornada
+        run: >
+          flutter analyze --no-pub
+          lib/presentation/screens/onboarding_inicial_web_page.dart
+          lib/presentation/screens/onboarding_inicial_mobile_screen.dart
+          lib/presentation/components/web/perfil_negocio_web_form.dart
+          lib/presentation/screens/auth_gate_mobile.dart
+          lib/presentation/screens/post_login_splash_mobile_page.dart
+          lib/presentation/services/web_authenticated_bootstrap_service.dart
+          lib/providers/locale_settings_provider.dart
+          lib/providers/onboarding_inicial_provider.dart
+          test/presentation/screens/onboarding_inicial_jornada_test.dart
+      - run: >
+          flutter test --no-pub
+          test/providers/authenticated_locale_fallback_test.dart
+          test/presentation/screens/onboarding_inicial_jornada_test.dart

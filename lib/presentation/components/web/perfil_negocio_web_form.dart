@@ -229,7 +229,7 @@ class PerfilNegocioWebForm extends StatelessWidget {
                   selected
                       ? Icons.check_circle_rounded
                       : Icons.circle_outlined,
-                  color: selected ? const Color(0xFF2563EB) : tokens.mutedText,
+                  color: selected ? tokens.info : tokens.mutedText,
                 ),
               ),
             );
@@ -262,7 +262,7 @@ class PerfilNegocioWebForm extends StatelessWidget {
                   selected
                       ? Icons.radio_button_checked_rounded
                       : Icons.radio_button_off_rounded,
-                  color: selected ? const Color(0xFF2563EB) : tokens.mutedText,
+                  color: selected ? tokens.info : tokens.mutedText,
                 ),
               ),
             );
@@ -292,10 +292,9 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color accent = Color(0xFF2563EB);
     return Material(
       color: selected
-          ? accent.withValues(alpha: 0.08)
+          ? tokens.selectedBackground
           : tokens.inputBackground,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
@@ -307,7 +306,7 @@ class _Tile extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? accent : tokens.cardBorder,
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -318,14 +317,14 @@ class _Tile extends StatelessWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   color: selected
-                      ? accent.withValues(alpha: 0.12)
+                      ? tokens.selectedBackground
                       : tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   icon,
                   size: 19,
-                  color: selected ? accent : tokens.secondaryText,
+                  color: selected ? tokens.info : tokens.secondaryText,
                 ),
               ),
               const SizedBox(width: 11),
@@ -341,8 +340,10 @@ class _Tile extends StatelessWidget {
               ),
               trailing ??
                   Icon(
-                    Icons.chevron_right_rounded,
-                    color: tokens.mutedText,
+                    selected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_off_rounded,
+                    color: selected ? tokens.info : tokens.mutedText,
                   ),
             ],
           ),
@@ -367,10 +368,9 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color accent = Color(0xFF2563EB);
     return Material(
       color: selected
-          ? accent.withValues(alpha: 0.08)
+          ? tokens.selectedBackground
           : tokens.inputBackground,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
@@ -381,13 +381,13 @@ class _Chip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? accent : tokens.cardBorder,
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
             ),
           ),
           child: Text(
             text,
             style: TextStyle(
-              color: selected ? accent : tokens.primaryText,
+              color: selected ? tokens.info : tokens.primaryText,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
