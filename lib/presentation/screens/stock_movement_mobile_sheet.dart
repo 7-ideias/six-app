@@ -67,8 +67,8 @@ class _StockMovementMobileSheetState extends State<_StockMovementMobileSheet> {
 
   Future<void> _load() async {
     try {
-      final List<ProdutoModel> products = await widget.produtoService
-          .buscarProdutosAtivosParaEstoque();
+      final products = (await widget.produtoService
+          .buscarProdutosAtivosParaEstoque()).toList();
       if (!mounted) return;
       products.sort(
         (ProdutoModel first, ProdutoModel second) => first.nomeProduto
@@ -239,7 +239,7 @@ class _StockMovementMobileSheetState extends State<_StockMovementMobileSheet> {
                             child: CircularProgressIndicator(),
                           ),
                         )
-                      else if (_products.isEmpty)
+                      else if (_products.isEmpty && _error == null)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 28),
                           child: Center(
@@ -254,7 +254,7 @@ class _StockMovementMobileSheetState extends State<_StockMovementMobileSheet> {
                             ),
                           ),
                         )
-                      else ...<Widget>[
+                      else if (_products.isNotEmpty) ...<Widget>[
                         DropdownButtonFormField<ProdutoModel>(
                           initialValue: _selectedProduct,
                           isExpanded: true,

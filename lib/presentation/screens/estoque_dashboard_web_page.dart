@@ -18,12 +18,16 @@ class EstoqueDashboardWebPage extends StatefulWidget {
   const EstoqueDashboardWebPage({
     super.key,
     this.onBack,
+    this.onCreateProduct,
+    this.produtoService,
     this.onEntradaEstoque,
     this.onSaidaEstoque,
     this.onAjusteEstoque,
     this.onOpenListaCompleta,
   });
 
+  final ProdutoService? produtoService;
+  final Future<bool?> Function()? onCreateProduct;
   final VoidCallback? onBack;
   final VoidCallback? onEntradaEstoque;
   final VoidCallback? onSaidaEstoque;
@@ -36,7 +40,7 @@ class EstoqueDashboardWebPage extends StatefulWidget {
 }
 
 class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
-  final ProdutoService _produtoService = ProdutoService();
+  late final ProdutoService _produtoService = widget.produtoService ?? ProdutoService();
   late Future<EstoqueDashboardModel> _future;
   final NumberFormat _money = NumberFormat.currency(
     locale: 'pt_BR',
@@ -50,8 +54,11 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
     _future = _produtoService.buscarDashboardEstoque();
   }
 
-  void _reload() =>
-      setState(() => _future = _produtoService.buscarDashboardEstoque());
+  void _reload() {
+    setState(() {
+      _future = _produtoService.buscarDashboardEstoque();
+    });
+  }
 
   Future<void> _openMovement(StockMovementType type) async {
     final bool? registered = await showStockMovementWebDialog(
@@ -95,6 +102,8 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
             BuildContext context,
             AsyncSnapshot<EstoqueDashboardModel> snapshot,
           ) {
+            final hasProducts = snapshot.connectionState == ConnectionState.done &&
+                snapshot.data?.isEmpty == false;
             final Widget child;
             if (snapshot.connectionState == ConnectionState.waiting) {
               child = _loading();
@@ -119,7 +128,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                     WebHeaderAssetPage.estoque,
                   ),
                   onBack: widget.onBack,
-                  actions: <Widget>[
+                  actions: !hasProducts ? const <Widget>[] : <Widget>[
                     OutlinedButton.icon(
                       onPressed: _reload,
                       icon: const Icon(Icons.refresh_rounded),
@@ -829,7 +838,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
             Icon(Icons.warehouse_outlined, size: 48, color: Theme.of(context).colorScheme.primary,),
             const SizedBox(height: 14),
             Text(
-              'Nenhum produto em estoque ainda.',
+              context.t('estoque.mobile.emptyTitle'),
               textAlign: TextAlign.center,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: tokens.primaryText,
@@ -838,21 +847,26 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Cadastre produtos e entradas para acompanhar reposição, rupturas, excessos e movimentações.',
+              context.t('stock.empty.description'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: tokens.secondaryText,
                 height: 1.45,
               ),
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed:
-                  widget.onEntradaEstoque ??
-                  () => _openMovement(StockMovementType.entry),
-              icon: const Icon(Icons.add_box_outlined),
-              label: const Text('Registrar entrada'),
-            ),
+            if (widget.onCreateProduct != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () async {
+                  final saved = await widget.onCreateProduct!();
+                  if (saved == true && mounted) _reload();
+                },
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  context.t('catalogHub.actions.newProduct'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

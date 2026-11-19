@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/produto_cadastro_form_utils.dart';
+import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/estoque_dashboard_model.dart';
@@ -75,10 +78,30 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
+  Future<void> _openCreate(String tipo) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CadastroProdutoMobileScreen(tipoInicial: tipo),
+      ),
+    );
+    if (saved == true && mounted) {
+      setState(() {
+        _dashboardFuture = _buscarDashboard();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
 
+    return FutureBuilder<EstoqueDashboardModel>(
+      future: _dashboardFuture,
+      builder: (context, snapshot) => _buildPage(snapshot),
+    );
+  }
+
+  Widget _buildPage(AsyncSnapshot<EstoqueDashboardModel> snapshot) {
     return SixMobilePageShell(
       title: _t('estoque.mobile.title', 'Estoque'),
       backgroundColor: SixMobilePalette.background,
@@ -91,177 +114,177 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
       scrollEffectOffset: 24,
       scrolledSurfaceOpacity: 0.66,
       actions: [
-        IconButton(
-          tooltip: _t('estoque.mobile.refresh', 'Atualizar'),
-          icon: Icon(Icons.refresh_rounded),
-          onPressed: _reload,
-        ),
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.data?.isEmpty == false)
+          IconButton(
+            tooltip: _t('estoque.mobile.refresh', 'Atualizar'),
+            icon: Icon(Icons.refresh_rounded),
+            onPressed: _reload,
+          ),
       ],
       bodyBuilder: (
         BuildContext context,
         ScrollController scrollController,
         double topInset,
       ) {
-        return FutureBuilder<EstoqueDashboardModel>(
-          future: _dashboardFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return SixoAppMobileLoadingScene.themed(
-                message: _t(
-                  'estoque.mobile.loading',
-                  'Carregando seu estoque...',
-                ),
-              );
-            }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SixoAppMobileLoadingScene.themed(
+            message: _t('estoque.mobile.loading', 'Carregando seu estoque...'),
+          );
+        }
 
-            if (snapshot.hasError) {
-              return Padding(
-                padding: EdgeInsets.only(top: topInset),
-                child: _ErrorState(onRetry: _reload),
-              );
-            }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: EdgeInsets.only(top: topInset),
+            child: _ErrorState(onRetry: _reload),
+          );
+        }
 
-            final dashboard = snapshot.data ?? _emptyDashboard();
-            if (dashboard.isEmpty) {
-              return _EmptyInventoryState(
-                onRefresh: _reload,
-                scrollController: scrollController,
-                topInset: topInset,
-              );
-            }
+        final dashboard = snapshot.data ?? _emptyDashboard();
+        if (dashboard.isEmpty) {
+          return _EmptyInventoryState(
+            onCreate:
+                context
+                        .watch<ColaboradorAutorizacoesProvider>()
+                        .podeCadastrarProduto
+                    ? _openCreate
+                    : null,
+            onRefresh: _reload,
+            scrollController: scrollController,
+            topInset: topInset,
+          );
+        }
 
-            return RefreshIndicator(
-              onRefresh: _reload,
-              child: ListView(
-                controller: scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-                children: [
-                  SixStaggeredEntry(child: _buildHeaderCard()),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 70),
-                    child: _buildActions(),
-                  ),
-                  SizedBox(height: 22),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 120),
-                    child: _buildProgressSection(
-                      title: _t(
-                        'estoque.mobile.stockSituation',
-                        'Situação do estoque',
-                      ),
-                      subtitle: _t(
-                        'estoque.mobile.stockSituationSubtitle',
-                        'Distribuição dos produtos por risco operacional.',
-                      ),
-                      icon: Icons.donut_large_rounded,
-                      items: dashboard.situacaoEstoque,
-                      useValue: false,
-                      emptyText: _t(
-                        'estoque.mobile.noStockSituationData',
-                        'Sem dados de situação do estoque.',
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 170),
-                    child: _buildProgressSection(
-                      title: _t(
-                        'estoque.mobile.valueByCategory',
-                        'Valor por categoria',
-                      ),
-                      subtitle: _t(
-                        'estoque.mobile.valueByCategorySubtitle',
-                        'Onde está concentrado o dinheiro parado em estoque.',
-                      ),
-                      icon: Icons.bar_chart_rounded,
-                      items: dashboard.valorEstoquePorCategoria,
-                      useValue: true,
-                      emptyText: _t(
-                        'estoque.mobile.noCategoryValues',
-                        'Sem valores por categoria.',
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 220),
-                    child: _buildAlerts(dashboard.alertas),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 270),
-                    child: _buildProductSection(
-                      title: _t(
-                        'estoque.mobile.productsForRestock',
-                        'Produtos para reposição',
-                      ),
-                      subtitle: _t(
-                        'estoque.mobile.productsForRestockSubtitle',
-                        'Itens abaixo do mínimo ou sem estoque.',
-                      ),
-                      icon: Icons.add_shopping_cart_outlined,
-                      items: dashboard.produtosParaReposicao,
-                      emptyText: _t(
-                        'estoque.mobile.noProductsBelowMinimum',
-                        'Nenhum produto abaixo do mínimo.',
-                      ),
-                      valueMode: _ProductValueMode.reposition,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 320),
-                    child: _buildProductSection(
-                      title: _t(
-                        'estoque.mobile.errorsAndExcess',
-                        'Erros e excessos',
-                      ),
-                      subtitle: _t(
-                        'estoque.mobile.errorsAndExcessSubtitle',
-                        'Estoque negativo ou acima do máximo configurado.',
-                      ),
-                      icon: Icons.report_problem_outlined,
-                      items: dashboard.produtosComErroEstoque,
-                      emptyText: _t(
-                        'estoque.mobile.noOperationalErrors',
-                        'Nenhum erro operacional identificado.',
-                      ),
-                      valueMode: _ProductValueMode.reposition,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 370),
-                    child: _buildProductSection(
-                      title: _t(
-                        'estoque.mobile.highestIdleValue',
-                        'Maior valor parado',
-                      ),
-                      subtitle: _t(
-                        'estoque.mobile.highestIdleValueSubtitle',
-                        'Produtos que concentram mais dinheiro em estoque.',
-                      ),
-                      icon: Icons.account_balance_wallet_outlined,
-                      items: dashboard.produtosMaiorValorParado,
-                      emptyText: _t(
-                        'estoque.mobile.noIdleValueProducts',
-                        'Sem produtos com valor parado.',
-                      ),
-                      valueMode: _ProductValueMode.value,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 420),
-                    child: _buildMovements(dashboard.movimentacoesRecentes),
-                  ),
-                ],
+        return RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(
+            controller: scrollController,
+            physics: AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+            children: [
+              SixStaggeredEntry(child: _buildHeaderCard()),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 70),
+                child: _buildActions(),
               ),
-            );
-          },
+              SizedBox(height: 22),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 120),
+                child: _buildProgressSection(
+                  title: _t(
+                    'estoque.mobile.stockSituation',
+                    'Situação do estoque',
+                  ),
+                  subtitle: _t(
+                    'estoque.mobile.stockSituationSubtitle',
+                    'Distribuição dos produtos por risco operacional.',
+                  ),
+                  icon: Icons.donut_large_rounded,
+                  items: dashboard.situacaoEstoque,
+                  useValue: false,
+                  emptyText: _t(
+                    'estoque.mobile.noStockSituationData',
+                    'Sem dados de situação do estoque.',
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 170),
+                child: _buildProgressSection(
+                  title: _t(
+                    'estoque.mobile.valueByCategory',
+                    'Valor por categoria',
+                  ),
+                  subtitle: _t(
+                    'estoque.mobile.valueByCategorySubtitle',
+                    'Onde está concentrado o dinheiro parado em estoque.',
+                  ),
+                  icon: Icons.bar_chart_rounded,
+                  items: dashboard.valorEstoquePorCategoria,
+                  useValue: true,
+                  emptyText: _t(
+                    'estoque.mobile.noCategoryValues',
+                    'Sem valores por categoria.',
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 220),
+                child: _buildAlerts(dashboard.alertas),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 270),
+                child: _buildProductSection(
+                  title: _t(
+                    'estoque.mobile.productsForRestock',
+                    'Produtos para reposição',
+                  ),
+                  subtitle: _t(
+                    'estoque.mobile.productsForRestockSubtitle',
+                    'Itens abaixo do mínimo ou sem estoque.',
+                  ),
+                  icon: Icons.add_shopping_cart_outlined,
+                  items: dashboard.produtosParaReposicao,
+                  emptyText: _t(
+                    'estoque.mobile.noProductsBelowMinimum',
+                    'Nenhum produto abaixo do mínimo.',
+                  ),
+                  valueMode: _ProductValueMode.reposition,
+                ),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 320),
+                child: _buildProductSection(
+                  title: _t(
+                    'estoque.mobile.errorsAndExcess',
+                    'Erros e excessos',
+                  ),
+                  subtitle: _t(
+                    'estoque.mobile.errorsAndExcessSubtitle',
+                    'Estoque negativo ou acima do máximo configurado.',
+                  ),
+                  icon: Icons.report_problem_outlined,
+                  items: dashboard.produtosComErroEstoque,
+                  emptyText: _t(
+                    'estoque.mobile.noOperationalErrors',
+                    'Nenhum erro operacional identificado.',
+                  ),
+                  valueMode: _ProductValueMode.reposition,
+                ),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 370),
+                child: _buildProductSection(
+                  title: _t(
+                    'estoque.mobile.highestIdleValue',
+                    'Maior valor parado',
+                  ),
+                  subtitle: _t(
+                    'estoque.mobile.highestIdleValueSubtitle',
+                    'Produtos que concentram mais dinheiro em estoque.',
+                  ),
+                  icon: Icons.account_balance_wallet_outlined,
+                  items: dashboard.produtosMaiorValorParado,
+                  emptyText: _t(
+                    'estoque.mobile.noIdleValueProducts',
+                    'Sem produtos com valor parado.',
+                  ),
+                  valueMode: _ProductValueMode.value,
+                ),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 420),
+                child: _buildMovements(dashboard.movimentacoesRecentes),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -1096,11 +1119,13 @@ class _ErrorState extends StatelessWidget {
 class _EmptyInventoryState extends StatelessWidget {
   const _EmptyInventoryState({
     required this.onRefresh,
+    required this.onCreate,
     required this.scrollController,
     required this.topInset,
   });
 
   final Future<void> Function() onRefresh;
+  final ValueChanged<String>? onCreate;
   final ScrollController scrollController;
   final double topInset;
 
@@ -1120,7 +1145,7 @@ class _EmptyInventoryState extends StatelessWidget {
           ),
           SizedBox(height: 14),
           Text(
-            context.t('estoque.mobile.emptyTitle', fallback: 'Estoque vazio'),
+            context.t('estoque.mobile.emptyTitle'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: SixMobilePalette.titleText,
@@ -1130,14 +1155,28 @@ class _EmptyInventoryState extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            context.t(
-              'estoque.mobile.emptySubtitle',
-              fallback:
-                  'Cadastre produtos e movimente o estoque para acompanhar os indicadores.',
-            ),
+            context.t('stock.empty.description'),
             textAlign: TextAlign.center,
             style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
+          if (onCreate != null) ...[
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => onCreate!(ProdutoCadastroFormUtils.tipoProduto),
+              icon: const Icon(Icons.add_box_outlined),
+              label: Text(
+                context.t('catalogHub.actions.newProduct'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => onCreate!(ProdutoCadastroFormUtils.tipoServico),
+              icon: const Icon(Icons.build_outlined),
+              label: Text(
+                context.t('catalogHub.actions.newService'),
+              ),
+            ),
+          ],
         ],
       ),
     );

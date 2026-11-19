@@ -65,8 +65,8 @@ class _StockMovementWebDialogState extends State<_StockMovementWebDialog> {
 
   Future<void> _loadProducts() async {
     try {
-      final List<ProdutoModel> products = await widget.produtoService
-          .buscarProdutosAtivosParaEstoque();
+      final products = (await widget.produtoService
+          .buscarProdutosAtivosParaEstoque()).toList();
       if (!mounted) return;
       products.sort(
         (ProdutoModel first, ProdutoModel second) => first.nomeProduto
@@ -230,9 +230,9 @@ class _StockMovementWebDialogState extends State<_StockMovementWebDialog> {
                               child: CircularProgressIndicator(),
                             ),
                           )
-                        else if (_products.isEmpty)
+                        else if (_products.isEmpty && _errorMessage == null)
                           _EmptyProducts()
-                        else ...<Widget>[
+                        else if (_products.isNotEmpty) ...<Widget>[
                           DropdownButtonFormField<ProdutoModel>(
                             initialValue: _selectedProduct,
                             isExpanded: true,
