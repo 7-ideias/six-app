@@ -2497,51 +2497,20 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   Widget _buildAvisoSessaoCaixaObrigatoriaPdv() {
-    final bool primeiraSincronizacaoEmAndamento =
-        _carregandoSessaoCaixaPdv && !_sessaoCaixaPdvSincronizada;
-    if (primeiraSincronizacaoEmAndamento) {
-      return const SizedBox.shrink();
-    }
-
-    if (_pdvPodeLancarVenda) {
-      return const SizedBox.shrink();
+    if (_carregandoSessaoCaixaPdv || !_sessaoCaixaPdvSincronizada) {
+      return SixBackendLoading(
+        title: context.t('pdv.cashSessionCheckingTitle'),
+        subtitle: context.t('pdv.cashSessionCheckingMessage'),
+      );
     }
 
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color color = _erroSessaoCaixaPdv ? tokens.danger : tokens.warning;
-    final String title =
-        _carregandoSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionCheckingTitle',
-              fallback: 'Verificando sessão do caixa',
-            )
-            : _erroSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionUnavailableTitle',
-              fallback: 'Não foi possível validar o caixa',
-            )
-            : context.t(
-              'pdv.cashSessionRequiredTitle',
-              fallback: 'Abra o caixa para vender',
-            );
-    final String message =
-        _carregandoSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionCheckingMessage',
-              fallback:
-                  'Aguarde a sincronização antes de lançar uma nova venda.',
-            )
-            : _erroSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionUnavailableMessage',
-              fallback:
-                  'Atualize a sessão ou acesse operações de caixa para conferir a situação.',
-            )
-            : context.t(
-              'pdv.cashSessionRequiredMessage',
-              fallback:
-                  'Abra uma sessão de caixa antes de lançar vendas no PDV.',
-            );
+    final String title = context.t(
+      _erroSessaoCaixaPdv
+          ? 'pdv.cashSessionUnavailableTitle'
+          : 'pdv.cashSessionRequiredTitle',
+    );
 
     return Container(
       width: double.infinity,
@@ -2558,72 +2527,31 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Icon(
-                _carregandoSessaoCaixaPdv
-                    ? Icons.sync_rounded
-                    : Icons.lock_open_rounded,
+                _erroSessaoCaixaPdv ? Icons.sync_problem : Icons.lock_outline,
                 color: color,
                 size: 22,
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      message,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _pdvTheme.secondaryText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
           );
-          final Widget actions = Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _atualizandoVisaoPdv ? null : _atualizarVisaoPdv,
-                icon:
-                    _atualizandoVisaoPdv
-                        ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.refresh_rounded),
-                label: Text(context.t('common.refresh', fallback: 'Atualizar')),
-                style: _pdvOutlinedCtaStyle(),
-              ),
-              FilledButton.icon(
-                onPressed:
-                    () =>
-                        _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
-                icon: const Icon(Icons.point_of_sale_rounded),
-                label: Text(
-                  context.t(
-                    'pdv.openCashOperations',
-                    fallback: 'Operações de caixa',
-                  ),
-                ),
-                style: _pdvFilledCtaStyle(),
-              ),
-            ],
+          final Widget action = FilledButton.icon(
+            onPressed: _erroSessaoCaixaPdv
+                ? _carregarSessaoCaixaPdv
+                : () => _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
+            icon: Icon(_erroSessaoCaixaPdv ? Icons.refresh : Icons.point_of_sale),
+            label: Text(context.t(_erroSessaoCaixaPdv
+                ? 'common.refresh'
+                : 'caixa.operacoes.openConfirmAction')),
+            style: _pdvFilledCtaStyle(),
           );
 
           if (compact) {
@@ -2632,7 +2560,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               children: <Widget>[
                 text,
                 const SizedBox(height: 12),
-                Align(alignment: Alignment.centerLeft, child: actions),
+                Align(alignment: Alignment.centerLeft, child: action),
               ],
             );
           }
@@ -2641,7 +2569,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             children: <Widget>[
               Expanded(child: text),
               const SizedBox(width: 12),
-              actions,
+              action,
             ],
           );
         },
@@ -2650,6 +2578,20 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   Widget _buildAreaVenda(double total) {
+    if (!_pdvPodeLancarVenda) {
+      return Expanded(
+        child: SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: _buildAvisoSessaoCaixaObrigatoriaPdv(),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Expanded(
       child: Focus(
         autofocus: true,
