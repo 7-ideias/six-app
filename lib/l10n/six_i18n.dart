@@ -1798,6 +1798,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Cuide da qualidade do catálogo e acesse cadastros, categorias e etiquetas.',
     'catalogHub.list.subtitle':
         'Gerencie produtos, serviços, preços, imagens e organização.',
+    'estoque.mobile.emptyTitle': 'Estoque vazio',
+    'stock.empty.description': 'O estoque acompanha as quantidades dos produtos cadastrados.',
     'catalogHub.actions.newProduct': 'Novo produto',
     'catalogHub.actions.newService': 'Novo serviço',
     'catalogHub.actions.newItem': 'Novo item',
@@ -4418,6 +4420,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Improve catalog quality and access items, categories, and labels.',
     'catalogHub.list.subtitle':
         'Manage products, services, prices, images, and organization.',
+    'estoque.mobile.emptyTitle': 'Empty inventory',
+    'stock.empty.description': 'Track quantities here once a product is added.',
     'catalogHub.actions.newProduct': 'New product',
     'catalogHub.actions.newService': 'New service',
     'catalogHub.actions.newItem': 'New item',
@@ -7532,6 +7536,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Mejore la calidad del catálogo y acceda a artículos, categorías y etiquetas.',
     'catalogHub.list.subtitle':
         'Gestione productos, servicios, precios, imágenes y organización.',
+    'estoque.mobile.emptyTitle': 'Inventario vacío',
+    'stock.empty.description': 'Aquí puedes consultar las cantidades de los productos registrados.',
     'catalogHub.actions.newProduct': 'Nuevo producto',
     'catalogHub.actions.newService': 'Nuevo servicio',
     'catalogHub.actions.newItem': 'Nuevo artículo',

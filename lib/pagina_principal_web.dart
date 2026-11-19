@@ -3249,6 +3249,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       case ModuloCentralPDV.estoque:
         return Expanded(
           child: EstoqueDashboardWebPage(
+            onCreateProduct: context.watch<ColaboradorAutorizacoesProvider>().podeCadastrarProduto
+                ? () => showSubPainelCadastroProduto(context, 'Cadastro de Produtos')
+                : null,
             onBack: voltarParaInicio,
             onOpenListaCompleta:
                 () => _abrirListaProdutosParaEdicao(

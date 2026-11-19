@@ -14,6 +14,8 @@ import 'package:sixpos/domain/models/aparencia_models.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 void main() {
@@ -80,6 +82,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Estoque vazio'), findsOneWidget);
+    expect(find.text('Novo produto'), findsOneWidget);
+    expect(find.text('Novo serviço'), findsOneWidget);
+    expect(find.byTooltip('Atualizar'), findsNothing);
     expect(
       _hasTextWithColor(
         tester,
@@ -101,6 +106,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Estoque vazio'), findsOneWidget);
+    expect(find.text('Novo produto'), findsOneWidget);
+    expect(find.text('Novo serviço'), findsOneWidget);
+    expect(find.byTooltip('Atualizar'), findsNothing);
     expect(
       _hasTextWithColor(
         tester,
@@ -110,6 +118,35 @@ void main() {
       isTrue,
     );
   });
+
+  for (final entry
+      in {'Novo produto': 'PRODUTO', 'Novo serviço': 'SERVICO'}.entries) {
+    testWidgets('empty inventory opens ${entry.value} registration', (
+      tester,
+    ) async {
+      var loads = 0;
+      await _pumpStock(
+        tester,
+        service: _FakeProdutoService(() async {
+          loads++;
+          return _emptyDashboard;
+        }),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(entry.key));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      final form = tester.widget<CadastroProdutoMobileScreen>(
+        find.byType(CadastroProdutoMobileScreen),
+      );
+      expect(form.tipoInicial, entry.value);
+      Navigator.of(
+        tester.element(find.byType(CadastroProdutoMobileScreen)),
+      ).pop(true);
+      await tester.pumpAndSettle();
+      expect(loads, 2);
+    });
+  }
 
   testWidgets(
     'stock dashboard data preserves semantic stock states in dark mode',
@@ -267,7 +304,10 @@ Future<void> _pumpStock(
         theme: ThemeData.light(),
         darkTheme: ThemeData.dark(),
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-        home: EstoqueMobileScreen(produtoService: service),
+        home: ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          create: (_) => _StockPermissions(),
+          child: EstoqueMobileScreen(produtoService: service),
+        ),
       ),
     ),
   );
@@ -557,4 +597,9 @@ bool _hasDecoratedAncestorColor(
         final Decoration? decoration = container.decoration;
         return decoration is BoxDecoration && decoration.color == expected;
       });
+}
+
+class _StockPermissions extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get podeCadastrarProduto => true;
 }
