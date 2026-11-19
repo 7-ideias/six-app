@@ -678,14 +678,12 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData baseTheme = Theme.of(context);
-    final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme);
-    final WebThemeTokens tokens = WebThemeTokens.resolve(baseTheme);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme, palette: tokens);
     final LocaleSettingsProvider regionalizacao =
         context.watch<LocaleSettingsProvider>();
-    return AnimatedTheme(
+    return Theme(
       data: webTheme,
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       child: Container(
         key: const Key('consulta-vendas-web-root'),
         color: tokens.workspaceBackground,
@@ -1490,9 +1488,7 @@ class _SurfaceCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   @override
-  Widget build(BuildContext context) => AnimatedContainer(
-    duration: WebThemeTokens.transitionDuration,
-    curve: WebThemeTokens.transitionCurve,
+  Widget build(BuildContext context) => Container(
     width: double.infinity,
     padding: padding,
     decoration: BoxDecoration(

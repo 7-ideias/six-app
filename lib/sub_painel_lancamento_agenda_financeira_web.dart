@@ -46,8 +46,8 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = WebThemeTokens.applyTo(Theme.of(context));
-    final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ThemeData theme = WebThemeTokens.applyTo(Theme.of(context), palette: tokens);
     return Theme(
       data: theme,
       child: CallbackShortcuts(
@@ -72,47 +72,49 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
                     ? (MediaQuery.of(context).size.height * 0.96).clamp(0.0,
                         MediaQuery.of(context).size.width < 640 ? 720.0 : 540.0,)
                     : MediaQuery.of(context).size.height * 0.96,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceElevated,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: tokens.cardBorder),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withValues(alpha: 0.18),
-                      blurRadius: 34,
-                      offset: const Offset(0, 18),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Scaffold(
-                  backgroundColor: tokens.workspaceBackground,
-                  appBar: AppBar(
-                    automaticallyImplyLeading: false,
-                    centerTitle: false,
-                    titleSpacing: 24,
-                    title: Text(
-                      textoDaAppBar,
-                      style: TextStyle(
-                        color: tokens.primaryText,
-                        fontWeight: FontWeight.w900,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceElevated,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: tokens.cardBorder),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.18),
+                        blurRadius: 34,
+                        offset: const Offset(0, 18),
                       ),
-                    ),
-                    backgroundColor: tokens.surfaceMuted,
-                    foregroundColor: tokens.primaryText,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    shape: Border(bottom: BorderSide(color: tokens.cardBorder)),
-                    actions: <Widget>[
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => _fecharSubPainel(context),
-                        tooltip: context.t('common.close', fallback: 'Fechar'),
-                      ),
-                      const SizedBox(width: 8),
                     ],
                   ),
-                  body: body,
+                  clipBehavior: Clip.antiAlias,
+                  child: Scaffold(
+                    backgroundColor: tokens.workspaceBackground,
+                    appBar: AppBar(
+                      automaticallyImplyLeading: false,
+                      centerTitle: false,
+                      titleSpacing: 24,
+                      title: Text(
+                        textoDaAppBar,
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      backgroundColor: tokens.surfaceMuted,
+                      foregroundColor: tokens.primaryText,
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 0,
+                      shape: Border(bottom: BorderSide(color: tokens.cardBorder)),
+                      actions: <Widget>[
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => _fecharSubPainel(context),
+                          tooltip: context.t('common.close', fallback: 'Fechar'),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                    body: body,
+                  ),
                 ),
               ),
             ),
