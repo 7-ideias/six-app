@@ -153,8 +153,10 @@ Widget _app(
   Widget child, {
   String language = 'pt',
   Brightness brightness = Brightness.light,
+  DateTime Function()? now,
 }) => ChangeNotifierProvider(
   create: (_) => LocaleSettingsProvider(
+    now: now,
     regionalizacaoService: RegionalizacaoService(apiClient: _RegionalApi()),
   ),
   child: MaterialApp(
@@ -176,13 +178,14 @@ Future<void> _pump(
   bool scrollToPayment = true,
   String language = 'pt',
   Brightness brightness = Brightness.light,
+  DateTime Function()? now,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(390, 900);
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
-    _app(child, language: language, brightness: brightness),
+    _app(child, language: language, brightness: brightness, now: now),
   );
   await tester.pumpAndSettle();
   if (child is AgendaFinanceiraLancamentoMobileEditScreen && scrollToPayment) {
@@ -715,6 +718,9 @@ void main() {
     testWidgets('calendar and payment labels use $language in dark mode', (
       tester,
     ) async {
+      // At 01:00 UTC on May 1, the company in São Paulo is still on April 30.
+      final instant = DateTime.utc(2026, 5, 1, 1);
+      final companyToday = DateTime(2026, 4, 30);
       DateTime? forecast;
       bool register = false;
       await _pump(
@@ -726,7 +732,7 @@ void main() {
                 receber: true,
                 previsao: forecast,
                 registrarPagamento: register,
-                dataEfetiva: DateTime.now(),
+                dataEfetiva: companyToday,
                 onPrevisaoChanged: (date) => setState(() => forecast = date),
                 onRegistrarChanged: (value) => setState(() => register = value),
                 onDataEfetivaChanged: (_) {},
@@ -734,6 +740,7 @@ void main() {
             ),
           ),
         ),
+        now: () => instant,
         language: language,
         brightness: Brightness.dark,
       );
@@ -786,16 +793,13 @@ void main() {
           language == 'en' ? 'Apply' : 'Aplicar',
         ),
       );
-      expect(
-        forecast,
-        DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1))),
-      );
+      expect(forecast, DateTime(2026, 5, 1));
       await _tap(tester, _key('agenda-registrar-pagamento'));
       await _tap(tester, _key('agenda-data-efetiva'));
       final calendar = tester.widget<DateSelectorMobileBottomSheet>(
         find.byType(DateSelectorMobileBottomSheet),
       );
-      expect(calendar.lastDate, DateUtils.dateOnly(DateTime.now()));
+      expect(calendar.lastDate, companyToday);
       expect(
         find.text(
           {'pt': 'Amanhã', 'en': 'Tomorrow', 'es': 'Mañana'}[language]!,
