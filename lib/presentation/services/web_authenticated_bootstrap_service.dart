@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/auth_service.dart';
+import '../../core/services/empresa_service.dart';
 import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
@@ -156,7 +157,18 @@ class WebAuthenticatedBootstrapService {
       debugPrint('Erro ao carregar aparência no login web: $e');
     }
 
-    await TelaInicialWebService().atualizaProviders();
+    await Future.wait<void>(<Future<void>>[
+      TelaInicialWebService().atualizaProviders(),
+      if (EmpresaProvider().empresa == null) _carregarEmpresa(),
+    ]);
+  }
+
+  Future<void> _carregarEmpresa() async {
+    try {
+      await EmpresaService().buscarDadosDaEmpresa();
+    } catch (error) {
+      debugPrint('Erro ao carregar o comércio atual na web: $error');
+    }
   }
 
   Future<String> _currentSessionKey() async {
