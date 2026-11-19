@@ -29,7 +29,7 @@ jobs:
       - run: flutter pub get
       - name: Analisar telas, inicialização e testes da jornada
         run: >
-          flutter analyze --no-pub --no-fatal-infos
+          flutter analyze --no-pub
           lib/presentation/screens/onboarding_inicial_web_page.dart
           lib/presentation/screens/onboarding_inicial_mobile_screen.dart
           lib/presentation/components/web/perfil_negocio_web_form.dart

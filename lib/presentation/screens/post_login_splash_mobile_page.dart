@@ -77,6 +77,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
     await context
         .read<ColaboradorAutorizacoesProvider>()
         .carregarAutorizacoesDoUsuarioLogado(force: true);
+    if (!mounted) return;
     final onboarding = context.read<OnboardingInicialProvider>();
     await onboarding.carregar(force: true);
 
