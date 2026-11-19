@@ -25,10 +25,8 @@ class WebHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    return AnimatedContainer(
+    return Container(
       key: const Key('web-header-container'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(

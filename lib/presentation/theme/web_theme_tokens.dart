@@ -7,6 +7,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   const WebThemeTokens({
     required this.workspaceBackground,
     required this.sidebarBackground,
+    required this.navigationBackground,
     required this.sidebarBorder,
     required this.headerBackground,
     required this.headerBorder,
@@ -46,6 +47,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
 
   final Color workspaceBackground;
   final Color sidebarBackground;
+  final Color navigationBackground;
   final Color sidebarBorder;
   final Color headerBackground;
   final Color headerBorder;
@@ -91,8 +93,8 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
         : light(colorScheme);
   }
 
-  static ThemeData applyTo(ThemeData theme) {
-    final WebThemeTokens tokens = resolve(theme);
+  static ThemeData applyTo(ThemeData theme, {WebThemeTokens? palette}) {
+    final WebThemeTokens tokens = palette ?? resolve(theme);
     final Iterable<ThemeExtension<ThemeExtension<dynamic>>>
     inheritedExtensions = theme.extensions.values
         .where(
@@ -137,6 +139,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
 
     return WebThemeTokens(
       workspaceBackground: const Color(0xFFF8FAFC),
+      navigationBackground: colorScheme.primary,
       sidebarBackground: const Color(0xFFFFFFFF),
       sidebarBorder: const Color(0xFFE2E8F0),
       headerBackground: const Color(0xFFFFFFFF),
@@ -193,6 +196,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
 
     return WebThemeTokens(
       workspaceBackground: workspace,
+      navigationBackground: sidebar,
       sidebarBackground: sidebar,
       sidebarBorder: const Color(0xFF20344F),
       headerBackground: sidebar,
@@ -237,6 +241,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   WebThemeTokens copyWith({
     Color? workspaceBackground,
     Color? sidebarBackground,
+    Color? navigationBackground,
     Color? sidebarBorder,
     Color? headerBackground,
     Color? headerBorder,
@@ -273,6 +278,7 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
     return WebThemeTokens(
       workspaceBackground: workspaceBackground ?? this.workspaceBackground,
       sidebarBackground: sidebarBackground ?? this.sidebarBackground,
+      navigationBackground: navigationBackground ?? this.navigationBackground,
       sidebarBorder: sidebarBorder ?? this.sidebarBorder,
       headerBackground: headerBackground ?? this.headerBackground,
       headerBorder: headerBorder ?? this.headerBorder,
@@ -322,6 +328,8 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
           Color.lerp(workspaceBackground, other.workspaceBackground, t)!,
       sidebarBackground:
           Color.lerp(sidebarBackground, other.sidebarBackground, t)!,
+      navigationBackground:
+          Color.lerp(navigationBackground, other.navigationBackground, t)!,
       sidebarBorder: Color.lerp(sidebarBorder, other.sidebarBorder, t)!,
       headerBackground:
           Color.lerp(headerBackground, other.headerBackground, t)!,

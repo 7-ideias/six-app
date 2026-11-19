@@ -9,7 +9,7 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 void main() {
-  testWidgets('alterna o tema e fecha o menu apos a animacao', (
+  testWidgets('alterna o tema e fecha o menu ao selecionar', (
     WidgetTester tester,
   ) async {
     final ThemeProvider themeProvider = ThemeProvider(
@@ -37,18 +37,23 @@ void main() {
       findsOneWidget,
     );
 
+    final ModalRoute<dynamic> menuRoute = ModalRoute.of(
+      tester.element(find.text('Sair')),
+    )!;
     await tester.tap(find.bySemanticsLabel('Ativar tema escuro'));
-    await tester.pump();
-
     expect(themeProvider.themeMode, ThemeMode.dark);
-    expect(
-      find.byKey(const ValueKey<String>('six-web-theme-toggle-moon')),
-      findsOneWidget,
-    );
+    expect(menuRoute.isCurrent, isFalse);
 
     await tester.pumpAndSettle();
 
     expect(find.text('Tema escuro'), findsNothing);
+    expect(find.text('Sair'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('open-theme-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Desativar tema escuro'));
+    expect(themeProvider.themeMode, ThemeMode.light);
+    await tester.pumpAndSettle();
     expect(find.text('Sair'), findsNothing);
   });
 }

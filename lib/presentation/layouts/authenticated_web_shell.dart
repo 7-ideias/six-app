@@ -92,8 +92,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ThemeData webTheme = WebThemeTokens.applyTo(theme);
-    final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ThemeData webTheme = WebThemeTokens.applyTo(theme, palette: tokens);
     final bool isSuperUser = context
         .select<ColaboradorAutorizacoesProvider, bool>(
           (ColaboradorAutorizacoesProvider provider) => provider.ehSuperUsuario,
@@ -150,10 +150,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                   ? WebSidebarNavigation.expandedWidth
                   : WebSidebarNavigation.collapsedWidth;
 
-          return AnimatedContainer(
+          return Container(
             key: const Key('web-shell-workspace'),
-            duration: WebThemeTokens.transitionDuration,
-            curve: WebThemeTokens.transitionCurve,
             decoration: BoxDecoration(color: tokens.workspaceBackground),
             child: Row(
               children: <Widget>[
@@ -161,10 +159,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
                   width: sidebarWidth,
-                  child: AnimatedTheme(
+                  child: Theme(
                     data: webTheme,
-                    duration: WebThemeTokens.transitionDuration,
-                    curve: WebThemeTokens.transitionCurve,
                     child: WebSidebarNavigation(
                       items: widget.navigationItems,
                       activeDestination: effectiveDestination,
@@ -180,10 +176,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                 Expanded(
                   child: Column(
                     children: <Widget>[
-                      AnimatedTheme(
+                      Theme(
                         data: webTheme,
-                        duration: WebThemeTokens.transitionDuration,
-                        curve: WebThemeTokens.transitionCurve,
                         child: WebHeader(
                           title: activeTitle,
                           sidebarExpanded: expanded,
