@@ -232,7 +232,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           color: tokens.info,
           backgroundColor: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(4),
-          semanticsValue: label,
+          semanticsLabel: label,
         ),
       ],
     );
