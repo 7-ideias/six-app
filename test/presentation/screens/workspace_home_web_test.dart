@@ -219,10 +219,22 @@ void main() {
 
       expect(service.calls, 1);
 
-      await tester.tap(find.byKey(const Key('toggle-home-shell-theme')));
-      await tester.pumpAndSettle();
+      const homeKey = Key('workspace-home-root');
+      const shellKey = Key('web-shell-workspace');
+      for (final mode in [ThemeMode.dark, ThemeMode.light]) {
+        final previousColor = _containerColor(tester, homeKey);
+        await tester.tap(find.byKey(const Key('toggle-home-shell-theme')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
 
-      expect(service.calls, 1);
+        final frameColor = _containerColor(tester, homeKey);
+        expect(frameColor, _containerColor(tester, shellKey), reason: mode.name);
+        expect(frameColor, isNot(previousColor));
+
+        await tester.pumpAndSettle();
+        expect(_containerColor(tester, homeKey), isNot(frameColor));
+        expect(service.calls, 1);
+      }
     });
 
     testWidgets('usa estado vazio quando não há alertas positivos', (
@@ -326,7 +338,7 @@ void main() {
         );
 
         expect(
-          _animatedContainerColor(tester, const Key('workspace-home-root')),
+          _containerColor(tester, const Key('workspace-home-root')),
           tokens.workspaceBackground,
         );
         final Container hero = tester.widget<Container>(
@@ -338,21 +350,21 @@ void main() {
           tokens.cardBorder,
         );
         expect(
-          _animatedContainerColor(
+          _containerColor(
             tester,
             const Key('workspace-home-section-today'),
           ),
           tokens.surface,
         );
         expect(
-          _animatedContainerColor(
+          _containerColor(
             tester,
             const Key('workspace-home-situation-receivable-today'),
           ),
           tokens.cardBackground,
         );
         expect(
-          _animatedContainerBorderColor(
+          _containerBorderColor(
             tester,
             const Key('workspace-home-situation-receivable-today'),
           ),
@@ -375,14 +387,14 @@ void main() {
       );
 
       expect(
-        _animatedContainerColor(
+        _containerColor(
           tester,
           const Key('workspace-home-attention-late-services'),
         ),
         tokens.cardBackground,
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-late-services'),
         ),
@@ -402,7 +414,7 @@ void main() {
         tokens.info,
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-waiting-approval'),
         ),
@@ -415,7 +427,7 @@ void main() {
         ),
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-ready-for-pickup'),
         ),
@@ -428,7 +440,7 @@ void main() {
         ),
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-overdue-receivable'),
         ),
@@ -441,7 +453,7 @@ void main() {
         ),
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-stock-negative'),
         ),
@@ -454,7 +466,7 @@ void main() {
         ),
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-attention-stock-below'),
         ),
@@ -530,7 +542,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        _animatedContainerColor(tester, const Key('workspace-home-error')),
+        _containerColor(tester, const Key('workspace-home-error')),
         _expectedTint(
           tokens.danger,
           tokens.cardBackground,
@@ -540,7 +552,7 @@ void main() {
         ),
       );
       expect(
-        _animatedContainerBorderColor(
+        _containerBorderColor(
           tester,
           const Key('workspace-home-error'),
         ),
@@ -660,18 +672,18 @@ Future<void> _pumpHome(
   await tester.pumpAndSettle();
 }
 
-Color? _animatedContainerColor(WidgetTester tester, Key key) {
-  return _animatedContainerDecoration(tester, key).color;
+Color? _containerColor(WidgetTester tester, Key key) {
+  return _containerDecoration(tester, key).color;
 }
 
-Color? _animatedContainerBorderColor(WidgetTester tester, Key key) {
-  final BoxBorder? border = _animatedContainerDecoration(tester, key).border;
+Color? _containerBorderColor(WidgetTester tester, Key key) {
+  final BoxBorder? border = _containerDecoration(tester, key).border;
   expect(border, isA<Border>());
   return (border! as Border).top.color;
 }
 
-BoxDecoration _animatedContainerDecoration(WidgetTester tester, Key key) {
-  final AnimatedContainer container = tester.widget(find.byKey(key));
+BoxDecoration _containerDecoration(WidgetTester tester, Key key) {
+  final Container container = tester.widget(find.byKey(key));
   final Decoration? decoration = container.decoration;
   expect(decoration, isA<BoxDecoration>());
   return decoration! as BoxDecoration;
@@ -748,8 +760,8 @@ class _ThemeSwitchingWorkspaceShellState
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.light(useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
+      theme: WebThemeTokens.applyTo(ThemeData.light(useMaterial3: true)),
+      darkTheme: WebThemeTokens.applyTo(ThemeData.dark(useMaterial3: true)),
       themeMode: _themeMode,
       locale: const Locale('pt'),
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[

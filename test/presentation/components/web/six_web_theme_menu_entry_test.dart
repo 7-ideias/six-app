@@ -43,7 +43,8 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Ativar tema escuro'));
     expect(themeProvider.themeMode, ThemeMode.dark);
     expect(menuRoute.isCurrent, isFalse);
-
+    await tester.pump();
+    expect(find.text('Sair', skipOffstage: false), findsNothing);
     await tester.pumpAndSettle();
 
     expect(find.text('Tema escuro'), findsNothing);
