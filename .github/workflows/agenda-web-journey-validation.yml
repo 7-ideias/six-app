@@ -15,6 +15,7 @@ on:
       - 'lib/providers/management_overview_provider.dart'
       - 'test/providers/financeiro_resumo_test.dart'
       - 'lib/presentation/screens/agenda_financeira*mobile*'
+      - 'test/presentation/screens/agenda_pagamento_mobile_test.dart'
       - 'test/presentation/screens/agenda_financeira_mobile_jornada_test.dart'
       - 'test/presentation/screens/agenda_financeira_mobile_dark_mode_test.dart'
       - 'lib/data/models/usuario_model.dart'
