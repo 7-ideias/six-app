@@ -61,6 +61,13 @@ void main() {
         expect(acionarPdvFrenteCaixaPeloElemento(page), isTrue);
         await tester.pump();
         await tester.pump();
+        final heading = find.bySemanticsLabel('Caixa fechado');
+        final openButton = find.widgetWithText(FilledButton, 'Abrir caixa');
+        expect(heading, findsOneWidget);
+        final titleCenter = tester.getCenter(find.text('Caixa fechado'));
+        final actionCenter = tester.getCenter(openButton);
+        expect(actionCenter.dx, closeTo(titleCenter.dx, 1));
+        expect(actionCenter.dy, greaterThan(titleCenter.dy));
         expect(
           find.text('Abra o caixa para iniciar uma venda.'),
           findsOneWidget,

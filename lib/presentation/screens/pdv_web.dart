@@ -2505,74 +2505,91 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     }
 
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color color = _erroSessaoCaixaPdv ? tokens.danger : tokens.warning;
-    final String title = context.t(
-      _erroSessaoCaixaPdv
-          ? 'pdv.cashSessionUnavailableTitle'
-          : 'pdv.cashSessionRequiredTitle',
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
+    final TextTheme typography = Theme.of(context).textTheme;
+    final bool erro = _erroSessaoCaixaPdv;
+    return Material(
+      color: tokens.cardBackground,
+      elevation: 2,
+      shadowColor: Theme.of(context).shadowColor.withValues(alpha: 0.18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: tokens.cardBorder),
       ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 760;
-          final Widget text = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                _erroSessaoCaixaPdv ? Icons.sync_problem : Icons.lock_outline,
-                color: color,
-                size: 22,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: tokens.surfaceMuted,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  erro
+                      ? Icons.sync_problem_rounded
+                      : Icons.point_of_sale_rounded,
+                  size: 30,
+                  color: erro ? tokens.danger : tokens.info,
+                ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: _pdvTheme.primaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
+            ),
+            const SizedBox(height: 18),
+            Semantics(
+              header: true,
+              child: Text(
+                context.t(
+                  erro
+                      ? 'pdv.cashSessionUnavailableTitle'
+                      : 'homeToday.cashClosed',
+                ),
+                textAlign: TextAlign.center,
+                style: typography.headlineSmall?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            if (!erro) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                context.t('pdv.cashSessionRequiredTitle'),
+                textAlign: TextAlign.center,
+                style: typography.bodyMedium?.copyWith(
+                  color: tokens.secondaryText,
+                  height: 1.4,
                 ),
               ),
             ],
-          );
-          final Widget action = FilledButton.icon(
-            onPressed: _erroSessaoCaixaPdv
-                ? _carregarSessaoCaixaPdv
-                : () => _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
-            icon: Icon(_erroSessaoCaixaPdv ? Icons.refresh : Icons.point_of_sale),
-            label: Text(context.t(_erroSessaoCaixaPdv
-                ? 'common.refresh'
-                : 'caixa.operacoes.openConfirmAction')),
-            style: _pdvFilledCtaStyle(),
-          );
-
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                text,
-                const SizedBox(height: 12),
-                Align(alignment: Alignment.centerLeft, child: action),
-              ],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              Expanded(child: text),
-              const SizedBox(width: 12),
-              action,
-            ],
-          );
-        },
+            const SizedBox(height: 24),
+            Center(
+              child: FilledButton.icon(
+                onPressed: erro
+                    ? _carregarSessaoCaixaPdv
+                    : () => _abrirOperacoesCaixa(
+                        retorno: ModuloCentralPDV.vendas,
+                      ),
+                icon: Icon(
+                  erro ? Icons.refresh_rounded : Icons.arrow_forward_rounded,
+                  size: 18,
+                ),
+                iconAlignment: IconAlignment.end,
+                label: Text(
+                  context.t(
+                    erro
+                        ? 'common.tryAgain'
+                        : 'caixa.operacoes.openConfirmAction',
+                  ),
+                ),
+                style: _pdvFilledCtaStyle(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2580,11 +2597,11 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   Widget _buildAreaVenda(double total) {
     if (!_pdvPodeLancarVenda) {
       return Expanded(
-        child: SingleChildScrollView(
-          child: Align(
-            alignment: Alignment.topCenter,
+        child: Align(
+          alignment: const Alignment(0, -0.2),
+          child: SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: _buildAvisoSessaoCaixaObrigatoriaPdv(),
             ),
           ),
