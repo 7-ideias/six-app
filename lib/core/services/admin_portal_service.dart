@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
+import 'admin_cockpit_snapshot.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
 import '../../data/models/agenda_email_models.dart';
@@ -86,6 +87,7 @@ class AdminBancoDadosResumo {
     required this.tamanhoArmazenadoBytes,
     required this.tamanhoIndicesBytes,
     required this.tamanhoTotalBytes,
+    this.available,
     required this.quantidadeColecoes,
     required this.quantidadeObjetos,
   });
@@ -95,11 +97,13 @@ class AdminBancoDadosResumo {
   final int tamanhoArmazenadoBytes;
   final int tamanhoIndicesBytes;
   final int tamanhoTotalBytes;
+  final bool? available;
   final int quantidadeColecoes;
   final int quantidadeObjetos;
 
   factory AdminBancoDadosResumo.fromJson(Map<String, dynamic> json) =>
       AdminBancoDadosResumo(
+        available: json['available'] as bool?,
         nome: json['nome']?.toString() ?? 'MongoDB',
         tamanhoDadosBytes: _toInt(json['tamanhoDadosBytes']),
         tamanhoArmazenadoBytes: _toInt(json['tamanhoArmazenadoBytes']),
@@ -149,12 +153,14 @@ class AdminPortalResumo {
     required this.totalEmpresasAtivas,
     this.bancosDeDados = const <AdminBancoDadosResumo>[],
     this.actuator,
+    this.cockpit,
     this.requestsHttp,
   });
 
   final int totalEmpresasCadastradas;
   final int totalEmpresasAtivas;
   final List<AdminBancoDadosResumo> bancosDeDados;
+  final AdminCockpitSnapshot? cockpit;
   final AdminActuatorResumo? actuator;
   final AdminRequestStatusResumo? requestsHttp;
 
@@ -172,6 +178,10 @@ class AdminPortalResumo {
                   .map(AdminBancoDadosResumo.fromJson)
                   .toList(growable: false)
               : const <AdminBancoDadosResumo>[],
+      cockpit:
+          json['cockpit'] is Map<String, dynamic>
+              ? AdminCockpitSnapshot.fromJson(json['cockpit'])
+              : null,
       actuator:
           actuatorRaw is Map<String, dynamic>
               ? AdminActuatorResumo.fromJson(actuatorRaw)
@@ -411,9 +421,13 @@ class AdminAiFeedbackResumo {
 }
 
 class AdminPortalService {
-  AdminPortalService({AuthService? authService, http.Client? client})
-    : _authService = authService ?? AuthService(),
-      _client = client ?? createHttpClient();
+  final bool cockpit;
+  AdminPortalService({
+    this.cockpit = false,
+    AuthService? authService,
+    http.Client? client,
+  }) : _authService = authService ?? AuthService(),
+       _client = client ?? createHttpClient();
 
   final AuthService _authService;
   final http.Client _client;
@@ -439,6 +453,7 @@ class AdminPortalService {
     }
     final Uri uri = Uri.parse('$baseUrl/private/api/admin/resumo').replace(
       queryParameters: <String, String>{
+        if (cockpit) 'cockpit': 'true',
         if (janelaValor != null) 'janelaValor': janelaValor.toString(),
         if (janelaUnidade != null) 'janelaUnidade': janelaUnidade.apiValue,
       },

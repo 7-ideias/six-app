@@ -49,6 +49,32 @@ const _texts = <String, List<String>>{
   'indexes': ['Índices', 'Indexes', 'Índices'],
   'total': ['Total', 'Total', 'Total'],
   'load': ['Carga', 'Load', 'Carga'],
+  'scope': ['Toda a plataforma', 'Platform-wide', 'Toda la plataforma'],
+  'collected': ['Coleta', 'Collected', 'Recopilado'],
+  'rate': ['Requisições/min', 'Requests/min', 'Solicitudes/min'],
+  'errors': ['Erros 5xx', '5xx errors', 'Errores 5xx'],
+  'latency': ['Tempo de resposta', 'Response time', 'Tiempo de respuesta'],
+  'traffic': ['Tráfego da API', 'API traffic', 'Tráfico de la API'],
+  'events': ['Eventos recentes', 'Recent events', 'Eventos recientes'],
+  'START': ['Backend iniciado', 'Backend started', 'Backend iniciado'],
+  'UNAVAILABLE': ['Indisponível', 'Unavailable', 'No disponible'],
+  'RECOVERED': [
+    'Conexão recuperada',
+    'Connection restored',
+    'Conexión recuperada',
+  ],
+  'available': ['Conectado', 'Connected', 'Conectado'],
+  'none': [
+    'Sem eventos neste período',
+    'No events in this period',
+    'Sin eventos en este período',
+  ],
+  'gap': [
+    'Sem coleta antes da linha tracejada',
+    'No samples before the dashed line',
+    'Sin muestras antes de la línea discontinua',
+  ],
+  'noSamples': ['Sem amostras', 'No samples', 'Sin muestras'],
   'details': ['Ver detalhes', 'View details', 'Ver detalles'],
 };
 
