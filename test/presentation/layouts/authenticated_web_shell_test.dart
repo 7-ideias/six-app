@@ -13,6 +13,19 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 void main() {
   group('AuthenticatedWebShell', () {
+    testWidgets('exibe o comércio no cabeçalho quando o nome chega', (
+      WidgetTester tester,
+    ) async {
+      final actions = _RecordingActions();
+      await _pumpShell(tester, actions: actions, currentCommerceName: '  ');
+      expect(_headerTitle('Contexto da sessão'), findsNothing);
+      expect(_headerTitle('Comércio atual'), findsNothing);
+
+      await _pumpShell(tester, actions: actions);
+      expect(_headerTitle('Comércio atual'), findsOneWidget);
+      expect(_headerTitle('Comércio Teste'), findsOneWidget);
+    });
+
     testWidgets('renderiza a navegacao ativa do registry sem relatorios', (
       WidgetTester tester,
     ) async {
@@ -531,6 +544,7 @@ Future<void> _pumpShell(
   WidgetTester tester, {
   required _RecordingActions actions,
   WebNavigationDestination activeDestination = WebNavigationDestination.home,
+  String? currentCommerceName = 'Comércio Teste',
   Size size = const Size(1200, 800),
   ThemeMode themeMode = ThemeMode.light,
   List<WebNavigationItem>? navigationItems,
@@ -561,7 +575,7 @@ Future<void> _pumpShell(
           resolver: WebNavigationDestinationResolver(actions: actions),
           activeDestination: activeDestination,
           appVersion: 'test',
-          currentCommerceName: 'Comércio Teste',
+          currentCommerceName: currentCommerceName,
           headerActions: const <Widget>[
             SizedBox(key: Key('header-action'), width: 24, height: 24),
           ],

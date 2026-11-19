@@ -38,7 +38,8 @@ class WebHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 900;
-          final bool showCommerceContext = !compact;
+          final String commerceName = currentCommerceName?.trim() ?? '';
+          final bool showCommerceContext = !compact && commerceName.isNotEmpty;
 
           return Row(
             children: <Widget>[
@@ -88,7 +89,7 @@ class WebHeader extends StatelessWidget {
                   children: <Widget>[
                     if (showCommerceContext)
                       _CommerceContextPill(
-                        currentCommerceName: currentCommerceName,
+                        currentCommerceName: commerceName,
                       ),
                     for (int index = 0; index < actions.length; index++)
                       Padding(
@@ -109,23 +110,14 @@ class WebHeader extends StatelessWidget {
 }
 
 class _CommerceContextPill extends StatelessWidget {
-  const _CommerceContextPill({this.currentCommerceName});
+  const _CommerceContextPill({required this.currentCommerceName});
 
-  final String? currentCommerceName;
+  final String currentCommerceName;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String commerceName = currentCommerceName?.trim() ?? '';
-    final String value =
-        commerceName.isEmpty
-            ? _headerText(
-              context,
-              'web.shell.sessionContext',
-              'Contexto da sessão',
-            )
-            : commerceName;
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 260),
@@ -163,7 +155,7 @@ class _CommerceContextPill extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  value,
+                  currentCommerceName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
