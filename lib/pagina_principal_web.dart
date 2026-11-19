@@ -5,6 +5,7 @@ import 'core/services/push_navigation_service.dart';
 import 'core/services/push_destination_resolver.dart';
 import 'l10n/billing_texts.dart';
 import 'dart:async';
+import 'presentation/components/six_backend_loading.dart';
 
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_button.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
@@ -92,7 +93,8 @@ part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
 
 class PaginaPrincipalWeb extends StatefulWidget {
-  const PaginaPrincipalWeb({super.key, this.initialDestination});
+  const PaginaPrincipalWeb({super.key, this.initialDestination, this.caixaService});
+  final CaixaService? caixaService;
   final WebNavigationDestination? initialDestination;
 
   @override
@@ -136,7 +138,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   late PdvVisualTheme _pdvTheme;
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
-  final CaixaService _caixaService = CaixaModule.caixaService;
+  CaixaService get _caixaService =>
+      widget.caixaService ?? CaixaModule.caixaService;
   final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient =
       VendaNaoLiquidadaApiClient();
   final OperationalProcedureFlowCoordinator _procedureCoordinator =
@@ -3613,7 +3616,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final LocaleSettingsProvider regionalizacao =
         context.watch<LocaleSettingsProvider>();
     final bool modoExpandidoAtivo =
-        _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
+        _moduloAtual == ModuloCentralPDV.vendas &&
+        _modoExpandidoFrenteCaixa &&
+        _pdvPodeLancarVenda;
     final WebThemeTokens webTokens = WebThemeTokens.of(context);
 
     if (modoExpandidoAtivo) {
