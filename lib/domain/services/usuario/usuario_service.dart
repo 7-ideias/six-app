@@ -230,7 +230,10 @@ class UsuarioService {
     UsuarioModel? usuarioAtual = UsuarioProvider().usuario;
     usuarioAtual ??= await _apiClient.buscarDadosPessoais();
 
-    final UsuarioModel atualizado = usuarioAtual.copyWith(foto: foto);
+    final UsuarioModel atualizado = usuarioAtual.copyWith(
+      foto: foto,
+      enviarPreferenciasIndividuaisDoUsuario: false,
+    );
     final UsuarioModel? usuarioAtualizado = await _apiClient
         .atualizarDadosPessoais(atualizado);
 
