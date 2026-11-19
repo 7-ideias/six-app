@@ -40,7 +40,8 @@ void main() {
     final ModalRoute<dynamic> menuRoute = ModalRoute.of(
       tester.element(find.text('Sair')),
     )!;
-    await tester.tap(find.bySemanticsLabel('Ativar tema escuro'));
+    expect(find.bySemanticsLabel('Ativar tema escuro'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('web-user-menu-theme-entry')));
     expect(themeProvider.themeMode, ThemeMode.dark);
     expect(menuRoute.isCurrent, isFalse);
     await tester.pump();

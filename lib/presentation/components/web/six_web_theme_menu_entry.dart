@@ -140,11 +140,12 @@ class _SixWebThemeMenuEntryState<T>
 
   void _toggleTheme(ThemeProvider themeProvider, bool isDark) {
     if (_switchingTheme) return;
-    final route = ModalRoute.of(context);
-    if (route is! PopupRoute<T> || !route.isCurrent) return;
     _switchingTheme = true;
-    // O popup conserva as cores da abertura durante a animação de saída.
-    Navigator.of(context).removeRoute(route);
+    final route = ModalRoute.of(context);
+    // PopupMenuButton pode usar um tipo de resultado anulável para a rota.
+    if (route is PopupRoute<dynamic> && route.isCurrent) {
+      Navigator.of(context).removeRoute(route);
+    }
     unawaited(themeProvider.toggleTheme(isDark));
   }
 }
