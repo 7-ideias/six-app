@@ -162,7 +162,18 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   final TextEditingController _bairroController = TextEditingController();
   final TextEditingController _localidadeController = TextEditingController();
   final TextEditingController _ufController = TextEditingController();
-  bool _salvandoFoto = false;
+  bool _preparandoFoto = false;
+  String? _fotoSelecionada;
+  String? _mensagem;
+  bool _mensagemDeErro = false;
+
+  void _mostrarMensagem(String mensagem, {bool erro = true}) {
+    if (!mounted) return;
+    setState(() {
+      _mensagem = mensagem;
+      _mensagemDeErro = erro;
+    });
+  }
 
   @override
   void initState() {
@@ -188,15 +199,10 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       _preencherControllers(_usuarioProvider.usuario);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t(
-                'perfil.web.loadError',
-                fallback:
-                    'Não foi possível carregar seus dados. Tente novamente.',
-              ),
-            ),
+        _mostrarMensagem(
+          context.t(
+            'perfil.web.loadError',
+            fallback: 'Não foi possível carregar seus dados. Tente novamente.',
           ),
         );
       }
@@ -473,9 +479,10 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   Future<void> _salvarPerfil() async {
     final UsuarioModel? usuarioAtual = _usuarioProvider.usuario;
     if (usuarioAtual == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Usuário não encontrado para atualização.'),
+      _mostrarMensagem(
+        context.t(
+          'perfil.mobile.userNotFound',
+          fallback: 'Usuário não encontrado para atualização.',
         ),
       );
       return;
@@ -487,7 +494,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       cpf: _cpfController.text,
       registroProfissional: _registroController.text,
       email: _emailController.text,
-      foto: usuarioAtual.foto,
+      foto: _fotoSelecionada ?? usuarioAtual.foto,
       nomeDeGuerra: _nomeDeGuerraController.text,
       celular: _celularController.text,
       senha: usuarioAtual.senha,
@@ -502,6 +509,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         localidade: _localidadeController.text,
         uf: _ufController.text,
       ),
+      enviarPreferenciasIndividuaisDoUsuario: false,
       preferenciasIndividuaisDoUsuario:
           usuarioAtual.preferenciasIndividuaisDoUsuario,
     );
@@ -509,29 +517,22 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     _usuarioProvider.setLoading(true);
     try {
       await _usuarioService.atualizarDadosDoUsuario(atualizado);
+      _fotoSelecionada = null;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t(
-                'perfil.web.saveSuccess',
-                fallback: 'Perfil atualizado com sucesso!',
-              ),
-            ),
+        _mostrarMensagem(
+          context.t(
+            'perfil.web.saveSuccess',
+            fallback: 'Perfil atualizado com sucesso!',
           ),
+          erro: false,
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t(
-                'perfil.web.saveError',
-                fallback:
-                    'Não foi possível atualizar seu perfil. Tente novamente.',
-              ),
-            ),
+        _mostrarMensagem(
+          context.t(
+            'perfil.web.saveError',
+            fallback: 'Não foi possível atualizar seu perfil. Tente novamente.',
           ),
         );
       }
@@ -541,52 +542,36 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   }
 
   Future<void> _selecionarFotoPerfil() async {
-    if (_salvandoFoto || _usuarioProvider.isLoading) {
+    if (_preparandoFoto || _usuarioProvider.isLoading) {
       return;
     }
 
-    final XFile? selected = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 82,
-    );
-    if (selected == null) {
-      return;
-    }
-
-    setState(() => _salvandoFoto = true);
+    setState(() {
+      _preparandoFoto = true;
+      _mensagem = null;
+    });
     try {
-      final String imageDataUrl = await buildProfileImageDataUrl(selected);
-      await _usuarioService.atualizarFotoDoUsuario(imageDataUrl);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'perfil.web.photoSaveSuccess',
-              fallback: 'Foto do perfil atualizada com sucesso.',
-            ),
-          ),
-        ),
+      final XFile? selected = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 82,
       );
+      if (selected == null || !mounted) return;
+      final String foto = await buildProfileImageDataUrl(selected);
+      if (mounted) setState(() => _fotoSelecionada = foto);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'perfil.web.photoSaveError',
-              fallback:
-                  'Não foi possível atualizar a foto do perfil. Tente novamente.',
-            ),
-          ),
+      _mostrarMensagem(
+        context.t(
+          'perfil.web.photoSaveError',
+          fallback:
+              'Não foi possível atualizar a foto do perfil. Tente novamente.',
         ),
       );
     } finally {
       if (mounted) {
-        setState(() => _salvandoFoto = false);
+        setState(() => _preparandoFoto = false);
       }
     }
   }
@@ -630,6 +615,25 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   child: body,
                 ),
               ),
+              if (_mensagem != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 6,
+                  ),
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _mensagem!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            _mensagemDeErro
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
               _buildFooter(context),
             ],
           );
@@ -688,7 +692,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           const SizedBox(width: 12),
           IconButton.filledTonal(
             onPressed:
-                _usuarioProvider.isLoading || _salvandoFoto
+                _usuarioProvider.isLoading || _preparandoFoto
                     ? null
                     : _selecionarFotoPerfil,
             tooltip: context.t(
@@ -696,7 +700,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
               fallback: 'Alterar foto',
             ),
             icon:
-                _salvandoFoto
+                _preparandoFoto
                     ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -732,7 +736,8 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String imageValue = _usuarioProvider.usuario?.foto ?? '';
+    final String imageValue =
+        _fotoSelecionada ?? _usuarioProvider.usuario?.foto ?? '';
 
     return Semantics(
       button: true,
@@ -740,7 +745,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap:
-            _usuarioProvider.isLoading || _salvandoFoto
+            _usuarioProvider.isLoading || _preparandoFoto
                 ? null
                 : _selecionarFotoPerfil,
         child: Container(
@@ -760,7 +765,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             ),
           ),
           child:
-              _salvandoFoto
+              _preparandoFoto
                   ? const Center(
                     child: SizedBox(
                       width: 20,
@@ -1024,7 +1029,10 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             ),
             const SizedBox(width: 12),
             FilledButton.icon(
-              onPressed: _usuarioProvider.isLoading ? null : _salvarPerfil,
+              onPressed:
+                  _usuarioProvider.isLoading || _preparandoFoto
+                      ? null
+                      : _salvarPerfil,
               icon: const Icon(Icons.save_outlined),
               label: const Text('Salvar meu perfil'),
             ),

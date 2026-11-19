@@ -196,6 +196,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         localidade: _localidadeController.text.trim(),
         uf: _ufController.text.trim(),
       ),
+      enviarPreferenciasIndividuaisDoUsuario: false,
       preferenciasIndividuaisDoUsuario:
           usuarioAtual.preferenciasIndividuaisDoUsuario,
     );
