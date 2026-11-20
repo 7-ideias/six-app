@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:provider/provider.dart';
 import 'subscription_web_page.dart';
 
 import 'package:flutter/material.dart';
@@ -58,6 +60,10 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
   @override
   void initState() {
     super.initState();
+    final permissions = context.read<ColaboradorAutorizacoesProvider>();
+    if (!widget.admin && permissions.tipoPerfilUsuario == 'DESCONHECIDO' && !permissions.loading) {
+      permissions.carregarAutorizacoesDoUsuarioLogado();
+    }
     controller.addListener(_changed);
     controller.load();
   }
@@ -91,6 +97,7 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
 
   Widget _content(BuildContext context) {
     final colors = WebThemeTokens.of(context);
+    final canViewPlans = context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) => PopScope(
@@ -148,7 +155,7 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                       subtitle: '',
                       compact: true,
                     ),
-                  if (controller.value != null) ...[
+                  if (canViewPlans && controller.value != null) ...[
                     Text(
                       billingText(context, controller.value!.status),
                       style: TextStyle(
@@ -171,7 +178,7 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                         style: TextStyle(color: colors.danger),
                       ),
                     ),
-                  if (!widget.admin) ...[
+                  if (!widget.admin && canViewPlans) ...[
                     const SizedBox(height: 24),
                     SubscriptionWebPanel(
                       companyId: widget.companyId,

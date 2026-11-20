@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -51,31 +52,36 @@ class SubscriptionWebPage extends StatelessWidget {
         ),
         title: Text(billingText(context, 'plans')),
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(
-              MediaQuery.sizeOf(context).width < 600 ? 12 : 24,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SubscriptionWebPanel(
-                  selection: selection,
-                  companyId: companyId,
-                  campaignId: campaignId,
+      body:
+          !context
+                  .watch<ColaboradorAutorizacoesProvider>()
+                  .podeConsultarPlanoEConsumo
+              ? Center(child: Text(billingText(context, 'forbidden')))
+              : Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(
+                      MediaQuery.sizeOf(context).width < 600 ? 12 : 24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SubscriptionWebPanel(
+                          selection: selection,
+                          companyId: companyId,
+                          campaignId: campaignId,
+                        ),
+                        if (companyId == null && campaignId == null) ...[
+                          const SizedBox(height: 16),
+                          const StorageUsageWebPage(scrollWithParent: true),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-                if (companyId == null && campaignId == null) ...[
-                  const SizedBox(height: 16),
-                  const StorageUsageWebPage(scrollWithParent: true),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+              ),
     );
   }
 }

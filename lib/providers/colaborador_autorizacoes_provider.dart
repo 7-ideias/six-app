@@ -74,6 +74,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
 
   bool get ehAdministrador => _ehAdministrador;
   bool get ehSuperUsuario => _ehSuperUsuario;
+  // Use the authenticated profile, independent of legacy UI permission defaults.
+  bool get podeConsultarPlanoEConsumo => tipoPerfilUsuario == 'ADMIN' || ehSuperUsuario;
   bool get ehColaborador => _tipoUsuario == TipoUsuarioEnum.COLABORADOR;
   bool get autorizacoesCarregadasComSucesso =>
       _autorizacoesCarregadasComSucesso;

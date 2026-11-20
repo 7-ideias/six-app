@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import '../../l10n/storage_texts.dart';
 import 'storage_usage_web_page.dart';
 import 'dart:convert';
@@ -2077,11 +2078,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final tokens = WebThemeTokens.of(context);
 
     final itens = [
-      (
-        secao: SecaoConfiguracaoSix.armazenamento,
-        titulo: storageText(context, 'title'),
-        icone: Icons.cloud_outlined,
-      ),
+      if (context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo)
+        (
+          secao: SecaoConfiguracaoSix.armazenamento,
+          titulo: storageText(context, 'title'),
+          icone: Icons.cloud_outlined,
+        ),
       (
         secao: SecaoConfiguracaoSix.formasRecebimento,
         titulo: context.t('paymentSettings.title'),
@@ -2958,6 +2960,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildConteudoSecao() {
     switch (_secaoAtual) {
       case SecaoConfiguracaoSix.armazenamento:
+        if (!context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo) return _buildSecaoGeral();
         return const SizedBox(height: 560, child: StorageUsageWebPage());
       case SecaoConfiguracaoSix.formasRecebimento:
         return SizedBox(
