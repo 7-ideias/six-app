@@ -271,6 +271,11 @@ class AdminUsuarioEmpresaAtiva {
   final DateTime? ultimoLoginEm;
   final bool planoPago;
 
+  String get identificador =>
+      idUnicoDoUsuario.trim().isNotEmpty
+          ? idUnicoDoUsuario.trim()
+          : keycloakId.trim();
+
   String get nomeExibicao {
     if (nome.trim().isNotEmpty) return nome.trim();
     if (email.trim().isNotEmpty) return email.trim();

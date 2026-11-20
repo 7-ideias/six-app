@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/data/models/agenda_email_models.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/presentation/screens/super_panel_mobile_screen.dart';
@@ -57,6 +58,41 @@ class _Service implements AdminPortalService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _ResendService extends _Service {
+  final destinosConsultados = <String>[];
+  final envios = <(String, String)>[];
+
+  @override
+  Future<List<AdminUsuarioEmpresaAtiva>> listarUsuariosSixo() async => [
+    AdminUsuarioEmpresaAtiva.fromJson({'keycloakId': 'ana-id', 'nome': 'Ana'}),
+  ];
+
+  @override
+  Future<List<AgendaEmailDestino>> listarDestinosAgendaEmail(
+    String idUsuario,
+  ) async {
+    destinosConsultados.add(idUsuario);
+    return [
+      for (final nome in ['Loja A', 'Loja B'])
+        AgendaEmailDestino(
+          idEmpresa: nome,
+          nomeEmpresa: nome,
+          email: 'ana@example.test',
+        ),
+    ];
+  }
+
+  @override
+  Future<AgendaEmailResultado> reenviarAgendaEmail({
+    required String idUsuario,
+    required String idEmpresa,
+    required String chaveRequisicao,
+  }) async {
+    envios.add((idUsuario, idEmpresa));
+    return const AgendaEmailResultado(idEnvio: 'envio', status: 'ENVIADO');
+  }
+}
+
 class _Permissions extends ColaboradorAutorizacoesProvider {
   _Permissions(this.allowed, {this.admin = false});
   bool allowed;
@@ -72,6 +108,8 @@ class _Permissions extends ColaboradorAutorizacoesProvider {
 }
 
 class _Locale extends ChangeNotifier implements LocaleSettingsProvider {
+  @override
+  String get timeZone => 'UTC';
   @override
   Locale get currentLocale => const Locale('pt', 'BR');
   @override
@@ -185,6 +223,7 @@ void main() {
             findsOneWidget,
           );
           expect(service.calls, 0);
+          expect(find.text('Usuários do Sixo'), findsNothing);
           expect(find.text('database-private'), findsNothing);
         },
       );
@@ -205,6 +244,42 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  }
+
+  for (final dark in [false, true]) {
+    testWidgets('SUPER reenvia pela lista mobile, tema escuro=$dark', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final service = _ResendService();
+      await _pump(tester, true, service, _Permissions(true), dark: dark);
+      await tester.tap(find.text('Usuários do Sixo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 400));
+      final atalho = find.text('Reenviar resumo financeiro');
+      await tester.ensureVisible(atalho);
+      expect(service.destinosConsultados, isEmpty);
+      await tester.tap(atalho);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(service.destinosConsultados, ['ana-id']);
+      expect(find.text('ana@example.test'), findsNWidgets(2));
+      expect(service.envios, isEmpty);
+      await tester.tap(find.text('Loja B'));
+      await tester.pump();
+      final confirmar = find.text('Confirmar envio');
+      await tester.ensureVisible(confirmar);
+      await tester.tap(confirmar);
+      await tester.pump();
+      expect(service.envios, [('ana-id', 'Loja B')]);
+      expect(find.text('Fechar'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   testWidgets(
