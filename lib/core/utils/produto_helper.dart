@@ -18,22 +18,28 @@ class ProdutoHelper {
       listen: false,
     );
 
-    final empresaId = await _authService.getEmpresaId();
-    final accessToken = await _authService.getAccessToken();
-
     await provider.carregar(
-      headers: {
-        'Content-Type': 'application/json',
-        'idUnicoDaEmpresa': empresaId ?? '',
-        'Authorization': 'Bearer $accessToken',
-        'tipo': tipo,
-        if (produtosAtivos != null) 'produtosAtivos': '$produtosAtivos',
-      },
+      headers: await headersListagem(tipo, produtosAtivos),
     );
 
     if (onSucesso != null) {
       onSucesso(provider.listaDeProdutos);
     }
+  }
+
+  static Future<Map<String, String>> headersListagem(
+    String tipo, [
+    bool? ativos,
+  ]) async {
+    final empresa = await _authService.getEmpresaId();
+    final token = await _authService.getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      'idUnicoDaEmpresa': empresa ?? '',
+      'Authorization': 'Bearer $token',
+      'tipo': tipo,
+      if (ativos != null) 'produtosAtivos': '$ativos',
+    };
   }
 
   static List<ProdutoModel> filtrarEOrdenarProdutos({

@@ -22,6 +22,8 @@ Future<bool?> showSubPainelCadastroProduto(
   String textoDaAppBar, {
   ProdutoModel? produtoParaEdicao,
   bool modoEdicao = false,
+  String tipoInicial = 'PRODUTO',
+  ValueChanged<ProdutoModel>? onCriado,
 }) {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(

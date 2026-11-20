@@ -256,15 +256,19 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       headers: await _getHeaders(),
     );
 
-    if (response.statusCode != 200 || response.body.trim().isEmpty) {
-      return _autorizacoesVazias();
+    if (response.statusCode == 204) return _autorizacoesVazias();
+    if (response.statusCode != 200) {
+      throw ColaboradorUsuarioApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     final dynamic data = jsonDecode(response.body);
     if (data is Map<String, dynamic>) {
       return data;
     }
-    return _autorizacoesVazias();
+    throw const FormatException('Invalid permissions response');
   }
 
   Map<String, dynamic> _autorizacoesVazias() {

@@ -17,6 +17,16 @@ class ProdutosListProvider<T> with ChangeNotifier {
 
   String? get erro => _erro;
 
+  List<T> itensDaResposta(dynamic response) {
+    if (response is List<T>) return response;
+    if (response != null && response.produtosList is List<T>)
+      return response.produtosList as List<T>;
+    return [];
+  }
+
+  Future<List<T>> consultar(Map<String, String> headers) async =>
+      itensDaResposta(await fetchFunction(headers));
+
   Future<void> carregar({Map<String, String>? headers}) async {
     _isLoading = true;
     _erro = null;
@@ -25,13 +35,7 @@ class ProdutosListProvider<T> with ChangeNotifier {
     try {
       final response = await fetchFunction(headers);
       _fullResponse = response;
-      if (response is List<T>) {
-        _items = response;
-      } else if (response != null && response.produtosList is List<T>) {
-        _items = response.produtosList;
-      } else {
-        _items = [];
-      }
+      _items = itensDaResposta(response);
     } catch (e) {
       _erro = e.toString();
       _items = [];

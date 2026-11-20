@@ -10,6 +10,7 @@ import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -24,6 +25,70 @@ void main() {
 
   tearDown(() {
     UsuarioProvider().clear();
+  });
+
+  for (final tema in [ThemeMode.light, ThemeMode.dark]) {
+    testWidgets('PDV sem produtos oferece serviço selecionável ($tema)', (
+      tester,
+    ) async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _buildTestApp(
+          themeMode: tema,
+          services: [
+            _servico(
+              id: 's1',
+              nome: 'Troca de conector',
+              codigo: 'S1',
+              categoria: 'Reparo',
+              preco: 89,
+            ),
+          ],
+          child: const Scaffold(
+            body: ProdutoListaBody(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+              apenasAtivosNoBackend: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Ainda não há produtos cadastrados.'), findsOneWidget);
+      expect(find.byTooltip('Marcadores'), findsNothing);
+      expect(find.text('Cadastrar produtos'), findsNothing);
+      await tester.tap(find.text('Ver serviços'));
+      await tester.pumpAndSettle();
+      expect(find.text('Troca de conector'), findsOneWidget);
+      await tester.tap(find.text('Troca de conector'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('PDV mobile com catálogo vazio orienta o vendedor sem cadastro', (
+    tester,
+  ) async {
+    _preferencias(ModoDeExibicaoUsuario.lista);
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      _buildTestApp(
+        themeMode: ThemeMode.dark,
+        child: const ProdutolistMobileScreen(
+          isSelecao: true,
+          permitirSelecaoMultipla: true,
+          apenasAtivosNoBackend: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ainda não há produtos cadastrados.'), findsOneWidget);
+    expect(find.text('Voltar ao PDV'), findsOneWidget);
+    expect(find.text('Cadastrar produtos'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('grade de edicao pagina e inclui servicos nos filtros rapidos', (
@@ -199,6 +264,7 @@ void main() {
 
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
       await tester.binding.setSurfaceSize(null);
     });
 
@@ -338,14 +404,7 @@ void main() {
   );
 }
 
-Future<void> _pumpCatalog(
-  WidgetTester tester, {
-  required Size size,
-  required ModoDeExibicaoUsuario viewMode,
-  required List<ProdutoModel> products,
-  required List<ProdutoModel> services,
-  ThemeMode themeMode = ThemeMode.light,
-}) async {
+void _preferencias(ModoDeExibicaoUsuario viewMode) {
   UsuarioProvider().setUsuario(
     UsuarioModel(
       nome: 'Ana',
@@ -360,7 +419,17 @@ Future<void> _pumpCatalog(
           ),
     ),
   );
+}
 
+Future<void> _pumpCatalog(
+  WidgetTester tester, {
+  required Size size,
+  required ModoDeExibicaoUsuario viewMode,
+  required List<ProdutoModel> products,
+  required List<ProdutoModel> services,
+  ThemeMode themeMode = ThemeMode.light,
+}) async {
+  _preferencias(viewMode);
   await tester.binding.setSurfaceSize(size);
   addTearDown(() async {
     await tester.binding.setSurfaceSize(null);

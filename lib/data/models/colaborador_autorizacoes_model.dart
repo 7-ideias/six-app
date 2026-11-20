@@ -2,6 +2,7 @@ class ColaboradorAutorizacoesModel {
   const ColaboradorAutorizacoesModel({
     required this.podeFazerDevolucao,
     required this.podeCadastrarProduto,
+    this.podeCadastrarServico = false,
     required this.objProdutosPode,
     required this.objVendasPode,
     required this.objAssistenciaTecnicaPode,
@@ -12,6 +13,7 @@ class ColaboradorAutorizacoesModel {
 
   final bool podeFazerDevolucao;
   final bool podeCadastrarProduto;
+  final bool podeCadastrarServico;
   final ObjProdutosPodeAutorizacao objProdutosPode;
   final ObjVendasPodeAutorizacao objVendasPode;
   final ObjAssistenciaTecnicaPodeAutorizacao objAssistenciaTecnicaPode;
@@ -23,6 +25,11 @@ class ColaboradorAutorizacoesModel {
     return ColaboradorAutorizacoesModel(
       podeFazerDevolucao: _asBool(json['podeFazerDevolucao']),
       podeCadastrarProduto: _asBool(json['podeCadastrarProduto']),
+      podeCadastrarServico:
+          (json['permissoesAdicionais'] as List?)?.contains(
+            'SERVICOS_CADASTRAR',
+          ) ==
+          true,
       objProdutosPode: ObjProdutosPodeAutorizacao.fromJson(
         _asMap(json['objProdutosPode']),
       ),
@@ -53,6 +60,7 @@ class ColaboradorAutorizacoesModel {
     return const ColaboradorAutorizacoesModel(
       podeFazerDevolucao: true,
       podeCadastrarProduto: true,
+      podeCadastrarServico: true,
       objProdutosPode: ObjProdutosPodeAutorizacao(
         podeVerEstoqueDeProduto: true,
         podeEditarProduto: true,
@@ -77,6 +85,7 @@ class ColaboradorAutorizacoesModel {
     return <String, dynamic>{
       'podeFazerDevolucao': podeFazerDevolucao,
       'podeCadastrarProduto': podeCadastrarProduto,
+      if (podeCadastrarServico) 'permissoesAdicionais': ['SERVICOS_CADASTRAR'],
       'objProdutosPode': objProdutosPode.toJson(),
       'objVendasPode': objVendasPode.toJson(),
       'objAssistenciaTecnicaPode': objAssistenciaTecnicaPode.toJson(),

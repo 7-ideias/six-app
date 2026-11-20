@@ -3217,7 +3217,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
             },
             onNovoServico: () {
-              showSubPainelCadastroProduto(context, 'Cadastro de Serviços');
+              showSubPainelCadastroProduto(
+                context,
+                'Cadastro de Serviços',
+                tipoInicial: 'SERVICO',
+              );
             },
             onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
             onOpenListaServicos:
@@ -3237,9 +3241,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ServicoDashboardWebPage(
             onBack: voltarParaInicio,
-            onNovoServico: () {
-              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-            },
+            onNovoServico:
+                context
+                        .watch<ColaboradorAutorizacoesProvider>()
+                        .podeCadastrarServico
+                    ? () => showSubPainelCadastroProduto(
+                      context,
+                      'Cadastro de Serviços',
+                      tipoInicial: 'SERVICO',
+                    )
+                    : null,
             onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
           ),
         );

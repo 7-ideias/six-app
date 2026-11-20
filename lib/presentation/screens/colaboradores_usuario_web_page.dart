@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/permissao_colaborador.dart';
+import 'package:sixpos/presentation/components/web/permissoes_colaborador_web.dart';
 import 'package:flutter/material.dart';
 import '../theme/six_web_action_styles.dart';
 import 'package:flutter/services.dart';
@@ -1190,12 +1192,7 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
   late final TextEditingController _email;
   late final TextEditingController _celular;
 
-  bool _podeVender = false;
-  bool _podeServico = false;
-  bool _podeEditarCliente = false;
-  bool _podeRelatorio = false;
-  bool _podeReceberNoCaixa = false;
-  bool _podeVerQuantoVendeu = false;
+  late final Set<PermissaoColaborador> _marcadas;
 
   @override
   void initState() {
@@ -1229,23 +1226,7 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     final Map<String, dynamic> autorizacoes = _ensureMap(
       json['objAutorizacoes'],
     );
-    _podeVender = _ensureMap(autorizacoes['objVendasPode'])['fazVenda'] == true;
-    _podeServico =
-        _ensureMap(autorizacoes['objAssistenciaTecnicaPode'])['lancaServico'] ==
-        true;
-    _podeEditarCliente =
-        _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] ==
-        true;
-    _podeRelatorio =
-        _ensureMap(
-          autorizacoes['objRelatoriosPode'],
-        )['geraRelatorioDeVendas'] ==
-        true;
-    final Map<String, dynamic> financeiro = _ensureMap(
-      autorizacoes['objLancamentosFinanceirosPode'],
-    );
-    _podeReceberNoCaixa = financeiro['podeReceberNoCaixa'] == true;
-    _podeVerQuantoVendeu = financeiro['podeVerQuantoVendeu'] == true;
+    _marcadas = PermissaoColaborador.ler(autorizacoes);
   }
 
   @override
@@ -1278,31 +1259,7 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     final Map<String, dynamic> autorizacoes = _ensureMap(
       json['objAutorizacoes'],
     );
-    autorizacoes['podeCadastrarProduto'] =
-        autorizacoes['podeCadastrarProduto'] ?? false;
-    autorizacoes['podeFazerDevolucao'] =
-        autorizacoes['podeFazerDevolucao'] ?? false;
-    autorizacoes['objVendasPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objVendasPode']),
-      'fazVenda': _podeVender,
-    };
-    autorizacoes['objAssistenciaTecnicaPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objAssistenciaTecnicaPode']),
-      'lancaServico': _podeServico,
-    };
-    autorizacoes['objClientesPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objClientesPode']),
-      'podeEditarCliente': _podeEditarCliente,
-    };
-    autorizacoes['objRelatoriosPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objRelatoriosPode']),
-      'geraRelatorioDeVendas': _podeRelatorio,
-    };
-    autorizacoes['objLancamentosFinanceirosPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objLancamentosFinanceirosPode']),
-      'podeReceberNoCaixa': _podeReceberNoCaixa,
-      'podeVerQuantoVendeu': _podeVerQuantoVendeu,
-    };
+    PermissaoColaborador.aplicar(autorizacoes, _marcadas);
     json['objAutorizacoes'] = autorizacoes;
     return json;
   }
@@ -1387,71 +1344,22 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  _t(
-                    'colaboradores.operationalPermissions',
-                    'Permissões operacionais',
-                  ),
+                  context.t('staff.permissions'),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 10),
-                _switchTile(
-                  _t('colaboradores.sales', 'Vendas'),
-                  _t(
-                    'colaboradores.canMakeSalesInBusiness',
-                    'Pode realizar vendas no comércio.',
-                  ),
-                  _podeVender,
-                  (bool value) => setState(() => _podeVender = value),
-                ),
-                _switchTile(
-                  _t(
-                    'colaboradores.technicalAssistance',
-                    'Assistência técnica',
-                  ),
-                  _t(
-                    'colaboradores.canCreateTechnicalWork',
-                    'Pode lançar serviços técnicos.',
-                  ),
-                  _podeServico,
-                  (bool value) => setState(() => _podeServico = value),
-                ),
-                _switchTile(
-                  _t('colaboradores.customers', 'Clientes'),
-                  _t(
-                    'colaboradores.canEditCustomerData',
-                    'Pode editar dados de clientes.',
-                  ),
-                  _podeEditarCliente,
-                  (bool value) => setState(() => _podeEditarCliente = value),
-                ),
-                _switchTile(
-                  _t('colaboradores.reports', 'Relatórios'),
-                  _t(
-                    'colaboradores.canGenerateSalesReports',
-                    'Pode gerar relatórios de vendas.',
-                  ),
-                  _podeRelatorio,
-                  (bool value) => setState(() => _podeRelatorio = value),
-                ),
-                _switchTile(
-                  _t('colaboradores.finance', 'Financeiro'),
-                  _t(
-                    'colaboradores.canReceiveAtCashRegister',
-                    'Pode receber no caixa.',
-                  ),
-                  _podeReceberNoCaixa,
-                  (bool value) => setState(() => _podeReceberNoCaixa = value),
-                ),
-                _switchTile(
-                  _t('colaboradores.salesSummary', 'Resumo das vendas'),
-                  _t(
-                    'colaboradores.canViewHowMuchSold',
-                    'Pode ver quanto vendeu e consultar o resumo das vendas.',
-                  ),
-                  _podeVerQuantoVendeu,
-                  (bool value) => setState(() => _podeVerQuantoVendeu = value),
+                PermissoesColaboradorWeb(
+                  marcadas: _marcadas,
+                  onChanged:
+                      (p, valor) => setState(() {
+                        if (valor) {
+                          _marcadas.add(p);
+                        } else {
+                          _marcadas.remove(p);
+                        }
+                      }),
                 ),
               ],
             ),
@@ -1491,39 +1399,6 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
         borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  Widget _switchTile(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: value ? tokens.selectedBackground : tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: value ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: Theme.of(context).colorScheme.primary,
-        title: Text(
-          title,
-          style: TextStyle(
-            color: tokens.primaryText,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        subtitle: Text(subtitle, style: TextStyle(color: tokens.secondaryText)),
-      ),
     );
   }
 

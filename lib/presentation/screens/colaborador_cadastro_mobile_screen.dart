@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/permissao_colaborador.dart';
+import 'package:sixpos/presentation/components/mobile/permissoes_colaborador_mobile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -65,23 +67,7 @@ class _ColaboradorCadastroMobileScreenState
   String _metodoPagamento = 'TRANSFERENCIA';
   int _etapaAtual = 0;
 
-  bool _fazVenda = true;
-  bool _lancaServico = true;
-  bool _editaCliente = true;
-  bool _fornecedoresConsultar = false;
-  bool _fornecedoresCadastrar = false;
-  bool _fornecedoresEditar = false;
-  bool _fornecedoresInativar = false;
-  bool _comprasConsultar = false;
-  bool _comprasCriar = false;
-  bool _comprasEditar = false;
-  bool _comprasConfirmar = false;
-  bool _comprasCancelar = false;
-  bool _comprasReceber = false;
-  bool _podeReceberNoCaixa = false;
-  bool _podeVerQuantoVendeu = false;
-  bool _geraRelatorio = false;
-  bool _gerenciaPermissoes = false;
+  final _marcadas = PermissaoColaborador.iniciais();
   bool _loading = false;
   _ConviteDeliveryAction? _loadingAction;
   ColaboradorConviteResponse? _convite;
@@ -143,25 +129,7 @@ class _ColaboradorCadastroMobileScreenState
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
-  List<String> _permissoes() => <String>[
-    if (_fazVenda) 'VENDAS_CRIAR',
-    if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
-    if (_editaCliente) 'CLIENTES_EDITAR',
-    if (_fornecedoresConsultar) 'FORNECEDORES_CONSULTAR',
-    if (_fornecedoresCadastrar) 'FORNECEDORES_CADASTRAR',
-    if (_fornecedoresEditar) 'FORNECEDORES_EDITAR',
-    if (_fornecedoresInativar) 'FORNECEDORES_INATIVAR',
-    if (_comprasConsultar) 'COMPRAS_CONSULTAR',
-    if (_comprasCriar) 'COMPRAS_CRIAR',
-    if (_comprasEditar) 'COMPRAS_EDITAR',
-    if (_comprasConfirmar) 'COMPRAS_CONFIRMAR',
-    if (_comprasCancelar) 'COMPRAS_CANCELAR',
-    if (_comprasReceber) 'COMPRAS_RECEBER',
-    if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
-    if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
-    if (_geraRelatorio) 'RELATORIOS_GERAR',
-    if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
-  ];
+  List<String> _permissoes() => [for (final p in _marcadas) p.codigo];
 
   double _parseDecimal(String value) {
     String raw = value.trim().replaceAll(' ', '');
@@ -1181,164 +1149,24 @@ class _ColaboradorCadastroMobileScreenState
     );
   }
 
-  Widget _permissionsSection() {
-    return _section(
-      title: _t('colaboradores.initialPermissions', 'Permissões iniciais'),
-      subtitle: _t(
-        'colaborador.permissions.subtitle',
-        'As permissões essenciais continuam com o comportamento atual.',
-      ),
-      icon: Icons.security_outlined,
-      child: Column(
-        children: <Widget>[
-          _permission(
-            title: _t('colaboradores.sales', 'Vendas'),
-            subtitle: _t('colaboradores.canCreateSales', 'Pode criar vendas.'),
-            icon: Icons.point_of_sale_outlined,
-            value: _fazVenda,
-            onChanged: (bool value) => setState(() => _fazVenda = value),
-          ),
-          _permission(
-            title: _t(
-              'colaboradores.technicalAssistance',
-              'Assistência técnica',
-            ),
-            subtitle: _t(
-              'colaboradores.canCreateTechnicalServices',
-              'Pode lançar atendimentos técnicos.',
-            ),
-            icon: Icons.handyman_outlined,
-            value: _lancaServico,
-            onChanged: (bool value) => setState(() => _lancaServico = value),
-          ),
-          _permission(
-            title: _t('colaboradores.customers', 'Clientes'),
-            subtitle: _t(
-              'colaboradores.canEditCustomers',
-              'Pode editar clientes.',
-            ),
-            icon: Icons.people_alt_outlined,
-            value: _editaCliente,
-            onChanged: (bool value) => setState(() => _editaCliente = value),
-          ),
-          _permission(
-            title: _t('suppliers.permission.read', 'Consultar fornecedores'),
-            subtitle: _t('suppliers.permission.readDescription', 'Consultar fornecedores da conta.',),
-            icon: Icons.local_shipping_outlined,
-            value: _fornecedoresConsultar,
-            onChanged: (bool v) => setState(() => _fornecedoresConsultar = v),
-          ),
-          _permission(
-            title: _t('suppliers.permission.create', 'Cadastrar fornecedores'),
-            subtitle: _t('suppliers.permission.createDescription', 'Criar fornecedores.',),
-            icon: Icons.add_business_outlined,
-            value: _fornecedoresCadastrar,
-            onChanged: (bool v) => setState(() => _fornecedoresCadastrar = v),
-          ),
-          _permission(
-            title: _t('suppliers.permission.edit', 'Editar fornecedores'),
-            subtitle: _t('suppliers.permission.editDescription', 'Alterar cadastros.',),
-            icon: Icons.edit_outlined,
-            value: _fornecedoresEditar,
-            onChanged: (bool v) => setState(() => _fornecedoresEditar = v),
-          ),
-          _permission(
-            title: _t('suppliers.permission.disable', 'Ativar / inativar fornecedores',),
-            subtitle: _t('suppliers.permission.disableDescription', 'Alterar status.',),
-            icon: Icons.block_outlined,
-            value: _fornecedoresInativar,
-            onChanged: (bool v) => setState(() => _fornecedoresInativar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.read', 'Consultar compras'),
-            subtitle: _t('purchases.permission.readDescription', 'Permite consultar pedidos do comércio.',),
-            icon: Icons.shopping_cart_outlined,
-            value: _comprasConsultar,
-            onChanged: (bool v) => setState(() => _comprasConsultar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.create', 'Criar compras'),
-            subtitle: _t('purchases.permission.createDescription', 'Permite criar novos rascunhos.',),
-            icon: Icons.add_shopping_cart_outlined,
-            value: _comprasCriar,
-            onChanged: (bool v) => setState(() => _comprasCriar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.edit', 'Editar compras'),
-            subtitle: _t('purchases.permission.editDescription', 'Permite alterar rascunhos.',),
-            icon: Icons.edit_note_outlined,
-            value: _comprasEditar,
-            onChanged: (bool v) => setState(() => _comprasEditar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.confirm', 'Confirmar compras'),
-            subtitle: _t('purchases.permission.confirmDescription', 'Confirma compras e gera contas a pagar.',),
-            icon: Icons.check_circle_outline_rounded,
-            value: _comprasConfirmar,
-            onChanged: (bool v) => setState(() => _comprasConfirmar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.cancel', 'Cancelar compras'),
-            subtitle: _t('purchases.permission.cancelDescription', 'Permite cancelar compras conforme regras financeiras.',),
-            icon: Icons.cancel_outlined,
-            value: _comprasCancelar,
-            onChanged: (bool v) => setState(() => _comprasCancelar = v),
-          ),
-          _permission(
-            title: _t('purchases.permission.receive', 'Receber mercadorias'),
-            subtitle: _t('purchases.permission.receiveDescription', 'Registra entradas reais de produtos da compra.',),
-            icon: Icons.inventory_2_outlined,
-            value: _comprasReceber,
-            onChanged: (bool v) => setState(() => _comprasReceber = v),
-          ),
-          _permission(
-            title: _t('colaboradores.finance', 'Financeiro'),
-            subtitle: _t(
-              'colaboradores.canReceiveAtCashier',
-              'Pode receber no caixa.',
-            ),
-            icon: Icons.account_balance_wallet_outlined,
-            value: _podeReceberNoCaixa,
-            onChanged:
-                (bool value) => setState(() => _podeReceberNoCaixa = value),
-          ),
-          _permission(
-            title: _t('colaboradores.salesSummary', 'Resumo das vendas'),
-            subtitle: _t(
-              'colaboradores.canViewSalesSummary',
-              'Pode consultar quanto vendeu.',
-            ),
-            icon: Icons.query_stats_outlined,
-            value: _podeVerQuantoVendeu,
-            onChanged:
-                (bool value) => setState(() => _podeVerQuantoVendeu = value),
-          ),
-          _permission(
-            title: _t('colaboradores.reports', 'Relatórios'),
-            subtitle: _t(
-              'colaboradores.canGenerateReports',
-              'Pode gerar relatórios.',
-            ),
-            icon: Icons.analytics_outlined,
-            value: _geraRelatorio,
-            onChanged: (bool value) => setState(() => _geraRelatorio = value),
-          ),
-          _permission(
-            title: _t('colaboradores.permissions', 'Permissões'),
-            subtitle: _t(
-              'colaboradores.canManagePermissions',
-              'Pode gerenciar permissões.',
-            ),
-            icon: Icons.verified_user_outlined,
-            value: _gerenciaPermissoes,
-            onChanged:
-                (bool value) => setState(() => _gerenciaPermissoes = value),
-            last: true,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _permissionsSection() => _section(
+    title: context.t('staff.permissions'),
+    subtitle: context.t('staff.permissionsHint'),
+    icon: Icons.security_outlined,
+    child: PermissoesColaboradorMobile(
+      marcadas: _marcadas,
+      onChanged:
+          _loading
+              ? null
+              : (p, valor) => setState(() {
+                if (valor) {
+                  _marcadas.add(p);
+                } else {
+                  _marcadas.remove(p);
+                }
+              }),
+    ),
+  );
 
   Widget _section({
     required String title,
@@ -1691,61 +1519,6 @@ class _ColaboradorCadastroMobileScreenState
           ),
     );
     if (result != null && mounted) onSelected(result);
-  }
-
-  Widget _permission({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    bool last = false,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: last ? 0 : 10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: value ? _colors.softAccentSurface : _colors.softSurface,
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: value ? _colors.accent : _colors.border),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              icon,
-              color: value ? _colors.accent : _colors.mutedText,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: _colors.titleText,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: _colors.mutedText, fontSize: 11.5),
-                  ),
-                ],
-              ),
-            ),
-            Switch.adaptive(
-              value: value,
-              onChanged: _loading ? null : onChanged,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _bottomActions() {

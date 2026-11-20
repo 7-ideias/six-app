@@ -1,3 +1,5 @@
+import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -125,6 +127,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   final PageController _horizontalProdutosController = PageController(
     viewportFraction: _horizontalViewportFraction,
   );
+
+  bool get _selecaoPdv => widget.isSelecao && widget.apenasAtivosNoBackend;
+  CatalogoSelecaoPdv? _catalogoPdv;
+  int _consultaPdv = 0;
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -465,6 +471,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Future<void> _recarregar() async {
+    if (_selecaoPdv) {
+      final consulta = ++_consultaPdv;
+      setState(() => _catalogoPdv = null);
+      final catalogo = await CatalogoSelecaoPdv.carregar(
+        context.read<ProdutosListProvider<ProdutoModel>>(),
+      );
+      if (!mounted || consulta != _consultaPdv) return;
+      _catalogoPdv = catalogo;
+      atualizarListaComProvider(catalogo.ativos(tipoSelecionado));
+      return;
+    }
+
     await ProdutoHelper.retornarProdutosList(
       context,
       tipo: tipoSelecionado,
@@ -803,10 +821,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           actions:
               isSelecao
                   ? <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(right: 2),
-                      child: _buildRestaurarBuscaAction(),
-                    ),
+                    if (!_selecaoPdv ||
+                        todosProdutos.isNotEmpty && _catalogoPdv != null)
+                      Padding(
+                        padding: EdgeInsets.only(right: 2),
+                        child: _buildRestaurarBuscaAction(),
+                      ),
                     Padding(
                       padding: EdgeInsets.only(right: 6),
                       child: _buildVoltarAoTopoAction(),
@@ -901,17 +921,21 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                 ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: IconButton(
-                        tooltip: _t(
-                          'produto.mobile.newProduct',
-                          'Novo produto',
+                    if (context
+                            .watch<ColaboradorAutorizacoesProvider?>()
+                            ?.podeCadastrarTipo(tipoSelecionado) ==
+                        true)
+                      Padding(
+                        padding: EdgeInsets.only(right: 6),
+                        child: IconButton(
+                          tooltip: _t(
+                            'produto.mobile.newProduct',
+                            'Novo produto',
+                          ),
+                          onPressed: _criarProduto,
+                          icon: Icon(Icons.add_rounded, size: 22),
                         ),
-                        onPressed: _criarProduto,
-                        icon: Icon(Icons.add_rounded, size: 22),
                       ),
-                    ),
                   ],
           bodyBuilder: (
             BuildContext context,
@@ -939,7 +963,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             delay: Duration(milliseconds: 70),
                             child: _buildAnimatedSelectionTabs(),
                           ),
-                        if (_exibirCampoBusca &&
+                        if ((!_selecaoPdv || todosProdutos.isNotEmpty) &&
+                            _exibirCampoBusca &&
                             !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                           SizedBox(height: 12),
                           SixStaggeredEntry(
@@ -975,7 +1000,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             );
           },
           bottomNavigationBar:
-              _selecaoMultiplaAtiva ? _buildBarraSelecaoMultipla() : null,
+              _selecaoMultiplaAtiva &&
+                      (!_selecaoPdv ||
+                          _selecionados.isNotEmpty ||
+                          todosProdutos.isNotEmpty)
+                  ? _buildBarraSelecaoMultipla()
+                  : null,
         );
       },
     );
@@ -1037,11 +1067,109 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  Future<void> _acaoVazio(AcaoCatalogo acao) async {
+    switch (acao) {
+      case AcaoCatalogo.verServicos:
+        _selectTipo('SERVICO');
+      case AcaoCatalogo.verProdutos:
+        _selectTipo('PRODUTO');
+      case AcaoCatalogo.voltar:
+        Navigator.of(context).pop();
+      case AcaoCatalogo.recarregar:
+        await _recarregar();
+      case AcaoCatalogo.limpar:
+        termoBusca = '';
+        _controllerBusca.clear();
+        _categoriaSelecionadaId = null;
+        _statusFiltro = _ProdutoStatusFiltroMobile.todos;
+        _estoqueFiltro = _ProdutoEstoqueFiltroMobile.todos;
+        aplicarFiltroOrdenacao();
+      case AcaoCatalogo.criarProduto:
+      case AcaoCatalogo.criarServico:
+        final tipo = acao == AcaoCatalogo.criarProduto ? 'PRODUTO' : 'SERVICO';
+        ProdutoModel? criado;
+        final salvo = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder:
+                (_) => CadastroProdutoMobileScreen(
+                  tipoInicial: tipo,
+                  onCriado: (p) => criado = p,
+                ),
+          ),
+        );
+        if (!mounted || salvo != true) return;
+        final item = criado;
+        tipoSelecionado = item?.tipoProduto ?? tipo;
+        termoBusca = '';
+        _controllerBusca.clear();
+        await _recarregar();
+        if (mounted && item != null && item.ativo) {
+          if (_selecaoMultiplaAtiva) {
+            _alternarProdutoSelecionado(item);
+          } else {
+            Navigator.of(context).pop(item);
+          }
+        }
+    }
+  }
+
+  Widget _vazioPdv() {
+    final acesso = context.watch<ColaboradorAutorizacoesProvider?>();
+    final estado = _catalogoPdv!.orientacao(
+      tipoSelecionado,
+      criarProduto: acesso?.podeCadastrarProduto == true,
+      criarServico: acesso?.podeCadastrarServico == true,
+    );
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceElevatedColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            _isProdutoSelecionado
+                ? Icons.inventory_2_outlined
+                : Icons.design_services_outlined,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.t(estado.titulo),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          if (estado.descricao != null) Text(context.t(estado.descricao!)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              FilledButton(
+                onPressed: () => _acaoVazio(estado.acao),
+                child: Text(context.t(estado.acao.chave)),
+              ),
+              if (estado.secundaria != null)
+                OutlinedButton(
+                  onPressed: () => _acaoVazio(estado.secundaria!),
+                  child: Text(context.t(estado.secundaria!.chave)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildListContent(
     ProdutosListProvider<ProdutoModel> provider,
     List<ProdutoModel> itensDaLista,
     bool isSelecao,
   ) {
+    if (_selecaoPdv && _catalogoPdv == null) return [_LoadingState()];
+    if (_selecaoPdv && itensDaLista.isEmpty) return [_vazioPdv()];
     if (provider.isLoading && todosProdutos.isEmpty) {
       return <Widget>[_LoadingState()];
     }
@@ -3356,6 +3484,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       todosProdutos = <ProdutoModel>[];
     });
     _agendarSalvamentoPreferenciasEstoqueMobile();
+    if (_selecaoPdv) {
+      atualizarListaComProvider(_catalogoPdv?.ativos(tipoSelecionado) ?? []);
+      return;
+    }
     _recarregar();
   }
 

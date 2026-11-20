@@ -28,6 +28,7 @@ class CatalogHealthMobileScreen extends StatelessWidget {
     );
   }
 }
+
 class _CatalogHealthMobileView extends StatelessWidget {
   const _CatalogHealthMobileView();
 
@@ -51,7 +52,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
       actions:
-          permissions.podeCadastrarProduto
+          permissions.podeCadastrarProduto || permissions.podeCadastrarServico
               ? <Widget>[
                 PopupMenuButton<_CatalogCreateAction>(
                   tooltip: context.t(
@@ -70,40 +71,42 @@ class _CatalogHealthMobileView extends StatelessWidget {
                       (
                         BuildContext context,
                       ) => <PopupMenuEntry<_CatalogCreateAction>>[
-                        PopupMenuItem<_CatalogCreateAction>(
-                          value: _CatalogCreateAction.product,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.add_rounded, size: 18),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  context.t(
-                                    'catalogHealth.mobile.newProduct',
-                                    fallback: 'Novo produto',
+                        if (permissions.podeCadastrarProduto)
+                          PopupMenuItem<_CatalogCreateAction>(
+                            value: _CatalogCreateAction.product,
+                            child: Row(
+                              children: <Widget>[
+                                Icon(Icons.add_rounded, size: 18),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    context.t(
+                                      'catalogHealth.mobile.newProduct',
+                                      fallback: 'Novo produto',
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        PopupMenuItem<_CatalogCreateAction>(
-                          value: _CatalogCreateAction.service,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.design_services_outlined, size: 18),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  context.t(
-                                    'workspaceHome.quickAction.newTechnicalService',
-                                    fallback: 'Serviços',
+                        if (permissions.podeCadastrarServico)
+                          PopupMenuItem<_CatalogCreateAction>(
+                            value: _CatalogCreateAction.service,
+                            child: Row(
+                              children: <Widget>[
+                                Icon(Icons.design_services_outlined, size: 18),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    context.t(
+                                      'workspaceHome.quickAction.newTechnicalService',
+                                      fallback: 'Serviços',
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                   child: Padding(
                     padding: EdgeInsets.only(right: 6),
@@ -273,10 +276,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
     );
   }
 
-  void _openPendingMetric(
-    BuildContext context,
-    CatalogHealthMetric metric,
-  ) {
+  void _openPendingMetric(BuildContext context, CatalogHealthMetric metric) {
     switch (metric.action?.type.toUpperCase()) {
       case 'ABRIR_ESTOQUE':
         Navigator.of(context).push(
@@ -645,7 +645,8 @@ class _CatalogHealthHero extends StatelessWidget {
     );
     final String heroDescription = context.t(
       'catalogHealth.mobile.description',
-      fallback: 'Qualidade de fotos, categorias e informações dos itens ativos.',
+      fallback:
+          'Qualidade de fotos, categorias e informações dos itens ativos.',
     );
     final String attentionLabel =
         attentionTemplate.contains('{count}')

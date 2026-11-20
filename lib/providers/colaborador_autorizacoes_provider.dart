@@ -100,12 +100,16 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       podeLancarAssistenciaTecnica ||
       autorizacoes.objAssistenciaTecnicaPode.ehUmTecnicoEFazAssistenciaTecnica;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
+  bool get podeCadastrarServico => autorizacoes.podeCadastrarServico;
+  bool podeCadastrarTipo(String tipo) =>
+      tipo == 'SERVICO' ? podeCadastrarServico : podeCadastrarProduto;
   bool get podeCadastrarProduto => autorizacoes.podeCadastrarProduto;
   bool get podeEditarProduto => autorizacoes.objProdutosPode.podeEditarProduto;
   bool get podeVerEstoqueDeProduto =>
       autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
   bool get podeAcessarCatalogo =>
       podeCadastrarProduto ||
+      podeCadastrarServico ||
       podeEditarProduto ||
       podeAcessarEtiquetas;
   bool get podeGerarRelatorio =>
@@ -179,11 +183,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       final ColaboradorAutorizacoesModel carregadas =
           ColaboradorAutorizacoesModel.fromJson(autorizacoesJson);
 
-      final bool administradorSemVinculo = _deveAssumirAdministradorSemVinculo(
-        detalhe: detalhe,
-        autorizacoes: carregadas,
-      );
-      final bool ehAdministrador = perfilAdmin || administradorSemVinculo;
+      final papelNoComercio = autorizacoesJson['administradorDaEmpresa'];
+      final bool ehAdministrador =
+          papelNoComercio is bool ? papelNoComercio : perfilAdmin;
       _atualizarPerfilDeAcesso(
         tipoPerfilUsuario: tipoPerfilUsuario,
         ehAdministrador: ehAdministrador,
@@ -296,28 +298,6 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       return TipoUsuarioEnum.CLIENTE;
     }
     return null;
-  }
-
-  bool _deveAssumirAdministradorSemVinculo({
-    required ColaboradorUsuarioDetalhe detalhe,
-    required ColaboradorAutorizacoesModel autorizacoes,
-  }) {
-    final bool semDadosDePessoa =
-        detalhe.nome.trim().isEmpty &&
-        detalhe.nomeDeGuerra.trim().isEmpty &&
-        detalhe.email.trim().isEmpty &&
-        detalhe.celularDeAcesso.trim().isEmpty;
-
-    final bool semAutorizacaoOperacional =
-        !autorizacoes.podeFazerDevolucao &&
-        !autorizacoes.objVendasPode.fazVenda &&
-        !autorizacoes.objAssistenciaTecnicaPode.lancaServico &&
-        !autorizacoes.objClientesPode.podeEditarCliente &&
-        !autorizacoes.objRelatoriosPode.geraRelatorioDeVendas &&
-        !autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa &&
-        !autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
-
-    return semDadosDePessoa && semAutorizacaoOperacional;
   }
 
   static Map<String, dynamic> _ensureMap(dynamic value) {
