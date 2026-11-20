@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/controllers/pdv_selecao_imagens_controller.dart';
+import 'package:sixpos/presentation/components/pdv_categoria_button.dart';
 import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
@@ -185,13 +187,18 @@ class SubPainelWebProdutoLista extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProdutoListaBody(
+    final body = ProdutoListaBody(
       isSelecao: isSelecao,
       modoEdicao: modoEdicao,
       permitirSelecaoMultipla: permitirSelecaoMultipla,
       tipoInicial: tipoInicial,
       apenasAtivosNoBackend: apenasAtivosNoBackend,
       exibirInformacoesEstoque: exibirInformacoesEstoque,
+    );
+    if (!isSelecao || !apenasAtivosNoBackend) return body;
+    return ChangeNotifierProvider(
+      create: (_) => PdvSelecaoImagensController()..initialize(),
+      child: body,
     );
   }
 }
@@ -1523,6 +1530,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildTipoSelector(BuildContext context, bool isCompact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    if (_selecaoPdv) {
+      return PdvCategorias(
+        tipo: tipoSelecionado,
+        onChanged: _selectTipo,
+        photoHeight: isCompact ? 80 : 96,
+        spacing: 12,
+        surface: tokens.surfaceMuted,
+        foreground: tokens.primaryText,
+        accent: tokens.info,
+        border: tokens.cardBorder,
+      );
+    }
 
     return Container(
       width: isCompact ? double.infinity : 420,
@@ -3691,6 +3710,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final int totalSelecionados = _quantidadeSelecionadaTotal;
     final bool possuiSelecionados = totalSelecionados > 0;
 
+    final selectedLabel =
+        _selecaoPdv
+            ? context.pdvSelectedItems(totalSelecionados)
+            : switch (totalSelecionados) {
+              0 => 'Nenhum item selecionado ainda.',
+              1 => '1 item selecionado',
+              _ => '$totalSelecionados itens selecionados',
+            };
+    final selectionSummary =
+        possuiSelecionados
+            ? '$selectedLabel • ${_precoFormatado(_totalSelecionado)}'
+            : selectedLabel;
+
     return AnimatedContainer(
       duration: WebThemeTokens.transitionDuration,
       curve: WebThemeTokens.transitionCurve,
@@ -3726,11 +3758,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              !possuiSelecionados
-                  ? 'Nenhum item selecionado ainda.'
-                  : totalSelecionados == 1
-                  ? '1 item selecionado • ${_precoFormatado(_totalSelecionado)}'
-                  : '$totalSelecionados itens selecionados • ${_precoFormatado(_totalSelecionado)}',
+              selectionSummary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -3747,7 +3775,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
             label: Text(
-              possuiSelecionados
+              _selecaoPdv
+                  ? context.t('pdv.selection.addToSale')
+                  : possuiSelecionados
                   ? 'Adicionar $totalSelecionados'
                   : 'Adicionar selecionados',
             ),

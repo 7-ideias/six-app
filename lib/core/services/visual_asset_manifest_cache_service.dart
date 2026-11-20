@@ -17,6 +17,7 @@ class VisualAssetManifestCacheService {
     required String kind,
     required String companyId,
     required String environment,
+    String? assetsVersion,
   }) async {
     if (kIsWeb) return null;
 
@@ -32,6 +33,9 @@ class VisualAssetManifestCacheService {
       if (decoded is! Map) return null;
       final Map<String, dynamic> envelope =
           Map<String, dynamic>.from(decoded);
+      if (assetsVersion != null && envelope['assetsVersion'] != assetsVersion) {
+        return null;
+      }
       final dynamic payload = envelope['payload'];
       if (payload is! Map) return null;
       return Map<String, dynamic>.from(payload);
@@ -48,6 +52,7 @@ class VisualAssetManifestCacheService {
     required String assetsVersion,
     required Map<String, dynamic> payload,
     required Iterable<String> imageUrls,
+    bool Function()? stillCurrent,
   }) async {
     if (kIsWeb) return true;
 
@@ -63,6 +68,7 @@ class VisualAssetManifestCacheService {
       'savedAtUtc': DateTime.now().toUtc().toIso8601String(),
       'payload': payload,
     };
+    if (stillCurrent != null && !stillCurrent()) return false;
     await preferences.setString(
       _key(kind, companyId, environment),
       jsonEncode(envelope),

@@ -28,6 +28,12 @@ String normalizeSixoAppBranding(String value) {
 }
 
 extension SixI18nBuildContext on BuildContext {
+  String pdvSelectedItems(int count) {
+    if (count == 0) return t('pdv.selection.none');
+    if (count == 1) return t('pdv.selection.one');
+    return t('pdv.selection.many').replaceAll('{n}', count.toString());
+  }
+
   /// Resolve textos do SixoApp a partir do pacote de traduções carregado do
   /// backend.
   ///
@@ -939,6 +945,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Venda concluída com sucesso',
     'pdv.quantityEditor.title': 'Editar quantidade',
     'pdv.quantityEditor.tooltip': 'Editar quantidade',
+    'pdv.selection.none': 'Nenhum item selecionado',
+    'pdv.selection.one': '1 item selecionado',
+    'pdv.selection.many': '{n} itens selecionados',
+    'pdv.selection.addToSale': 'Adicionar à venda',
+    'pdv.selection.imagesGroup': 'Frente de caixa · Seleção de itens',
     'pdv.quantityEditor.subtitle':
         'Revise o item e aplique a nova quantidade. O subtotal e o total da venda serão recalculados imediatamente.',
     'pdv.quantityEditor.codeLabel': 'Código',
@@ -4299,6 +4310,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Sale completed successfully',
     'pdv.quantityEditor.title': 'Edit quantity',
     'pdv.quantityEditor.tooltip': 'Edit quantity',
+    'pdv.selection.none': 'No items selected',
+    'pdv.selection.one': '1 item selected',
+    'pdv.selection.many': '{n} items selected',
+    'pdv.selection.addToSale': 'Add to sale',
+    'pdv.selection.imagesGroup': 'Point of sale · Item selection',
     'pdv.quantityEditor.subtitle':
         'Review the item and apply the new quantity. The item subtotal and sale total will be recalculated immediately.',
     'pdv.quantityEditor.codeLabel': 'Code',
@@ -7463,6 +7479,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Venta finalizada correctamente',
     'pdv.quantityEditor.title': 'Editar cantidad',
     'pdv.quantityEditor.tooltip': 'Editar cantidad',
+    'pdv.selection.none': 'Ningún artículo seleccionado',
+    'pdv.selection.one': '1 artículo seleccionado',
+    'pdv.selection.many': '{n} artículos seleccionados',
+    'pdv.selection.addToSale': 'Agregar a la venta',
+    'pdv.selection.imagesGroup': 'Punto de venta · Selección de artículos',
     'pdv.quantityEditor.subtitle':
         'Revisa el artículo y aplica la nueva cantidad. El subtotal del artículo y el total de la venta se recalcularán de inmediato.',
     'pdv.quantityEditor.codeLabel': 'Código',

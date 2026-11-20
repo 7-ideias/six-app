@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/pdv_categoria_button.dart';
 import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
@@ -1219,6 +1220,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildTabs({required bool compact}) {
+    if (_selecaoPdv) {
+      return PdvCategorias(
+        tipo: tipoSelecionado,
+        onChanged: _selectTipo,
+        photoHeight: 76,
+        spacing: 8,
+        surface: _surfaceColor,
+        foreground: _titleTextColor,
+        accent: _accentColor,
+        border: _borderColor,
+      );
+    }
     return Container(
       padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -3035,7 +3048,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    '$_quantidadeSelecionadaTotal item(ns) selecionado(s)',
+                    _selecaoPdv
+                        ? context.pdvSelectedItems(_quantidadeSelecionadaTotal)
+                        : '$_quantidadeSelecionadaTotal item(ns) selecionado(s)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -3059,7 +3074,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             FilledButton.icon(
               onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
               icon: Icon(Icons.add_shopping_cart_rounded),
-              label: Text('Adicionar selecionados'),
+              label: Text(
+                _selecaoPdv
+                    ? context.t('pdv.selection.addToSale')
+                    : 'Adicionar selecionados',
+              ),
               style: FilledButton.styleFrom(
                 minimumSize: Size.fromHeight(48),
                 shape: RoundedRectangleBorder(

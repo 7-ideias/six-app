@@ -64,6 +64,86 @@ void main() {
     },
   );
 
+  for (final mobile in [false, true]) {
+    testWidgets(
+      'PDV preserva produto e serviço na mesma seleção (mobile=$mobile)',
+      (tester) async {
+        _preferencias(ModoDeExibicaoUsuario.lista);
+        await tester.binding.setSurfaceSize(
+          mobile ? const Size(390, 844) : const Size(1440, 900),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        List<ProdutoModel>? added;
+        await tester.pumpWidget(
+          _buildTestApp(
+            products: [
+              _produto(
+                id: '1',
+                nome: 'Cabo USB',
+                codigo: 'C1',
+                categoria: 'Acessórios',
+                preco: 20,
+              ),
+            ],
+            services: [
+              _servico(
+                id: '1',
+                nome: 'Reparo USB',
+                codigo: 'S1',
+                categoria: 'Reparo',
+                preco: 50,
+              ),
+            ],
+            child: Builder(
+              builder:
+                  (context) => Scaffold(
+                    body: TextButton(
+                      onPressed: () async {
+                        added = await Navigator.of(
+                          context,
+                        ).push<List<ProdutoModel>>(
+                          MaterialPageRoute(
+                            builder:
+                                (_) =>
+                                    mobile
+                                        ? const ProdutolistMobileScreen(
+                                          isSelecao: true,
+                                          permitirSelecaoMultipla: true,
+                                          apenasAtivosNoBackend: true,
+                                        )
+                                        : const Scaffold(
+                                          body: SubPainelWebProdutoLista(
+                                            isSelecao: true,
+                                            permitirSelecaoMultipla: true,
+                                            apenasAtivosNoBackend: true,
+                                          ),
+                                        ),
+                          ),
+                        );
+                      },
+                      child: const Text('Abrir seletor'),
+                    ),
+                  ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Abrir seletor'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cabo USB'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('pdv-categoria-SERVICO')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reparo USB'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('2 itens selecionados'), findsOneWidget);
+        await tester.tap(find.text('Adicionar à venda'));
+        await tester.pumpAndSettle();
+        expect(added?.map((p) => p.nomeProduto), ['Cabo USB', 'Reparo USB']);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   for (final tema in [ThemeMode.light, ThemeMode.dark]) {
     testWidgets('PDV sem produtos oferece serviço selecionável ($tema)', (
       tester,

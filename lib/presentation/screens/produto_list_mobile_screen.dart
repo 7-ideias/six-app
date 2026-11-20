@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/controllers/pdv_selecao_imagens_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
@@ -32,7 +33,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProdutosListProvider<ProdutoModel>>(
+    final body = Consumer<ProdutosListProvider<ProdutoModel>>(
       builder: (
         BuildContext context,
         ProdutosListProvider<ProdutoModel> provider,
@@ -52,6 +53,11 @@ class ProdutolistMobileScreen extends StatelessWidget {
           ),
         );
       },
+    );
+    if (!isSelecao || !apenasAtivosNoBackend) return body;
+    return ChangeNotifierProvider(
+      create: (_) => PdvSelecaoImagensController()..initialize(),
+      child: body,
     );
   }
 

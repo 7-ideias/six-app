@@ -512,46 +512,47 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
             service: _service,
             imageUrl: panel.slots
                 .where((slot) => slot.platform == 'WEB' &&
+                    !slot.slot.startsWith('PDV_SELECAO_') &&
                     (slot.current ?? slot.fallback) != null,)
                 .map((slot) => (slot.current ?? slot.fallback)!.imageUrl)
                 .firstOrNull,
           ),
-          SixWebPageShell.sectionGap,
-          _PlatformSection(
-            title: 'Web',
-            icon: Icons.language_rounded,
-            slots: panel.slots
-                .where((AdminVisualAssetSlotPanel slot) => slot.platform == 'WEB',)
-                .toList(growable: false),
-            companyScope: _scope == 'EMPRESA',
-            texts: texts,
-            onUpload: _upload,
-            onHistory: _showHistory,
-            onDelete: _deleteImage,
-            onDeleteScheduled: (slot) => _deleteImage(slot, scheduled: true),
-            environment: panel.environment,
-          ),
-          SixWebPageShell.sectionGap,
-          _PlatformSection(
-            title: 'Mobile',
-            icon: Icons.phone_iphone_rounded,
-            slots: panel.slots
-                .where(
-                  (AdminVisualAssetSlotPanel slot) => slot.platform == 'MOBILE',
-                )
-                .toList(growable: false),
-            companyScope: _scope == 'EMPRESA',
-            texts: texts,
-            onUpload: _upload,
-            onHistory: _showHistory,
-            onDelete: _deleteImage,
-            onDeleteScheduled: (slot) => _deleteImage(slot, scheduled: true),
-            environment: panel.environment,
-          ),
+          for (final group in ['WEB', 'MOBILE', 'PDV'])
+            if (panel.slots.any((slot) => _inImageGroup(slot, group))) ...[
+              SixWebPageShell.sectionGap,
+              _PlatformSection(
+                title: switch (group) {
+                  'WEB' => 'Web',
+                  'MOBILE' => 'Mobile',
+                  _ => context.t('pdv.selection.imagesGroup'),
+                },
+                icon: switch (group) {
+                  'WEB' => Icons.language_rounded,
+                  'MOBILE' => Icons.phone_iphone_rounded,
+                  _ => Icons.point_of_sale_outlined,
+                },
+                slots: panel.slots
+                    .where((slot) => _inImageGroup(slot, group))
+                    .toList(growable: false),
+                companyScope: _scope == 'EMPRESA',
+                texts: texts,
+                onUpload: _upload,
+                onHistory: _showHistory,
+                onDelete: _deleteImage,
+                onDeleteScheduled:
+                    (slot) => _deleteImage(slot, scheduled: true),
+                environment: panel.environment,
+              ),
+            ],
         ],
       ],
     );
   }
+}
+
+bool _inImageGroup(AdminVisualAssetSlotPanel slot, String group) {
+  if (slot.slot.startsWith('PDV_SELECAO_')) return group == 'PDV';
+  return slot.platform == group;
 }
 
 class _VisualAssetsDialogTheme extends StatelessWidget {
@@ -2982,6 +2983,10 @@ class _VisualAssetsTexts {
 
   String slotTitle(BuildContext context, AdminVisualAssetSlotPanel slot) {
     final labels = <String, List<String>>{
+      'PDV_SELECAO_WEB_PRODUTO': ['Web · Produtos', 'Web · Products', 'Web · Productos'],
+      'PDV_SELECAO_WEB_SERVICO': ['Web · Serviços', 'Web · Services', 'Web · Servicios'],
+      'PDV_SELECAO_MOBILE_PRODUTO': ['Mobile · Produtos', 'Mobile · Products', 'Mobile · Productos'],
+      'PDV_SELECAO_MOBILE_SERVICO': ['Mobile · Serviços', 'Mobile · Services', 'Mobile · Servicios'],
       'WEB_DEVOLUCOES_HEADER': [
         'Web · Devoluções e trocas',
         'Web · Returns and exchanges',
