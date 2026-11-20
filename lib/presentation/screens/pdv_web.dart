@@ -648,7 +648,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       ),
                     ),
                     if (_podeReceberPdv) _buildSessaoCaixaPdvChip(l10n),
-                    if (_sessaoCaixaPdv != null)
+                    if (_podeReceberPdv && _sessaoCaixaPdv != null)
                       _buildTempoAtivoSessaoCaixaPdvChip(_sessaoCaixaPdv!),
                     if (_consultandoVendaNaoLiquidada)
                       _buildStatusChip(
@@ -846,7 +846,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           label:
               'F4 ${l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente'}',
         ),
-        _buildAtalhoPdvChip(
+        if (_podeReceberPdv) _buildAtalhoPdvChip(
           icon: Icons.payments_outlined,
           label: 'F8 ${l10n?.pdvWebReceiveAction ?? 'Receber'}',
         ),
