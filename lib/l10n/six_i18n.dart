@@ -71,6 +71,9 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'pdv.openForPayment': 'Abra seu caixa para receber com esta forma de pagamento.',
+    'pdv.sellWithoutPayment': 'Você pode registrar a venda para receber depois.',
+    'pdv.registeredPending': 'Venda registrada para receber depois.',
     "homeToday.title": "Meu dia",
     "homeToday.subtitle":
         "Dados do comércio ativo. Cada bloco é atualizado separadamente.",
@@ -3390,6 +3393,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'pdv.openForPayment': 'Open your register to receive this payment method.',
+    'pdv.sellWithoutPayment': 'You can register the sale for later payment.',
+    'pdv.registeredPending': 'Sale registered for later payment.',
     "homeToday.title": "My day",
     "homeToday.subtitle":
         "Active business data. Each section updates independently.",
@@ -6486,6 +6492,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'pdv.openForPayment': 'Abre tu caja para cobrar con esta forma de pago.',
+    'pdv.sellWithoutPayment': 'Puedes registrar la venta para cobrar después.',
+    'pdv.registeredPending': 'Venta registrada para cobrar después.',
     "homeToday.title": "Mi día",
     "homeToday.subtitle":
         "Datos del comercio activo. Cada bloque se actualiza por separado.",

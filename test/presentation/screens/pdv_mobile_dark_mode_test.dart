@@ -1,3 +1,5 @@
+import '../../support/pdv_permissoes_teste.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -125,7 +127,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('PDV initial loading error and cash gate stay themed', (
+  testWidgets('vendedor registra venda sem caixa e sem receber nos dois temas', (
     WidgetTester tester,
   ) async {
     for (final _ThemeCase themeCase in _themeCases) {
@@ -134,6 +136,7 @@ void main() {
       final _FakeCaixaApiClient caixaApiClient = _FakeCaixaApiClient(
         sessionCompleter: sessionCompleter,
       );
+      final operacoes = _FakeOperacaoService();
       int cashNavigationCalls = 0;
       int productSelectionCalls = 0;
 
@@ -141,47 +144,40 @@ void main() {
         tester,
         themeCase: themeCase,
         caixaApiClient: caixaApiClient,
+        operacaoService: operacoes,
+        procedureCoordinator: _procedureCoordinator(runner: (_, __, ___) async => const ProcedureFlowResult.continueOperation(completedProcedureIds: [])),
         cashOperationsLauncher: () async {
           cashNavigationCalls += 1;
         },
         productSelectionLauncher: () async {
           productSelectionCalls += 1;
-          return null;
+          return [_product(id: 'produto-1', name: 'Produto', price: 10)];
         },
         settle: false,
+        receber: false,
       );
       await tester.pump();
 
       expect(_scaffoldBackground(tester), themeCase.colors.background);
-      expect(find.text('Verificando sessão do caixa'), findsWidgets);
+
       expect(caixaApiClient.sessaoAtualCalls, 1);
 
       sessionCompleter.complete(null);
       await tester.pumpAndSettle();
 
-      expect(find.text('Abra o caixa para vender'), findsOneWidget);
-      expect(find.text('Sem sessão aberta'), findsWidgets);
-      expect(
-        _hasMaterialAncestorColor(
-          tester,
-          find.text('Adicionar produto').first,
-          themeCase.colors.softSurface,
-        ),
-        isTrue,
-      );
-
+      expect(find.text('Operações de caixa'), findsNothing);
       await tester.tap(find.text('Adicionar produto').first);
       await tester.pumpAndSettle();
-      expect(productSelectionCalls, 0);
-      expect(
-        find.text('Abra uma sessão de caixa antes de lançar vendas no PDV.'),
-        findsWidgets,
-      );
-
-      await tester.tap(find.text('Operações de caixa').first);
+      expect(productSelectionCalls, 1);
+      expect(cashNavigationCalls, 0);
+      expect(find.widgetWithText(FilledButton, 'Finalizar venda'), findsNothing);
+      await _tapText(tester, 'Receber depois');
       await tester.pumpAndSettle();
-      expect(cashNavigationCalls, 1);
-      expect(caixaApiClient.sessaoAtualCalls, 2);
+      await _tapText(tester, 'Registrar para receber depois');
+      await tester.pumpAndSettle();
+      expect(operacoes.finalizarCalls, 1);
+      expect(operacoes.lastInput?.receberDepois, isTrue);
+      expect(operacoes.lastInput?.formasPagamento, isEmpty);
       expect(tester.takeException(), isNull);
     }
   });
@@ -629,6 +625,7 @@ Future<void> _pumpPdv(
   double textScale = 1,
   EdgeInsets viewInsets = EdgeInsets.zero,
   bool settle = true,
+  bool receber = true,
 }) {
   final _FakeCaixaApiClient effectiveCaixaApiClient =
       caixaApiClient ??
@@ -641,6 +638,7 @@ Future<void> _pumpPdv(
     textScale: textScale,
     viewInsets: viewInsets,
     settle: settle,
+    receber: receber,
     productFetch: (_) async => <ProdutoModel>[],
     child: pdv_base.PdvMobileScreen(
       vendaNaoLiquidada: vendaNaoLiquidada,
@@ -671,6 +669,7 @@ Future<void> _pumpMobile(
   Future<List<ProdutoModel>> Function(Map<String, String>? headers)?
   productFetch,
   bool settle = true,
+  bool receber = true,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -690,6 +689,7 @@ Future<void> _pumpMobile(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(create: (_) => PermissoesPdvTeste(receber: receber)),
         ChangeNotifierProvider<LocaleSettingsProvider>(
           create:
               (_) => LocaleSettingsProvider(
@@ -810,18 +810,6 @@ Future<void> _enterPaymentValue(
 
 Color? _scaffoldBackground(WidgetTester tester) {
   return tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor;
-}
-
-bool _hasMaterialAncestorColor(
-  WidgetTester tester,
-  Finder child,
-  Color expected,
-) {
-  return tester
-      .widgetList<Material>(
-        find.ancestor(of: child, matching: find.byType(Material)),
-      )
-      .any((Material material) => material.color == expected);
 }
 
 bool _hasDecoratedAncestorColor(

@@ -1,3 +1,5 @@
+import '../../support/pdv_permissoes_teste.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -685,12 +687,17 @@ Future<void> _pumpMobile(
   );
 
   await tester.pumpWidget(
-    ChangeNotifierProvider<LocaleSettingsProvider>(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(create: (_) => PermissoesPdvTeste()),
+        ChangeNotifierProvider<LocaleSettingsProvider>(
       create: (_) => LocaleSettingsProvider(
         regionalizacaoService: RegionalizacaoService(
           apiClient: _FakeRegionalizacaoApiClient(),
         ),
       ),
+        ),
+      ],
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: _testSupportedLocales,

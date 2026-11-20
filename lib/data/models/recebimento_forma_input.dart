@@ -6,9 +6,13 @@ class RecebimentoFormaInput {
     this.contaFinanceiraId,
     this.maquininhaId,
     this.dataPrevista,
+    this.contaCaixa = false,
     this.taxa = 0,
     this.recebimentoFuturo = false,
   });
+
+  final bool contaCaixa;
+  bool get exigeSessaoCaixa => codigo.trim().toLowerCase() == 'tipo1' || contaCaixa;
 
   final String codigo;
   final double valor;

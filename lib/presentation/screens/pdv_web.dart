@@ -23,7 +23,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   bool get _vendaNaoLiquidadaPermiteEdicaoItens =>
-      _consultandoVendaNaoLiquidada &&
+      _pdvPodeLancarVenda && _consultandoVendaNaoLiquidada &&
       !_vendaNaoLiquidadaPossuiRecebimentoAnterior;
 
   bool get _pdvPodeEditarVenda =>
@@ -55,6 +55,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   Future<void> _abrirVendasAReceberWeb() async {
+    if (!_podeReceberPdv) return;
     final VendaNaoLiquidadaModel? vendaSelecionada =
         await showDialog<VendaNaoLiquidadaModel>(
           context: context,
@@ -277,7 +278,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return;
     }
 
-    if (!await _garantirSessaoCaixaAbertaParaVenda() || !mounted) {
+    if (!_podeReceberPdv) {
       return;
     }
 
@@ -357,6 +358,10 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return;
     }
 
+    if (!_podeReceberPdv) return;
+    if (resultado.recebimentos.any((f) => f.exigeSessaoCaixa) &&
+        !await _garantirSessaoCaixaParaRecebimento()) return;
+    if (!mounted) return;
     setState(() => _recebendoVendaNaoLiquidada = true);
     try {
       final bool vendaPermaneceAtual =
@@ -642,7 +647,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                         color: _pdvTheme.primaryText,
                       ),
                     ),
-                    _buildSessaoCaixaPdvChip(l10n),
+                    if (_podeReceberPdv) _buildSessaoCaixaPdvChip(l10n),
                     if (_sessaoCaixaPdv != null)
                       _buildTempoAtivoSessaoCaixaPdvChip(_sessaoCaixaPdv!),
                     if (_consultandoVendaNaoLiquidada)
@@ -740,6 +745,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           Wrap(
             spacing: 4,
             children: <Widget>[
+              if (_podeReceberPdv)
               Tooltip(
                 message: context.t(
                   'pdv.openCashOperations',
@@ -1868,12 +1874,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 style: _pdvOutlinedCtaStyle(),
               ),
             const SizedBox(height: 10),
-            if (temPagamentoConfirmado)
+            if (_podeReceberPdv && temPagamentoConfirmado)
               _buildSecaoPagamentoConfirmado(
                 l10n: l10n,
                 formasPagamento: formasPagamento,
               )
-            else
+            else if (_podeReceberPdv)
               OutlinedButton.icon(
                 onPressed:
                     _recebendoVendaNaoLiquidada
@@ -2319,6 +2325,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 ),
               ),
 
+              if (_podeReceberPdv)
               OutlinedButton.icon(
                 onPressed:
                     () =>
@@ -2333,6 +2340,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 style: _pdvOutlinedCtaStyle(),
               ),
 
+              if (_podeReceberPdv)
               OutlinedButton.icon(
                 onPressed: _abrirVendasAReceberWeb,
                 icon: const Icon(Icons.receipt_long_outlined),
@@ -2401,7 +2409,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           : _pdvDangerOutlinedCtaStyle(),
                 ),
 
-              if (!_consultandoVendaNaoLiquidada)
+              if (!_consultandoVendaNaoLiquidada && podeLancarVenda)
                 OutlinedButton.icon(
                   onPressed:
                       temItens && podeLancarVenda && !_registrandoReceberDepois
@@ -2423,11 +2431,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                   style: _pdvOutlinedCtaStyle(),
                 ),
 
+              if (_podeReceberPdv)
               FilledButton.icon(
                 onPressed:
                     temItens &&
                             podeReceber &&
-                            podeLancarVenda &&
+                            (_consultandoVendaNaoLiquidada || podeLancarVenda) &&
                             !_recebendoVendaNaoLiquidada
                         ? _acionarRecebimentoPrincipal
                         : null,
@@ -2496,119 +2505,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     );
   }
 
-  Widget _buildAvisoSessaoCaixaObrigatoriaPdv() {
-    if (_carregandoSessaoCaixaPdv || !_sessaoCaixaPdvSincronizada) {
-      return SixBackendLoading(
-        title: context.t('pdv.cashSessionCheckingTitle'),
-        subtitle: context.t('pdv.cashSessionCheckingMessage'),
-      );
-    }
-
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final TextTheme typography = Theme.of(context).textTheme;
-    final bool erro = _erroSessaoCaixaPdv;
-    return Material(
-      color: tokens.cardBackground,
-      elevation: 2,
-      shadowColor: Theme.of(context).shadowColor.withValues(alpha: 0.18),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-        side: BorderSide(color: tokens.cardBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  erro
-                      ? Icons.sync_problem_rounded
-                      : Icons.point_of_sale_rounded,
-                  size: 30,
-                  color: erro ? tokens.danger : tokens.info,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Semantics(
-              header: true,
-              child: Text(
-                context.t(
-                  erro
-                      ? 'pdv.cashSessionUnavailableTitle'
-                      : 'homeToday.cashClosed',
-                ),
-                textAlign: TextAlign.center,
-                style: typography.headlineSmall?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            if (!erro) ...<Widget>[
-              const SizedBox(height: 6),
-              Text(
-                context.t('pdv.cashSessionRequiredTitle'),
-                textAlign: TextAlign.center,
-                style: typography.bodyMedium?.copyWith(
-                  color: tokens.secondaryText,
-                  height: 1.4,
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Center(
-              child: FilledButton.icon(
-                onPressed: erro
-                    ? _carregarSessaoCaixaPdv
-                    : () => _abrirOperacoesCaixa(
-                        retorno: ModuloCentralPDV.vendas,
-                      ),
-                icon: Icon(
-                  erro ? Icons.refresh_rounded : Icons.arrow_forward_rounded,
-                  size: 18,
-                ),
-                iconAlignment: IconAlignment.end,
-                label: Text(
-                  context.t(
-                    erro
-                        ? 'common.tryAgain'
-                        : 'caixa.operacoes.openConfirmAction',
-                  ),
-                ),
-                style: _pdvFilledCtaStyle(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAreaVenda(double total) {
-    if (!_pdvPodeLancarVenda) {
-      return Expanded(
-        child: Align(
-          alignment: const Alignment(0, -0.2),
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: _buildAvisoSessaoCaixaObrigatoriaPdv(),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Expanded(
       child: Focus(
         autofocus: true,

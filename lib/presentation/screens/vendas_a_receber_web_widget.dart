@@ -209,7 +209,13 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     final dataLiquidacao = context.read<LocaleSettingsProvider>().calendarNow;
     setState(() => _processando = true);
     try {
-      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
+      final exigeCaixa = resultado.recebimentos.any((f) => f.exigeSessaoCaixa);
+      final idSessaoCaixa = exigeCaixa ? await _buscarIdSessaoCaixaAberta() : null;
+      if (!mounted) return;
+      if (exigeCaixa && idSessaoCaixa == null) {
+        _snack(context.t('pdv.openForPayment'));
+        return;
+      }
       if (resultado.total) {
         await _api.liquidar(
           idRecebimento: venda.idRecebimento,

@@ -89,6 +89,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeCancelarCompras => _ehAdministrador || _compraAcesso.cancelar;
   bool get podeReceberCompras => _ehAdministrador || _compraAcesso.receber;
 
+  bool get podeRegistrarVendaPdv => ehAdministrador || podeFazerVenda;
+  bool get podeReceberVendaPdv => ehAdministrador || podeReceberNoCaixa;
+
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
   bool get podeLancarAssistenciaTecnica =>

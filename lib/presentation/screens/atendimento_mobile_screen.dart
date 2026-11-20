@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -540,7 +542,13 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           ),
         };
 
-    return _ordemCardsController.ordem
+    final permissoes = context.watch<ColaboradorAutorizacoesProvider>();
+    return _ordemCardsController.ordem.where((item) {
+      if (item == AtendimentoMobileCardPreferencia.receber ||
+          item == AtendimentoMobileCardPreferencia.operacoesCaixa) return permissoes.podeReceberVendaPdv;
+      if (item == AtendimentoMobileCardPreferencia.novaVenda) return permissoes.podeRegistrarVendaPdv;
+      return true;
+    })
         .map((preferencia) => actions[preferencia]!)
         .toList(growable: false);
   }
