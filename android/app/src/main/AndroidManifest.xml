@@ -39,6 +39,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="www.sixoapp.com"
                     android:path="/mobile/billing-return" />
+                <data android:path="/mobile/agenda-financeira" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.sixoapp.app" android:host="mobile"
+                    android:path="/agenda-financeira" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
