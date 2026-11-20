@@ -160,6 +160,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   bool get _filtrosOcupados =>
       _trocandoEspaco || _carregando || _executandoAcao;
 
+  // Tons de contexto do espaço Pessoal usados na Agenda mobile.
+  Color _corDoEspaco(Brightness brightness, Color empresa, {bool fundo = false}) {
+    if (_service.espacoFinanceiro != 'PESSOAL') return empresa;
+    final dark = brightness == Brightness.dark;
+    if (fundo) return dark ? const Color(0xFF302C23) : const Color(0xFFF0E5CD);
+    return dark ? const Color(0xFF594C32) : const Color(0xFFF4E8CC);
+  }
+
   Widget _seletorEspaco() {
     final tokens = WebThemeTokens.of(context);
     return Wrap(
@@ -180,7 +188,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             minimumSize: const Size(0, 44),
             foregroundColor: tokens.secondaryText,
             selectedForegroundColor: tokens.primaryText,
-            selectedBackgroundColor: tokens.selectedBackground,
+            selectedBackgroundColor: _corDoEspaco(
+              Theme.of(context).brightness,
+              tokens.selectedBackground,
+            ),
             side: BorderSide(color: tokens.cardBorder),
           ),
           segments: [
@@ -1904,18 +1915,39 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           );
 
-          return Material(
-            color: tokens.workspaceBackground,
-            child: SafeArea(
-              child: podeFecharTela
-                  ? CallbackShortcuts(
-                      bindings: <ShortcutActivator, VoidCallback>{
-                        const SingleActivator(LogicalKeyboardKey.escape):
-                            _fechar,
-                      },
-                      child: content,
-                    )
-                  : content,
+          return AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 350),
+            curve: Curves.easeInOutCubic,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0, .72],
+                colors: [
+                  _corDoEspaco(
+                    theme.brightness,
+                    tokens.workspaceBackground,
+                    fundo: true,
+                  ),
+                  tokens.workspaceBackground,
+                ],
+              ),
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: SafeArea(
+                child: podeFecharTela
+                    ? CallbackShortcuts(
+                        bindings: <ShortcutActivator, VoidCallback>{
+                          const SingleActivator(LogicalKeyboardKey.escape):
+                              _fechar,
+                        },
+                        child: content,
+                      )
+                    : content,
+              ),
             ),
           );
         },
