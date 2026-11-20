@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -37,22 +38,26 @@ class SubscriptionMobileScreen extends StatelessWidget {
         controller: scroll,
         padding: EdgeInsets.fromLTRB(20, topInset + 20, 20, 32),
         children: [
-          SubscriptionMobilePanel(
-            initialReturn: initialReturn,
-            companyId: companyId,
-            campaignId: campaignId,
-          ),
-          if (companyId == null && campaignId == null)
-            ListTile(
-              leading: const Icon(Icons.cloud_outlined),
-              title: Text(storageText(context, 'title')),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const StorageUsageMobileScreen(),
+          if (!context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo)
+            Text(billingText(context, 'forbidden'))
+          else ...[
+            SubscriptionMobilePanel(
+              initialReturn: initialReturn,
+              companyId: companyId,
+              campaignId: campaignId,
+            ),
+            if (companyId == null && campaignId == null)
+              ListTile(
+                leading: const Icon(Icons.cloud_outlined),
+                title: Text(storageText(context, 'title')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StorageUsageMobileScreen(),
+                  ),
                 ),
               ),
-            ),
+          ],
         ],
       ),
     );

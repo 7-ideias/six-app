@@ -379,8 +379,7 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                                         MeuPerfilMobileScreen(),
                                       ),
                                 ),
-                                if (autorizacoes.ehAdministrador ||
-                                    autorizacoes.ehSuperUsuario)
+                                if (autorizacoes.podeConsultarPlanoEConsumo)
                                   _GroupedItemData(
                                     icon: Icons.credit_card_outlined,
                                     title: billingText(context, 'plans'),

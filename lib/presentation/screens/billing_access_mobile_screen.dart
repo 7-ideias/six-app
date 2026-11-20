@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:provider/provider.dart';
 import 'subscription_mobile_screen.dart';
 
 import 'package:flutter/material.dart';
@@ -38,6 +40,10 @@ class _BillingAccessMobileScreenState extends State<BillingAccessMobileScreen> {
   @override
   void initState() {
     super.initState();
+    final permissions = context.read<ColaboradorAutorizacoesProvider>();
+    if (!widget.admin && permissions.tipoPerfilUsuario == 'DESCONHECIDO' && !permissions.loading) {
+      permissions.carregarAutorizacoesDoUsuarioLogado();
+    }
     controller.addListener(_changed);
     controller.load();
   }
@@ -61,6 +67,7 @@ class _BillingAccessMobileScreenState extends State<BillingAccessMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.sixMobileColors;
+    final canViewPlans = context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) => PopScope(
@@ -95,7 +102,7 @@ class _BillingAccessMobileScreenState extends State<BillingAccessMobileScreen> {
                   subtitle: '',
                   compact: true,
                 ),
-              if (controller.value != null)
+              if (canViewPlans && controller.value != null)
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -133,7 +140,7 @@ class _BillingAccessMobileScreenState extends State<BillingAccessMobileScreen> {
                     style: TextStyle(color: colors.error),
                   ),
                 ),
-              if (!widget.admin) ...[
+              if (!widget.admin && canViewPlans) ...[
                 const SizedBox(height: 24),
                 SubscriptionMobilePanel(
                   companyId: widget.companyId,

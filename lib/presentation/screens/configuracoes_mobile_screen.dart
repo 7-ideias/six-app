@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:provider/provider.dart';
 import '../../l10n/billing_texts.dart';
 import 'subscription_mobile_screen.dart';
 import '../../l10n/storage_texts.dart';
@@ -38,28 +40,30 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.all(16),
           children: <Widget>[
-            _ConfigTile(
-              icon: Icons.credit_card_outlined,
-              title: billingText(context, 'plans'),
-              subtitle: billingText(context, 'portal'),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const SubscriptionMobileScreen(),
+            if (context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo) ...[
+              _ConfigTile(
+                icon: Icons.credit_card_outlined,
+                title: billingText(context, 'plans'),
+                subtitle: billingText(context, 'portal'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SubscriptionMobileScreen(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _ConfigTile(
-              icon: Icons.cloud_outlined,
-              title: storageText(context, 'title'),
-              subtitle: storageText(context, 'subtitle'),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const StorageUsageMobileScreen(),
+              const SizedBox(height: 16),
+              _ConfigTile(
+                icon: Icons.cloud_outlined,
+                title: storageText(context, 'title'),
+                subtitle: storageText(context, 'subtitle'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StorageUsageMobileScreen(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
             _buildSectionLabel('Empresa'),
             SizedBox(height: 8),
             _ConfigTile(

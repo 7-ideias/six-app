@@ -1,8 +1,10 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/subscription_billing.dart';
 import 'package:sixpos/presentation/screens/subscription_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/subscription_web_page.dart';
 import 'package:sixpos/presentation/theme/subscription_visuals.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
@@ -17,7 +19,52 @@ class Regionalization extends ChangeNotifier implements LocaleSettingsProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class AccountPermissions extends ColaboradorAutorizacoesProvider {
+  AccountPermissions(this.profile, {this.superUser = false});
+  final String profile;
+  final bool superUser;
+  @override
+  String get tipoPerfilUsuario => profile;
+  @override
+  bool get ehSuperUsuario => superUser;
+}
+
 void main() {
+  test('plan visibility requires an explicit admin profile or SUPER', () {
+    expect(AccountPermissions('ADMIN').podeConsultarPlanoEConsumo, isTrue);
+    expect(
+      AccountPermissions(
+        'DESCONHECIDO',
+        superUser: true,
+      ).podeConsultarPlanoEConsumo,
+      isTrue,
+    );
+    expect(
+      AccountPermissions('COLABORADOR').podeConsultarPlanoEConsumo,
+      isFalse,
+    );
+    expect(
+      AccountPermissions('DESCONHECIDO').podeConsultarPlanoEConsumo,
+      isFalse,
+    );
+  });
+  testWidgets(
+    'direct subscription route hides billing and usage for a collaborator',
+    (tester) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          create: (_) => AccountPermissions('COLABORADOR'),
+          child: const MaterialApp(home: SubscriptionWebPage()),
+        ),
+      );
+      expect(find.byType(SubscriptionWebPanel), findsNothing);
+      expect(find.byType(StorageUsageWebPage), findsNothing);
+      expect(
+        find.text('You do not have permission for this action.'),
+        findsOneWidget,
+      );
+    },
+  );
   const offer = BillingOffer(
     planId: 'pro',
     name: 'Professional',
@@ -28,6 +75,22 @@ void main() {
     benefits: ['Inventory', 'Technical services'],
     featured: true,
   );
+  testWidgets('mobile settings hide both entries for collaborators', (
+    tester,
+  ) async {
+    for (final profile in ['COLABORADOR', 'ADMIN']) {
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          key: ValueKey(profile),
+          create: (_) => AccountPermissions(profile),
+          child: const MaterialApp(home: ConfiguracoesMobileScreen()),
+        ),
+      );
+      final expected = profile == 'ADMIN' ? findsOneWidget : findsNothing;
+      expect(find.text('Plans and payment'), expected);
+      expect(find.text('Storage'), expected);
+    }
+  });
   for (final theme in [ThemeData.light(), ThemeData.dark()]) {
     testWidgets(
       'Account dialog shows usage and returns to opener in ${theme.brightness}',
@@ -35,6 +98,9 @@ void main() {
         await tester.pumpWidget(
           MultiProvider(
             providers: [
+              ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+                create: (_) => AccountPermissions('ADMIN'),
+              ),
               ChangeNotifierProvider<LocaleSettingsProvider>(
                 create: (_) => Regionalization(),
               ),

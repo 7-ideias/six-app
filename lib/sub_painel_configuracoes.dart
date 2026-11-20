@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'l10n/storage_texts.dart';
 import 'presentation/screens/storage_usage_web_page.dart';
 import 'package:flutter/material.dart';
@@ -84,13 +85,15 @@ class _ConfiguracoesRapidasWeb extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          _ConfigTile(
-            icon: Icons.cloud_outlined,
-            title: storageText(context, 'title'),
-            subtitle: storageText(context, 'subtitle'),
-            onTap: () => showStorageUsageWeb(context),
-          ),
-          const SizedBox(height: 12),
+          if (context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo) ...[
+            _ConfigTile(
+              icon: Icons.cloud_outlined,
+              title: storageText(context, 'title'),
+              subtitle: storageText(context, 'subtitle'),
+              onTap: () => showStorageUsageWeb(context),
+            ),
+            const SizedBox(height: 12),
+          ],
           _ConfigTile(
             icon: Icons.storefront_outlined,
             title: perfilNegocioText(context, 'profile'),

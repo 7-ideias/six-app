@@ -124,7 +124,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   int _quantidadeNotificacoesNaoLidas = 0;
   StatusComunicacaoBackend _statusComunicacaoBackend =
       StatusComunicacaoBackend.conectando;
-  DateTime? _ultimaValidacaoBackend;
   Timer? _monitoramentoComunicacaoTimer;
   DateTime? _ultimaTentativaReconexao;
 
@@ -501,7 +500,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
       setState(() {
         _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
-        _ultimaValidacaoBackend = DateTime.now().toUtc();
       });
     };
 
@@ -538,7 +536,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _quantidadeNotificacoesNaoLidas = (_quantidadeNotificacoesNaoLidas + 1)
             .clamp(0, 9);
         _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
-        _ultimaValidacaoBackend = DateTime.now().toUtc();
       });
 
       _bellAnimationController.forward(from: 0);
@@ -587,7 +584,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
         });
       }
-      _ultimaValidacaoBackend = DateTime.now().toUtc();
       return;
     }
 
@@ -624,17 +620,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  String _textoStatusBackend() {
-    switch (_statusComunicacaoBackend) {
-      case StatusComunicacaoBackend.conectado:
-        return 'Backend online';
-      case StatusComunicacaoBackend.conectando:
-        return 'Validando conexão...';
-      case StatusComunicacaoBackend.desconectado:
-        return 'Backend offline';
-    }
-  }
-
   Color _webHeaderAccentColor(ColorScheme colorScheme, WebThemeTokens tokens) {
     return colorScheme.brightness == Brightness.dark
         ? tokens.info
@@ -664,50 +649,46 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color corStatus = _corStatusBackend(tokens);
-    final String tooltip =
-        _ultimaValidacaoBackend == null
-            ? _textoStatusBackend()
-            : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
-
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        key: const Key('web-header-backend-status'),
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: tokens.surfaceMuted,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: tokens.cardBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: corStatus,
-                shape: BoxShape.circle,
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: corStatus.withValues(alpha: 0.30),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+    return Container(
+      key: const Key('web-header-backend-status'),
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: corStatus,
+              shape: BoxShape.circle,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: corStatus.withValues(alpha: 0.30),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              'online',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: tokens.primaryText,
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            switch (_statusComunicacaoBackend) {
+              StatusComunicacaoBackend.conectado => 'online',
+              StatusComunicacaoBackend.desconectado => 'offline',
+              StatusComunicacaoBackend.conectando => context.t('common.loading'),
+            },
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w700,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1147,28 +1128,29 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                         ],
                       ),
                     ),
-                  PopupMenuItem<_WebHeaderUserAction>(
-                    value: _WebHeaderUserAction.subscription,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.credit_card_rounded,
-                          size: 18,
-                          color: accent,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            billingText(context, 'plans'),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: tokens.primaryText,
-                              fontWeight: FontWeight.w600,
+                  if (autorizacoes.podeConsultarPlanoEConsumo)
+                    PopupMenuItem<_WebHeaderUserAction>(
+                      value: _WebHeaderUserAction.subscription,
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.credit_card_rounded,
+                            size: 18,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              billingText(context, 'plans'),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
                   PopupMenuItem<_WebHeaderUserAction>(
                     value: _WebHeaderUserAction.logout,
