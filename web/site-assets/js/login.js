@@ -116,7 +116,12 @@ import {
       key;
   }
 
+  const inviteParams = new URLSearchParams(window.location.search);
+  const inviteLogin = inviteParams.get('origem') === 'convite';
+  const pendingInvite = inviteLogin ? inviteParams.get('convite') : null;
+
   function destination() {
+    if (pendingInvite && /^[A-Za-z0-9_-]{16,128}$/.test(pendingInvite)) return '/colaborador/convites/' + pendingInvite;
     return resolvePublicLoginRedirect(window.location.search, window.location.origin);
   }
 
@@ -375,6 +380,12 @@ import {
   let sessionCheck = null;
 
   async function checkExistingSession(elements) {
+    if (inviteLogin) {
+      document.querySelector('[data-session-check]').hidden = true;
+      elements.card.hidden = false;
+      void renderGoogle(elements);
+      return;
+    }
     if (state.mobileBlocked || !state.apiConfig || sessionCheck) return;
     const panel = document.querySelector('[data-session-check]');
     const message = document.querySelector('[data-session-message]');
@@ -435,7 +446,11 @@ import {
       },
     });
 
-    state.mobileBlocked = shouldBlockPublicLoginOnMobile(window);
+    state.mobileBlocked = !inviteLogin && shouldBlockPublicLoginOnMobile(window);
+    if (inviteLogin) {
+      elements.login.value = new URLSearchParams(window.location.hash.slice(1)).get('email') || '';
+      history.replaceState(history.state, '', window.location.pathname + window.location.search);
+    }
     updatePasswordToggle(elements);
     applyMobileBlockState(elements);
 

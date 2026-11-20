@@ -18,10 +18,22 @@ import '../components/six_web_splash_scene.dart';
 import 'web_auth_gate.dart';
 
 class LoginPageWeb extends StatelessWidget {
-  const LoginPageWeb({super.key});
+  const LoginPageWeb({
+    super.key,
+    this.emailConvite,
+    this.voltarAoConvite = false,
+  });
+  final String? emailConvite;
+  final bool voltarAoConvite;
 
   @override
   Widget build(BuildContext context) {
+    if (emailConvite != null || voltarAoConvite) {
+      return _LoginFormWeb(
+        emailConvite: emailConvite,
+        voltarAoConvite: voltarAoConvite,
+      );
+    }
     final route = Uri.parse(
       ModalRoute.of(context)?.settings.name ?? '/login/flutter',
     );
@@ -67,7 +79,9 @@ class _AuthenticatedLoginRedirectState
 }
 
 class _LoginFormWeb extends StatefulWidget {
-  const _LoginFormWeb();
+  const _LoginFormWeb({this.emailConvite, this.voltarAoConvite = false});
+  final String? emailConvite;
+  final bool voltarAoConvite;
 
   @override
   State<_LoginFormWeb> createState() => _LoginPageWebState();
@@ -90,7 +104,10 @@ class _LoginPageWebState extends State<_LoginFormWeb> {
   @override
   void initState() {
     super.initState();
-    _redirectBlockedPhoneBrowserIfNeeded();
+    _loginController.text = widget.emailConvite ?? '';
+    if (widget.emailConvite == null && !widget.voltarAoConvite) {
+      _redirectBlockedPhoneBrowserIfNeeded();
+    }
     if (_redirectingBlockedPhoneBrowser) {
       return;
     }
@@ -170,7 +187,7 @@ class _LoginPageWebState extends State<_LoginFormWeb> {
 
   Future<void> _login() async {
     final String login = _loginController.text.trim();
-    final String senha = _passwordController.text.trim();
+    final String senha = _passwordController.text;
 
     if (login.isEmpty || senha.isEmpty) {
       _showSnack(_l10n.authErrFillEmailPassword);
@@ -207,6 +224,10 @@ class _LoginPageWebState extends State<_LoginFormWeb> {
   }
 
   Future<void> _completeAuthenticatedLogin() async {
+    if (widget.voltarAoConvite) {
+      Navigator.of(context).pop(true);
+      return;
+    }
     await _prepareAuthenticatedSession();
     if (!mounted) return;
     _navigateToAuthenticatedRoute();

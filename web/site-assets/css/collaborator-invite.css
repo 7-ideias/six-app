@@ -383,3 +383,6 @@
     animation-iteration-count: 1;
   }
 }
+
+.invite-card [hidden] { display: none !important; }
+.invite-card [data-step="password"] { display: grid; gap: 1rem; }

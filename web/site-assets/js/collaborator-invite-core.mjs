@@ -8,6 +8,31 @@ export const COLLABORATOR_INVITE_TIMEOUT_MS = 15000;
 
 export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
   pt: Object.freeze({
+    "access.send": "Enviar código",
+    "access.confirm": "Confirmar código",
+    "access.code": "Código de 6 dígitos",
+    "access.resend": "Enviar outro código",
+    "access.password": "Senha (8 a 64 caracteres)",
+    "access.repeat": "Confirme a senha",
+    "access.show": "Mostrar senhas",
+    "access.save": "Criar senha",
+    "access.accept": "Aceitar convite",
+    "access.signIn": "Entrar com a conta convidada",
+    "access.done": "Senha criada. Entre com seu e-mail e a senha que acabou de escolher.",
+    "access.login": "Ir para o login",
+    "access.open": "Abrir no aplicativo",
+    "access.title": "Convite de colaborador",
+    "access.invalid": "Código incorreto ou expirado. Confira os 6 dígitos ou solicite outro código.",
+    "access.verifyAgain": "Confirme seu e-mail novamente para criar a senha.",
+    "access.length": "Escolha uma senha de 8 a 64 caracteres.",
+    "access.mismatch": "As senhas precisam ser iguais.",
+    "access.wait": "Aguarde um minuto antes de pedir outro código.",
+    "access.wrongAccount": "Entre com a conta que recebeu este convite.",
+    "access.unavailable": "Não foi possível concluir. Tente novamente.",
+    "access.closed": "Convite indisponível. Se já aceitou, entre com sua conta.",
+    "access.retry": "Tentar novamente",
+    "access.mail": "E-mail do convite",
+
     title: 'SixoApp - Convite de colaborador',
     description: 'Confirme seu convite de colaborador para acessar uma empresa no SixoApp.',
     ogTitle: 'SixoApp - Convite de colaborador',
@@ -74,6 +99,31 @@ export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
     'error.pending': 'Aguarde a confirmação atual terminar.'
   }),
   en: Object.freeze({
+    "access.send": "Send code",
+    "access.confirm": "Verify code",
+    "access.code": "6-digit code",
+    "access.resend": "Send another code",
+    "access.password": "Password (8 to 64 characters)",
+    "access.repeat": "Confirm password",
+    "access.show": "Show passwords",
+    "access.save": "Create password",
+    "access.accept": "Accept invitation",
+    "access.signIn": "Sign in with the invited account",
+    "access.done": "Password created. Sign in with your email and the password you just chose.",
+    "access.login": "Go to sign in",
+    "access.open": "Open in the app",
+    "access.title": "Team invitation",
+    "access.invalid": "Incorrect or expired code. Check all 6 digits or request a new code.",
+    "access.verifyAgain": "Verify your email again to create a password.",
+    "access.length": "Choose a password with 8 to 64 characters.",
+    "access.mismatch": "The passwords must match.",
+    "access.wait": "Wait one minute before requesting another code.",
+    "access.wrongAccount": "Sign in with the account that received this invitation.",
+    "access.unavailable": "Could not complete this step. Please try again.",
+    "access.closed": "Invitation unavailable. If you already accepted it, sign in.",
+    "access.retry": "Try again",
+    "access.mail": "Invited email",
+
     title: 'SixoApp - Collaborator invitation',
     description: 'Confirm your collaborator invitation to access a business in SixoApp.',
     ogTitle: 'SixoApp - Collaborator invitation',
@@ -140,6 +190,31 @@ export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
     'error.pending': 'Wait for the current confirmation to finish.'
   }),
   es: Object.freeze({
+    "access.send": "Enviar código",
+    "access.confirm": "Confirmar código",
+    "access.code": "Código de 6 dígitos",
+    "access.resend": "Enviar otro código",
+    "access.password": "Contraseña (8 a 64 caracteres)",
+    "access.repeat": "Confirma la contraseña",
+    "access.show": "Mostrar contraseñas",
+    "access.save": "Crear contraseña",
+    "access.accept": "Aceptar invitación",
+    "access.signIn": "Entrar con la cuenta invitada",
+    "access.done": "Contraseña creada. Entra con tu correo y la contraseña que acabas de elegir.",
+    "access.login": "Ir al inicio de sesión",
+    "access.open": "Abrir en la aplicación",
+    "access.title": "Invitación de colaborador",
+    "access.invalid": "Código incorrecto o caducado. Revisa los 6 dígitos o solicita otro código.",
+    "access.verifyAgain": "Confirma tu correo de nuevo para crear la contraseña.",
+    "access.length": "Elige una contraseña de 8 a 64 caracteres.",
+    "access.mismatch": "Las contraseñas deben coincidir.",
+    "access.wait": "Espera un minuto antes de solicitar otro código.",
+    "access.wrongAccount": "Entra con la cuenta que recibió esta invitación.",
+    "access.unavailable": "No se pudo completar este paso. Inténtalo de nuevo.",
+    "access.closed": "Invitación no disponible. Si ya la aceptaste, inicia sesión.",
+    "access.retry": "Volver a intentar",
+    "access.mail": "Correo de la invitación",
+
     title: 'SixoApp - Invitación de colaborador',
     description: 'Confirma tu invitación de colaborador para acceder a un comercio en SixoApp.',
     ogTitle: 'SixoApp - Invitación de colaborador',
@@ -316,26 +391,8 @@ export function extractCollaboratorInviteCode(pathname) {
   return normalizeCollaboratorInviteCode(decodedCode);
 }
 
-export function normalizeCollaboratorInviteEmail(value) {
-  const email = String(value || '').trim().toLowerCase();
-  if (!email) {
-    throw new CollaboratorInviteValidationError('emailRequired');
-  }
-  if (
-    email.length > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    throw new CollaboratorInviteValidationError('emailInvalid');
-  }
-  return email;
-}
-
 export function createCollaboratorInviteEndpoint(apiBaseUrl, code) {
   return `${normalizeApiBaseUrl(apiBaseUrl)}/public/api/colaborador/convites/${encodeURIComponent(normalizeCollaboratorInviteCode(code))}`;
-}
-
-export function createCollaboratorInviteConfirmationEndpoint(apiBaseUrl, code) {
-  return `${createCollaboratorInviteEndpoint(apiBaseUrl, code)}/confirmar-email`;
 }
 
 export function buildCollaboratorInviteValidationRequest({ apiBaseUrl, code }) {
@@ -350,26 +407,6 @@ export function buildCollaboratorInviteValidationRequest({ apiBaseUrl, code }) {
   });
 }
 
-export function buildCollaboratorInviteConfirmationRequest({
-  apiBaseUrl,
-  code,
-  email,
-}) {
-  return Object.freeze({
-    endpoint: createCollaboratorInviteConfirmationEndpoint(apiBaseUrl, code),
-    options: Object.freeze({
-      method: 'POST',
-      credentials: 'omit',
-      cache: 'no-store',
-      headers: Object.freeze({
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      }),
-      body: JSON.stringify({ email: normalizeCollaboratorInviteEmail(email) })
-    })
-  });
-}
-
 function backendCodeFromPayload(payload, fallbackText = '') {
   const candidates = [
     payload && payload.codigo,
@@ -379,7 +416,7 @@ function backendCodeFromPayload(payload, fallbackText = '') {
     fallbackText,
   ];
   const knownCodes = [
-    'CONVITE_EMAIL_DIVERGENTE',
+    'CONVITE_EMAIL_DIVERGENTE', 'CONVITE_CODIGO_INVALIDO', 'CONVITE_VERIFIQUE_NOVAMENTE', 'CONVITE_ENTRAR_COM_CONTA',
     'CONVITE_EXPIRADO',
     'CONVITE_JA_UTILIZADO',
     'CONVITE_CANCELADO',
@@ -448,6 +485,7 @@ export async function fetchCollaboratorInvite({
     requirePayload: true,
   });
   return Object.freeze({
+    contaExistente: payload.contaExistente === true,
     emailConvidado: String(payload.emailConvidado || ''),
     nomeConvidado: String(payload.nomeConvidado || ''),
     idUnicoDaEmpresa: String(payload.idUnicoDaEmpresa || ''),
@@ -457,22 +495,30 @@ export async function fetchCollaboratorInvite({
   });
 }
 
-export async function confirmCollaboratorInviteEmail({
-  apiBaseUrl,
-  code,
-  email,
-  fetchImpl = globalThis.fetch,
-  timeoutMs = COLLABORATOR_INVITE_TIMEOUT_MS,
-}) {
+export async function postInviteStep({ apiBaseUrl, code, step, body, language, fetchImpl = globalThis.fetch }) {
+  const endpoint = createCollaboratorInviteEndpoint(apiBaseUrl, code);
   return performRequest({
-    request: buildCollaboratorInviteConfirmationRequest({
-      apiBaseUrl,
-      code,
-      email,
-    }),
-    fetchImpl,
-    timeoutMs,
-    requirePayload: false,
+    request: {
+      endpoint: endpoint + '/' + step,
+      options: { method: 'POST', credentials: 'omit', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', 'Accept-Language': language },
+        body: JSON.stringify(body) },
+    }, fetchImpl, timeoutMs: COLLABORATOR_INVITE_TIMEOUT_MS, requirePayload: step === 'confirmar-email',
+  });
+}
+
+export async function acceptWithWebSession({ apiBaseUrl, code, fetchImpl = globalThis.fetch }) {
+  const base = normalizeApiBaseUrl(apiBaseUrl);
+  const session = await performRequest({
+    request: { endpoint: base + '/auth/web/refresh', options: { method: 'POST', credentials: 'include', cache: 'no-store' } },
+    fetchImpl, timeoutMs: COLLABORATOR_INVITE_TIMEOUT_MS, requirePayload: true,
+  });
+  if (!session.accessToken) throw new CollaboratorInviteHttpError(401);
+  return performRequest({
+    request: { endpoint: base + '/private/api/colaborador/convites/' + normalizeCollaboratorInviteCode(code) + '/aceitar',
+      options: { method: 'POST', credentials: 'omit', cache: 'no-store',
+        headers: { Authorization: 'Bearer ' + session.accessToken } } },
+    fetchImpl, timeoutMs: COLLABORATOR_INVITE_TIMEOUT_MS, requirePayload: false,
   });
 }
 
@@ -496,6 +542,9 @@ export function collaboratorInviteErrorKeyFromError(error) {
   if (error instanceof CollaboratorInviteTimeoutError) return 'error.timeout';
   if (error instanceof CollaboratorInviteNetworkError) return 'error.network';
   if (error instanceof CollaboratorInviteHttpError) {
+    if (error.backendCode === 'CONVITE_CODIGO_INVALIDO') return 'access.invalid';
+    if (error.backendCode === 'CONVITE_VERIFIQUE_NOVAMENTE') return 'access.verifyAgain';
+    if (error.backendCode === 'CONVITE_ENTRAR_COM_CONTA') return 'access.signIn';
     if (error.backendCode === 'CONVITE_EMAIL_DIVERGENTE') return 'error.emailMismatch';
     if (error.backendCode === 'CONVITE_EXPIRADO') return 'error.expired';
     if (error.backendCode === 'CONVITE_JA_UTILIZADO') return 'error.used';
