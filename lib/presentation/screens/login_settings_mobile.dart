@@ -22,6 +22,8 @@ import 'package:sixpos/providers/usuario_provider.dart';
 
 import 'chat_suporte_mobile_screen.dart';
 import 'meu_perfil_mobile_screen.dart';
+import '../../l10n/billing_texts.dart';
+import 'subscription_mobile_screen.dart';
 import 'security_settings_mobile_screen.dart';
 
 class _AccountPanelColors {
@@ -377,6 +379,21 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                                         MeuPerfilMobileScreen(),
                                       ),
                                 ),
+                                if (autorizacoes.ehAdministrador ||
+                                    autorizacoes.ehSuperUsuario)
+                                  _GroupedItemData(
+                                    icon: Icons.credit_card_outlined,
+                                    title: billingText(context, 'plans'),
+                                    subtitle: billingText(
+                                      context,
+                                      'subscriptionDetails',
+                                    ),
+                                    semanticsLabel: billingText(context, 'plans'),
+                                    onTap: () => _openScreen(
+                                      context,
+                                      const SubscriptionMobileScreen(),
+                                    ),
+                                  ),
                                 _GroupedItemData(
                                   icon: Icons.shield_outlined,
                                   title: context.t(

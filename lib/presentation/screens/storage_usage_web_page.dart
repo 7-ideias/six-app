@@ -19,28 +19,31 @@ Future<void> showStorageUsageWeb(
 }) {
   return showDialog<void>(
     context: context,
-    builder: (dialogContext) => Dialog(
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        width: 880,
-        height: MediaQuery.sizeOf(dialogContext).height * .8,
-        child: StorageUsageWebPage(
-          adminCompanyId: companyId,
-          companyLabel: companyLabel,
-          onClose: () => Navigator.of(dialogContext).pop(),
+    builder:
+        (dialogContext) => Dialog(
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: 880,
+            height: MediaQuery.sizeOf(dialogContext).height * .8,
+            child: StorageUsageWebPage(
+              adminCompanyId: companyId,
+              companyLabel: companyLabel,
+              onClose: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
         ),
-      ),
-    ),
   );
 }
 
 class StorageUsageWebPage extends StatefulWidget {
   const StorageUsageWebPage({
     super.key,
+    this.scrollWithParent = false,
     this.adminCompanyId,
     this.companyLabel,
     this.onClose,
   });
+  final bool scrollWithParent;
   final String? adminCompanyId;
   final String? companyLabel;
   final VoidCallback? onClose;
@@ -61,9 +64,10 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final company = widget.adminCompanyId == null
-        ? context.watch<EmpresaProvider>().empresa
-        : widget.adminCompanyId;
+    final company =
+        widget.adminCompanyId == null
+            ? context.watch<EmpresaProvider>().empresa
+            : widget.adminCompanyId;
     if (!_started || !identical(company, _company)) {
       _started = true;
       _company = company;
@@ -95,6 +99,118 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
       animation: _controller,
       builder: (context, _) {
         final usage = _controller.usage;
+        final details = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_controller.loading)
+              _loadingSkeleton(context)
+            else ...[
+              Text(
+                '${storageText(context, 'plan')}: ${usage == null
+                    ? storageText(context, 'noMeasurement')
+                    : usage.plan.planId == null
+                    ? storageText(context, 'noPlan')
+                    : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (widget.adminCompanyId != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await showStoragePlansWeb(
+                        context,
+                        companyId: widget.adminCompanyId,
+                      );
+                      if (mounted) await _controller.load();
+                    },
+                    icon: const Icon(Icons.tune),
+                    label: Text(storageText(context, 'managePlans')),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width =
+                      constraints.maxWidth < 600
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - 16) / 2;
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      SizedBox(
+                        width: width,
+                        child: _metric(
+                          context,
+                          Icons.storage_outlined,
+                          'database',
+                          usage?.databaseBytes,
+                        ),
+                      ),
+                      SizedBox(
+                        width: width,
+                        child: _metric(
+                          context,
+                          Icons.folder_outlined,
+                          'files',
+                          usage?.fileBytes,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _controller.error != null
+                      ? storageText(context, _controller.error!)
+                      : usage == null
+                      ? storageText(context, 'pending')
+                      : storageText(context, storageStatusKey(usage.status)),
+                  style: TextStyle(
+                    color:
+                        _controller.error != null || usage?.status == 'ERRO'
+                            ? tokens.danger
+                            : tokens.secondaryText,
+                  ),
+                ),
+              ),
+              if (usage?.measuredAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '${storageText(context, 'measuredAt')}: ${storageTimestamp(context, usage!.measuredAt!)}',
+                    style: TextStyle(color: tokens.secondaryText),
+                  ),
+                ),
+              if (usage?.plan.limits.maxUploadBytes != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
+                  ),
+                ),
+              if (usage?.status == 'PARCIAL')
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(storageText(context, 'partialQuota')),
+                ),
+            ],
+            const SizedBox(height: 24),
+            Text(
+              storageText(context, 'scope'),
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              storageText(context, 'informational'),
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+          ],
+        );
         return Material(
           color: tokens.workspaceBackground,
           child: Column(
@@ -106,9 +222,8 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                     widget.companyLabel ?? storageText(context, 'subtitle'),
                 actions: [
                   OutlinedButton.icon(
-                    onPressed: _controller.loading
-                        ? null
-                        : () => _controller.load(),
+                    onPressed:
+                        _controller.loading ? null : () => _controller.load(),
                     icon: const Icon(Icons.refresh),
                     label: Text(storageText(context, 'refresh')),
                   ),
@@ -120,126 +235,15 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
                     ),
                 ],
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_controller.loading)
-                        _loadingSkeleton(context)
-                      else ...[
-                        Text(
-                          '${storageText(context, 'plan')}: ${usage == null
-                              ? storageText(context, 'noMeasurement')
-                              : usage.plan.planId == null
-                              ? storageText(context, 'noPlan')
-                              : usage.plan.name(Localizations.localeOf(context).toLanguageTag())}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        if (widget.adminCompanyId != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                await showStoragePlansWeb(
-                                  context,
-                                  companyId: widget.adminCompanyId,
-                                );
-                                if (mounted) await _controller.load();
-                              },
-                              icon: const Icon(Icons.tune),
-                              label: Text(storageText(context, 'managePlans')),
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final width = constraints.maxWidth < 600
-                                ? constraints.maxWidth
-                                : (constraints.maxWidth - 16) / 2;
-                            return Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
-                              children: [
-                                SizedBox(
-                                  width: width,
-                                  child: _metric(
-                                    context,
-                                    Icons.storage_outlined,
-                                    'database',
-                                    usage?.databaseBytes,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: _metric(
-                                    context,
-                                    Icons.folder_outlined,
-                                    'files',
-                                    usage?.fileBytes,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            _controller.error != null
-                                ? storageText(context, _controller.error!)
-                                : usage == null
-                                ? storageText(context, 'pending')
-                                : storageText(
-                                    context,
-                                    storageStatusKey(usage.status),
-                                  ),
-                            style: TextStyle(
-                              color:
-                                  _controller.error != null ||
-                                      usage?.status == 'ERRO'
-                                  ? tokens.danger
-                                  : tokens.secondaryText,
-                            ),
-                          ),
-                        ),
-                        if (usage?.measuredAt != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              '${storageText(context, 'measuredAt')}: ${storageTimestamp(context, usage!.measuredAt!)}',
-                              style: TextStyle(color: tokens.secondaryText),
-                            ),
-                          ),
-                        if (usage?.plan.limits.maxUploadBytes != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              '${storageText(context, 'uploadConfigured')}: ${storageBytes(context, usage!.plan.limits.maxUploadBytes!)}',
-                            ),
-                          ),
-                        if (usage?.status == 'PARCIAL')
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(storageText(context, 'partialQuota')),
-                          ),
-                      ],
-                      const SizedBox(height: 24),
-                      Text(
-                        storageText(context, 'scope'),
-                        style: TextStyle(color: tokens.secondaryText),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        storageText(context, 'informational'),
-                        style: TextStyle(color: tokens.secondaryText),
-                      ),
-                    ],
+              if (widget.scrollWithParent)
+                Padding(padding: const EdgeInsets.all(20), child: details)
+              else
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: details,
                   ),
                 ),
-              ),
             ],
           ),
         );
@@ -273,9 +277,10 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
               const SizedBox(height: 16),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final width = constraints.maxWidth < 600
-                      ? constraints.maxWidth
-                      : (constraints.maxWidth - 16) / 2;
+                  final width =
+                      constraints.maxWidth < 600
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - 16) / 2;
                   return Wrap(
                     spacing: 16,
                     runSpacing: 16,
@@ -329,16 +334,18 @@ class _StorageUsageWebPageState extends State<StorageUsageWebPage> {
     int? bytes,
   ) {
     final limits = _controller.usage?.plan.limits;
-    final limit = label == 'database'
-        ? limits?.databaseLimitBytes
-        : limits?.fileLimitBytes;
+    final limit =
+        label == 'database'
+            ? limits?.databaseLimitBytes
+            : limits?.fileLimitBytes;
     final status = storageQuotaStatus(bytes, limit);
     final tokens = WebThemeTokens.of(context);
-    final color = status == 'quotaExceeded' || status == 'quotaReached'
-        ? tokens.danger
-        : status == 'quotaNear'
-        ? tokens.warning
-        : tokens.info;
+    final color =
+        status == 'quotaExceeded' || status == 'quotaReached'
+            ? tokens.danger
+            : status == 'quotaNear'
+            ? tokens.warning
+            : tokens.info;
     final ratio = bytes == null || limit == null ? null : bytes / limit;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

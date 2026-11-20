@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'six_i18n.dart';
 
 const billingTexts = <String, List<String>>{
+  'subscriptionDetails': [
+    'Detalhes da assinatura',
+    'Subscription details',
+    'Detalles de la suscripción',
+  ],
   'plansIntro': [
     'Escolha o plano para o seu comércio.',
     'Choose the plan for your business.',

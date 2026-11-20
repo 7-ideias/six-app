@@ -41,6 +41,7 @@ import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
+import 'presentation/screens/subscription_web_page.dart';
 import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_pdv_clear_sale_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_pdv_quantity_dialog.dart';
@@ -1081,7 +1082,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             onSelected: (_WebHeaderUserAction action) {
               switch (action) {
                 case _WebHeaderUserAction.subscription:
-                  Navigator.of(context).pushNamed('/app/assinatura');
+                  showSubscriptionWebDialog(context);
                   return;
                 case _WebHeaderUserAction.profile:
                   showMeuPerfilWebDialog(context);

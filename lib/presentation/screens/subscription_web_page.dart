@@ -5,54 +5,79 @@ import 'package:provider/provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../data/models/subscription_billing.dart';
 import '../components/six_backend_loading.dart';
-import '../theme/subscription_visuals.dart';
+import '../theme/web_theme_tokens.dart';
+import 'storage_usage_web_page.dart';
 
 import '../../l10n/billing_texts.dart';
 import '../../l10n/storage_texts.dart';
 import '../controllers/subscription_billing_controller.dart';
 
+Future<void> showSubscriptionWebDialog(BuildContext context) =>
+    showDialog<void>(
+      context: context,
+      builder:
+          (context) => Dialog(
+            clipBehavior: Clip.antiAlias,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980, maxHeight: 780),
+              child: const SubscriptionWebPage(),
+            ),
+          ),
+    );
+
 class SubscriptionWebPage extends StatelessWidget {
   const SubscriptionWebPage({super.key, this.selection});
   final Uri? selection;
+
   @override
-  Widget build(BuildContext context) => Theme(
-    data: SubscriptionVisuals.theme(context),
-    child: Builder(
-      builder: (context) => Scaffold(
-        appBar: AppBar(title: Text(billingText(context, 'plans'))),
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.topCenter,
-              radius: 1.2,
-              colors: [
-                SubscriptionVisuals.highlightedSurface,
-                SubscriptionVisuals.background,
-              ],
+  Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
+    final companyId = selection?.queryParameters['companyId'];
+    final campaignId = selection?.queryParameters['campaignId'];
+    return Scaffold(
+      backgroundColor: tokens.workspaceBackground,
+      appBar: AppBar(
+        backgroundColor: tokens.headerBackground,
+        foregroundColor: tokens.primaryText,
+        leading: BackButton(
+          onPressed: () {
+            final navigator = Navigator.of(context);
+            if (navigator.canPop()) {
+              navigator.pop();
+            } else {
+              navigator.pushReplacementNamed('/app');
+            }
+          },
+        ),
+        title: Text(billingText(context, 'plans')),
+      ),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(
+              MediaQuery.sizeOf(context).width < 600 ? 12 : 24,
             ),
-          ),
-          child: SizedBox.expand(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
-                vertical: 48,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1152),
-                  child: SubscriptionWebPanel(
-                    selection: selection,
-                    companyId: selection?.queryParameters['companyId'],
-                    campaignId: selection?.queryParameters['campaignId'],
-                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SubscriptionWebPanel(
+                  selection: selection,
+                  companyId: companyId,
+                  campaignId: campaignId,
                 ),
-              ),
+                if (companyId == null && campaignId == null) ...[
+                  const SizedBox(height: 16),
+                  const StorageUsageWebPage(scrollWithParent: true),
+                ],
+              ],
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class SubscriptionOfferWebCard extends StatelessWidget {
@@ -68,18 +93,15 @@ class SubscriptionOfferWebCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     final highlighted = offer.featured || selected;
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: highlighted
-            ? SubscriptionVisuals.highlightedSurface
-            : SubscriptionVisuals.surface,
+        color: highlighted ? tokens.selectedBackground : tokens.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: highlighted
-              ? SubscriptionVisuals.cyan
-              : SubscriptionVisuals.border,
+          color: highlighted ? tokens.info : tokens.cardBorder,
         ),
       ),
       child: Column(
@@ -88,8 +110,8 @@ class SubscriptionOfferWebCard extends StatelessWidget {
           if (offer.featured || selected) ...[
             Text(
               billingText(context, selected ? 'selectedPlan' : 'popular'),
-              style: const TextStyle(
-                color: SubscriptionVisuals.cyan,
+              style: TextStyle(
+                color: tokens.info,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -106,19 +128,17 @@ class SubscriptionOfferWebCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               offer.description,
-              style: const TextStyle(
-                color: SubscriptionVisuals.muted,
-                height: 1.5,
-              ),
+              style: TextStyle(color: tokens.secondaryText, height: 1.5),
             ),
           ],
           const SizedBox(height: 28),
           Text(
             NumberFormat.currency(
-              locale: context
-                  .watch<LocaleSettingsProvider>()
-                  .currentLocale
-                  .toLanguageTag(),
+              locale:
+                  context
+                      .watch<LocaleSettingsProvider>()
+                      .currentLocale
+                      .toLanguageTag(),
               name: offer.currency,
             ).format(offer.amountMinor / 100),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -132,16 +152,16 @@ class SubscriptionOfferWebCard extends StatelessWidget {
               context,
               offer.interval == 'year' ? 'yearCycle' : 'monthCycle',
             ),
-            style: const TextStyle(
-              color: SubscriptionVisuals.muted,
+            style: TextStyle(
+              color: tokens.secondaryText,
               height: 1.5,
               fontSize: 13,
             ),
           ),
           if (offer.benefits.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Divider(color: SubscriptionVisuals.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Divider(color: tokens.cardBorder),
             ),
             for (final benefit in offer.benefits)
               Padding(
@@ -149,17 +169,13 @@ class SubscriptionOfferWebCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.check,
-                      size: 18,
-                      color: SubscriptionVisuals.cyan,
-                    ),
+                    Icon(Icons.check, size: 18, color: tokens.info),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         benefit,
-                        style: const TextStyle(
-                          color: SubscriptionVisuals.muted,
+                        style: TextStyle(
+                          color: tokens.secondaryText,
                           height: 1.5,
                         ),
                       ),
@@ -197,7 +213,6 @@ class SubscriptionWebPanel extends StatefulWidget {
 }
 
 class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
-  bool _hovered = false;
   late final controller = SubscriptionBillingController(
     companyId: widget.companyId,
     campaignId: widget.campaignId,
@@ -219,74 +234,22 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: SubscriptionVisuals.theme(context),
-      child: Builder(
-        builder: (context) {
-          final reducedMotion = MediaQuery.disableAnimationsOf(context);
-          final duration = reducedMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 220);
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: reducedMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            child: MouseRegion(
-              onEnter: (_) => setState(() => _hovered = true),
-              onExit: (_) => setState(() => _hovered = false),
-              child: AnimatedContainer(
-                duration: duration,
-                curve: Curves.easeOutCubic,
-                transform: Matrix4.translationValues(
-                  0,
-                  _hovered && !reducedMotion ? -3 : 0,
-                  0,
-                ),
-                decoration: BoxDecoration(
-                  color: SubscriptionVisuals.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: _hovered
-                        ? SubscriptionVisuals.cyan.withValues(alpha: 0.4)
-                        : SubscriptionVisuals.border,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.32),
-                      blurRadius: _hovered ? 48 : 36,
-                      offset: Offset(0, _hovered ? 22 : 16),
-                      spreadRadius: -8,
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Padding(
-                    padding: EdgeInsets.all(
-                      MediaQuery.sizeOf(context).width < 600 ? 20 : 32,
-                    ),
-                    child: _content(context),
-                  ),
-                ),
-              ),
-            ),
-            builder: (context, value, child) => Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 12 * (1 - value)),
-                child: child,
-              ),
-            ),
-          );
-        },
+    final tokens = WebThemeTokens.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: _content(context),
       ),
     );
   }
 
   Widget _content(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -295,28 +258,26 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              billingText(context, 'plans'),
+              billingText(context, 'subscriptionDetails'),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.8,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              billingText(context, 'plansIntro'),
-              style: const TextStyle(
-                color: SubscriptionVisuals.muted,
-                height: 1.5,
+            if (state != null && !state.hasSubscription)
+              Text(
+                billingText(context, 'plansIntro'),
+                style: TextStyle(color: tokens.secondaryText, height: 1.5),
               ),
-            ),
             const SizedBox(height: 24),
             if (controller.busy)
               SixBackendLoading(
                 title: billingText(context, 'loading'),
                 subtitle: '',
                 compact: true,
-                backgroundColor: SubscriptionVisuals.surface,
-                borderColor: SubscriptionVisuals.border,
+                backgroundColor: tokens.cardBackground,
+                borderColor: tokens.cardBorder,
               ),
             if (controller.error != null)
               Padding(
@@ -354,15 +315,13 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                     for (final option in controller.intervals)
                       ChoiceChip(
                         label: Text(billingText(context, option)),
-                        labelStyle: TextStyle(
-                          color: controller.selectedInterval == option
-                              ? SubscriptionVisuals.background
-                              : SubscriptionVisuals.foreground,
-                        ),
+                        labelStyle: TextStyle(color: tokens.primaryText),
+                        selectedColor: tokens.selectedBackground,
                         selected: controller.selectedInterval == option,
-                        onSelected: controller.busy
-                            ? null
-                            : (_) => controller.selectInterval(option),
+                        onSelected:
+                            controller.busy
+                                ? null
+                                : (_) => controller.selectInterval(option),
                       ),
                   ],
                 ),
@@ -370,11 +329,12 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                 if (state.offers.isEmpty) Text(billingText(context, 'noPlans')),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 960
-                        ? 3
-                        : constraints.maxWidth >= 600
-                        ? 2
-                        : 1;
+                    final columns =
+                        constraints.maxWidth >= 960
+                            ? 3
+                            : constraints.maxWidth >= 600
+                            ? 2
+                            : 1;
                     final width =
                         (constraints.maxWidth - (columns - 1) * 20) / columns;
                     return Wrap(
@@ -388,9 +348,10 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                               offer: offer,
                               selected:
                                   offer.planId == controller.selectedPlanId,
-                              onSubscribe: controller.busy
-                                  ? null
-                                  : () => controller.open(offer: offer),
+                              onSubscribe:
+                                  controller.busy
+                                      ? null
+                                      : () => controller.open(offer: offer),
                             ),
                           ),
                       ],
@@ -400,8 +361,8 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                 const SizedBox(height: 16),
                 Text(
                   billingText(context, 'paymentTerms'),
-                  style: const TextStyle(
-                    color: SubscriptionVisuals.muted,
+                  style: TextStyle(
+                    color: tokens.secondaryText,
                     height: 1.6,
                     fontSize: 12,
                   ),
@@ -416,16 +377,16 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
                       state.hasSubscription &&
                       state.available)
                     FilledButton.icon(
-                      onPressed: controller.busy
-                          ? null
-                          : () => controller.open(),
+                      onPressed:
+                          controller.busy ? null : () => controller.open(),
                       icon: const Icon(Icons.credit_card),
                       label: Text(billingText(context, 'portal')),
                     ),
                   OutlinedButton.icon(
-                    onPressed: controller.busy
-                        ? null
-                        : () => controller.load(sync: true),
+                    onPressed:
+                        controller.busy
+                            ? null
+                            : () => controller.load(sync: true),
                     icon: const Icon(Icons.refresh),
                     label: Text(billingText(context, 'sync')),
                   ),

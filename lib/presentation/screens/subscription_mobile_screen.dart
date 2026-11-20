@@ -6,6 +6,7 @@ import '../../providers/locale_settings_provider.dart';
 import '../../data/models/subscription_billing.dart';
 import '../components/six_backend_loading.dart';
 import '../theme/subscription_visuals.dart';
+import 'storage_usage_mobile_screen.dart';
 
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../l10n/billing_texts.dart';
@@ -41,6 +42,17 @@ class SubscriptionMobileScreen extends StatelessWidget {
             companyId: companyId,
             campaignId: campaignId,
           ),
+          if (companyId == null && campaignId == null)
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: Text(storageText(context, 'title')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const StorageUsageMobileScreen(),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -239,13 +251,14 @@ class _SubscriptionMobilePanelState extends State<SubscriptionMobilePanel> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              billingText(context, 'plansIntro'),
-              style: const TextStyle(
-                color: SubscriptionVisuals.muted,
-                height: 1.5,
+            if (state != null && !state.hasSubscription)
+              Text(
+                billingText(context, 'plansIntro'),
+                style: const TextStyle(
+                  color: SubscriptionVisuals.muted,
+                  height: 1.5,
+                ),
               ),
-            ),
             const SizedBox(height: 24),
             if (controller.busy)
               SixBackendLoading(
