@@ -9,6 +9,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
+import '../components/mobile/agenda_email_reenvio_mobile_button.dart';
 import 'usuario_sixo_detalhe_mobile_screen.dart';
 
 class UsuariosSixoMobileScreen extends StatefulWidget {
@@ -375,6 +376,7 @@ class _UsuariosSixoMobileScreenState extends State<UsuariosSixoMobileScreen> {
               padding: const EdgeInsets.only(bottom: 10),
               child: _MobileSixoUserCard(
                 user: users[index],
+                service: _service,
                 roleLabel: _roleLabel(context, users[index].papel),
                 onTap: () => _openUser(users[index]),
               ),
@@ -411,129 +413,157 @@ class _MobileSixoUserCard extends StatelessWidget {
   const _MobileSixoUserCard({
     required this.user,
     required this.roleLabel,
+    required this.service,
     required this.onTap,
   });
 
   final AdminUsuarioEmpresaAtiva user;
   final String roleLabel;
+  final AdminPortalService service;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    final String name = user.nomeExibicao.trim().isEmpty
-        ? context.t('usuariosSixo.userFallback', fallback: 'Usuário do Sixo')
-        : user.nomeExibicao.trim();
+    final String name =
+        user.nomeExibicao.trim().isEmpty
+            ? context.t(
+              'usuariosSixo.userFallback',
+              fallback: 'Usuário do Sixo',
+            )
+            : user.nomeExibicao.trim();
+    return Material(
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _details(context, colors, name),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: AgendaEmailReenvioMobileButton(
+              service: service,
+              idUsuario: user.identificador,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _details(
+    BuildContext context,
+    SixMobileColorScheme colors,
+    String name,
+  ) {
     return Semantics(
       container: true,
       button: true,
       label: '$name, $roleLabel',
-      child: Material(
-        color: colors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: colors.border),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                CircleAvatar(
-                  radius: 23,
-                  backgroundColor: colors.softAccentSurface,
-                  foregroundColor: colors.accent,
-                  child: Text(
-                    _initials(name),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              CircleAvatar(
+                radius: 23,
+                backgroundColor: colors.softAccentSurface,
+                foregroundColor: colors.accent,
+                child: Text(
+                  _initials(name),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.titleText,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.titleText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.softAccentSurface,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              roleLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.accent,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.softAccentSurface,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            roleLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      UltimoLoginPill(
-                        ultimoLoginEm: user.ultimoLoginEm,
-                        hojeColor:
-                            Theme.of(context).brightness == Brightness.dark
-                            ? SixMobilePalette.successDark
-                            : SixMobilePalette.successLight,
-                        recenteColor: colors.accent,
-                        antigoColor:
-                            Theme.of(context).brightness == Brightness.dark
-                            ? SixMobilePalette.warningDark
-                            : SixMobilePalette.warningLight,
-                        semRegistroColor: colors.mutedText,
-                      ),
-                      const SizedBox(height: 10),
-                      _MobileUserMetadata(
-                        icon: Icons.mail_outline_rounded,
-                        value: user.email.trim().isEmpty
-                            ? context.t(
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    UltimoLoginPill(
+                      ultimoLoginEm: user.ultimoLoginEm,
+                      hojeColor:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? SixMobilePalette.successDark
+                              : SixMobilePalette.successLight,
+                      recenteColor: colors.accent,
+                      antigoColor:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? SixMobilePalette.warningDark
+                              : SixMobilePalette.warningLight,
+                      semRegistroColor: colors.mutedText,
+                    ),
+                    const SizedBox(height: 10),
+                    _MobileUserMetadata(
+                      icon: Icons.mail_outline_rounded,
+                      value:
+                          user.email.trim().isEmpty
+                              ? context.t(
                                 'usuariosSixo.noEmail',
                                 fallback: 'E-mail não informado',
                               )
-                            : user.email.trim(),
-                      ),
-                      const SizedBox(height: 7),
-                      _MobileUserMetadata(
-                        icon: Icons.phone_outlined,
-                        value: user.celular.trim().isEmpty
-                            ? context.t(
+                              : user.email.trim(),
+                    ),
+                    const SizedBox(height: 7),
+                    _MobileUserMetadata(
+                      icon: Icons.phone_outlined,
+                      value:
+                          user.celular.trim().isEmpty
+                              ? context.t(
                                 'usuariosSixo.noPhone',
                                 fallback: 'Celular não informado',
                               )
-                            : user.celular.trim(),
-                      ),
-                    ],
-                  ),
+                              : user.celular.trim(),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, color: colors.mutedText),
-              ],
-            ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: colors.mutedText),
+            ],
           ),
         ),
       ),
