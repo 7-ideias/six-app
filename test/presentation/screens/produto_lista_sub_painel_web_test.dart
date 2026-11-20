@@ -10,6 +10,8 @@ import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -24,6 +26,186 @@ void main() {
 
   tearDown(() {
     UsuarioProvider().clear();
+  });
+
+  testWidgets(
+    'Atualizar no seletor reflete a concessão e a retirada de cadastro',
+    (tester) async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
+      final acesso = _PermissoesDoPdv();
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+          value: acesso,
+          child: _buildTestApp(
+            child: const Scaffold(
+              body: ProdutoListaBody(
+                isSelecao: true,
+                permitirSelecaoMultipla: true,
+                apenasAtivosNoBackend: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Voltar ao PDV'), findsOneWidget);
+      for (final permitir in [true, false]) {
+        acesso.concessao = permitir;
+        await tester.tap(find.text('Atualizar'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Cadastrar produtos'),
+          permitir ? findsOneWidget : findsNothing,
+        );
+        expect(find.text('Cadastrar serviços'), findsNothing);
+      }
+    },
+  );
+
+  for (final mobile in [false, true]) {
+    testWidgets(
+      'PDV preserva produto e serviço na mesma seleção (mobile=$mobile)',
+      (tester) async {
+        _preferencias(ModoDeExibicaoUsuario.lista);
+        await tester.binding.setSurfaceSize(
+          mobile ? const Size(390, 844) : const Size(1440, 900),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        List<ProdutoModel>? added;
+        await tester.pumpWidget(
+          _buildTestApp(
+            products: [
+              _produto(
+                id: '1',
+                nome: 'Cabo USB',
+                codigo: 'C1',
+                categoria: 'Acessórios',
+                preco: 20,
+              ),
+            ],
+            services: [
+              _servico(
+                id: '1',
+                nome: 'Reparo USB',
+                codigo: 'S1',
+                categoria: 'Reparo',
+                preco: 50,
+              ),
+            ],
+            child: Builder(
+              builder:
+                  (context) => Scaffold(
+                    body: TextButton(
+                      onPressed: () async {
+                        added = await Navigator.of(
+                          context,
+                        ).push<List<ProdutoModel>>(
+                          MaterialPageRoute(
+                            builder:
+                                (_) =>
+                                    mobile
+                                        ? const ProdutolistMobileScreen(
+                                          isSelecao: true,
+                                          permitirSelecaoMultipla: true,
+                                          apenasAtivosNoBackend: true,
+                                        )
+                                        : const Scaffold(
+                                          body: SubPainelWebProdutoLista(
+                                            isSelecao: true,
+                                            permitirSelecaoMultipla: true,
+                                            apenasAtivosNoBackend: true,
+                                          ),
+                                        ),
+                          ),
+                        );
+                      },
+                      child: const Text('Abrir seletor'),
+                    ),
+                  ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Abrir seletor'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cabo USB'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('pdv-categoria-SERVICO')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reparo USB'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('2 itens selecionados'), findsOneWidget);
+        await tester.tap(find.text('Adicionar à venda'));
+        await tester.pumpAndSettle();
+        expect(added?.map((p) => p.nomeProduto), ['Cabo USB', 'Reparo USB']);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final tema in [ThemeMode.light, ThemeMode.dark]) {
+    testWidgets('PDV sem produtos oferece serviço selecionável ($tema)', (
+      tester,
+    ) async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _buildTestApp(
+          themeMode: tema,
+          services: [
+            _servico(
+              id: 's1',
+              nome: 'Troca de conector',
+              codigo: 'S1',
+              categoria: 'Reparo',
+              preco: 89,
+            ),
+          ],
+          child: const Scaffold(
+            body: ProdutoListaBody(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+              apenasAtivosNoBackend: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Ainda não há produtos cadastrados.'), findsOneWidget);
+      expect(find.byTooltip('Marcadores'), findsNothing);
+      expect(find.text('Cadastrar produtos'), findsNothing);
+      await tester.tap(find.text('Ver serviços'));
+      await tester.pumpAndSettle();
+      expect(find.text('Troca de conector'), findsOneWidget);
+      await tester.tap(find.text('Troca de conector'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('PDV mobile com catálogo vazio orienta o vendedor sem cadastro', (
+    tester,
+  ) async {
+    _preferencias(ModoDeExibicaoUsuario.lista);
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      _buildTestApp(
+        themeMode: ThemeMode.dark,
+        child: const ProdutolistMobileScreen(
+          isSelecao: true,
+          permitirSelecaoMultipla: true,
+          apenasAtivosNoBackend: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ainda não há produtos cadastrados.'), findsOneWidget);
+    expect(find.text('Voltar ao PDV'), findsOneWidget);
+    expect(find.text('Cadastrar produtos'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('grade de edicao pagina e inclui servicos nos filtros rapidos', (
@@ -199,6 +381,7 @@ void main() {
 
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
       await tester.binding.setSurfaceSize(null);
     });
 
@@ -338,14 +521,7 @@ void main() {
   );
 }
 
-Future<void> _pumpCatalog(
-  WidgetTester tester, {
-  required Size size,
-  required ModoDeExibicaoUsuario viewMode,
-  required List<ProdutoModel> products,
-  required List<ProdutoModel> services,
-  ThemeMode themeMode = ThemeMode.light,
-}) async {
+void _preferencias(ModoDeExibicaoUsuario viewMode) {
   UsuarioProvider().setUsuario(
     UsuarioModel(
       nome: 'Ana',
@@ -360,7 +536,17 @@ Future<void> _pumpCatalog(
           ),
     ),
   );
+}
 
+Future<void> _pumpCatalog(
+  WidgetTester tester, {
+  required Size size,
+  required ModoDeExibicaoUsuario viewMode,
+  required List<ProdutoModel> products,
+  required List<ProdutoModel> services,
+  ThemeMode themeMode = ThemeMode.light,
+}) async {
+  _preferencias(viewMode);
   await tester.binding.setSurfaceSize(size);
   addTearDown(() async {
     await tester.binding.setSurfaceSize(null);
@@ -546,3 +732,16 @@ final ConfiguracaoRegionalizacaoResponse _regionalizacao =
 
 const String _png1x1 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p94AAAAASUVORK5CYII=';
+
+class _PermissoesDoPdv extends ColaboradorAutorizacoesProvider {
+  bool concessao = false;
+  bool _cadastrar = false;
+  @override
+  bool get podeCadastrarProduto => _cadastrar;
+  @override
+  Future<bool> atualizarAutorizacoesDoPdv() async {
+    _cadastrar = concessao;
+    notifyListeners();
+    return true;
+  }
+}

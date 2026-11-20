@@ -60,7 +60,7 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Frente de caixa',
           icon: Icons.point_of_sale_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[WebNavigationPermission.podeFazerVenda],
+            <WebNavigationPermission>[WebNavigationPermission.podeFazerVenda, WebNavigationPermission.podeReceberNoCaixa],
           ),
           destination: WebNavigationDestination.operationsPointOfSale,
         ),
@@ -83,7 +83,6 @@ abstract final class WebNavigationRegistry {
           icon: Icons.payments_outlined,
           visibility:
               WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeAcessarFinanceiro,
                 WebNavigationPermission.podeReceberNoCaixa,
               ]),
           destination: WebNavigationDestination.cash,

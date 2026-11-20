@@ -294,7 +294,9 @@ class _DestinosRecebimentoWebState extends State<DestinosRecebimentoWeb> {
                   !_loading && !_erro && valido
                       ? () => Navigator.pop(
                         context,
-                        _drafts.map((d) => d.toInput()).toList(),
+                        _drafts.map((d) => d.toInput(contaCaixa: _contas.any(
+                          (conta) => conta.id == d.contaId && conta.tipo == 'CAIXA',
+                        ))).toList(),
                       )
                       : null,
               child: Text(context.t('space.save')),

@@ -1,3 +1,5 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/usuario_model.dart';
@@ -182,7 +184,10 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
           ),
         };
 
+    final permissoes = context.watch<ColaboradorAutorizacoesProvider?>();
     return _ordemCardsController.ordem
+        .where((item) => item != VendasMobileCardPreferencia.vendasAReceber ||
+            permissoes?.podeReceberVendaPdv == true)
         .map((preferencia) => actions[preferencia]!)
         .toList(growable: false);
   }

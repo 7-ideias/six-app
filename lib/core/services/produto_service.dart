@@ -51,6 +51,9 @@ class ProdutoService {
 
       print('✅ STATUS: ${response.statusCode}');
 
+      if (response.statusCode == 204) {
+        return ProdutoResponseModel.fromJson({'skusTotaisNoEstoque': 0});
+      }
       if (response.statusCode == 200) {
         final jsonMap = jsonDecode(response.body);
         return ProdutoResponseModel.fromJson(jsonMap);

@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -23,11 +24,13 @@ class CadastroProdutoMobileScreen extends StatefulWidget {
   const CadastroProdutoMobileScreen({
     super.key,
     this.produtoParaEdicao,
+    this.onCriado,
     this.tipoInicial = ProdutoCadastroFormUtils.tipoProduto,
     this.produtoService,
     this.categoriaApiClient,
   });
 
+  final ValueChanged<ProdutoModel>? onCriado;
   final ProdutoModel? produtoParaEdicao;
   final String tipoInicial;
   final ProdutoService? produtoService;
@@ -205,6 +208,13 @@ class _CadastroProdutoMobileScreenState
       _cstCofinsController,
     ]);
     _tipoSelecionado = _normalizarTipo(widget.tipoInicial);
+    final acesso = context.read<ColaboradorAutorizacoesProvider?>();
+    if (!_isModoEdicao &&
+        acesso != null &&
+        !acesso.podeCadastrarTipo(_tipoSelecionado)) {
+      if (acesso.podeCadastrarServico) _tipoSelecionado = 'SERVICO';
+      if (acesso.podeCadastrarProduto) _tipoSelecionado = 'PRODUTO';
+    }
     _preencherCamposSeModoEdicao();
     _carregarCategoriasCatalogo();
 
@@ -523,11 +533,19 @@ class _CadastroProdutoMobileScreenState
     });
 
     try {
+      final permissoes = context.read<ColaboradorAutorizacoesProvider?>();
+      if (!_isModoEdicao &&
+          permissoes != null &&
+          !permissoes.podeCadastrarTipo(_tipoSelecionado)) {
+        throw StateError(context.t('pdv.empty.askAdmin'));
+      }
       final produto = _montarProduto();
       if (_isModoEdicao) {
         await _produtoService.atualizarProduto(produto);
       } else {
-        await _produtoService.cadastrarProduto(produto);
+        final id = await _produtoService.cadastrarProduto(produto);
+        if (id != null && mounted)
+          widget.onCriado?.call(produto.copyWith(id: id));
       }
 
       if (!mounted) return;
@@ -874,10 +892,19 @@ class _CadastroProdutoMobileScreenState
     return _MobileSelectorField(
       label: _t('produto.mobile.typeLabel', 'Tipo'),
       value: _tipoLabel(_tipoSelecionado),
-      icon: _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
-          ? Icons.design_services_outlined
-          : Icons.inventory_2_outlined,
-      enabled: !_isLoading,
+      icon:
+          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+              ? Icons.design_services_outlined
+              : Icons.inventory_2_outlined,
+      enabled:
+          !_isLoading &&
+          (_isModoEdicao ||
+              (context
+                      .watch<ColaboradorAutorizacoesProvider?>()
+                      ?.podeCadastrarTipo(
+                        _tipoSelecionado == 'SERVICO' ? 'PRODUTO' : 'SERVICO',
+                      ) ??
+                  true)),
       onTap: _abrirSeletorTipo,
     );
   }

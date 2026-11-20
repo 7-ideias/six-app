@@ -1,3 +1,4 @@
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
 import 'dart:async';
@@ -125,6 +126,8 @@ Future<bool?> showSubPainelCadastroProduto(
   String textoDaAppBar, {
   ProdutoModel? produtoParaEdicao,
   bool modoEdicao = false,
+  String tipoInicial = 'PRODUTO',
+  ValueChanged<ProdutoModel>? onCriado,
 }) {
   final WebThemeTokens tokens = WebThemeTokens.of(context);
   final double barrierAlpha =
@@ -139,6 +142,8 @@ Future<bool?> showSubPainelCadastroProduto(
         body: CadastroProdutoWebBody(
           produtoParaEdicao: produtoParaEdicao,
           modoEdicao: modoEdicao,
+          tipoInicial: tipoInicial,
+          onCriado: onCriado,
         ),
       );
     },
@@ -149,12 +154,16 @@ class CadastroProdutoWebBody extends StatefulWidget {
   const CadastroProdutoWebBody({
     super.key,
     this.produtoParaEdicao,
+    this.onCriado,
+    this.tipoInicial = 'PRODUTO',
     this.modoEdicao = false,
     this.produtoService,
     this.imagemSugestaoApiClient,
     this.categoriaApiClient,
   });
 
+  final ValueChanged<ProdutoModel>? onCriado;
+  final String tipoInicial;
   final ProdutoModel? produtoParaEdicao;
   final bool modoEdicao;
   final ProdutoService? produtoService;
@@ -357,6 +366,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       _cstPisController,
       _cstCofinsController,
     ]);
+    _tipoSelecionado = widget.tipoInicial;
+    final acesso = context.read<ColaboradorAutorizacoesProvider?>();
+    if (!_isModoEdicao &&
+        acesso != null &&
+        !acesso.podeCadastrarTipo(_tipoSelecionado)) {
+      if (acesso.podeCadastrarServico) _tipoSelecionado = 'SERVICO';
+      if (acesso.podeCadastrarProduto) _tipoSelecionado = 'PRODUTO';
+    }
     _preencherCamposSeModoEdicao();
     _carregarCategoriasCatalogo();
     _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
@@ -813,16 +830,26 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         icon: Icons.inventory_2_outlined,
         tooltip: '${_t('common.select', 'Selecionar')} $label',
         options: <_SixWebDropdownOption>[
-          _SixWebDropdownOption(
-            value: ProdutoCadastroFormUtils.tipoProduto,
-            label: _t('produto.web.typeProduct', 'Produto'),
-            icon: Icons.inventory_2_outlined,
-          ),
-          _SixWebDropdownOption(
-            value: ProdutoCadastroFormUtils.tipoServico,
-            label: _t('produto.web.typeService', 'Serviço'),
-            icon: Icons.handyman_outlined,
-          ),
+          if (_isModoEdicao ||
+              (context
+                      .watch<ColaboradorAutorizacoesProvider?>()
+                      ?.podeCadastrarProduto ??
+                  true))
+            _SixWebDropdownOption(
+              value: ProdutoCadastroFormUtils.tipoProduto,
+              label: _t('produto.web.typeProduct', 'Produto'),
+              icon: Icons.inventory_2_outlined,
+            ),
+          if (_isModoEdicao ||
+              (context
+                      .watch<ColaboradorAutorizacoesProvider?>()
+                      ?.podeCadastrarServico ??
+                  true))
+            _SixWebDropdownOption(
+              value: ProdutoCadastroFormUtils.tipoServico,
+              label: _t('produto.web.typeService', 'Serviço'),
+              icon: Icons.handyman_outlined,
+            ),
         ],
         onSelected: (String value) {
           setState(() {
@@ -1033,11 +1060,19 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     });
 
     try {
+      final permissoes = context.read<ColaboradorAutorizacoesProvider?>();
+      if (!_isModoEdicao &&
+          permissoes != null &&
+          !permissoes.podeCadastrarTipo(_tipoSelecionado)) {
+        throw StateError(context.t('pdv.empty.askAdmin'));
+      }
       final produto = _montarProduto();
       if (_isModoEdicao) {
         await _produtoService.atualizarProduto(produto);
       } else {
-        await _produtoService.cadastrarProduto(produto);
+        final id = await _produtoService.cadastrarProduto(produto);
+        if (id != null && mounted)
+          widget.onCriado?.call(produto.copyWith(id: id));
       }
 
       if (!mounted) return;

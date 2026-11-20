@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,8 +21,11 @@ class VisualAssetSyncService with WidgetsBindingObserver {
   static const String _lastEnvironmentPreference =
       'six_visual_assets_last_environment';
 
-  final StreamController<void> _changes =
-      StreamController<void>.broadcast(sync: true);
+  late final StreamController<void> _changes = StreamController<void>.broadcast(
+    sync: true,
+    onListen: _startRecovery,
+    onCancel: _stopRecovery,
+  );
 
   StreamSubscription<Map<String, dynamic>>? _stompSubscription;
   Timer? _activationTimer;
@@ -42,17 +44,27 @@ class VisualAssetSyncService with WidgetsBindingObserver {
     await restoreLocalState();
     if (!_initialized) {
       _initialized = true;
-      _stompSubscription = stompMessages.listen(_handleStompMessage);
+      _stompSubscription ??= stompMessages.listen(_handleStompMessage);
       WidgetsBinding.instance.addObserver(this);
-      _recoveryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
-        final state = WidgetsBinding.instance.lifecycleState;
-        if (_changes.hasListener &&
-            (state == null || state == AppLifecycleState.resumed)) {
-          unawaited(synchronize());
-        }
-      });
     }
+    if (_changes.hasListener) _startRecovery();
     return synchronize();
+  }
+
+  void _startRecovery() {
+    if (!_initialized) return;
+    _recoveryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      final state = WidgetsBinding.instance.lifecycleState;
+      if (state == null || state == AppLifecycleState.resumed) {
+        unawaited(synchronize());
+      }
+    });
+  }
+
+  void _stopRecovery() {
+    _recoveryTimer?.cancel();
+    _recoveryTimer = null;
+    _activationTimer?.cancel();
   }
 
   @override
@@ -203,7 +215,7 @@ class VisualAssetSyncService with WidgetsBindingObserver {
   void _scheduleDefensiveCheck(DateTime? nextUtc) {
     _activationTimer?.cancel();
     _activationTimer = null;
-    if (nextUtc == null) return;
+    if (nextUtc == null || !_changes.hasListener) return;
 
     final DateTime target = nextUtc.toUtc();
     final Duration delay = target.difference(DateTime.now().toUtc());

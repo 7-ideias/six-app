@@ -1,3 +1,5 @@
+import '../../support/pdv_permissoes_teste.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -778,11 +780,14 @@ Future<List<String>> _pumpAtendimento(
           devicePixelRatio: 1,
           textScaler: TextScaler.linear(textScale),
         ),
-        child: AtendimentoMobileScreen(
-          procedureCoordinator: procedureCoordinator,
-          showBottomNavigationBar: false,
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+        child: ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          create: (_) => PermissoesPdvTeste(),
+          child: AtendimentoMobileScreen(
+            procedureCoordinator: procedureCoordinator,
+            showBottomNavigationBar: false,
+            onNavigate:
+                (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          ),
         ),
       ),
     ),
@@ -903,10 +908,13 @@ Future<List<String>> _pumpNovaVenda(
           size: size,
           devicePixelRatio: 1,
         ),
-        child: OpcoesVendaMobileScreen(
-          procedureCoordinator: procedureCoordinator,
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+        child: ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          create: (_) => PermissoesPdvTeste(),
+          child: OpcoesVendaMobileScreen(
+            procedureCoordinator: procedureCoordinator,
+            onNavigate:
+                (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          ),
         ),
       ),
     ),
@@ -1009,6 +1017,10 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
 }
 
 class _FakeColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
+  @override
+  Future<Map<String, dynamic>> buscarAutorizacoes(String id) async =>
+      (await buscarColaborador(id)).toJson()['objAutorizacoes'] ?? {};
+
   const _FakeColaboradorUsuarioApiClient(this.colaboradores);
 
   final List<ColaboradorUsuarioResumo> colaboradores;

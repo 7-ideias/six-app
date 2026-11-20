@@ -98,6 +98,7 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
     final ColaboradorAutorizacoesProvider permissions = context
         .watch<ColaboradorAutorizacoesProvider>();
     final bool canCreate = permissions.podeCadastrarProduto;
+    final bool canCreateService = permissions.podeCadastrarServico;
     final bool canManage =
         permissions.podeCadastrarProduto || permissions.podeEditarProduto;
     final bool canViewStock = permissions.podeVerEstoqueDeProduto;
@@ -127,8 +128,8 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
                     context.t('common.refresh', fallback: 'Atualizar'),
                   ),
                 ),
-                if (canCreate &&
-                    (onNovoProduto != null || onNovoServico != null))
+                if ((canCreate && onNovoProduto != null) ||
+                    (canCreateService && onNovoServico != null))
                   PopupMenuButton<_CatalogCreateAction>(
                     onSelected: (_CatalogCreateAction action) {
                       switch (action) {
@@ -138,9 +139,11 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
                           onNovoServico?.call();
                       }
                     },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<_CatalogCreateAction>>[
-                          if (onNovoProduto != null)
+                    itemBuilder:
+                        (
+                          BuildContext context,
+                        ) => <PopupMenuEntry<_CatalogCreateAction>>[
+                          if (canCreate && onNovoProduto != null)
                             PopupMenuItem<_CatalogCreateAction>(
                               value: _CatalogCreateAction.product,
                               child: ListTile(
@@ -155,7 +158,7 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          if (onNovoServico != null)
+                          if (canCreateService && onNovoServico != null)
                             PopupMenuItem<_CatalogCreateAction>(
                               value: _CatalogCreateAction.service,
                               child: ListTile(
@@ -286,6 +289,14 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
 
     final CatalogHealthSummary? summary = provider.summary;
     if (summary == null || summary.isEmpty) {
+      final permissoes = context.watch<ColaboradorAutorizacoesProvider>();
+      final produto = permissoes.podeCadastrarProduto && onNovoProduto != null;
+      final criar =
+          produto
+              ? onNovoProduto
+              : permissoes.podeCadastrarServico
+              ? onNovoServico
+              : null;
       return _CatalogStatePanel(
         icon: Icons.inventory_2_outlined,
         title: context.t(
@@ -297,18 +308,20 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
           fallback:
               'Cadastre o primeiro produto ou serviço. A saúde do catálogo será calculada automaticamente.',
         ),
-        action: onNovoProduto == null
-            ? null
-            : FilledButton.icon(
-                onPressed: onNovoProduto,
-                icon: const Icon(Icons.add_rounded),
-                label: Text(
-                  context.t(
-                    'catalogHub.actions.newProduct',
-                    fallback: 'Novo produto',
+        action:
+            criar == null
+                ? null
+                : FilledButton.icon(
+                  onPressed: criar,
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(
+                    context.t(
+                      produto
+                          ? 'staff.permission.produtos'
+                          : 'staff.permission.servicos',
+                    ),
                   ),
                 ),
-              ),
       );
     }
 

@@ -13,6 +13,7 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/domain/services/streak/streak_service.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:sixpos/pagina_principal_web.dart';
+import '../../support/pdv_permissoes_teste.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -49,7 +50,7 @@ void main() {
   });
   for (final brightness in Brightness.values) {
     testWidgets(
-      'caixa fechado exibe apenas o aviso e a abertura ($brightness)',
+      'vendedor pode lançar com caixa fechado e sem ações de recebimento ($brightness)',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1366, 768));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -61,24 +62,11 @@ void main() {
         expect(acionarPdvFrenteCaixaPeloElemento(page), isTrue);
         await tester.pump();
         await tester.pump();
-        final heading = find.bySemanticsLabel('Caixa fechado');
-        final openButton = find.widgetWithText(FilledButton, 'Abrir caixa');
-        expect(heading, findsOneWidget);
-        final titleCenter = tester.getCenter(find.text('Caixa fechado'));
-        final actionCenter = tester.getCenter(openButton);
-        expect(actionCenter.dx, closeTo(titleCenter.dx, 1));
-        expect(actionCenter.dy, greaterThan(titleCenter.dy));
-        expect(
-          find.text('Abra o caixa para iniciar uma venda.'),
-          findsOneWidget,
-        );
-        expect(
-          find.widgetWithText(FilledButton, 'Abrir caixa'),
-          findsOneWidget,
-        );
-        expect(find.text('Vendas a receber'), findsNothing);
+        expect(find.text('Receber depois'), findsOneWidget);
         expect(find.byTooltip('Operações de caixa'), findsNothing);
-        expect(find.text('Itens da venda'), findsNothing);
+        expect(find.text('Vendas a receber'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Receber'), findsNothing);
+
       },
     );
   }
@@ -107,7 +95,7 @@ class _PdvExpandedTestApp extends StatelessWidget {
       providers: <SingleChildWidget>[
         ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
         ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
-          create: (_) => ColaboradorAutorizacoesProvider(),
+          create: (_) => PermissoesPdvTeste(receber: open),
         ),
         ChangeNotifierProvider<StreakProvider>(
           create:

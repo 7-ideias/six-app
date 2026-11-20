@@ -5,7 +5,6 @@ import 'core/services/push_navigation_service.dart';
 import 'core/services/push_destination_resolver.dart';
 import 'l10n/billing_texts.dart';
 import 'dart:async';
-import 'presentation/components/six_backend_loading.dart';
 
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_button.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
@@ -218,7 +217,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _modoExpandidoFrenteCaixa = false;
   bool _carregandoSessaoCaixaPdv = false;
   bool _atualizandoVisaoPdv = false;
-  bool _sessaoCaixaPdvSincronizada = false;
+
   bool _erroSessaoCaixaPdv = false;
   CaixaSessao? _sessaoCaixaPdv;
   Timer? _sessaoCaixaPdvTempoAtivoTimer;
@@ -467,7 +466,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _sincronizarTotalVendasAReceber() async {
-    if (!mounted || _sincronizandoTotalVendasAReceber) {
+    if (!mounted || !_podeReceberPdv || _sincronizandoTotalVendasAReceber) {
       return;
     }
 
@@ -1499,7 +1498,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
-    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
+    if (!_pdvPodeLancarVenda) {
       return;
     }
     if (!mounted) {
@@ -1711,7 +1710,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       setState(() {
         _sessaoCaixaPdv = sessao;
         _erroSessaoCaixaPdv = false;
-        _sessaoCaixaPdvSincronizada = true;
         _referenciaTempoSessaoCaixaPdv = DateTime.now().toUtc();
       });
       _sincronizarTimerTempoAtivoSessaoCaixaPdv();
@@ -1723,7 +1721,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       setState(() {
         _sessaoCaixaPdv = null;
         _erroSessaoCaixaPdv = true;
-        _sessaoCaixaPdvSincronizada = true;
       });
       _sincronizarTimerTempoAtivoSessaoCaixaPdv();
     } finally {
@@ -1824,20 +1821,29 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return sessao != null && _sessaoCaixaPdvAberta(sessao);
   }
 
-  bool get _pdvPodeLancarVenda {
-    return !_carregandoSessaoCaixaPdv &&
-        !_erroSessaoCaixaPdv &&
-        _pdvTemSessaoCaixaAberta;
+  String get _nomeVendedorPdv {
+    final usuario = UsuarioProvider().usuario;
+    if (usuario == null) return '';
+    return usuario.nomeDeGuerra.trim().isNotEmpty
+        ? usuario.nomeDeGuerra.trim()
+        : '${usuario.nome} ${usuario.sobrenome}'.trim();
   }
 
-  Future<bool> _garantirSessaoCaixaAbertaParaVenda() async {
-    if (_pdvPodeLancarVenda) {
+  bool get _pdvPodeLancarVenda {
+    return context.read<ColaboradorAutorizacoesProvider>().podeRegistrarVendaPdv;
+  }
+
+  bool get _podeReceberPdv =>
+      context.read<ColaboradorAutorizacoesProvider>().podeReceberVendaPdv;
+
+  Future<bool> _garantirSessaoCaixaParaRecebimento() async {
+    if (_pdvTemSessaoCaixaAberta) {
       return true;
     }
 
     if (!_carregandoSessaoCaixaPdv) {
       await _carregarSessaoCaixaPdv();
-      if (_pdvPodeLancarVenda) {
+      if (_pdvTemSessaoCaixaAberta) {
         return true;
       }
     }
@@ -1855,10 +1861,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          context.t(
-            'pdv.cashSessionRequiredMessage',
-            fallback: 'Abra uma sessão de caixa antes de lançar vendas no PDV.',
-          ),
+          context.t('pdv.openForPayment'),
         ),
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
@@ -2724,7 +2727,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
+    if (!_pdvPodeLancarVenda) {
       return;
     }
     if (!mounted) {
@@ -2830,14 +2833,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         descricao:
             'Venda web para receber depois ${dataOperacao.toIso8601String()}',
         idColaborador: idColaborador,
-        nomeColaborador: 'Colaborador',
+        nomeColaborador: _nomeVendedorPdv,
         itens: _montarItensDaVendaParaOperacao(),
         formasPagamento: const <FormaPagamentoSelecionada>[],
         dataOperacao: dataOperacao,
         receberDepois: true,
       );
 
-      await _operacaoService.finalizarVenda(input);
+      final response = await _operacaoService.finalizarVenda(input);
 
       if (!mounted) {
         return;
@@ -2851,8 +2854,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _limparVendaAposSucessoRecebimento();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Venda registrada para receber depois.'),
+        SnackBar(
+          content: Text('${context.t('pdv.registeredPending')} ${response.uuid}'.trim()),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2923,18 +2926,19 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
+    if (!_podeReceberPdv) return;
+    if (!somenteSelecao &&
+        _formasPagamentoConfirmadas.any((f) => f.financeiro?.exigeSessaoCaixa ?? true) &&
+        !await _garantirSessaoCaixaParaRecebimento()) return;
+    if (!mounted) return;
 
     setState(() {
       _overlayRecebimentoAberto = true;
     });
 
     try {
+      final vendedorId = await AuthService().getUserId();
+      if (!mounted || !_podeReceberPdv) return;
       await showRecebimentoPagamentoWebDialog(
         context: context,
         somenteSelecao: somenteSelecao,
@@ -2960,8 +2964,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 ? _clienteIdentificado!.nome.trim()
                 : _clienteIdentificadoController.text.trim(),
         numeroVenda: '',
-        idColaborador: 'idUnicoDoColaborador',
-        nomeColaborador: 'Nome do colaborador',
+        idColaborador: vendedorId ?? '',
+        nomeColaborador: _nomeVendedorPdv,
         operacaoService: _operacaoService,
         procedureCoordinator: _procedureCoordinator,
       );
@@ -2996,6 +3000,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _acionarRecebimentoPrincipal() {
+    if (!_podeReceberPdv) return;
     if (_vendaNaoLiquidadaEmConsulta != null) {
       _receberVendaNaoLiquidadaEmConsulta();
       return;
@@ -3194,7 +3199,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
             },
             onNovoServico: () {
-              showSubPainelCadastroProduto(context, 'Cadastro de Serviços');
+              showSubPainelCadastroProduto(
+                context,
+                'Cadastro de Serviços',
+                tipoInicial: 'SERVICO',
+              );
             },
             onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
             onOpenListaServicos:
@@ -3214,9 +3223,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ServicoDashboardWebPage(
             onBack: voltarParaInicio,
-            onNovoServico: () {
-              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-            },
+            onNovoServico:
+                context
+                        .watch<ColaboradorAutorizacoesProvider>()
+                        .podeCadastrarServico
+                    ? () => showSubPainelCadastroProduto(
+                      context,
+                      'Cadastro de Serviços',
+                      tipoInicial: 'SERVICO',
+                    )
+                    : null,
             onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
           ),
         );

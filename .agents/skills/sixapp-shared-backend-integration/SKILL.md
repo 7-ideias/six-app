@@ -1,6 +1,6 @@
 ---
 name: sixapp-shared-backend-integration
-description: Use ao criar, alterar ou revisar integrações Flutter com o backend do SixApp, especialmente funcionalidades que existem ou poderão existir nas interfaces Web e Mobile. Garante o reaproveitamento de endpoint, ApiClient, requests, responses, models, parsing, mappers, services, autenticação, tenant e erros. Não use para mudanças exclusivamente visuais nem para implementar o backend Java.
+description: Use ao criar, alterar ou revisar integrações Flutter com o backend do SixApp, especialmente funcionalidades que existem ou poderão existir nas interfaces Web e Mobile. Garante o reaproveitamento de endpoint, ApiClient, requests, responses, models, parsing, mappers, services, autenticação, tenant, erros e imagens publicadas pelo painel Imagens do SixoApp. Não use para mudanças exclusivamente visuais nem para implementar o backend Java.
 ---
 
 # Integrações compartilhadas com o backend do SixApp
@@ -17,6 +17,8 @@ Leia primeiro:
 - `.junie/AGENTS.md`, quando existir;
 - `references/architecture.md` desta skill;
 - os arquivos reais do domínio afetado.
+
+Para qualquer novo espaço de imagem administrável, inclusive em uma única tela, consulte [Imagens gerenciadas](references/imagens-gerenciadas.md) antes de definir o contrato ou o cache.
 
 ## Resultado obrigatório
 

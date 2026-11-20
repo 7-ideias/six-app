@@ -20,7 +20,8 @@ class DestinoRecebimentoDraft {
   bool futuro;
   DateTime data;
   double taxa, valor;
-  RecebimentoFormaInput toInput() => RecebimentoFormaInput(
+  RecebimentoFormaInput toInput({bool contaCaixa = false}) => RecebimentoFormaInput(
+    contaCaixa: contaCaixa,
     codigo: origem.codigo,
     descricao: origem.descricao,
     valor: valor,

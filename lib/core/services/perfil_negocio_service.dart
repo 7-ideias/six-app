@@ -8,6 +8,7 @@ import '../../data/models/gestao_mobile_assets_model.dart';
 import '../../data/models/vendas_mobile_assets_model.dart';
 import '../../data/models/web_header_assets_model.dart';
 import '../../data/models/perfil_negocio_model.dart';
+import '../../data/models/pdv_selecao_assets.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
@@ -51,6 +52,16 @@ class PerfilNegocioService {
           empresaId,
         ),
       );
+
+  Future<Map<String, String>> imagensSelecaoPdv(String empresaId) async {
+    return pdvSelecaoUrls(
+      await _request(
+        'GET',
+        '/pdv/selecao/assets?plataforma=${kIsWeb ? 'WEB' : 'MOBILE'}',
+        empresaId,
+      ),
+    );
+  }
 
   Future<AtendimentoMobileAssetsModel> atendimentoMobileAssets(
     String empresaId,

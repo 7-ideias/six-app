@@ -572,7 +572,7 @@ class _MyAppState extends State<MyApp> {
         if (link == null) return null;
         return MaterialPageRoute<void>(settings: settings, builder: (_) => _destinoDoConvite(link));
       },
-      home: kIsWeb ? null : const SplashScreen(),
+      routes: kIsWeb ? const {} : {'/': (_) => const SplashScreen()},
       initialRoute: kIsWeb ? null : '/',
     );
   }

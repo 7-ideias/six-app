@@ -11,6 +11,7 @@ Antes de editar, identifique as plataformas e os componentes envolvidos. Abra as
 | Seleção de valor, entidade, categoria, período ou filtro com opções | [sixapp-dropdown-pattern](.agents/skills/sixapp-dropdown-pattern/SKILL.md) |
 | Confirmação Web de ação crítica, encerramento ou conclusão com feedback | [six-web-impact-dialogs](.agents/skills/six-web-impact-dialogs/SKILL.md) |
 | Texto visível, mensagem de domínio, moeda, número, data, hora ou idioma | [sixapp-regionalization](.agents/skills/sixapp-regionalization/SKILL.md) |
+| Imagem gerenciável, banner ou cartão com foto publicado em **Imagens do SixoApp** | [Imagens gerenciadas · painel, resolução, cache e WebSocket](.agents/skills/sixapp-shared-backend-integration/references/imagens-gerenciadas.md) |
 | Consumo de API, contrato, DTO, parsing, service ou estado ligado ao backend | [sixapp-shared-backend-integration](.agents/skills/sixapp-shared-backend-integration/SKILL.md) |
 | Persistência de preferência individual, como filtros ou visualização | [sixapp-user-preferences](.agents/skills/sixapp-user-preferences/SKILL.md) |
 | Navegação por notificação, payload de push ou destino de deep link de push | [sixapp-push-navigation](.agents/skills/sixapp-push-navigation/SKILL.md) |

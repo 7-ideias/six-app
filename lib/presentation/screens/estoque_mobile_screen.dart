@@ -143,12 +143,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
         final dashboard = snapshot.data ?? _emptyDashboard();
         if (dashboard.isEmpty) {
           return _EmptyInventoryState(
-            onCreate:
-                context
-                        .watch<ColaboradorAutorizacoesProvider>()
-                        .podeCadastrarProduto
-                    ? _openCreate
-                    : null,
+            onCreate: _openCreate,
             onRefresh: _reload,
             scrollController: scrollController,
             topInset: topInset,
@@ -1125,7 +1120,7 @@ class _EmptyInventoryState extends StatelessWidget {
   });
 
   final Future<void> Function() onRefresh;
-  final ValueChanged<String>? onCreate;
+  final ValueChanged<String> onCreate;
   final ScrollController scrollController;
   final double topInset;
 
@@ -1159,18 +1154,24 @@ class _EmptyInventoryState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
-          if (onCreate != null) ...[
+          if (context
+              .watch<ColaboradorAutorizacoesProvider>()
+              .podeCadastrarProduto) ...[
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: () => onCreate!(ProdutoCadastroFormUtils.tipoProduto),
+              onPressed: () => onCreate(ProdutoCadastroFormUtils.tipoProduto),
               icon: const Icon(Icons.add_box_outlined),
               label: Text(
                 context.t('catalogHub.actions.newProduct'),
               ),
             ),
+          ],
+          if (context
+              .watch<ColaboradorAutorizacoesProvider>()
+              .podeCadastrarServico) ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () => onCreate!(ProdutoCadastroFormUtils.tipoServico),
+              onPressed: () => onCreate(ProdutoCadastroFormUtils.tipoServico),
               icon: const Icon(Icons.build_outlined),
               label: Text(
                 context.t('catalogHub.actions.newService'),

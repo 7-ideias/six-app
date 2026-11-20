@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/permissao_colaborador.dart';
+import 'package:sixpos/presentation/components/web/permissoes_colaborador_web.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -65,23 +67,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   String _metodoPagamento = 'TRANSFERENCIA';
   int _etapaAtual = 0;
 
-  bool _fazVenda = true;
-  bool _lancaServico = true;
-  bool _editaCliente = true;
-  bool _fornecedoresConsultar = false;
-  bool _fornecedoresCadastrar = false;
-  bool _fornecedoresEditar = false;
-  bool _fornecedoresInativar = false;
-  bool _comprasConsultar = false;
-  bool _comprasCriar = false;
-  bool _comprasEditar = false;
-  bool _comprasConfirmar = false;
-  bool _comprasCancelar = false;
-  bool _comprasReceber = false;
-  bool _podeReceberNoCaixa = false;
-  bool _podeVerQuantoVendeu = false;
-  bool _geraRelatorio = false;
-  bool _gerenciaPermissoes = false;
+  final _marcadas = PermissaoColaborador.iniciais();
   bool _isLoading = false;
   _ConviteWebAction? _loadingAction;
   ColaboradorConviteResponse? _ultimoConvite;
@@ -142,24 +128,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
-  List<String> _permissoesSelecionadas() => <String>[
-    if (_fazVenda) 'VENDAS_CRIAR',
-    if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
-    if (_editaCliente) 'CLIENTES_EDITAR',
-    if (_fornecedoresConsultar) 'FORNECEDORES_CONSULTAR',
-    if (_fornecedoresCadastrar) 'FORNECEDORES_CADASTRAR',
-    if (_fornecedoresEditar) 'FORNECEDORES_EDITAR',
-    if (_fornecedoresInativar) 'FORNECEDORES_INATIVAR',
-    if (_comprasConsultar) 'COMPRAS_CONSULTAR',
-    if (_comprasCriar) 'COMPRAS_CRIAR',
-    if (_comprasEditar) 'COMPRAS_EDITAR',
-    if (_comprasConfirmar) 'COMPRAS_CONFIRMAR',
-    if (_comprasCancelar) 'COMPRAS_CANCELAR',
-    if (_comprasReceber) 'COMPRAS_RECEBER',
-    if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
-    if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
-    if (_geraRelatorio) 'RELATORIOS_GERAR',
-    if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
+  List<String> _permissoesSelecionadas() => [
+    for (final p in _marcadas) p.codigo,
   ];
 
   QualidadeCadastroColaborador get _qualidade {
@@ -827,7 +797,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     if (_cadastroCompleto && _etapaAtual == 2) {
       return _contractSection(compact, wide);
     }
-    return _permissionsSection(compact, wide);
+    return _permissionsSection();
   }
 
   Widget _essentialSection(bool compact, bool wide) {
@@ -1203,164 +1173,24 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     );
   }
 
-  Widget _permissionsSection(bool compact, bool wide) {
-    final List<Widget> cards = <Widget>[
-      _switchCard(
-        title: _t('colaboradores.sales', 'Vendas'),
-        subtitle: _t('colaboradores.canCreateSales', 'Pode criar vendas.'),
-        icon: Icons.point_of_sale_outlined,
-        value: _fazVenda,
-        onChanged: (bool value) => setState(() => _fazVenda = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.technicalAssistance', 'Assistência técnica'),
-        subtitle: _t(
-          'colaboradores.canCreateTechnicalServices',
-          'Pode lançar atendimentos técnicos.',
-        ),
-        icon: Icons.handyman_outlined,
-        value: _lancaServico,
-        onChanged: (bool value) => setState(() => _lancaServico = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.customers', 'Clientes'),
-        subtitle: _t('colaboradores.canEditCustomers', 'Pode editar clientes.'),
-        icon: Icons.people_alt_outlined,
-        value: _editaCliente,
-        onChanged: (bool value) => setState(() => _editaCliente = value),
-      ),
-      _switchCard(
-        title: _t('suppliers.permission.read', 'Consultar fornecedores'),
-        subtitle: _t('suppliers.permission.readDescription', 'Consultar fornecedores da conta.'),
-        icon: Icons.local_shipping_outlined,
-        value: _fornecedoresConsultar,
-        onChanged: (bool v) => setState(() => _fornecedoresConsultar = v),
-      ),
-      _switchCard(
-        title: _t('suppliers.permission.create', 'Cadastrar fornecedores'),
-        subtitle: _t('suppliers.permission.createDescription', 'Criar novos fornecedores.'),
-        icon: Icons.add_business_outlined,
-        value: _fornecedoresCadastrar,
-        onChanged: (bool v) => setState(() => _fornecedoresCadastrar = v),
-      ),
-      _switchCard(
-        title: _t('suppliers.permission.edit', 'Editar fornecedores'),
-        subtitle: _t('suppliers.permission.editDescription', 'Alterar cadastros existentes.'),
-        icon: Icons.edit_outlined,
-        value: _fornecedoresEditar,
-        onChanged: (bool v) => setState(() => _fornecedoresEditar = v),
-      ),
-      _switchCard(
-        title: _t('suppliers.permission.disable', 'Ativar / inativar fornecedores'),
-        subtitle: _t('suppliers.permission.disableDescription', 'Alterar status dos fornecedores.'),
-        icon: Icons.block_outlined,
-        value: _fornecedoresInativar,
-        onChanged: (bool v) => setState(() => _fornecedoresInativar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.read', 'Consultar compras'),
-        subtitle: _t('purchases.permission.readDescription', 'Permite consultar pedidos do comércio.'),
-        icon: Icons.shopping_cart_outlined,
-        value: _comprasConsultar,
-        onChanged: (bool v) => setState(() => _comprasConsultar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.create', 'Criar compras'),
-        subtitle: _t('purchases.permission.createDescription', 'Permite criar novos rascunhos.'),
-        icon: Icons.add_shopping_cart_outlined,
-        value: _comprasCriar,
-        onChanged: (bool v) => setState(() => _comprasCriar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.edit', 'Editar compras'),
-        subtitle: _t('purchases.permission.editDescription', 'Permite alterar rascunhos.'),
-        icon: Icons.edit_note_outlined,
-        value: _comprasEditar,
-        onChanged: (bool v) => setState(() => _comprasEditar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.confirm', 'Confirmar compras'),
-        subtitle: _t('purchases.permission.confirmDescription', 'Confirma compras e gera contas a pagar.'),
-        icon: Icons.check_circle_outline_rounded,
-        value: _comprasConfirmar,
-        onChanged: (bool v) => setState(() => _comprasConfirmar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.cancel', 'Cancelar compras'),
-        subtitle: _t('purchases.permission.cancelDescription', 'Permite cancelar compras conforme regras financeiras.'),
-        icon: Icons.cancel_outlined,
-        value: _comprasCancelar,
-        onChanged: (bool v) => setState(() => _comprasCancelar = v),
-      ),
-      _switchCard(
-        title: _t('purchases.permission.receive', 'Receber mercadorias'),
-        subtitle: _t('purchases.permission.receiveDescription', 'Registra entradas reais de produtos da compra.'),
-        icon: Icons.inventory_2_outlined,
-        value: _comprasReceber,
-        onChanged: (bool v) => setState(() => _comprasReceber = v),
-      ),
-      _switchCard(
-        title: _t('colaboradores.finance', 'Financeiro'),
-        subtitle: _t(
-          'colaboradores.canReceiveAtCashier',
-          'Pode receber no caixa.',
-        ),
-        icon: Icons.account_balance_wallet_outlined,
-        value: _podeReceberNoCaixa,
-        onChanged: (bool value) => setState(() => _podeReceberNoCaixa = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.salesSummary', 'Resumo das vendas'),
-        subtitle: _t(
-          'colaboradores.canViewSalesSummary',
-          'Pode consultar o resumo das vendas.',
-        ),
-        icon: Icons.query_stats_outlined,
-        value: _podeVerQuantoVendeu,
-        onChanged: (bool value) => setState(() => _podeVerQuantoVendeu = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.reports', 'Relatórios'),
-        subtitle: _t(
-          'colaboradores.canGenerateReports',
-          'Pode gerar relatórios.',
-        ),
-        icon: Icons.analytics_outlined,
-        value: _geraRelatorio,
-        onChanged: (bool value) => setState(() => _geraRelatorio = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.permissions', 'Permissões'),
-        subtitle: _t(
-          'colaboradores.canManagePermissions',
-          'Pode gerenciar permissões.',
-        ),
-        icon: Icons.verified_user_outlined,
-        value: _gerenciaPermissoes,
-        onChanged: (bool value) => setState(() => _gerenciaPermissoes = value),
-      ),
-    ];
-    return SixWebSectionCard(
-      title: _t('colaboradores.initialPermissions', 'Permissões iniciais'),
-      subtitle: _t(
-        'colaborador.permissions.subtitle',
-        'As permissões essenciais continuam com o comportamento atual.',
-      ),
-      icon: Icons.security_outlined,
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 14,
-        children: cards
-            .map(
-              (Widget child) => SizedBox(
-                width: compact ? double.infinity : (wide ? 330 : 300),
-                child: child,
-              ),
-            )
-            .toList(growable: false),
-      ),
-    );
-  }
+  Widget _permissionsSection() => SixWebSectionCard(
+    title: context.t('staff.permissions'),
+    subtitle: context.t('staff.permissionsHint'),
+    icon: Icons.security_outlined,
+    child: PermissoesColaboradorWeb(
+      marcadas: _marcadas,
+      onChanged:
+          _isLoading
+              ? null
+              : (p, valor) => setState(() {
+                if (valor) {
+                  _marcadas.add(p);
+                } else {
+                  _marcadas.remove(p);
+                }
+              }),
+    ),
+  );
 
   Widget _field({
     required TextEditingController controller,
@@ -1437,60 +1267,6 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
-      ),
-    );
-  }
-
-  Widget _switchCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: value ? tokens.selectedBackground : tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: value ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: value ? tokens.info : tokens.statusNeutral),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: tokens.secondaryText, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: _isLoading ? null : onChanged,
-          ),
-        ],
       ),
     );
   }

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../core/enums/tipo_usuario_enum.dart';
 import '../core/services/auth_service.dart';
 import '../data/models/colaborador_autorizacoes_model.dart';
-import '../data/models/colaborador_usuario_model.dart';
 import '../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../domain/services/etiqueta/etiqueta_service.dart';
 import '../data/services/fornecedor_usuario/fornecedor_usuario_api_client.dart';
@@ -43,6 +42,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   FornecedorAcesso _fornecedorAcesso = FornecedorAcesso.negado;
   CompraAcesso _compraAcesso = CompraAcesso.negado;
   String? _empresaIdCarregada;
+  int _consultaPdv = 0;
 
   // Falha fechada: dados antigos ou nao carregados nao concedem acesso.
   ColaboradorAutorizacoesModel get autorizacoes =>
@@ -91,6 +91,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeCancelarCompras => _ehAdministrador || _compraAcesso.cancelar;
   bool get podeReceberCompras => _ehAdministrador || _compraAcesso.receber;
 
+  bool get podeRegistrarVendaPdv => ehAdministrador || podeFazerVenda;
+  bool get podeReceberVendaPdv => ehAdministrador || podeReceberNoCaixa;
+
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
   bool get podeLancarAssistenciaTecnica =>
@@ -99,12 +102,16 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       podeLancarAssistenciaTecnica ||
       autorizacoes.objAssistenciaTecnicaPode.ehUmTecnicoEFazAssistenciaTecnica;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
+  bool get podeCadastrarServico => autorizacoes.podeCadastrarServico;
+  bool podeCadastrarTipo(String tipo) =>
+      tipo == 'SERVICO' ? podeCadastrarServico : podeCadastrarProduto;
   bool get podeCadastrarProduto => autorizacoes.podeCadastrarProduto;
   bool get podeEditarProduto => autorizacoes.objProdutosPode.podeEditarProduto;
   bool get podeVerEstoqueDeProduto =>
       autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
   bool get podeAcessarCatalogo =>
       podeCadastrarProduto ||
+      podeCadastrarServico ||
       podeEditarProduto ||
       podeAcessarEtiquetas;
   bool get podeGerarRelatorio =>
@@ -161,6 +168,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       return;
     }
 
+    ++_consultaPdv;
     _loading = true;
     _erro = null;
     _ultimaFalha = null;
@@ -169,20 +177,13 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final ColaboradorUsuarioDetalhe detalhe = await _apiClient
-          .buscarColaborador(idUnicoDoUsuario);
-      final Map<String, dynamic> json = detalhe.toJson();
-      final Map<String, dynamic> autorizacoesJson = _ensureMap(
-        json['objAutorizacoes'],
-      );
+      final autorizacoesJson = await _apiClient.buscarAutorizacoes(idUnicoDoUsuario);
       final ColaboradorAutorizacoesModel carregadas =
           ColaboradorAutorizacoesModel.fromJson(autorizacoesJson);
 
-      final bool administradorSemVinculo = _deveAssumirAdministradorSemVinculo(
-        detalhe: detalhe,
-        autorizacoes: carregadas,
-      );
-      final bool ehAdministrador = perfilAdmin || administradorSemVinculo;
+      final papelNoComercio = autorizacoesJson['administradorDaEmpresa'];
+      final bool ehAdministrador =
+          papelNoComercio is bool ? papelNoComercio : perfilAdmin;
       _atualizarPerfilDeAcesso(
         tipoPerfilUsuario: tipoPerfilUsuario,
         ehAdministrador: ehAdministrador,
@@ -243,7 +244,45 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> atualizarAutorizacoesDoPdv() async {
+    final usuario = _idUnicoDoUsuarioCarregado;
+    final empresa = _empresaIdCarregada;
+    if (usuario == null || empresa == null || _loading) return false;
+    final consulta = ++_consultaPdv;
+    try {
+      final dados = await _apiClient.buscarAutorizacoes(usuario);
+      final empresaAtual = await _authService.getEmpresaId();
+      final usuarioAtual = await _authService.getUserId();
+      if (consulta != _consultaPdv ||
+          _loading ||
+          usuario != _idUnicoDoUsuarioCarregado ||
+          usuario != usuarioAtual ||
+          empresa != _empresaIdCarregada ||
+          empresa != empresaAtual) {
+        return false;
+      }
+      if (dados.isEmpty) {
+        return _ehAdministrador && _autorizacoesCarregadasComSucesso;
+      }
+      final admin = dados['administradorDaEmpresa'];
+      if (!_autorizacoesCarregadasComSucesso ||
+          (admin is bool && admin != _ehAdministrador)) {
+        await carregarAutorizacoesDoUsuarioLogado(force: true);
+        return _autorizacoesCarregadasComSucesso;
+      }
+      _autorizacoes = _ehAdministrador
+          ? ColaboradorAutorizacoesModel.permitirTudo()
+          : ColaboradorAutorizacoesModel.fromJson(dados);
+      _podeFazerDevolucao = _ehAdministrador || autorizacoes.podeFazerDevolucao;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void limpar() {
+    ++_consultaPdv;
     _autorizacoes = null;
     _loading = false;
     _erro = null;
@@ -295,38 +334,5 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       return TipoUsuarioEnum.CLIENTE;
     }
     return null;
-  }
-
-  bool _deveAssumirAdministradorSemVinculo({
-    required ColaboradorUsuarioDetalhe detalhe,
-    required ColaboradorAutorizacoesModel autorizacoes,
-  }) {
-    final bool semDadosDePessoa =
-        detalhe.nome.trim().isEmpty &&
-        detalhe.nomeDeGuerra.trim().isEmpty &&
-        detalhe.email.trim().isEmpty &&
-        detalhe.celularDeAcesso.trim().isEmpty;
-
-    final bool semAutorizacaoOperacional =
-        !autorizacoes.podeFazerDevolucao &&
-        !autorizacoes.objVendasPode.fazVenda &&
-        !autorizacoes.objAssistenciaTecnicaPode.lancaServico &&
-        !autorizacoes.objClientesPode.podeEditarCliente &&
-        !autorizacoes.objRelatoriosPode.geraRelatorioDeVendas &&
-        !autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa &&
-        !autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
-
-    return semDadosDePessoa && semAutorizacaoOperacional;
-  }
-
-  static Map<String, dynamic> _ensureMap(dynamic value) {
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic value) =>
-            MapEntry<String, dynamic>(key.toString(), value),
-      );
-    }
-    return <String, dynamic>{};
   }
 }

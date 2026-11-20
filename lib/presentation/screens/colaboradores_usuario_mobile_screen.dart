@@ -1,3 +1,5 @@
+import 'package:sixpos/data/models/permissao_colaborador.dart';
+import 'package:sixpos/presentation/components/mobile/permissoes_colaborador_mobile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/colaborador_usuario_model.dart';
@@ -235,6 +237,11 @@ class _ColaboradoresUsuarioMobileScreenState
         ),
       );
       _reload();
+    } on PermissoesNaoConfirmadas {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('staff.permissionsNotSaved')), behavior: SnackBarBehavior.floating),
+      );
     } on ColaboradorUsuarioApiException catch (error) {
       if (!mounted) {
         return;
@@ -1411,12 +1418,10 @@ class _EditarColaboradorMobileSheetState
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _accentColor => _colors.accent;
   Color get _surfaceColor => _colors.surface;
-  Color get _surfaceElevatedColor => _colors.surfaceElevated;
   Color get _softSurfaceColor => _colors.softSurface;
   Color get _softAccentColor => _colors.softAccentSurface;
   Color get _mutedTextColor => _colors.mutedText;
   Color get _titleTextColor => _colors.titleText;
-  Color get _borderColor => _colors.border;
   Color get _strongBorderColor => _colors.strongBorder;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -1425,12 +1430,7 @@ class _EditarColaboradorMobileSheetState
   late final TextEditingController _email;
   late final TextEditingController _celular;
 
-  bool _podeVender = false;
-  bool _podeServico = false;
-  bool _podeEditarCliente = false;
-  bool _podeRelatorio = false;
-  bool _podeReceberNoCaixa = false;
-  bool _podeVerQuantoVendeu = false;
+  late final Set<PermissaoColaborador> _marcadas;
 
   @override
   void initState() {
@@ -1464,23 +1464,7 @@ class _EditarColaboradorMobileSheetState
     final Map<String, dynamic> autorizacoes = _ensureMap(
       json['objAutorizacoes'],
     );
-    _podeVender = _ensureMap(autorizacoes['objVendasPode'])['fazVenda'] == true;
-    _podeServico =
-        _ensureMap(autorizacoes['objAssistenciaTecnicaPode'])['lancaServico'] ==
-        true;
-    _podeEditarCliente =
-        _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] ==
-        true;
-    _podeRelatorio =
-        _ensureMap(
-          autorizacoes['objRelatoriosPode'],
-        )['geraRelatorioDeVendas'] ==
-        true;
-    final Map<String, dynamic> financeiro = _ensureMap(
-      autorizacoes['objLancamentosFinanceirosPode'],
-    );
-    _podeReceberNoCaixa = financeiro['podeReceberNoCaixa'] == true;
-    _podeVerQuantoVendeu = financeiro['podeVerQuantoVendeu'] == true;
+    _marcadas = PermissaoColaborador.ler(autorizacoes);
   }
 
   @override
@@ -1513,31 +1497,7 @@ class _EditarColaboradorMobileSheetState
     final Map<String, dynamic> autorizacoes = _ensureMap(
       json['objAutorizacoes'],
     );
-    autorizacoes['podeCadastrarProduto'] =
-        autorizacoes['podeCadastrarProduto'] ?? false;
-    autorizacoes['podeFazerDevolucao'] =
-        autorizacoes['podeFazerDevolucao'] ?? false;
-    autorizacoes['objVendasPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objVendasPode']),
-      'fazVenda': _podeVender,
-    };
-    autorizacoes['objAssistenciaTecnicaPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objAssistenciaTecnicaPode']),
-      'lancaServico': _podeServico,
-    };
-    autorizacoes['objClientesPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objClientesPode']),
-      'podeEditarCliente': _podeEditarCliente,
-    };
-    autorizacoes['objRelatoriosPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objRelatoriosPode']),
-      'geraRelatorioDeVendas': _podeRelatorio,
-    };
-    autorizacoes['objLancamentosFinanceirosPode'] = <String, dynamic>{
-      ..._ensureMap(autorizacoes['objLancamentosFinanceirosPode']),
-      'podeReceberNoCaixa': _podeReceberNoCaixa,
-      'podeVerQuantoVendeu': _podeVerQuantoVendeu,
-    };
+    PermissaoColaborador.aplicar(autorizacoes, _marcadas);
     json['objAutorizacoes'] = autorizacoes;
     return json;
   }
@@ -1665,68 +1625,22 @@ class _EditarColaboradorMobileSheetState
               ),
               SizedBox(height: 18),
               Text(
-                _t(
-                  'colaboradores.operationalPermissions',
-                  'Permissões operacionais',
-                ),
+                context.t('staff.permissions'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
               SizedBox(height: 10),
-              _switchCard(
-                _t('colaboradores.sales', 'Vendas'),
-                _t(
-                  'colaboradores.canMakeSalesInBusiness',
-                  'Pode realizar vendas no comércio.',
-                ),
-                _podeVender,
-                (bool value) => setState(() => _podeVender = value),
-              ),
-              _switchCard(
-                _t('colaboradores.technicalAssistance', 'Assistência técnica'),
-                _t(
-                  'colaboradores.canCreateTechnicalWork',
-                  'Pode lançar serviços técnicos.',
-                ),
-                _podeServico,
-                (bool value) => setState(() => _podeServico = value),
-              ),
-              _switchCard(
-                _t('colaboradores.customers', 'Clientes'),
-                _t(
-                  'colaboradores.canEditCustomerData',
-                  'Pode editar dados de clientes.',
-                ),
-                _podeEditarCliente,
-                (bool value) => setState(() => _podeEditarCliente = value),
-              ),
-              _switchCard(
-                _t('colaboradores.reports', 'Relatórios'),
-                _t(
-                  'colaboradores.canGenerateSalesReports',
-                  'Pode gerar relatórios de vendas.',
-                ),
-                _podeRelatorio,
-                (bool value) => setState(() => _podeRelatorio = value),
-              ),
-              _switchCard(
-                _t('colaboradores.finance', 'Financeiro'),
-                _t(
-                  'colaboradores.canReceiveAtCashRegister',
-                  'Pode receber no caixa.',
-                ),
-                _podeReceberNoCaixa,
-                (bool value) => setState(() => _podeReceberNoCaixa = value),
-              ),
-              _switchCard(
-                _t('colaboradores.salesSummary', 'Resumo das vendas'),
-                _t(
-                  'colaboradores.canViewHowMuchSold',
-                  'Pode ver quanto vendeu e consultar o resumo das vendas.',
-                ),
-                _podeVerQuantoVendeu,
-                (bool value) => setState(() => _podeVerQuantoVendeu = value),
+              PermissoesColaboradorMobile(
+                marcadas: _marcadas,
+                onChanged:
+                    (p, valor) => setState(() {
+                      if (valor) {
+                        _marcadas.add(p);
+                      } else {
+                        _marcadas.remove(p);
+                      }
+                    }),
               ),
               SizedBox(height: 18),
               Row(
@@ -1766,41 +1680,6 @@ class _EditarColaboradorMobileSheetState
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       filled: true,
       fillColor: _softSurfaceColor,
-    );
-  }
-
-  Widget _switchCard(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _surfaceElevatedColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(title, style: TextStyle(fontWeight: FontWeight.w800)),
-                SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Switch(value: value, onChanged: onChanged),
-        ],
-      ),
     );
   }
 

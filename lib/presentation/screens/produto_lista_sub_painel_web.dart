@@ -1,3 +1,7 @@
+import 'package:sixpos/presentation/controllers/pdv_selecao_imagens_controller.dart';
+import 'package:sixpos/presentation/components/pdv_categoria_button.dart';
+import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -183,13 +187,18 @@ class SubPainelWebProdutoLista extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProdutoListaBody(
+    final body = ProdutoListaBody(
       isSelecao: isSelecao,
       modoEdicao: modoEdicao,
       permitirSelecaoMultipla: permitirSelecaoMultipla,
       tipoInicial: tipoInicial,
       apenasAtivosNoBackend: apenasAtivosNoBackend,
       exibirInformacoesEstoque: exibirInformacoesEstoque,
+    );
+    if (!isSelecao || !apenasAtivosNoBackend) return body;
+    return ChangeNotifierProvider(
+      create: (_) => PdvSelecaoImagensController()..initialize(),
+      child: body,
     );
   }
 }
@@ -225,6 +234,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final ProdutoService _produtoService = ProdutoService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final UsuarioService _usuarioService = UsuarioService();
+
+  bool get _selecaoPdv => widget.isSelecao && widget.apenasAtivosNoBackend;
+  CatalogoSelecaoPdv? _catalogoPdv;
+  int _consultaPdv = 0;
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -620,6 +633,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Future<void> _recarregar() async {
+    if (_selecaoPdv) {
+      final consulta = ++_consultaPdv;
+      setState(() => _catalogoPdv = null);
+      final catalogo = await CatalogoSelecaoPdv.carregar(
+        context.read<ProdutosListProvider<ProdutoModel>>(),
+        confirmarAcesso: context.read<ColaboradorAutorizacoesProvider?>()?.atualizarAutorizacoesDoPdv,
+      );
+      if (!mounted || consulta != _consultaPdv) return;
+      _catalogoPdv = catalogo;
+      atualizarListaComProvider(catalogo.ativos(tipoSelecionado));
+      return;
+    }
+
     if (!widget.isSelecao) {
       await _recarregarCatalogoEdicao();
       return;
@@ -760,6 +786,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       todosProdutos = <ProdutoModel>[];
     });
 
+    if (_selecaoPdv) {
+      atualizarListaComProvider(_catalogoPdv?.ativos(tipoSelecionado) ?? []);
+      return;
+    }
     _recarregar();
   }
 
@@ -929,7 +959,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   Future<void> _abrirNovoProduto() async {
     final bool? atualizado = await showSubPainelCadastroProduto(
       context,
-      'Cadastro de Produtos',
+      context.t(
+        tipoSelecionado == 'SERVICO'
+            ? 'staff.permission.servicos'
+            : 'staff.permission.produtos',
+      ),
+      tipoInicial: tipoSelecionado,
     );
     if (atualizado == true && mounted) {
       await _recarregar();
@@ -1003,7 +1038,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   ? todosProdutos
                   : provider.listaDeProdutos;
           itensDaLista =
-              baseProdutos.isEmpty && termoBusca.isEmpty
+              _selecaoPdv
+                  ? produtosFiltrados
+                  : baseProdutos.isEmpty && termoBusca.isEmpty
                   ? provider.listaDeProdutos
                   : produtosFiltrados;
         } else {
@@ -1039,7 +1076,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       ),
                       child: _buildTipoSelector(context, isCompact),
                     ),
-                  if (widget.isSelecao)
+                  if (widget.isSelecao &&
+                      (!_selecaoPdv ||
+                          todosProdutos.isNotEmpty && _catalogoPdv != null))
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
@@ -1049,7 +1088,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       ),
                       child: _buildSearchOrderAndPreference(context, isCompact),
                     )
-                  else
+                  else if (!widget.isSelecao)
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
@@ -1113,7 +1152,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         isCompact,
                       ),
                     ),
-                  if (widget.isSelecao && widget.permitirSelecaoMultipla)
+                  if (widget.isSelecao &&
+                      widget.permitirSelecaoMultipla &&
+                      (!_selecaoPdv ||
+                          _produtosSelecionados.isNotEmpty ||
+                          todosProdutos.isNotEmpty))
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
@@ -1254,13 +1297,17 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             _limparSelecaoMultipla,
           ),
         if (!widget.isSelecao) ...<Widget>[
-          _headerButton(
-            context,
-            Icons.add_rounded,
-            context.t('produto.webList.newItem', fallback: 'Novo item'),
-            _abrirNovoProduto,
-            filled: true,
-          ),
+          if (context
+                  .watch<ColaboradorAutorizacoesProvider?>()
+                  ?.podeCadastrarTipo(tipoSelecionado) ==
+              true)
+            _headerButton(
+              context,
+              Icons.add_rounded,
+              context.t('produto.webList.newItem', fallback: 'Novo item'),
+              _abrirNovoProduto,
+              filled: true,
+            ),
           _headerButton(
             context,
             Icons.picture_as_pdf_outlined,
@@ -1483,6 +1530,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildTipoSelector(BuildContext context, bool isCompact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    if (_selecaoPdv) {
+      return PdvCategorias(
+        tipo: tipoSelecionado,
+        onChanged: _selectTipo,
+        photoHeight: isCompact ? 80 : 96,
+        spacing: 12,
+        surface: tokens.surfaceMuted,
+        foreground: tokens.primaryText,
+        accent: tokens.info,
+        border: tokens.cardBorder,
+      );
+    }
 
     return Container(
       width: isCompact ? double.infinity : 420,
@@ -3571,6 +3630,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutosListProvider<ProdutoModel> provider,
     List<ProdutoModel> itens,
   ) {
+    if (_selecaoPdv && _catalogoPdv == null) return _loadingList(context);
+    if (_selecaoPdv && itens.isEmpty) return _vazioPdv();
     if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
@@ -3649,6 +3710,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final int totalSelecionados = _quantidadeSelecionadaTotal;
     final bool possuiSelecionados = totalSelecionados > 0;
 
+    final selectedLabel =
+        _selecaoPdv
+            ? context.pdvSelectedItems(totalSelecionados)
+            : switch (totalSelecionados) {
+              0 => 'Nenhum item selecionado ainda.',
+              1 => '1 item selecionado',
+              _ => '$totalSelecionados itens selecionados',
+            };
+    final selectionSummary =
+        possuiSelecionados
+            ? '$selectedLabel • ${_precoFormatado(_totalSelecionado)}'
+            : selectedLabel;
+
     return AnimatedContainer(
       duration: WebThemeTokens.transitionDuration,
       curve: WebThemeTokens.transitionCurve,
@@ -3684,11 +3758,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              !possuiSelecionados
-                  ? 'Nenhum item selecionado ainda.'
-                  : totalSelecionados == 1
-                  ? '1 item selecionado • ${_precoFormatado(_totalSelecionado)}'
-                  : '$totalSelecionados itens selecionados • ${_precoFormatado(_totalSelecionado)}',
+              selectionSummary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -3705,7 +3775,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
             label: Text(
-              possuiSelecionados
+              _selecaoPdv
+                  ? context.t('pdv.selection.addToSale')
+                  : possuiSelecionados
                   ? 'Adicionar $totalSelecionados'
                   : 'Adicionar selecionados',
             ),
@@ -3737,6 +3809,100 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               border: Border.all(color: tokens.cardBorder),
             ),
           ),
+    );
+  }
+
+  Future<void> _acaoVazio(AcaoCatalogo acao) async {
+    switch (acao) {
+      case AcaoCatalogo.verServicos:
+        _selectTipo('SERVICO');
+      case AcaoCatalogo.verProdutos:
+        _selectTipo('PRODUTO');
+      case AcaoCatalogo.voltar:
+        Navigator.of(context).pop();
+      case AcaoCatalogo.recarregar:
+        await _recarregar();
+      case AcaoCatalogo.limpar:
+        termoBusca = '';
+        _controllerBusca.clear();
+        _marcacaoFiltro = _ProdutoMarcacaoFiltro.todos;
+        aplicarFiltroOrdenacao();
+      case AcaoCatalogo.criarProduto:
+      case AcaoCatalogo.criarServico:
+        final tipo = acao == AcaoCatalogo.criarProduto ? 'PRODUTO' : 'SERVICO';
+        ProdutoModel? criado;
+        final salvo = await showSubPainelCadastroProduto(
+          context,
+          context.t(acao.chave),
+          tipoInicial: tipo,
+          onCriado: (p) => criado = p,
+        );
+        if (!mounted || salvo != true) return;
+        final item = criado;
+        tipoSelecionado = item?.tipoProduto ?? tipo;
+        termoBusca = '';
+        _controllerBusca.clear();
+        await _recarregar();
+        if (mounted && item != null && item.ativo) {
+          _selecionarProduto(item);
+        }
+    }
+  }
+
+  Widget _vazioPdv() {
+    final acesso = context.watch<ColaboradorAutorizacoesProvider?>();
+    final estado = _catalogoPdv!.orientacao(
+      tipoSelecionado,
+      criarProduto: acesso?.podeCadastrarProduto == true,
+      criarServico: acesso?.podeCadastrarServico == true,
+    );
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 480),
+          margin: const EdgeInsets.only(top: 24),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: WebThemeTokens.of(context).cardBackground,
+            border: Border.all(color: WebThemeTokens.of(context).cardBorder),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                _isProdutoSelecionado
+                    ? Icons.inventory_2_outlined
+                    : Icons.design_services_outlined,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.t(estado.titulo),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (estado.descricao != null) Text(context.t(estado.descricao!)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  FilledButton(
+                    onPressed: () => _acaoVazio(estado.acao),
+                    child: Text(context.t(estado.acao.chave)),
+                  ),
+                  if (estado.secundaria != null)
+                    OutlinedButton(
+                      onPressed: () => _acaoVazio(estado.secundaria!),
+                      child: Text(context.t(estado.secundaria!.chave)),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

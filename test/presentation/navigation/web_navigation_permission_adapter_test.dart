@@ -297,13 +297,13 @@ void main() {
       ]);
       expect(
         _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-        <String>[WebNavigationIds.cash],
+        <String>[WebNavigationIds.operationsPos, WebNavigationIds.cash],
       );
       expect(_findItem(visible, WebNavigationIds.financial), isNull);
     });
 
     test(
-      'Financeiro completo libera Agenda financeira e Caixa em Operacoes',
+      'Consulta financeira libera a agenda e preserva a restrição de caixa',
       () {
         final List<WebNavigationItem> visible = _visibleItemsFor(
           _FakeAutorizacoesProvider(podeVerQuantoVendeu: true),
@@ -316,7 +316,7 @@ void main() {
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.operationsSales, WebNavigationIds.cash],
+          <String>[WebNavigationIds.operationsSales],
         );
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.financial)),

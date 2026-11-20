@@ -28,6 +28,12 @@ String normalizeSixoAppBranding(String value) {
 }
 
 extension SixI18nBuildContext on BuildContext {
+  String pdvSelectedItems(int count) {
+    if (count == 0) return t('pdv.selection.none');
+    if (count == 1) return t('pdv.selection.one');
+    return t('pdv.selection.many').replaceAll('{n}', count.toString());
+  }
+
   /// Resolve textos do SixoApp a partir do pacote de traduções carregado do
   /// backend.
   ///
@@ -71,6 +77,61 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'pdv.empty.products': 'Ainda não há produtos cadastrados.',
+    'pdv.empty.services': 'Ainda não há serviços cadastrados.',
+    'pdv.empty.inactiveProducts': 'Nenhum produto ativo para venda.',
+    'pdv.empty.inactiveServices': 'Nenhum serviço ativo para venda.',
+    'pdv.empty.sellService': 'Você pode lançar um serviço nesta venda.',
+    'pdv.empty.sellProduct': 'Você pode lançar um produto nesta venda.',
+    'pdv.empty.askAdmin':
+        'Peça ao administrador para disponibilizar um produto ou serviço para venda.',
+    'pdv.empty.create': 'Cadastre um item para usar nesta venda.',
+    'pdv.empty.viewServices': 'Ver serviços',
+    'pdv.empty.viewProducts': 'Ver produtos',
+    'pdv.empty.back': 'Voltar ao PDV',
+    'pdv.empty.noMatch': 'Nenhum item corresponde à busca ou aos filtros.',
+    'pdv.empty.clear': 'Limpar busca e filtros',
+    'pdv.empty.error': 'Não foi possível carregar o catálogo.',
+    'pdv.empty.retry': 'Tentar novamente',
+    'staff.permissionsNotSaved':
+        'As permissões salvas são diferentes das solicitadas. Reabra o cadastro para conferir.',
+    'staff.groups.atendimento': 'Atendimento',
+    'staff.groups.catalogo': 'Catálogo',
+    'staff.groups.fornecedores': 'Fornecedores',
+    'staff.groups.compras': 'Compras',
+    'staff.groups.financeiro': 'Financeiro e relatórios',
+    'staff.groups.administracao': 'Administração',
+    'staff.permission.vendas': 'Vendas',
+    'staff.permission.vendas.description': 'Pode realizar vendas no comércio.',
+    'staff.permission.assistencia': 'Assistência técnica',
+    'staff.permission.assistencia.description':
+        'Pode lançar atendimentos técnicos.',
+    'staff.permission.clientes': 'Clientes',
+    'staff.permission.clientes.description': 'Pode editar dados de clientes.',
+    'staff.permission.produtos': 'Cadastrar produtos',
+    'staff.permission.produtos.description':
+        'Pode cadastrar produtos no catálogo.',
+    'staff.permission.servicos': 'Cadastrar serviços',
+    'staff.permission.servicos.description':
+        'Pode cadastrar serviços no catálogo.',
+    'staff.permission.receber': 'Recebimento no caixa',
+    'staff.permission.receber.description': 'Pode receber no caixa.',
+    'staff.permission.resumo': 'Resumo das vendas',
+    'staff.permission.resumo.description':
+        'Pode ver quanto vendeu e consultar o resumo das vendas.',
+    'staff.permission.relatorios': 'Relatórios',
+    'staff.permission.relatorios.description':
+        'Pode gerar relatórios de vendas.',
+    'staff.permission.permissoes': 'Gerenciar permissões',
+    'staff.permission.permissoes.description': 'Pode gerenciar permissões.',
+    'staff.permissions': 'Permissões do colaborador',
+    'staff.permissionsHint':
+        'Escolha o que o colaborador pode fazer neste comércio.',
+    'pdv.openForPayment':
+        'Abra seu caixa para receber com esta forma de pagamento.',
+    'pdv.sellWithoutPayment':
+        'Você pode registrar a venda para receber depois.',
+    'pdv.registeredPending': 'Venda registrada para receber depois.',
     "homeToday.title": "Meu dia",
     "homeToday.subtitle":
         "Dados do comércio ativo. Cada bloco é atualizado separadamente.",
@@ -884,6 +945,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Venda concluída com sucesso',
     'pdv.quantityEditor.title': 'Editar quantidade',
     'pdv.quantityEditor.tooltip': 'Editar quantidade',
+    'pdv.selection.none': 'Nenhum item selecionado',
+    'pdv.selection.one': '1 item selecionado',
+    'pdv.selection.many': '{n} itens selecionados',
+    'pdv.selection.addToSale': 'Adicionar à venda',
+    'pdv.selection.imagesGroup': 'Frente de caixa · Seleção de itens',
     'pdv.quantityEditor.subtitle':
         'Revise o item e aplique a nova quantidade. O subtotal e o total da venda serão recalculados imediatamente.',
     'pdv.quantityEditor.codeLabel': 'Código',
@@ -3390,6 +3456,57 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'pdv.empty.products': 'No products have been added yet.',
+    'pdv.empty.services': 'No services have been added yet.',
+    'pdv.empty.inactiveProducts': 'No active products are available to sell.',
+    'pdv.empty.inactiveServices': 'No active services are available to sell.',
+    'pdv.empty.sellService': 'You can add a service to this sale.',
+    'pdv.empty.sellProduct': 'You can add a product to this sale.',
+    'pdv.empty.askAdmin':
+        'Ask your administrator to make a product or service available for sale.',
+    'pdv.empty.create': 'Create an item to use in this sale.',
+    'pdv.empty.viewServices': 'View services',
+    'pdv.empty.viewProducts': 'View products',
+    'pdv.empty.back': 'Back to POS',
+    'pdv.empty.noMatch': 'No items match your search or filters.',
+    'pdv.empty.clear': 'Clear search and filters',
+    'pdv.empty.error': 'Could not load the catalog.',
+    'pdv.empty.retry': 'Try again',
+    'staff.permissionsNotSaved':
+        'The saved permissions differ from the changes you requested. Reopen the employee record to review them.',
+    'staff.groups.atendimento': 'Sales and service',
+    'staff.groups.catalogo': 'Catalog',
+    'staff.groups.fornecedores': 'Suppliers',
+    'staff.groups.compras': 'Purchases',
+    'staff.groups.financeiro': 'Finance and reports',
+    'staff.groups.administracao': 'Administration',
+    'staff.permission.vendas': 'Sales',
+    'staff.permission.vendas.description':
+        'Can register sales for this business.',
+    'staff.permission.assistencia': 'Technical assistance',
+    'staff.permission.assistencia.description': 'Can register service orders.',
+    'staff.permission.clientes': 'Customers',
+    'staff.permission.clientes.description': 'Can edit customer details.',
+    'staff.permission.produtos': 'Create products',
+    'staff.permission.produtos.description': 'Can add products to the catalog.',
+    'staff.permission.servicos': 'Create services',
+    'staff.permission.servicos.description': 'Can add services to the catalog.',
+    'staff.permission.receber': 'Register payments',
+    'staff.permission.receber.description':
+        'Can take payments at the register.',
+    'staff.permission.resumo': 'Sales summary',
+    'staff.permission.resumo.description':
+        'Can view sales totals and the sales summary.',
+    'staff.permission.relatorios': 'Reports',
+    'staff.permission.relatorios.description': 'Can generate sales reports.',
+    'staff.permission.permissoes': 'Manage permissions',
+    'staff.permission.permissoes.description': 'Can manage permissions.',
+    'staff.permissions': 'Staff permissions',
+    'staff.permissionsHint':
+        'Choose what this staff member can do in this business.',
+    'pdv.openForPayment': 'Open your register to receive this payment method.',
+    'pdv.sellWithoutPayment': 'You can register the sale for later payment.',
+    'pdv.registeredPending': 'Sale registered for later payment.',
     "homeToday.title": "My day",
     "homeToday.subtitle":
         "Active business data. Each section updates independently.",
@@ -4193,6 +4310,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Sale completed successfully',
     'pdv.quantityEditor.title': 'Edit quantity',
     'pdv.quantityEditor.tooltip': 'Edit quantity',
+    'pdv.selection.none': 'No items selected',
+    'pdv.selection.one': '1 item selected',
+    'pdv.selection.many': '{n} items selected',
+    'pdv.selection.addToSale': 'Add to sale',
+    'pdv.selection.imagesGroup': 'Point of sale · Item selection',
     'pdv.quantityEditor.subtitle':
         'Review the item and apply the new quantity. The item subtotal and sale total will be recalculated immediately.',
     'pdv.quantityEditor.codeLabel': 'Code',
@@ -6486,6 +6608,61 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'pdv.empty.products': 'Aún no hay productos registrados.',
+    'pdv.empty.services': 'Aún no hay servicios registrados.',
+    'pdv.empty.inactiveProducts': 'No hay productos activos para la venta.',
+    'pdv.empty.inactiveServices': 'No hay servicios activos para la venta.',
+    'pdv.empty.sellService': 'Puedes agregar un servicio a esta venta.',
+    'pdv.empty.sellProduct': 'Puedes agregar un producto a esta venta.',
+    'pdv.empty.askAdmin':
+        'Pide al administrador que habilite un producto o servicio para la venta.',
+    'pdv.empty.create': 'Registra un artículo para usar en esta venta.',
+    'pdv.empty.viewServices': 'Ver servicios',
+    'pdv.empty.viewProducts': 'Ver productos',
+    'pdv.empty.back': 'Volver al punto de venta',
+    'pdv.empty.noMatch':
+        'Ningún artículo coincide con la búsqueda o los filtros.',
+    'pdv.empty.clear': 'Limpiar búsqueda y filtros',
+    'pdv.empty.error': 'No se pudo cargar el catálogo.',
+    'pdv.empty.retry': 'Reintentar',
+    'staff.permissionsNotSaved':
+        'Los permisos guardados difieren de los solicitados. Vuelva a abrir la ficha del colaborador para revisarlos.',
+    'staff.groups.atendimento': 'Atención',
+    'staff.groups.catalogo': 'Catálogo',
+    'staff.groups.fornecedores': 'Proveedores',
+    'staff.groups.compras': 'Compras',
+    'staff.groups.financeiro': 'Finanzas e informes',
+    'staff.groups.administracao': 'Administración',
+    'staff.permission.vendas': 'Ventas',
+    'staff.permission.vendas.description':
+        'Puede registrar ventas en el comercio.',
+    'staff.permission.assistencia': 'Asistencia técnica',
+    'staff.permission.assistencia.description':
+        'Puede registrar órdenes de servicio.',
+    'staff.permission.clientes': 'Clientes',
+    'staff.permission.clientes.description': 'Puede editar datos de clientes.',
+    'staff.permission.produtos': 'Registrar productos',
+    'staff.permission.produtos.description':
+        'Puede registrar productos en el catálogo.',
+    'staff.permission.servicos': 'Registrar servicios',
+    'staff.permission.servicos.description':
+        'Puede registrar servicios en el catálogo.',
+    'staff.permission.receber': 'Cobros en caja',
+    'staff.permission.receber.description': 'Puede cobrar en caja.',
+    'staff.permission.resumo': 'Resumen de ventas',
+    'staff.permission.resumo.description':
+        'Puede ver cuánto vendió y consultar el resumen de ventas.',
+    'staff.permission.relatorios': 'Informes',
+    'staff.permission.relatorios.description':
+        'Puede generar informes de ventas.',
+    'staff.permission.permissoes': 'Gestionar permisos',
+    'staff.permission.permissoes.description': 'Puede gestionar permisos.',
+    'staff.permissions': 'Permisos del colaborador',
+    'staff.permissionsHint':
+        'Elige qué puede hacer el colaborador en este comercio.',
+    'pdv.openForPayment': 'Abre tu caja para cobrar con esta forma de pago.',
+    'pdv.sellWithoutPayment': 'Puedes registrar la venta para cobrar después.',
+    'pdv.registeredPending': 'Venta registrada para cobrar después.',
     "homeToday.title": "Mi día",
     "homeToday.subtitle":
         "Datos del comercio activo. Cada bloque se actualiza por separado.",
@@ -7302,6 +7479,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.mobile.saleCompletedSemantics': 'Venta finalizada correctamente',
     'pdv.quantityEditor.title': 'Editar cantidad',
     'pdv.quantityEditor.tooltip': 'Editar cantidad',
+    'pdv.selection.none': 'Ningún artículo seleccionado',
+    'pdv.selection.one': '1 artículo seleccionado',
+    'pdv.selection.many': '{n} artículos seleccionados',
+    'pdv.selection.addToSale': 'Agregar a la venta',
+    'pdv.selection.imagesGroup': 'Punto de venta · Selección de artículos',
     'pdv.quantityEditor.subtitle':
         'Revisa el artículo y aplica la nueva cantidad. El subtotal del artículo y el total de la venta se recalcularán de inmediato.',
     'pdv.quantityEditor.codeLabel': 'Código',
