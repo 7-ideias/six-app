@@ -631,6 +631,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       setState(() => _catalogoPdv = null);
       final catalogo = await CatalogoSelecaoPdv.carregar(
         context.read<ProdutosListProvider<ProdutoModel>>(),
+        confirmarAcesso: context.read<ColaboradorAutorizacoesProvider?>()?.atualizarAutorizacoesDoPdv,
       );
       if (!mounted || consulta != _consultaPdv) return;
       _catalogoPdv = catalogo;

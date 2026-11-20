@@ -3,13 +3,16 @@ import '../../providers/produtos_list_provider.dart';
 import 'produto_helper.dart';
 
 class CatalogoSelecaoPdv {
-  CatalogoSelecaoPdv(this.porTipo);
+  CatalogoSelecaoPdv(this.porTipo, {this.acessoConfirmado = true});
+  final bool acessoConfirmado;
   // Uma falha em uma aba não impede a venda de itens da outra.
   final Map<String, List<ProdutoModel>?> porTipo;
 
   static Future<CatalogoSelecaoPdv> carregar(
-    ProdutosListProvider<ProdutoModel> provider,
-  ) async {
+    ProdutosListProvider<ProdutoModel> provider, {
+    Future<bool> Function()? confirmarAcesso,
+  }) async {
+    final acesso = confirmarAcesso?.call();
     final Map<String, String> headers;
     try {
       headers = await ProdutoHelper.headersListagem('PRODUTO');
@@ -28,7 +31,10 @@ class CatalogoSelecaoPdv {
         }
       }),
     );
-    return CatalogoSelecaoPdv(Map.fromEntries(abas));
+    return CatalogoSelecaoPdv(
+      Map.fromEntries(abas),
+      acessoConfirmado: await acesso ?? true,
+    );
   }
 
   List<ProdutoModel> ativos(String tipo) =>
@@ -51,8 +57,11 @@ class CatalogoSelecaoPdv {
                 ? 'pdv.empty.inactiveProducts'
                 : 'pdv.empty.inactiveServices');
     final verOutro = ativos(outroTipo).isNotEmpty;
+    if (!acessoConfirmado && !verOutro) return OrientacaoCatalogo.erro;
     final cadastrar =
-        (produto ? criarProduto : criarServico)
+        !acessoConfirmado
+            ? null
+            : (produto ? criarProduto : criarServico)
             ? (produto ? AcaoCatalogo.criarProduto : AcaoCatalogo.criarServico)
             : criarProduto
             ? AcaoCatalogo.criarProduto
@@ -67,8 +76,9 @@ class CatalogoSelecaoPdv {
         secundaria: cadastrar,
       );
     }
-    if (cadastrar != null)
+    if (cadastrar != null) {
       return OrientacaoCatalogo(titulo, 'pdv.empty.create', cadastrar);
+    }
     if (porTipo[outroTipo] == null) return OrientacaoCatalogo.erro;
     return OrientacaoCatalogo(
       titulo,

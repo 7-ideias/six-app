@@ -22,14 +22,12 @@ class ColaboradorAutorizacoesModel {
   final ObjLancamentosFinanceirosPodeAutorizacao objLancamentosFinanceirosPode;
 
   factory ColaboradorAutorizacoesModel.fromJson(Map<String, dynamic> json) {
+    final adicionais = json['permissoesAdicionais'];
     return ColaboradorAutorizacoesModel(
       podeFazerDevolucao: _asBool(json['podeFazerDevolucao']),
-      podeCadastrarProduto: _asBool(json['podeCadastrarProduto']),
-      podeCadastrarServico:
-          (json['permissoesAdicionais'] as List?)?.contains(
-            'SERVICOS_CADASTRAR',
-          ) ==
-          true,
+      podeCadastrarProduto: _asBool(json['podeCadastrarProduto']) ||
+          (adicionais is List && adicionais.contains('PRODUTOS_CADASTRAR')),
+      podeCadastrarServico: adicionais is List && adicionais.contains('SERVICOS_CADASTRAR'),
       objProdutosPode: ObjProdutosPodeAutorizacao.fromJson(
         _asMap(json['objProdutosPode']),
       ),

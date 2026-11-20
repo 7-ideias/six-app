@@ -87,6 +87,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.empty.clear': 'Limpar busca e filtros',
     'pdv.empty.error': 'Não foi possível carregar o catálogo.',
     'pdv.empty.retry': 'Tentar novamente',
+    'staff.permissionsNotSaved':
+        'As permissões salvas são diferentes das solicitadas. Reabra o cadastro para conferir.',
     'staff.groups.atendimento': 'Atendimento',
     'staff.groups.catalogo': 'Catálogo',
     'staff.groups.fornecedores': 'Fornecedores',
@@ -3459,6 +3461,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.empty.clear': 'Clear search and filters',
     'pdv.empty.error': 'Could not load the catalog.',
     'pdv.empty.retry': 'Try again',
+    'staff.permissionsNotSaved':
+        'The saved permissions differ from the changes you requested. Reopen the employee record to review them.',
     'staff.groups.atendimento': 'Sales and service',
     'staff.groups.catalogo': 'Catalog',
     'staff.groups.fornecedores': 'Suppliers',
@@ -6605,6 +6609,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.empty.clear': 'Limpiar búsqueda y filtros',
     'pdv.empty.error': 'No se pudo cargar el catálogo.',
     'pdv.empty.retry': 'Reintentar',
+    'staff.permissionsNotSaved':
+        'Los permisos guardados difieren de los solicitados. Vuelva a abrir la ficha del colaborador para revisarlos.',
     'staff.groups.atendimento': 'Atención',
     'staff.groups.catalogo': 'Catálogo',
     'staff.groups.fornecedores': 'Proveedores',

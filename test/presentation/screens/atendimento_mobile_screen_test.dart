@@ -1017,6 +1017,10 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
 }
 
 class _FakeColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
+  @override
+  Future<Map<String, dynamic>> buscarAutorizacoes(String id) async =>
+      (await buscarColaborador(id)).toJson()['objAutorizacoes'] ?? {};
+
   const _FakeColaboradorUsuarioApiClient(this.colaboradores);
 
   final List<ColaboradorUsuarioResumo> colaboradores;

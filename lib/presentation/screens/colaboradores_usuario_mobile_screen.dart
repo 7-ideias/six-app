@@ -237,6 +237,11 @@ class _ColaboradoresUsuarioMobileScreenState
         ),
       );
       _reload();
+    } on PermissoesNaoConfirmadas {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('staff.permissionsNotSaved')), behavior: SnackBarBehavior.floating),
+      );
     } on ColaboradorUsuarioApiException catch (error) {
       if (!mounted) {
         return;

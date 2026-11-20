@@ -216,6 +216,10 @@ class _FakeClienteUsuarioApiClient implements ClienteUsuarioApiClient {
 
 class _FakeColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   @override
+  Future<Map<String, dynamic>> buscarAutorizacoes(String id) async =>
+      (await buscarColaborador(id)).toJson()['objAutorizacoes'] ?? {};
+
+  @override
   Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario) {
     throw UnimplementedError();
   }

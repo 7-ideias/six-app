@@ -11,6 +11,7 @@ import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.da
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -26,6 +27,42 @@ void main() {
   tearDown(() {
     UsuarioProvider().clear();
   });
+
+  testWidgets(
+    'Atualizar no seletor reflete a concessão e a retirada de cadastro',
+    (tester) async {
+      _preferencias(ModoDeExibicaoUsuario.grade);
+      final acesso = _PermissoesDoPdv();
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+          value: acesso,
+          child: _buildTestApp(
+            child: const Scaffold(
+              body: ProdutoListaBody(
+                isSelecao: true,
+                permitirSelecaoMultipla: true,
+                apenasAtivosNoBackend: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Voltar ao PDV'), findsOneWidget);
+      for (final permitir in [true, false]) {
+        acesso.concessao = permitir;
+        await tester.tap(find.text('Atualizar'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Cadastrar produtos'),
+          permitir ? findsOneWidget : findsNothing,
+        );
+        expect(find.text('Cadastrar serviços'), findsNothing);
+      }
+    },
+  );
 
   for (final tema in [ThemeMode.light, ThemeMode.dark]) {
     testWidgets('PDV sem produtos oferece serviço selecionável ($tema)', (
@@ -615,3 +652,16 @@ final ConfiguracaoRegionalizacaoResponse _regionalizacao =
 
 const String _png1x1 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p94AAAAASUVORK5CYII=';
+
+class _PermissoesDoPdv extends ColaboradorAutorizacoesProvider {
+  bool concessao = false;
+  bool _cadastrar = false;
+  @override
+  bool get podeCadastrarProduto => _cadastrar;
+  @override
+  Future<bool> atualizarAutorizacoesDoPdv() async {
+    _cadastrar = concessao;
+    notifyListeners();
+    return true;
+  }
+}

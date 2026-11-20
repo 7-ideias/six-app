@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
@@ -7,11 +8,13 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/http_client_factory.dart';
 import '../../models/colaborador_autorizacoes_model.dart';
 import '../../models/colaborador_usuario_model.dart';
+import '../../models/permissao_colaborador.dart';
 
 abstract class ColaboradorUsuarioApiClient {
   Future<List<ColaboradorUsuarioResumo>> listarColaboradores();
   Future<List<ColaboradorUsuarioResumo>> listarTecnicosAssistenciaTecnica();
   Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario);
+  Future<Map<String, dynamic>> buscarAutorizacoes(String idUnicoDoUsuario);
   Future<void> editarColaborador(Map<String, dynamic> payload);
 }
 
@@ -45,13 +48,16 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
 
   @override
   Future<List<ColaboradorUsuarioResumo>> listarColaboradores() async {
+    return _listarColaboradores(await _getHeaders());
+  }
+
+  Future<List<ColaboradorUsuarioResumo>> _listarColaboradores(
+    Map<String, String> headers,
+  ) async {
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/colaborador/listar',
     );
-    final http.Response response = await _httpClient.get(
-      uri,
-      headers: await _getHeaders(),
-    );
+    final http.Response response = await _httpClient.get(uri, headers: headers);
 
     if (response.statusCode == 204) {
       return const <ColaboradorUsuarioResumo>[];
@@ -147,19 +153,43 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   Future<ColaboradorUsuarioDetalhe> buscarColaborador(
     String idUnicoDoUsuario,
   ) async {
+    final headers = await _getHeaders();
+    return await _buscarCadastro(idUnicoDoUsuario, headers) ??
+        await _buscarDetalheResumidoParaEdicao(idUnicoDoUsuario, headers);
+  }
+
+  @override
+  Future<Map<String, dynamic>> buscarAutorizacoes(
+    String idUnicoDoUsuario,
+  ) async {
+    return _lerAutorizacoes(idUnicoDoUsuario, await _getHeaders());
+  }
+
+  Future<Map<String, dynamic>> _lerAutorizacoes(
+    String idUnicoDoUsuario,
+    Map<String, String> headers,
+  ) async {
+    final cadastro = await _buscarCadastro(idUnicoDoUsuario, headers);
+    if (cadastro != null) {
+      return _ensureMap(cadastro.toJson()['objAutorizacoes']);
+    }
+    return _buscarAutorizacoesParaEdicao(idUnicoDoUsuario, headers);
+  }
+
+  Future<ColaboradorUsuarioDetalhe?> _buscarCadastro(
+    String idUnicoDoUsuario,
+    Map<String, String> headers,
+  ) async {
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/colaborador/buscar',
     ).replace(
       queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
     );
 
-    final http.Response response = await _httpClient.get(
-      uri,
-      headers: await _getHeaders(),
-    );
+    final http.Response response = await _httpClient.get(uri, headers: headers);
 
     if (response.statusCode == 204 || response.statusCode == 404) {
-      return _buscarDetalheResumidoParaEdicao(idUnicoDoUsuario);
+      return null;
     }
 
     if (response.statusCode != 200) {
@@ -182,9 +212,10 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
 
   Future<ColaboradorUsuarioDetalhe> _buscarDetalheResumidoParaEdicao(
     String idUnicoDoUsuario,
+    Map<String, String> headers,
   ) async {
     final List<ColaboradorUsuarioResumo> colaboradores =
-        await listarColaboradores();
+        await _listarColaboradores(headers);
     final ColaboradorUsuarioResumo resumo = colaboradores.firstWhere(
       (ColaboradorUsuarioResumo item) =>
           item.idUnicoPessoal == idUnicoDoUsuario,
@@ -200,7 +231,7 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
           ),
     );
     final Map<String, dynamic> autorizacoes =
-        await _buscarAutorizacoesParaEdicao(idUnicoDoUsuario);
+        await _buscarAutorizacoesParaEdicao(idUnicoDoUsuario, headers);
 
     return ColaboradorUsuarioDetalhe.fromJson(<String, dynamic>{
       'foto': resumo.foto,
@@ -238,12 +269,14 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         },
         'DOCUMENTO_DE_IDENTIFICACAO_UNICO_DA_EMPRESA': null,
       },
-      'objAutorizacoes': autorizacoes,
+      'objAutorizacoes':
+          autorizacoes.isEmpty ? _autorizacoesVazias() : autorizacoes,
     });
   }
 
   Future<Map<String, dynamic>> _buscarAutorizacoesParaEdicao(
     String idUnicoDoUsuario,
+    Map<String, String> headers,
   ) async {
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/colaborador/permissoes',
@@ -251,12 +284,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
     );
 
-    final http.Response response = await _httpClient.get(
-      uri,
-      headers: await _getHeaders(),
-    );
+    final http.Response response = await _httpClient.get(uri, headers: headers);
 
-    if (response.statusCode == 204) return _autorizacoesVazias();
+    if (response.statusCode == 204) return {};
     if (response.statusCode != 200) {
       throw ColaboradorUsuarioApiException(
         statusCode: response.statusCode,
@@ -304,9 +334,10 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       '${AppConfig.baseUrl}/private/api/colaborador/editar',
     );
 
+    final headers = await _getHeaders();
     final http.Response response = await _httpClient.post(
       uri,
-      headers: await _getHeaders(),
+      headers: headers,
       body: jsonEncode(payload),
     );
 
@@ -318,7 +349,25 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         body: response.body,
       );
     }
+    final enviadas = payload['objAutorizacoes'];
+    if (enviadas is Map<String, dynamic>) {
+      final id =
+          _ensureMap(payload['objInformacoesDoCadastro'])['idUnicoDoUsuario']
+              as String;
+      final gravadas = await _lerAutorizacoes(id, headers);
+      if (gravadas.isEmpty ||
+          !setEquals(
+            PermissaoColaborador.ler(enviadas),
+            PermissaoColaborador.ler(gravadas),
+          )) {
+        throw const PermissoesNaoConfirmadas();
+      }
+    }
   }
+}
+
+class PermissoesNaoConfirmadas implements Exception {
+  const PermissoesNaoConfirmadas();
 }
 
 class ColaboradorUsuarioApiException implements Exception {

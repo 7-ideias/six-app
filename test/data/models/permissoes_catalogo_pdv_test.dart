@@ -1,9 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
+import 'package:sixpos/data/models/colaborador_autorizacoes_model.dart';
 import 'package:sixpos/data/models/permissao_colaborador.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 
 void main() {
+  test(
+    'cadastro por código independe de editar produtos e receber no caixa',
+    () {
+      final acesso = ColaboradorAutorizacoesModel.fromJson({
+        'permissoesAdicionais': ['PRODUTOS_CADASTRAR'],
+        'objProdutosPode': {'podeEditarProduto': false},
+      });
+      expect(acesso.podeCadastrarProduto, isTrue);
+      expect(acesso.objProdutosPode.podeEditarProduto, isFalse);
+      expect(acesso.podeCadastrarServico, isFalse);
+      expect(acesso.objLancamentosFinanceirosPode.podeReceberNoCaixa, isFalse);
+    },
+  );
+
   test(
     '19 permissões fazem ida e volta preservando comissões e campos antigos',
     () {
