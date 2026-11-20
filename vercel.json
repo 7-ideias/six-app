@@ -393,6 +393,10 @@
   ],
   "rewrites": [
     {
+      "source": "/mobile/agenda-financeira",
+      "destination": "/agenda-link.html"
+    },
+    {
       "source": "/mobile/billing-return",
       "destination": "/billing-return.html"
     },

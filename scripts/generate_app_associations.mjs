@@ -15,7 +15,7 @@ mkdirSync(output, { recursive: true });
 writeFileSync(join(output, 'apple-app-site-association'), JSON.stringify({
   applinks: { apps: [], details: [{
     appID: team + '.com.sixoapp.app',
-    paths: ['/mobile/billing-return'],
+    paths: ['/mobile/billing-return', '/mobile/agenda-financeira'],
   }] },
 }, null, 2));
 writeFileSync(join(output, 'assetlinks.json'), JSON.stringify(fingerprints.length ? [{

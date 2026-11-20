@@ -7,6 +7,7 @@ import 'presentation/navigation/web_destination_routes.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/billing_http_client.dart';
 import 'core/services/billing_return_service.dart';
+import 'core/services/agenda_email_link_service.dart';
 import 'presentation/screens/billing_access_web_page.dart';
 import 'presentation/screens/billing_access_mobile_screen.dart';
 
@@ -62,7 +63,10 @@ import 'core/ui/app_feedback.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) BillingReturnService.instance.initialize();
+  if (!kIsWeb) {
+    BillingReturnService.instance.initialize();
+    AgendaEmailLinkService.instance.initialize();
+  }
   if (kIsWeb) usePathUrlStrategy();
   final SharedPreferences? prefs = await _loadSharedPreferences();
   final ThemeProvider themeProvider = await ThemeProvider.load(
@@ -547,6 +551,16 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // A cold agenda link resumes through the same authentication entry point.
+      onGenerateInitialRoutes:
+          !kIsWeb && AgendaEmailLinkService.instance.pending
+              ? (_) => [
+                MaterialPageRoute<void>(
+                  settings: const RouteSettings(name: '/'),
+                  builder: (_) => const SplashScreen(),
+                ),
+              ]
+              : null,
       home: kIsWeb ? null : const SplashScreen(),
       initialRoute: kIsWeb ? null : '/',
     );
