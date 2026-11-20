@@ -56,10 +56,7 @@
           <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Convite para a equipe</p>
           <h1 id="invite-context-title" data-i18n="context.title">Seu próximo acesso começa aqui.</h1>
           <p class="auth-context-lead" data-i18n="context.body">Confirme com segurança o e-mail que recebeu o convite para entrar na equipe de um comércio no SixoApp.</p>
-          <div class="invite-trust-note">
-            <span class="invite-trust-mark" aria-hidden="true"></span>
-            <p data-i18n="context.security">Esta página não exige login e nunca solicita sua senha.</p>
-          </div>
+
         </section>
 
         <section class="auth-card invite-card invite-loading-card" data-invite-loading aria-live="polite">
@@ -106,29 +103,28 @@
           </dl>
 
           <form class="invite-form" data-invite-form novalidate>
-            <div class="field">
-              <label for="invite-email" data-i18n="form.email.label">E-mail que recebeu o convite</label>
-              <div class="input-shell">
-                <input
-                  id="invite-email"
-                  data-invite-email
-                  name="email"
-                  type="email"
-                  autocomplete="email"
-                  inputmode="email"
-                  spellcheck="false"
-                  required
-                  placeholder="exemplo@email.com"
-                  data-i18n-placeholder="form.email.placeholder">
-              </div>
-              <p class="invite-field-help" data-i18n="form.email.help">Use exatamente o endereço informado pelo administrador.</p>
+            <p data-invite-destination></p>
+            <div class="field" data-step="code" hidden>
+              <label for="otp" data-i18n="access.code">Código de 6 dígitos</label>
+              <div class="input-shell"><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+              <button class="invite-secondary-link" type="button" data-resend data-i18n="access.resend">Enviar outro código</button>
             </div>
-
+            <div data-step="password" hidden>
+              <div class="field">
+                <label for="new-password" data-i18n="access.password">Senha (8 a 64 caracteres)</label>
+                <div class="input-shell"><input id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="64"></div>
+              </div>
+              <div class="field">
+                <label for="repeat" data-i18n="access.repeat">Confirme a senha</label>
+                <div class="input-shell"><input id="repeat" type="password" autocomplete="new-password" maxlength="64"></div>
+              </div>
+              <label><input type="checkbox" data-show> <span data-i18n="access.show">Mostrar senhas</span></label>
+            </div>
             <p class="form-alert" data-invite-feedback role="alert" aria-live="polite" tabindex="-1" hidden></p>
 
             <button class="button button-primary submit-button invite-main-action" type="submit" data-invite-submit>
               <span class="submit-spinner" aria-hidden="true"></span>
-              <span data-invite-submit-label data-i18n="form.submit">Confirmar e-mail</span>
+              <span data-invite-submit-label>Enviar código</span>
             </button>
           </form>
 
@@ -136,7 +132,7 @@
             <div class="invite-state-mark invite-state-mark-success" aria-hidden="true">✓</div>
             <p class="editorial-pill invite-card-eyebrow" data-i18n="success.eyebrow">E-mail confirmado</p>
             <h3 id="invite-success-title" data-i18n="success.title" tabindex="-1">Seu acesso foi preparado</h3>
-            <p data-i18n="success.body">O convite foi confirmado. Agora você pode seguir para o login do SixoApp.</p>
+            <p data-i18n="access.done">Senha criada. Entre com seu e-mail e a senha que acabou de escolher.</p>
             <div class="invite-mobile-handoff" data-invite-mobile-handoff hidden>
               <p data-i18n="success.mobileBody">No celular, abra o app SixoApp para continuar. Se ele ainda não estiver instalado, baixe pela loja.</p>
               <button class="button button-primary invite-main-action" type="button" data-invite-open-app data-i18n="success.openApp">Abrir app SixoApp</button>
@@ -148,9 +144,7 @@
             <a class="button button-primary invite-main-action" href="/login" data-i18n="success.login">Ir para o login</a>
           </section>
 
-          <div class="invite-card-footer">
-            <span data-i18n="invite.noPassword">O SixoApp não solicitará sua senha nesta confirmação.</span>
-          </div>
+          <button class="button button-secondary" type="button" data-mobile-start hidden data-i18n="access.open">Abrir no aplicativo</button>
 
           <noscript>
             <p class="register-noscript" data-i18n="noscript.message">Ative o JavaScript para validar e confirmar este convite.</p>

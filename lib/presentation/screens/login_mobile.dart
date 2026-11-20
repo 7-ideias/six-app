@@ -16,7 +16,13 @@ import 'esqueceu_senha_mobile.dart';
 import 'post_login_splash_mobile_page.dart';
 
 class LoginPageMobile extends StatefulWidget {
-  const LoginPageMobile({super.key});
+  const LoginPageMobile({
+    super.key,
+    this.emailInicial,
+    this.voltarAoConvite = false,
+  });
+  final String? emailInicial;
+  final bool voltarAoConvite;
 
   @override
   State<LoginPageMobile> createState() => _LoginPageMobileState();
@@ -43,6 +49,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   @override
   void initState() {
     super.initState();
+    _loginController.text = widget.emailInicial ?? '';
     _passwordFocusNode.addListener(_handlePasswordFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadBiometricState();
@@ -510,6 +517,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 
   void _navigateToPostLoginSplash() {
+    if (widget.voltarAoConvite) {
+      Navigator.of(context).pop(true);
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute<void>(

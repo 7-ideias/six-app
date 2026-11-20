@@ -89,47 +89,82 @@ class ColaboradorConviteWebService {
       headers: const <String, String>{'Content-Type': 'application/json'},
     );
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Erro ao validar convite de colaborador: ${response.statusCode} ${response.body}',
-      );
-    }
+    _validarResposta(response);
 
     return ColaboradorConvitePublicoResponse.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
   }
 
-  Future<ColaboradorConviteResponse> confirmarEmailConvite(
+  Future<void> enviarCodigo(String codigo, String idioma) async {
+    await _postPublico(codigo, 'enviar-codigo', {}, idioma: idioma);
+  }
+
+  Future<({String prova, String email})> verificarCodigo(
     String codigo,
-    String email,
+    String otp,
   ) async {
-    final Uri uri = Uri.parse(
-      '${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo/confirmar-email',
-    );
-    final http.Response response = await _client.post(
-      uri,
-      headers: const <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, String>{'email': email.trim()}),
-    );
+    final response = await _postPublico(codigo, 'confirmar-email', {
+      'codigo': otp,
+    });
+    final dados = jsonDecode(response.body) as Map<String, dynamic>;
+    return (prova: dados['prova'] as String, email: dados['email'] as String);
+  }
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(
-        'Erro ao confirmar e-mail do convite: ${response.statusCode} ${response.body}',
-      );
+  Future<void> criarSenha(String codigo, String prova, String senha) async {
+    await _postPublico(codigo, 'criar-senha', {'prova': prova, 'senha': senha});
+  }
+
+  Future<http.Response> _postPublico(
+    String codigo,
+    String etapa,
+    Map<String, String> dados, {
+    String idioma = 'pt',
+  }) async {
+    final response = await _client
+        .post(
+          Uri.parse(
+            '${AppConfig.baseUrl}/public/api/colaborador/convites/${Uri.encodeComponent(codigo)}/$etapa',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': idioma,
+          },
+          body: jsonEncode(dados),
+        )
+        .timeout(const Duration(seconds: 20));
+    _validarResposta(response);
+    return response;
+  }
+
+  void _validarResposta(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    String message = '';
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      message = body['message']?.toString() ?? '';
+    } on FormatException {
+      /* A proxy may return HTML. */
     }
-
-    return ColaboradorConviteResponse.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
+    final key = switch (message) {
+      'CONVITE_EMAIL_DIVERGENTE' => 'wrongAccount',
+      'CONVITE_VERIFIQUE_NOVAMENTE' => 'verifyAgain',
+      'CONVITE_CODIGO_INVALIDO' => 'invalid',
+      'CONVITE_ENTRAR_COM_CONTA' => 'signIn',
+      _ => switch (response.statusCode) {
+        401 => 'signIn',
+        429 => 'wait',
+        404 || 409 || 410 => 'closed',
+        _ => 'unavailable',
+      },
+    };
+    throw ConviteException(key);
   }
 
   Future<void> aceitarConvite(String codigo) async {
     final String? token = await _authService.getAccessToken();
     if (token == null || token.trim().isEmpty) {
-      throw Exception(
-        'Faça login com o e-mail convidado para aceitar este convite.',
-      );
+      throw const ConviteException('signIn');
     }
 
     final Uri uri = Uri.parse(
@@ -143,11 +178,7 @@ class ColaboradorConviteWebService {
       },
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(
-        'Erro ao aceitar convite de colaborador: ${response.statusCode} ${response.body}',
-      );
-    }
+    _validarResposta(response);
   }
 
   Future<List<EmpresaVinculoWebModel>> listarVinculos() async {
@@ -175,4 +206,9 @@ class ColaboradorConviteWebService {
         .map(EmpresaVinculoWebModel.fromJson)
         .toList(growable: false);
   }
+}
+
+class ConviteException implements Exception {
+  const ConviteException(this.key);
+  final String key;
 }

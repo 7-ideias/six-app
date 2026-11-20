@@ -13,10 +13,11 @@ import {
   collaboratorInvitePlatform,
   collaboratorInviteStoreUrls,
   collaboratorInviteStatusKey,
-  confirmCollaboratorInviteEmail,
+  postInviteStep,
+  acceptWithWebSession,
   extractCollaboratorInviteCode,
   fetchCollaboratorInvite,
-  normalizeCollaboratorInviteEmail,
+
   resolvePublicApiConfig,
 } from './collaborator-invite-core.mjs';
 
@@ -31,6 +32,10 @@ import {
     errorKey: null,
     submitting: false,
     confirmed: false,
+    step: 'send',
+    proof: null,
+    email: '',
+    switchAccount: false,
   };
 
   const elements = {
@@ -44,7 +49,13 @@ import {
     status: document.querySelector('[data-invite-status]'),
     expires: document.querySelector('[data-invite-expires]'),
     form: document.querySelector('[data-invite-form]'),
-    email: document.querySelector('[data-invite-email]'),
+    otp: document.querySelector('#otp'),
+    password: document.querySelector('#new-password'),
+    repeat: document.querySelector('#repeat'),
+    show: document.querySelector('[data-show]'),
+    resend: document.querySelector('[data-resend]'),
+    startApp: document.querySelector('[data-mobile-start]'),
+    destination: document.querySelector('[data-invite-destination]'),
     feedback: document.querySelector('[data-invite-feedback]'),
     submit: document.querySelector('[data-invite-submit]'),
     submitLabel: document.querySelector('[data-invite-submit-label]'),
@@ -82,12 +93,12 @@ import {
 
   function openAppOrStore() {
     if (!state.code) return;
-    window.location.href = appOpenUrl();
-    window.setTimeout(() => {
-      if (!document.hidden) {
-        window.location.href = preferredStoreUrl();
-      }
-    }, 1600);
+    let target = appOpenUrl();
+    if (state.confirmed) {
+      const query = new URLSearchParams({ login: '1', email: state.email });
+      target = target.replace(/(#Intent|$)/, '?' + query + '$1');
+    }
+    window.location.href = target;
   }
 
   function configureMobileHandoff() {
@@ -157,10 +168,15 @@ import {
       '—';
     elements.status.textContent = copy(
       state.confirmed
-        ? 'status.confirmed'
+        ? 'status.accepted'
         : collaboratorInviteStatusKey(state.invite.status),
     );
     elements.status.classList.toggle('is-confirmed', state.confirmed);
+    elements.destination.textContent = state.invite.emailConvidado;
+    document.querySelector('[data-step="code"]').hidden = state.step !== 'code';
+    document.querySelector('[data-step="password"]').hidden = state.step !== 'password';
+    elements.startApp.hidden = !isMobileInviteFlow() || state.confirmed;
+    elements.submitLabel.textContent = stepLabel();
     elements.expires.textContent = formatExpiration(state.invite.expiraEm);
     elements.form.hidden = state.confirmed;
     elements.success.hidden = !state.confirmed;
@@ -178,20 +194,29 @@ import {
     if (state.errorKey && !elements.feedback.hidden) {
       elements.feedback.textContent = copy(state.errorKey);
     }
-    elements.submitLabel.textContent = copy(
-      state.submitting ? 'form.loading' : 'form.submit',
-    );
+    elements.submitLabel.textContent = stepLabel();
+  }
+
+  function stepLabel() {
+    if (state.submitting) return copy('form.loading');
+    const key = {send: 'send', code: 'confirm', password: 'save', existing: state.switchAccount ? 'signIn' : 'accept'};
+    return copy('access.' + key[state.step]);
   }
 
   function setSubmitting(value) {
     state.submitting = value;
-    elements.form.setAttribute('aria-busy', value ? 'true' : 'false');
-    elements.email.disabled = value;
-    elements.submit.disabled = value;
+    elements.form.setAttribute('aria-busy', String(value));
+    for (const input of elements.form.elements) input.disabled = value;
     elements.submit.classList.toggle('is-loading', value);
-    elements.submitLabel.textContent = copy(
-      value ? 'form.loading' : 'form.submit',
-    );
+    elements.submitLabel.textContent = stepLabel();
+  }
+
+  function loginUrl(existing) {
+    const url = new URL('/login', window.location.origin);
+    url.searchParams.set('origem', 'convite');
+    if (existing) url.searchParams.set('convite', state.code);
+    if (state.email) url.hash = new URLSearchParams({ email: state.email }).toString();
+    return url.toString();
   }
 
   async function loadInvite() {
@@ -204,42 +229,60 @@ import {
         apiBaseUrl: state.apiConfig.apiBaseUrl,
         code: state.code,
       });
-      state.confirmed = ['EMAIL_CONFIRMADO', 'ACEITO'].includes(
-        state.invite.status.trim().toUpperCase(),
-      );
+      state.step = state.invite.contaExistente ? 'existing' : 'send';
       renderInvite();
     } catch (error) {
       showLoadError(collaboratorInviteErrorKeyFromError(error));
     }
   }
 
+  function post(step, body) {
+    return postInviteStep({ apiBaseUrl: state.apiConfig.apiBaseUrl, code: state.code, step, body, language: state.language });
+  }
+
   async function submitConfirmation(event) {
     event.preventDefault();
-    if (state.submitting) {
-      setFeedback('error.pending');
-      return;
-    }
-
+    if (state.submitting) return;
     clearFeedback();
+    setSubmitting(true);
     try {
-      const email = normalizeCollaboratorInviteEmail(elements.email.value);
-      setSubmitting(true);
-      await confirmCollaboratorInviteEmail({
-        apiBaseUrl: state.apiConfig.apiBaseUrl,
-        code: state.code,
-        email,
-      });
-      state.confirmed = true;
-      elements.email.value = '';
-      renderInvite();
-      elements.successTitle.focus({ preventScroll: false });
-      if (isMobileInviteFlow()) {
-        window.setTimeout(openAppOrStore, 350);
+      if (state.step === 'send' || event.currentTarget === elements.resend) {
+        await post('enviar-codigo');
+        state.step = 'code';
+        elements.otp.value = '';
+      } else if (state.step === 'code') {
+        if (!/^[0-9]{6}$/.test(elements.otp.value)) return setFeedback('access.invalid', true);
+        const result = await post('confirmar-email', { codigo: elements.otp.value });
+        state.proof = result.prova;
+        state.email = result.email;
+        elements.otp.value = '';
+        state.step = 'password';
+      } else if (state.step === 'password') {
+        const senha = elements.password.value;
+        if (!senha.trim() || senha.length < 8 || senha.length > 64) return setFeedback('access.length', true);
+        if (senha !== elements.repeat.value) return setFeedback('access.mismatch', true);
+        await post('criar-senha', { prova: state.proof, senha });
+        elements.repeat.value = elements.password.value = '';
+        state.proof = null;
+        state.confirmed = true;
+        elements.success.querySelector('a[href="/login"]').href = loginUrl(false);
+        if (!isMobileInviteFlow()) window.location.replace(loginUrl(false));
+      } else if (state.switchAccount) {
+        window.location.assign(loginUrl(true));
+      } else {
+        await acceptWithWebSession({ apiBaseUrl: state.apiConfig.apiBaseUrl, code: state.code });
+        window.location.replace('/app');
       }
+      renderInvite();
     } catch (error) {
-      setFeedback(collaboratorInviteErrorKeyFromError(error), true);
-      if (error && ['emailRequired', 'emailInvalid'].includes(error.code)) {
-        elements.email.focus();
+      if (state.step === 'existing' && error.status === 401) {
+        window.location.assign(loginUrl(true));
+      } else {
+        if (error.backendCode === 'CONVITE_EMAIL_DIVERGENTE') state.switchAccount = true;
+        if (error.backendCode === 'CONVITE_VERIFIQUE_NOVAMENTE') state.step = 'send';
+        if (error.backendCode === 'CONVITE_ENTRAR_COM_CONTA') state.step = 'existing';
+        renderInvite();
+        setFeedback(collaboratorInviteErrorKeyFromError(error), true);
       }
     } finally {
       setSubmitting(false);
@@ -262,7 +305,12 @@ import {
 
     elements.form.addEventListener('submit', submitConfirmation);
     elements.retry.addEventListener('click', loadInvite);
-    elements.email.addEventListener('input', clearFeedback);
+    elements.form.addEventListener('input', clearFeedback);
+    elements.resend.addEventListener('click', submitConfirmation);
+    elements.startApp.addEventListener('click', openAppOrStore);
+    elements.show.addEventListener('change', () => {
+      elements.repeat.type = elements.password.type = elements.show.checked ? 'text' : 'password';
+    });
     elements.openApp.addEventListener('click', openAppOrStore);
     elements.androidStore.addEventListener('click', () => {
       elements.androidStore.href = storeUrls().android;

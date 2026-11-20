@@ -195,8 +195,10 @@ class ColaboradorConvitePublicoResponse {
     required this.nomeFantasia,
     required this.status,
     required this.expiraEm,
+    this.contaExistente = false,
   });
 
+  final bool contaExistente;
   final String emailConvidado;
   final String nomeConvidado;
   final String idUnicoDaEmpresa;
@@ -208,6 +210,7 @@ class ColaboradorConvitePublicoResponse {
     Map<String, dynamic> json,
   ) {
     return ColaboradorConvitePublicoResponse(
+      contaExistente: json['contaExistente'] == true,
       emailConvidado: json['emailConvidado']?.toString() ?? '',
       nomeConvidado: json['nomeConvidado']?.toString() ?? '',
       idUnicoDaEmpresa: json['idUnicoDaEmpresa']?.toString() ?? '',

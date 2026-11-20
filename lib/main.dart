@@ -25,6 +25,9 @@ import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:sixpos/presentation/screens/colaborador_convite_publico_web_page.dart';
+import 'package:sixpos/presentation/screens/colaborador_convite_mobile_page.dart';
+import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/data/models/convite_link.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_status_publico_page.dart';
@@ -379,7 +382,6 @@ class _MyAppState extends State<MyApp> {
         settings: settings,
         builder: (_) => ColaboradorConvitePublicoWebPage(
           codigo: routeUri.pathSegments[3],
-          initialUri: routeUri,
         ),
       );
     }
@@ -480,6 +482,11 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  Widget _destinoDoConvite(ConviteLink convite) =>
+      convite.login
+          ? LoginPageMobile(emailInicial: convite.email)
+          : ColaboradorConviteMobilePage(codigo: convite.codigo);
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
@@ -551,16 +558,20 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      // A cold agenda link resumes through the same authentication entry point.
-      onGenerateInitialRoutes:
-          !kIsWeb && AgendaEmailLinkService.instance.pending
-              ? (_) => [
-                MaterialPageRoute<void>(
-                  settings: const RouteSettings(name: '/'),
-                  builder: (_) => const SplashScreen(),
-                ),
-              ]
-              : null,
+      onGenerateInitialRoutes: kIsWeb ? null : (name) {
+        final link = ConviteLink.parse(WidgetsBinding.instance.platformDispatcher.defaultRouteName)
+            ?? ConviteLink.parse(name);
+        // Agenda links continue from the splash screen after authentication.
+        return [MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/'),
+          builder: (_) => link == null ? const SplashScreen() : _destinoDoConvite(link),
+        )];
+      },
+      onGenerateRoute: kIsWeb ? null : (settings) {
+        final link = ConviteLink.parse(settings.name);
+        if (link == null) return null;
+        return MaterialPageRoute<void>(settings: settings, builder: (_) => _destinoDoConvite(link));
+      },
       home: kIsWeb ? null : const SplashScreen(),
       initialRoute: kIsWeb ? null : '/',
     );
