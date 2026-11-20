@@ -41,6 +41,7 @@ PUBLIC_HTML_ROUTES = {
     "/checkout": "checkout.html",
     "/catalogo": "catalogo.html",
     "/cliente/auto-cadastro": "customer-signup.html",
+    "/mobile/agenda-financeira": "agenda-link.html",
 }
 
 FLUTTER_EXACT_ROUTES = {

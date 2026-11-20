@@ -11,6 +11,8 @@ import '../../core/services/notificacao_evento_sync_service.dart';
 import '../../core/services/push_destination_resolver.dart';
 import '../../core/services/push_navigation_service.dart';
 import '../../core/services/billing_return_service.dart';
+import '../../core/services/agenda_email_link_service.dart';
+import 'agenda_financeira_mobile_screen.dart';
 import 'subscription_mobile_screen.dart';
 import '../../core/ui/app_feedback.dart';
 import '../../core/services/websocket_service.dart';
@@ -63,6 +65,7 @@ class _MobileMainShellState extends State<MobileMainShell>
   bool _restoringSessionAfterResume = false;
   bool _resumingRealtimeSession = false;
   bool _redirectingToLogin = false;
+  Route<void>? _agendaLinkRoute;
 
   @override
   void initState() {
@@ -91,6 +94,8 @@ class _MobileMainShellState extends State<MobileMainShell>
     _notificacaoService.addListener(_onNotificacoesChanged);
     BillingReturnService.instance.addListener(_onBillingReturn);
     _onBillingReturn();
+    AgendaEmailLinkService.instance.addListener(_onAgendaEmailLink);
+    _onAgendaEmailLink();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PushNavigationService().bindExecutor(_pushNavigationExecutor);
       _registrarOfensivaMobile();
@@ -100,6 +105,7 @@ class _MobileMainShellState extends State<MobileMainShell>
 
   @override
   void dispose() {
+    AgendaEmailLinkService.instance.removeListener(_onAgendaEmailLink);
     BillingReturnService.instance.removeListener(_onBillingReturn);
     WidgetsBinding.instance.removeObserver(this);
     _navigationController.removeListener(_onNavigationChanged);
@@ -108,6 +114,30 @@ class _MobileMainShellState extends State<MobileMainShell>
     _navigationController.dispose();
     _transitionController.dispose();
     super.dispose();
+  }
+
+  void _onAgendaEmailLink() {
+    final links = AgendaEmailLinkService.instance;
+    if (!links.pending) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _redirectingToLogin || _restoringSessionAfterResume) {
+        return;
+      }
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+      if (!links.take()) return;
+      if (_agendaLinkRoute?.isCurrent ?? false) return;
+      final route = MaterialPageRoute<void>(
+        settings: const RouteSettings(name: AgendaEmailLinkService.path),
+        builder: (_) => const AgendaFinanceiraMobileScreen(),
+      );
+      _agendaLinkRoute = route;
+      Navigator.of(context).push(route).whenComplete(() {
+        if (identical(_agendaLinkRoute, route)) _agendaLinkRoute = null;
+      });
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   void _onBillingReturn() {
@@ -143,30 +173,33 @@ class _MobileMainShellState extends State<MobileMainShell>
       return;
     }
 
+    final MobileSessionRestorationResult restoration;
     _restoringSessionAfterResume = true;
     try {
-      final MobileSessionRestorationResult restoration =
-          await _sessionRestorationService.restore();
-
-      switch (restoration.status) {
-        case MobileSessionRestorationStatus.restored:
-          await _resumeRealtimeSession();
-          await _registrarOfensivaMobile();
-          return;
-        case MobileSessionRestorationStatus.temporaryFailure:
-          debugPrint(
-            '[MobileMainShell] Sessão preservada após falha temporária: '
-            '${restoration.error}',
-          );
-          unawaited(_resumeRealtimeSession());
-          return;
-        case MobileSessionRestorationStatus.noStoredSession:
-        case MobileSessionRestorationStatus.invalidSession:
-          _goToLogin();
-          return;
-      }
+      restoration = await _sessionRestorationService.restore();
     } finally {
       _restoringSessionAfterResume = false;
+    }
+    if (!mounted || _redirectingToLogin) return;
+
+    switch (restoration.status) {
+      case MobileSessionRestorationStatus.restored:
+        _onAgendaEmailLink();
+        await _resumeRealtimeSession();
+        await _registrarOfensivaMobile();
+        return;
+      case MobileSessionRestorationStatus.temporaryFailure:
+        debugPrint(
+          '[MobileMainShell] Sessão preservada após falha temporária: '
+          '${restoration.error}',
+        );
+        _onAgendaEmailLink();
+        unawaited(_resumeRealtimeSession());
+        return;
+      case MobileSessionRestorationStatus.noStoredSession:
+      case MobileSessionRestorationStatus.invalidSession:
+        _goToLogin();
+        return;
     }
   }
 

@@ -10,6 +10,7 @@ import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/six_backend_loading.dart';
 import '../controllers/super_panel_controller.dart';
 import '../utils/infrastructure_formatters.dart';
+import 'usuarios_sixo_mobile_screen.dart';
 
 class SuperPanelMobileScreen extends StatefulWidget {
   const SuperPanelMobileScreen({super.key, this.service});
@@ -111,6 +112,30 @@ class _SuperPanelMobileScreenState extends State<SuperPanelMobileScreen> {
                           Text(
                             superPanelText(context, 'subtitle'),
                             style: TextStyle(color: _mutedTextColor),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.manage_accounts_outlined),
+                            label: Text(
+                              context.t(
+                                'usuariosSixo.title',
+                                fallback: 'Usuários do Sixo',
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _colors.accent,
+                              side: BorderSide(color: _colors.border),
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            onPressed:
+                                () => Navigator.of(context).push<void>(
+                                  MaterialPageRoute<void>(
+                                    builder:
+                                        (_) => UsuariosSixoMobileScreen(
+                                          service: widget.service,
+                                        ),
+                                  ),
+                                ),
                           ),
                           const SizedBox(height: 16),
                           if (_controller.hasError &&

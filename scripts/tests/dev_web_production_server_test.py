@@ -54,6 +54,9 @@ class DevWebProductionServerTest(unittest.TestCase):
             "public-collaborator-invite",
         )
 
+    def test_agenda_email_link(self) -> None:
+        self.assert_route("/mobile/agenda-financeira?lang=en", "public-agenda-link")
+
     def test_collaborator_invite_does_not_send_code_as_referrer(self) -> None:
         status, headers, _ = self.request(
             "/colaborador/convites/1234567890abcdef",
@@ -73,6 +76,7 @@ class DevWebProductionServerTest(unittest.TestCase):
     def test_flutter_routes(self) -> None:
         self.assert_route("/app", "flutter-app")
         self.assert_route("/app/deep-link", "flutter-app")
+        self.assert_route("/app/agenda-financeira", "flutter-app")
         self.assert_route("/admin", "flutter-app")
         self.assert_route("/admin/deep-link", "flutter-app")
         self.assert_route("/login/flutter", "flutter-app")
@@ -157,6 +161,7 @@ class DevWebProductionServerTest(unittest.TestCase):
             "catalogo.html": "public-catalog",
             "collaborator-invite.html": "public-collaborator-invite",
             "customer-signup.html": "public-customer-signup",
+            "agenda-link.html": "public-agenda-link",
             "flutter.html": "flutter-app",
         }
 
