@@ -30,6 +30,7 @@ import 'package:sixpos/presentation/components/agenda_recorrencia_confirmacao.da
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -64,7 +65,60 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
-class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
+    with SingleTickerProviderStateMixin {
+  final _areaAgenda = GlobalKey();
+  final _controleEspaco = GlobalKey();
+  late final _focoInicial = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 300),
+  );
+  bool _espacoRestaurado = false;
+
+  @override
+  void dispose() {
+    _focoInicial.dispose();
+    super.dispose();
+  }
+
+  Widget _destaqueInicial(Widget agenda) => Stack(
+    key: _areaAgenda,
+    children: [
+      agenda,
+      Positioned.fill(
+        child: IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _focoInicial,
+            builder: (context, _) {
+              if (!_focoInicial.isAnimating || MediaQuery.disableAnimationsOf(context)) {
+                return const SizedBox.shrink();
+              }
+              final area = _areaAgenda.currentContext?.findRenderObject();
+              final seletor = _controleEspaco.currentContext?.findRenderObject();
+              if (area is! RenderBox || seletor is! RenderBox ||
+                  !area.hasSize || !seletor.hasSize || !seletor.attached) {
+                return const SizedBox.shrink();
+              }
+              final origem = seletor.localToGlobal(Offset.zero, ancestor: area);
+              final alvo = origem & seletor.size;
+              if (!alvo.isFinite || !(Offset.zero & area.size).overlaps(alvo)) {
+                return const SizedBox.shrink();
+              }
+              final sigma = 2.4 * (1 - Curves.easeInOut.transform(_focoInicial.value));
+              return ClipPath(
+                clipper: _RecorteDoEspaco(alvo.inflate(2)),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                  child: const SizedBox.expand(),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ],
+  );
+
   List<TiposRecebimento> _tiposPagamentoEditaveis = [];
   bool _podeEditarTiposPagamento = false;
   bool _editandoTipoPagamento = false;
@@ -170,44 +224,69 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _seletorEspaco() {
     final tokens = WebThemeTokens.of(context);
-    return Wrap(
-      spacing: 16,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text(
-          context.t('agenda.web.space'),
-          style: TextStyle(
-            color: tokens.primaryText,
-            fontWeight: FontWeight.w700,
+    final titulo = Text(
+      context.t('agenda.web.space'),
+      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w700),
+    );
+    final seletor = Visibility(
+      visible: _espacoRestaurado,
+      maintainSize: true,
+      maintainAnimation: true,
+      maintainState: true,
+      child: SegmentedButton<String>(
+        key: _controleEspaco,
+        style: SegmentedButton.styleFrom(
+          minimumSize: const Size(0, 44),
+          foregroundColor: tokens.secondaryText,
+          selectedForegroundColor: tokens.primaryText,
+          selectedBackgroundColor: _corDoEspaco(
+            Theme.of(context).brightness,
+            tokens.selectedBackground,
           ),
+          side: BorderSide(color: tokens.cardBorder),
         ),
-        SegmentedButton<String>(
-          showSelectedIcon: false,
-          style: SegmentedButton.styleFrom(
-            minimumSize: const Size(0, 44),
-            foregroundColor: tokens.secondaryText,
-            selectedForegroundColor: tokens.primaryText,
-            selectedBackgroundColor: _corDoEspaco(
-              Theme.of(context).brightness,
-              tokens.selectedBackground,
+        segments: [
+          for (final tipo in ['EMPRESA', 'PESSOAL'])
+            ButtonSegment(
+              value: tipo,
+              icon: Icon(tipo == 'EMPRESA' ? Icons.storefront_outlined : Icons.person_outline),
+              label: Text(context.t('space.$tipo')),
             ),
-            side: BorderSide(color: tokens.cardBorder),
-          ),
-          segments: [
-            for (final tipo in ['EMPRESA', 'PESSOAL'])
-              ButtonSegment(value: tipo, label: Text(context.t('space.$tipo'))),
+        ],
+        selected: {_service.espacoFinanceiro},
+        onSelectionChanged:
+            _filtrosOcupados ? null : (value) => _trocarEspaco(value.first),
+      ),
+    );
+    final gerenciar = TextButton.icon(
+      onPressed: _filtrosOcupados ? null : _configurarEspaco,
+      icon: const Icon(Icons.settings_outlined, size: 18),
+      label: Text(context.t('agenda.web.manageSpace')),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 720 * MediaQuery.textScalerOf(context).scale(1)) {
+          return Column(
+            children: [
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                children: [titulo, gerenciar],
+              ),
+              const SizedBox(height: 8),
+              seletor,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: titulo),
+            seletor,
+            Expanded(child: Align(alignment: AlignmentDirectional.centerEnd, child: gerenciar)),
           ],
-          selected: {_service.espacoFinanceiro},
-          onSelectionChanged:
-              _filtrosOcupados ? null : (value) => _trocarEspaco(value.first),
-        ),
-        TextButton.icon(
-          onPressed: _filtrosOcupados ? null : _configurarEspaco,
-          icon: const Icon(Icons.settings_outlined, size: 18),
-          label: Text(context.t('agenda.web.manageSpace')),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -336,9 +415,23 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final bool abriuOverlay = await _abrirComoOverlayInicialSeNecessario();
       if (abriuOverlay || !mounted) return;
-      await _restaurarPreferenciasAgendaFinanceira();
+      try {
+        await _restaurarPreferenciasAgendaFinanceira();
+      } catch (error) {
+        debugPrint('Erro ao ler preferências locais da Agenda: $error');
+      }
+      if (!mounted) return;
       await _restaurarPreferenciasAgendaFinanceiraBackend();
       if (!mounted) return;
+      setState(() => _espacoRestaurado = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            TickerMode.of(context) &&
+            (ModalRoute.of(context)?.isCurrent ?? true) &&
+            !MediaQuery.disableAnimationsOf(context)) {
+          _focoInicial.forward();
+        }
+      });
       await _carregarTiposPagamentoConfigurados();
       await _carregarCentrosCusto();
       final preferencias = _preferenciasAgendaRestauradas;
@@ -1944,9 +2037,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                           const SingleActivator(LogicalKeyboardKey.escape):
                               _fechar,
                         },
-                        child: content,
+                        child: _destaqueInicial(content),
                       )
-                    : content,
+                    : _destaqueInicial(content),
               ),
             ),
           );
@@ -3801,4 +3894,18 @@ class _DetalheStatusStampData {
   const _DetalheStatusStampData(this.label, this.color);
   final String label;
   final Color color;
+}
+
+class _RecorteDoEspaco extends CustomClipper<Path> {
+  const _RecorteDoEspaco(this.alvo);
+  final Rect alvo;
+
+  @override
+  Path getClip(Size size) => Path()
+    ..fillType = PathFillType.evenOdd
+    ..addRect(Offset.zero & size)
+    ..addRRect(RRect.fromRectAndRadius(alvo, Radius.circular(alvo.height / 2)));
+
+  @override
+  bool shouldReclip(_RecorteDoEspaco anterior) => anterior.alvo != alvo;
 }
