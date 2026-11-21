@@ -174,4 +174,33 @@ void main() {
       });
     },
   );
+
+  test('modo de exibicao mobile envia apenas a preferencia alterada', () async {
+    final List<http.Request> requests = <http.Request>[];
+    final client = HttpUsuarioApiClient(
+      httpClient: MockClient((http.Request request) async {
+        requests.add(request);
+        return http.Response('', 202);
+      }),
+    );
+
+    await client.atualizarPreferenciasIndividuais(<String, dynamic>{
+      'modoDeExibicaoProdutosMobile': 'HORIZONTAL',
+    });
+
+    expect(requests, hasLength(1));
+    final http.Request request = requests.single;
+    expect(request.method, 'POST');
+    expect(
+      request.url.path,
+      '/private/api/eventos/atualizacoes-simples',
+    );
+
+    final Map<String, dynamic> envelope =
+        jsonDecode(request.body) as Map<String, dynamic>;
+    expect(envelope['acao'], 'ATUALIZAR_PARCIAL');
+    expect(envelope['payload'], <String, dynamic>{
+      'modoDeExibicaoProdutosMobile': 'HORIZONTAL',
+    });
+  });
 }
