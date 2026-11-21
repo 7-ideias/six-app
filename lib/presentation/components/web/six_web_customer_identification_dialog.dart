@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,6 +8,7 @@ import '../../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../screens/cliente_usuario_cadastro_web_dialog.dart';
 import '../../theme/web_theme_tokens.dart';
+import 'six_web_animated_dialog.dart';
 
 class ClienteIdentificacaoVendaResult {
   const ClienteIdentificacaoVendaResult({this.cliente, this.limpar = false});
@@ -21,53 +20,33 @@ class ClienteIdentificacaoVendaResult {
 typedef SixWebCreateCustomerFlow =
     Future<ClienteUsuario?> Function(BuildContext context);
 
-enum _SummaryPillVariant { info, neutral, highlight }
-
 Future<ClienteIdentificacaoVendaResult?>
 showSixWebCustomerIdentificationDialog({
   required BuildContext context,
+  bool barrierDismissible = false,
   ClienteUsuario? clienteAtual,
   ClienteUsuarioApiClient? apiClient,
   ClienteUsuarioService? clienteUsuarioService,
   SixWebCreateCustomerFlow? onCreateCustomer,
 }) {
-  final bool reduceMotion =
-      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-  return showGeneralDialog<ClienteIdentificacaoVendaResult>(
+  final compact = MediaQuery.sizeOf(context).width < 600;
+  return showSixWebAnimatedDialog<ClienteIdentificacaoVendaResult>(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
+    barrierDismissible: barrierDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 280),
-    pageBuilder: (
-      BuildContext routeContext,
-      Animation<double> animation,
-      Animation<double> secondaryAnimation,
-    ) {
-      return _CustomerIdentificationRouteSurface(
-        animation: animation,
-        reduceMotion: reduceMotion,
-        child: PdvClienteIdentificacaoDialog(
+    padding: EdgeInsets.all(compact ? 12 : 24),
+    builder:
+        (_) => _CustomerIdentificationDialog(
           clienteAtual: clienteAtual,
           apiClient: apiClient,
           clienteUsuarioService: clienteUsuarioService,
           onCreateCustomer: onCreateCustomer,
         ),
-      );
-    },
-    transitionBuilder:
-        (
-          BuildContext context,
-          Animation<double> animation,
-          Animation<double> secondaryAnimation,
-          Widget child,
-        ) => child,
   );
 }
 
-class PdvClienteIdentificacaoDialog extends StatefulWidget {
-  const PdvClienteIdentificacaoDialog({
-    super.key,
+class _CustomerIdentificationDialog extends StatefulWidget {
+  const _CustomerIdentificationDialog({
     this.clienteAtual,
     this.apiClient,
     this.clienteUsuarioService,
@@ -80,12 +59,12 @@ class PdvClienteIdentificacaoDialog extends StatefulWidget {
   final SixWebCreateCustomerFlow? onCreateCustomer;
 
   @override
-  State<PdvClienteIdentificacaoDialog> createState() =>
-      _PdvClienteIdentificacaoDialogState();
+  State<_CustomerIdentificationDialog> createState() =>
+      _CustomerIdentificationDialogState();
 }
 
-class _PdvClienteIdentificacaoDialogState
-    extends State<PdvClienteIdentificacaoDialog>
+class _CustomerIdentificationDialogState
+    extends State<_CustomerIdentificationDialog>
     with SingleTickerProviderStateMixin {
   late final ClienteUsuarioService _clienteUsuarioService;
   late final AnimationController _iconController;
@@ -93,7 +72,8 @@ class _PdvClienteIdentificacaoDialogState
 
   bool _loading = true;
   bool _openingCreateFlow = false;
-  String? _erro;
+  bool _loadFailed = false;
+  bool _createFailed = false;
   List<ClienteUsuario> _clientes = <ClienteUsuario>[];
   String _filtro = '';
 
@@ -135,7 +115,7 @@ class _PdvClienteIdentificacaoDialogState
   Future<void> _carregarClientes() async {
     setState(() {
       _loading = true;
-      _erro = null;
+      _loadFailed = false;
     });
 
     try {
@@ -150,10 +130,7 @@ class _PdvClienteIdentificacaoDialogState
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _erro = _txt(
-          'pdv.customerIdentification.loadError',
-          'Não foi possível carregar os clientes.',
-        );
+        _loadFailed = true;
       });
     }
   }
@@ -161,9 +138,6 @@ class _PdvClienteIdentificacaoDialogState
   List<ClienteUsuario> get _clientesFiltrados {
     return _clienteUsuarioService.filtrarClientes(_clientes, _filtro);
   }
-
-  String _txt(String key, String fallback) =>
-      context.t(key, fallback: fallback);
 
   void _selecionar(ClienteUsuario cliente) {
     Navigator.of(
@@ -184,7 +158,10 @@ class _PdvClienteIdentificacaoDialogState
 
   Future<void> _cadastrarCliente() async {
     if (_openingCreateFlow) return;
-    setState(() => _openingCreateFlow = true);
+    setState(() {
+      _openingCreateFlow = true;
+      _createFailed = false;
+    });
     try {
       final ClienteUsuario? cliente =
           await (widget.onCreateCustomer?.call(context) ??
@@ -193,25 +170,10 @@ class _PdvClienteIdentificacaoDialogState
                 apiClient: widget.apiClient,
               ));
       if (!mounted || cliente == null) return;
-      setState(() {
-        _erro = null;
-        _loading = false;
-        _filtro = '';
-        _buscaController.clear();
-        _clientes = <ClienteUsuario>[
-          cliente,
-          ..._clientes.where((ClienteUsuario item) => item.id != cliente.id),
-        ];
-      });
       _selecionar(cliente);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _erro = _txt(
-          'pdv.customerIdentification.createError',
-          'Não foi possível abrir o cadastro de cliente agora.',
-        );
-      });
+      setState(() => _createFailed = true);
     } finally {
       if (mounted) {
         setState(() => _openingCreateFlow = false);
@@ -223,7 +185,6 @@ class _PdvClienteIdentificacaoDialogState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent = tokens.info;
 
     return Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
@@ -246,69 +207,93 @@ class _PdvClienteIdentificacaoDialogState
             canPop: _canDismiss,
             child: Semantics(
               namesRoute: true,
-              label: _txt(
-                'pdv.customerIdentification.title',
-                'Identificar cliente',
-              ),
+              label: context.t('pdv.customerIdentification.title'),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 980),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: const Color(0xFF020617).withValues(alpha: 0.28),
-                        blurRadius: 42,
-                        offset: const Offset(0, 22),
-                      ),
-                    ],
+                constraints: const BoxConstraints(
+                  maxWidth: 660,
+                  maxHeight: 640,
+                ),
+                child: Material(
+                  key: const ValueKey('pdv-identificar-cliente-painel'),
+                  elevation: 18,
+                  color: tokens.surfaceElevated,
+                  surfaceTintColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    side: BorderSide(color: tokens.cardBorder),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Material(
-                      color: tokens.surfaceElevated,
-                      surfaceTintColor: Colors.transparent,
-                      child: Stack(
-                        children: <Widget>[
-                          SizedBox(
-                            width: 980,
-                            height: 680,
-                            child: Column(
-                              children: <Widget>[
-                                _buildHeader(theme, tokens, accent),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    24,
-                                    20,
-                                    24,
-                                    14,
+                  clipBehavior: Clip.antiAlias,
+                  child: LayoutBuilder(
+                    builder: (context, bounds) {
+                      final short =
+                          bounds.maxHeight < 440 ||
+                          MediaQuery.textScalerOf(context).scale(16) > 22;
+                      final filters =
+                          _clientes.isNotEmpty && !_loading && !_loadFailed;
+                      final clientes = _clientesFiltrados;
+                      final header = _buildHeader(theme, tokens);
+                      final footer = _buildFooter(tokens);
+                      final search = filters ? _buildSearchField(tokens) : null;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!short) header,
+                          if (!short && search != null) search,
+                          Flexible(
+                            child: CustomScrollView(
+                              shrinkWrap: true,
+                              slivers: [
+                                if (short) SliverToBoxAdapter(child: header),
+                                if (short && search != null)
+                                  SliverToBoxAdapter(child: search),
+                                if (_createFailed)
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 8,
+                                      ),
+                                      child: _inlineError(
+                                        tokens,
+                                        context.t(
+                                          'pdv.customerIdentification.createError',
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  child: _buildSearchField(theme, tokens),
-                                ),
-                                Expanded(
-                                  child: Padding(
+                                if (_loading || _loadFailed || clientes.isEmpty)
+                                  SliverToBoxAdapter(
+                                    child: _buildStatus(theme, tokens),
+                                  )
+                                else
+                                  SliverPadding(
                                     padding: const EdgeInsets.fromLTRB(
-                                      24,
-                                      0,
-                                      24,
+                                      20,
+                                      2,
+                                      20,
                                       16,
                                     ),
-                                    child: _buildBody(theme, tokens),
+                                    sliver: SliverList.separated(
+                                      itemCount: clientes.length,
+                                      separatorBuilder:
+                                          (_, __) => const SizedBox(height: 8),
+                                      itemBuilder:
+                                          (_, index) => _clienteTile(
+                                            theme,
+                                            tokens,
+                                            clientes[index],
+                                          ),
+                                    ),
                                   ),
-                                ),
-                                _buildFooter(theme, tokens),
+                                if (short) SliverToBoxAdapter(child: footer),
                               ],
                             ),
                           ),
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(height: 3, color: accent),
-                          ),
+                          if (!short) footer,
                         ],
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -319,345 +304,171 @@ class _PdvClienteIdentificacaoDialogState
     );
   }
 
-  Widget _buildHeader(ThemeData theme, WebThemeTokens tokens, Color accent) {
-    final int total = _clientes.length;
-    final String currentCustomer =
-        widget.clienteAtual?.nome.trim().isNotEmpty == true
-            ? widget.clienteAtual!.nome
-            : _txt(
-              'pdv.customerIdentification.currentEmpty',
-              'Nenhum cliente vinculado',
-            );
-
+  Widget _buildHeader(ThemeData theme, WebThemeTokens tokens) {
+    final current = widget.clienteAtual;
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      padding: const EdgeInsets.fromLTRB(24, 24, 16, 20),
       decoration: BoxDecoration(
-        color: tokens.selectedBackground.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: tokens.selectedBorder.withValues(alpha: 0.82),
-        ),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.divider)),
       ),
+      padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
+        children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
+            children: [
               _CustomerSearchIcon(
                 animation: _iconController,
-                accent: accent,
+                accent: tokens.info,
                 surfaceColor: tokens.surfaceElevated,
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      _txt(
-                        'pdv.customerIdentification.title',
-                        'Identificar cliente',
-                      ),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: tokens.primaryText,
-                        fontWeight: FontWeight.w900,
-                        height: 1.12,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _txt(
-                        'pdv.customerIdentification.subtitle',
-                        'Selecione um cliente cadastrado ou crie um novo sem sair do atendimento.',
-                      ),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: tokens.secondaryText,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  context.t('pdv.customerIdentification.title'),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               IconButton(
-                tooltip: _txt('common.close', 'Fechar'),
+                tooltip: context.t('common.close'),
                 onPressed: _canDismiss ? _cancel : null,
                 icon: const Icon(Icons.close_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              _summaryPill(
-                tokens: tokens,
-                icon: Icons.groups_2_outlined,
-                label: _txt(
-                  'pdv.customerIdentification.availableCustomers',
-                  'Clientes ativos',
-                ),
-                value: '$total',
-                variant: _SummaryPillVariant.info,
+          if (current != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "${context.t('pdv.customerIdentification.currentCustomer')} · ${current.nome.trim().isEmpty ? current.documento : current.nome}",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.primaryText,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: context.t(
+                      'pdv.customerIdentification.removeCustomer',
+                    ),
+                    onPressed: _canDismiss ? _limparCliente : null,
+                    icon: const Icon(Icons.person_remove_outlined),
+                  ),
+                ],
               ),
-              _summaryPill(
-                tokens: tokens,
-                icon: Icons.person_outline_rounded,
-                label: _txt(
-                  'pdv.customerIdentification.currentCustomer',
-                  'Cliente atual',
-                ),
-                value: currentCustomer,
-                variant:
-                    widget.clienteAtual == null
-                        ? _SummaryPillVariant.neutral
-                        : _SummaryPillVariant.highlight,
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildSearchField(ThemeData theme, WebThemeTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tokens.cardBorder),
-      ),
+  Widget _buildSearchField(WebThemeTokens tokens) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: TextField(
-        key: const ValueKey<String>('customer-identification-search-field'),
+        key: const ValueKey('customer-identification-search-field'),
         controller: _buscaController,
         autofocus: true,
-        enabled: !_openingCreateFlow,
+        enabled: _canDismiss,
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
           suffixIcon:
-              _buscaController.text.trim().isEmpty
+              _buscaController.text.isEmpty
                   ? null
                   : IconButton(
-                    tooltip: _txt('common.clear', 'Limpar'),
-                    onPressed:
-                        _openingCreateFlow
-                            ? null
-                            : () {
-                              _buscaController.clear();
-                              setState(() => _filtro = '');
-                            },
+                    tooltip: context.t('common.clear'),
+                    onPressed: () {
+                      _buscaController.clear();
+                      setState(() => _filtro = '');
+                    },
                     icon: const Icon(Icons.close_rounded),
                   ),
-          labelText: _txt(
-            'pdv.customerIdentification.searchLabel',
-            'Buscar cliente por nome, documento, telefone ou e-mail',
-          ),
+          labelText: context.t('pdv.customerIdentification.searchLabel'),
           filled: true,
-          fillColor: tokens.surface,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 18,
-          ),
+          fillColor: tokens.inputBackground,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: tokens.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: tokens.selectedBorder, width: 1.5),
           ),
         ),
-        onChanged: (String value) => setState(() => _filtro = value),
+        onChanged: (value) => setState(() => _filtro = value),
       ),
     );
   }
 
-  Widget _buildBody(ThemeData theme, WebThemeTokens tokens) {
-    if (_loading) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(color: tokens.info),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              _txt(
-                'pdv.customerIdentification.loading',
-                'Carregando clientes ativos...',
+  Widget _buildStatus(ThemeData theme, WebThemeTokens tokens) {
+    final searching = _filtro.trim().isNotEmpty;
+    final title =
+        _loading
+            ? 'loading'
+            : _loadFailed
+            ? 'errorTitle'
+            : searching
+            ? 'emptySearchTitle'
+            : 'emptyTitle';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_loading)
+            SizedBox.square(
+              dimension: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: tokens.info,
               ),
+            )
+          else
+            Icon(
+              _loadFailed
+                  ? Icons.cloud_off_outlined
+                  : searching
+                  ? Icons.search_off_rounded
+                  : Icons.people_outline_rounded,
+              size: 32,
+              color: _loadFailed ? tokens.danger : tokens.mutedText,
+            ),
+          const SizedBox(height: 10),
+          Text(
+            context.t('pdv.customerIdentification.$title'),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (!_loading && !_loadFailed) ...[
+            const SizedBox(height: 6),
+            Text(
+              context.t(
+                searching
+                    ? 'pdv.customerIdentification.emptySearchMessage'
+                    : 'pdv.customerIdentification.emptyMessage',
+              ),
+              textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: tokens.secondaryText,
               ),
             ),
           ],
-        ),
-      );
-    }
-
-    if (_erro != null && _clientes.isEmpty) {
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: tokens.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: tokens.danger.withValues(alpha: 0.26)),
+          if (_loadFailed)
+            TextButton.icon(
+              onPressed: _canDismiss ? _carregarClientes : null,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(context.t('common.tryAgain')),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(Icons.cloud_off_rounded, size: 42, color: tokens.danger),
-                const SizedBox(height: 12),
-                Text(
-                  _txt(
-                    'pdv.customerIdentification.errorTitle',
-                    'Não foi possível carregar os clientes',
-                  ),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: tokens.primaryText,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _erro!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: <Widget>[
-                    OutlinedButton.icon(
-                      onPressed: _carregarClientes,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(_txt('common.tryAgain', 'Tentar novamente')),
-                    ),
-                    FilledButton.icon(
-                      onPressed: _openingCreateFlow ? null : _cadastrarCliente,
-                      icon: const Icon(Icons.person_add_alt_1_rounded),
-                      label: Text(
-                        _txt(
-                          'pdv.customerIdentification.newCustomer',
-                          'Cadastrar cliente',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final List<ClienteUsuario> clientes = _clientesFiltrados;
-    if (clientes.isEmpty) {
-      final bool emptySearch = _filtro.trim().isNotEmpty;
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: tokens.surfaceMuted,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: tokens.cardBorder),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  emptySearch
-                      ? Icons.search_off_rounded
-                      : Icons.person_off_outlined,
-                  size: 42,
-                  color: tokens.mutedText,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _txt(
-                    emptySearch
-                        ? 'pdv.customerIdentification.emptySearchTitle'
-                        : 'pdv.customerIdentification.emptyTitle',
-                    emptySearch
-                        ? 'Nenhum cliente encontrado'
-                        : 'Nenhum cliente ativo cadastrado',
-                  ),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: tokens.primaryText,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _txt(
-                    emptySearch
-                        ? 'pdv.customerIdentification.emptySearchMessage'
-                        : 'pdv.customerIdentification.emptyMessage',
-                    emptySearch
-                        ? 'Revise os termos da busca ou cadastre um novo cliente para continuar.'
-                        : 'Cadastre o cliente agora para seguir com o atendimento sem sair desta etapa.',
-                  ),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.45,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _openingCreateFlow ? null : _cadastrarCliente,
-                  icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: Text(
-                    _txt(
-                      'pdv.customerIdentification.newCustomer',
-                      'Cadastrar cliente',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: <Widget>[
-        if (_erro != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-            child: _inlineError(tokens, _erro!),
-          ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
-            itemCount: clientes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (BuildContext context, int index) {
-              return _clienteTile(theme, tokens, clientes[index]);
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -670,246 +481,138 @@ class _PdvClienteIdentificacaoDialogState
     final bool fiadoLiberado =
         cliente.permiteCompraFiado && !cliente.bloqueadoFiado;
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
+    return Semantics(
+      button: true,
+      selected: selecionado,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _selecionar(cliente),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: selecionado ? tokens.selectedBackground : tokens.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selecionado ? tokens.selectedBorder : tokens.cardBorder,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: _canDismiss ? () => _selecionar(cliente) : null,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: selecionado ? tokens.selectedBackground : tokens.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selecionado ? tokens.selectedBorder : tokens.cardBorder,
+              ),
             ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              CircleAvatar(
-                backgroundColor:
-                    selecionado
-                        ? tokens.selectedBackground
-                        : tokens.surfaceMuted,
-                child: Text(
-                  _iniciais(cliente.nome),
-                  style: TextStyle(
-                    color: tokens.info,
-                    fontWeight: FontWeight.w900,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                CircleAvatar(
+                  backgroundColor:
+                      selecionado
+                          ? tokens.selectedBackground
+                          : tokens.surfaceMuted,
+                  child: Text(
+                    _iniciais(cliente.nome),
+                    style: TextStyle(
+                      color: tokens.info,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      cliente.nome.isEmpty
-                          ? _txt(
-                            'pdv.customerIdentification.unnamedCustomer',
-                            'Cliente sem nome',
-                          )
-                          : cliente.nome,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: tokens.primaryText,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        cliente.nome.isEmpty
+                            ? context.t(
+                              'pdv.customerIdentification.unnamedCustomer',
+                            )
+                            : cliente.nome,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: tokens.primaryText,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${cliente.tipoPessoa.isEmpty ? _txt('pdv.customerIdentification.personTypeFallback', 'PF') : cliente.tipoPessoa} • ${cliente.documento.isEmpty ? _txt('pdv.customerIdentification.noDocument', 'Sem documento') : cliente.documento}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: tokens.secondaryText),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      fiadoLiberado
-                          ? _txt(
-                            'pdv.customerIdentification.creditEnabled',
-                            'Fiado liberado',
-                          )
-                          : cliente.permiteCompraFiado
-                          ? _txt(
-                            'pdv.customerIdentification.creditBlocked',
-                            'Fiado bloqueado para novas vendas',
-                          )
-                          : _txt(
-                            'pdv.customerIdentification.creditDisabled',
-                            'Cliente sem fiado liberado',
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color:
-                            cliente.bloqueadoFiado
-                                ? tokens.danger
-                                : tokens.secondaryText,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 4),
+                      Text(
+                        '${cliente.tipoPessoa.isEmpty ? context.t('pdv.customerIdentification.personTypeFallback') : cliente.tipoPessoa} • ${cliente.documento.isEmpty ? context.t('pdv.customerIdentification.noDocument') : cliente.documento}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: tokens.secondaryText),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        fiadoLiberado
+                            ? context.t(
+                              'pdv.customerIdentification.creditEnabled',
+                            )
+                            : cliente.permiteCompraFiado
+                            ? context.t(
+                              'pdv.customerIdentification.creditBlocked',
+                            )
+                            : context.t(
+                              'pdv.customerIdentification.creditDisabled',
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              cliente.bloqueadoFiado
+                                  ? tokens.danger
+                                  : tokens.secondaryText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              FilledButton.icon(
-                onPressed: () => _selecionar(cliente),
-                icon: Icon(
-                  selecionado
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.person_add_alt_1_rounded,
+                const SizedBox(width: 14),
+                Tooltip(
+                  message: context.t(
+                    selecionado
+                        ? 'pdv.customerIdentification.selected'
+                        : 'pdv.customerIdentification.select',
+                  ),
+                  child: Icon(
+                    selecionado
+                        ? Icons.check_circle_rounded
+                        : Icons.chevron_right_rounded,
+                    color: selecionado ? tokens.info : tokens.mutedText,
+                  ),
                 ),
-                label: Text(
-                  selecionado
-                      ? _txt(
-                        'pdv.customerIdentification.selected',
-                        'Selecionado',
-                      )
-                      : _txt('pdv.customerIdentification.select', 'Selecionar'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFooter(ThemeData theme, WebThemeTokens tokens) {
+  Widget _buildFooter(WebThemeTokens tokens) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: tokens.cardBorder)),
+        border: Border(top: BorderSide(color: tokens.divider)),
       ),
       child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runAlignment: WrapAlignment.center,
+        alignment: WrapAlignment.end,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 12,
-        runSpacing: 12,
-        children: <Widget>[
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _openingCreateFlow ? null : _cadastrarCliente,
-                icon: const Icon(Icons.person_add_alt_1_rounded),
-                label: Text(
-                  _openingCreateFlow
-                      ? _txt(
-                        'pdv.customerIdentification.openingCreate',
-                        'Abrindo cadastro...',
-                      )
-                      : _txt(
-                        'pdv.customerIdentification.newCustomer',
-                        'Cadastrar cliente',
-                      ),
-                ),
-              ),
-              if (widget.clienteAtual != null)
-                OutlinedButton.icon(
-                  onPressed: _openingCreateFlow ? null : _limparCliente,
-                  icon: const Icon(Icons.person_remove_outlined),
-                  label: Text(
-                    _txt(
-                      'pdv.customerIdentification.removeCustomer',
-                      'Remover cliente do atendimento',
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        runSpacing: 8,
+        children: [
           TextButton(
-            onPressed: _openingCreateFlow ? null : _cancel,
-            child: Text(_txt('common.cancel', 'Cancelar')),
+            onPressed: _canDismiss ? _cancel : null,
+            child: Text(context.t('common.cancel')),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryPill({
-    required WebThemeTokens tokens,
-    required IconData icon,
-    required String label,
-    required String value,
-    required _SummaryPillVariant variant,
-  }) {
-    final ({Color background, Color border, Color icon, Color iconBackground})
-    colors = switch (variant) {
-      _SummaryPillVariant.info => (
-        background: tokens.surfaceMuted,
-        border: tokens.cardBorder,
-        icon: tokens.info,
-        iconBackground: tokens.info.withValues(alpha: 0.12),
-      ),
-      _SummaryPillVariant.neutral => (
-        background: tokens.surfaceMuted,
-        border: tokens.cardBorder,
-        icon: tokens.statusNeutral,
-        iconBackground: tokens.statusNeutral.withValues(alpha: 0.14),
-      ),
-      _SummaryPillVariant.highlight => (
-        background: tokens.selectedBackground,
-        border: tokens.selectedBorder.withValues(alpha: 0.90),
-        icon: tokens.info,
-        iconBackground: tokens.info.withValues(alpha: 0.14),
-      ),
-    };
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 320),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: colors.iconBackground,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: colors.icon, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.secondaryText,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+          FilledButton.icon(
+            onPressed: _openingCreateFlow ? null : _cadastrarCliente,
+            icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+            label: Text(
+              context.t(
+                _openingCreateFlow
+                    ? 'pdv.customerIdentification.openingCreate'
+                    : 'pdv.customerIdentification.newCustomer',
+              ),
             ),
           ),
         ],
@@ -976,8 +679,8 @@ class _CustomerSearchIcon extends StatelessWidget {
     );
 
     return SizedBox(
-      width: 74,
-      height: 74,
+      width: 48,
+      height: 48,
       child: AnimatedBuilder(
         animation: curved,
         builder: (BuildContext context, Widget? child) {
@@ -988,8 +691,8 @@ class _CustomerSearchIcon extends StatelessWidget {
               Transform.scale(
                 scale: 0.9 + (progress * 0.1),
                 child: Container(
-                  width: 68,
-                  height: 68,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: accent.withValues(alpha: 0.10),
@@ -1007,8 +710,8 @@ class _CustomerSearchIcon extends StatelessWidget {
                 ),
               ),
               Container(
-                width: 56,
-                height: 56,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: surfaceColor,
@@ -1021,78 +724,7 @@ class _CustomerSearchIcon extends StatelessWidget {
                   child: Icon(
                     Icons.person_search_outlined,
                     color: accent,
-                    size: 28,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CustomerIdentificationRouteSurface extends StatelessWidget {
-  const _CustomerIdentificationRouteSurface({
-    required this.animation,
-    required this.reduceMotion,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final bool reduceMotion;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final Animation<double> curvedAnimation = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-
-    return Material(
-      type: MaterialType.transparency,
-      child: AnimatedBuilder(
-        animation: curvedAnimation,
-        child: child,
-        builder: (BuildContext context, Widget? dialogChild) {
-          final double progress = curvedAnimation.value;
-          final double blur = reduceMotion ? 0 : 12 * progress;
-
-          return Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              Positioned.fill(
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                    child: ColoredBox(
-                      color: const Color(0xCC08111F).withValues(
-                        alpha: reduceMotion ? 0.78 : 0.78 * progress,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SafeArea(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Opacity(
-                      opacity: progress,
-                      child: Transform.translate(
-                        offset: Offset(
-                          0,
-                          reduceMotion ? 0 : (1 - progress) * 22,
-                        ),
-                        child: Transform.scale(
-                          scale: reduceMotion ? 1 : 0.96 + (0.04 * progress),
-                          child: dialogChild,
-                        ),
-                      ),
-                    ),
+                    size: 22,
                   ),
                 ),
               ),
