@@ -273,8 +273,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Troca de tela'));
       await tester.pumpAndSettle();
-      // The web preference also accepts the previous horizontal/vertical values.
-      _preferencias(ModoDeExibicaoUsuario.horizontal);
+      if (dark) {
+        // A preferência legada horizontal também deve restaurar a grade.
+        _preferencias(ModoDeExibicaoUsuario.horizontal);
+      } else {
+        await tester.tap(find.text('Grade'));
+      }
       await tester.pumpAndSettle();
       expect(find.byType(SliverGrid), findsOneWidget);
       expect(find.text('2 itens selecionados'), findsOneWidget);

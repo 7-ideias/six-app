@@ -10,6 +10,8 @@ import '../../theme/web_theme_tokens.dart';
 import '../produto_web_image.dart';
 import '../six_cached_network_image.dart';
 
+const double _larguraAcoesLista = 148;
+
 class PdvSeletorItensWeb extends StatelessWidget {
   const PdvSeletorItensWeb({
     super.key,
@@ -127,6 +129,37 @@ class PdvSeletorItensWeb extends StatelessWidget {
             shrinkWrap: true,
             slivers: [
               if (curto) SliverToBoxAdapter(child: cabecalho),
+              if (!grade &&
+                  !revisando &&
+                  estado == null &&
+                  largura - 20 >= 520 * scale)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(pad + 10, 6, pad + 10, 4),
+                    child: DefaultTextStyle(
+                      style: TextStyle(
+                        color: tokens.secondaryText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              context.t(
+                                tipo == 'PRODUTO'
+                                    ? 'produto.webList.table.product'
+                                    : 'agenda.saleItems.service',
+                              ),
+                            ),
+                          ),
+                          Text(context.t('produto.webList.table.price')),
+                          const SizedBox(width: _larguraAcoesLista),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(pad, 2, pad, 12),
                 sliver:
@@ -471,9 +504,15 @@ class PdvItemSelecaoWeb extends StatelessWidget {
                             ),
                           ),
                           if (!estreito)
-                            SizedBox(width: 132 * scale, child: valor),
+                            SizedBox(
+                              width: 132 * scale,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: valor,
+                              ),
+                            ),
                           SizedBox(
-                            width: estreito ? null : 116,
+                            width: estreito ? null : _larguraAcoesLista,
                             child: Align(
                               alignment: Alignment.centerRight,
                               widthFactor: 1,
