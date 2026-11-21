@@ -747,35 +747,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       return;
     }
 
-    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtualizadas =
-        usuarioAtual.preferenciasIndividuaisDoUsuario.copyWith(
-          modoDeExibicaoProdutos: novoModo,
-        );
-
-    final UsuarioModel usuarioAtualizado = UsuarioModel(
-      nome: usuarioAtual.nome,
-      sobrenome: usuarioAtual.sobrenome,
-      cpf: usuarioAtual.cpf,
-      registroProfissional: usuarioAtual.registroProfissional,
-      email: usuarioAtual.email,
-      foto: usuarioAtual.foto,
-      nomeDeGuerra: usuarioAtual.nomeDeGuerra,
-      celular: usuarioAtual.celular,
-      senha: usuarioAtual.senha,
-      salt: usuarioAtual.salt,
-      rg: usuarioAtual.rg,
-      dataNascimento: usuarioAtual.dataNascimento,
-      objEndereco: usuarioAtual.objEndereco,
-      preferenciasIndividuaisDoUsuario: preferenciasAtualizadas,
-      enviarPreferenciasIndividuaisDoUsuario: true,
-    );
-
     setState(() => _salvandoPreferencia = true);
     try {
-      await UsuarioService().atualizarDadosDoUsuario(usuarioAtualizado);
+      await _usuarioService.atualizarPreferenciasIndividuais(
+        modoDeExibicaoProdutosMobile: novoModo.codigo,
+      );
       if (!mounted) return;
       setState(() {});
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao salvar modo de exibicao mobile de produtos: '
+        '$error\n$stackTrace',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
