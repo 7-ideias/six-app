@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
@@ -9,6 +13,7 @@ import 'package:sixpos/data/models/regionalizacao_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/components/web/pdv_seletor_itens_web.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
@@ -18,7 +23,24 @@ import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
 void main() {
+  final eventosPreferencia = <http.Request>[];
+  setUpAll(() {
+    // O serviço da sessão conserva o cliente recebido na primeira inicialização.
+    http.runWithClient(
+      () => UsuarioService(),
+      () => MockClient((request) async {
+        if (request.method == 'POST' &&
+            request.url.path.endsWith('/eventos/atualizacoes-simples')) {
+          eventosPreferencia.add(request);
+          return http.Response('', 202);
+        }
+        return http.Response('', 404);
+      }),
+    );
+  });
+
   setUp(() {
+    eventosPreferencia.clear();
     SharedPreferences.setMockInitialValues(<String, Object>{
       'accessToken': 'token-test',
       'idUnicoDaEmpresa': 'empresa-test',
@@ -281,6 +303,16 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(find.byType(SliverGrid), findsOneWidget);
+      if (!dark) {
+        final evento = jsonDecode(eventosPreferencia.single.body);
+        expect(
+          evento['payload']['modoDeExibicaoProdutosWeb'],
+          ModoDeExibicaoUsuario.grade.codigo,
+        );
+        final cache =
+            await UsuarioService().carregarPreferenciasIndividuaisDoCache();
+        expect(cache?.modoDeExibicaoProdutosWeb, ModoDeExibicaoUsuario.grade);
+      }
       expect(find.text('2 itens selecionados'), findsOneWidget);
       expect(find.textContaining('139,90'), findsOneWidget);
       await tester.tap(find.text('2 itens selecionados'));

@@ -31,13 +31,3 @@ jobs:
           flutter test --no-pub --reporter expanded
           --name 'PDV|seletor|selecao web|dialogo de selecao'
           test/presentation/screens/produto_lista_sub_painel_web_test.dart
-      - name: Comparar os testes de edição na base do PR
-        if: always()
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git fetch --depth=1 origin "$BASE_SHA"
-          git worktree add --detach "$RUNNER_TEMP/base-pdv" "$BASE_SHA"
-          cd "$RUNNER_TEMP/base-pdv"
-          flutter pub get
-          flutter test --no-pub --reporter expanded --name 'lista web filtra por busca|catalogo web renderiza' test/presentation/screens/produto_lista_sub_painel_web_test.dart
