@@ -1510,9 +1510,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       permitirSelecaoMultipla: true,
       tipoInicial: tipoInicial,
       apenasAtivosNoBackend: true,
-      widthFactor: 0.80,
-      heightFactor: 0.80,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+      widthFactor: 1,
+      heightFactor: 0.94,
+      maxWidth: 1040,
+      padding: const EdgeInsets.all(12),
     );
 
     if (!mounted) {

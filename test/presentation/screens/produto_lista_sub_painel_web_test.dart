@@ -9,6 +9,7 @@ import 'package:sixpos/data/models/regionalizacao_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/components/web/pdv_seletor_itens_web.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
@@ -53,7 +54,7 @@ void main() {
       expect(find.text('Voltar ao PDV'), findsOneWidget);
       for (final permitir in [true, false]) {
         acesso.concessao = permitir;
-        await tester.tap(find.text('Atualizar'));
+        await tester.tap(find.byTooltip('Atualizar'));
         await tester.pumpAndSettle();
         expect(
           find.text('Cadastrar produtos'),
@@ -184,6 +185,161 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final dark in [false, true]) {
+    testWidgets('PDV Web revisa quantidades entre abas e modos (dark=$dark)', (
+      tester,
+    ) async {
+      final size = dark ? const Size(480, 740) : const Size(1366, 768);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      _preferencias(ModoDeExibicaoUsuario.vertical);
+      final cabo = _produto(
+        id: 'p',
+        nome: 'Cabo USB-C',
+        codigo: 'C01',
+        categoria: 'Cabos',
+        preco: 39.90,
+        favorito: true,
+      ).copyWith(detalhes: const ProdutoDetalhesModel(codigoInterno: 'INT-01'));
+      List<ProdutoModel>? venda;
+      await tester.pumpWidget(
+        _buildTestApp(
+          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          products: [
+            _produto(
+              id: 'f',
+              nome: 'Fonte',
+              codigo: 'F01',
+              categoria: 'Peças',
+              preco: 30,
+            ),
+            cabo,
+          ],
+          services: [
+            _servico(
+              id: 's',
+              nome: 'Troca de tela',
+              codigo: 'T01',
+              categoria: 'Reparo',
+              preco: 100,
+            ),
+          ],
+          child: Builder(
+            builder:
+                (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () async {
+                      venda = await showProdutoListaSelecaoWebDialog<
+                        List<ProdutoModel>
+                      >(
+                        context: context,
+                        permitirSelecaoMultipla: true,
+                        apenasAtivosNoBackend: true,
+                        widthFactor: 1,
+                        maxWidth: 1040,
+                        padding: const EdgeInsets.all(12),
+                      );
+                    },
+                    child: const Text('Abrir'),
+                  ),
+                ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+      final busca = find.byType(TextField);
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText))
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
+      expect(find.text('Lista'), findsOneWidget);
+      expect(find.byType(SliverGrid), findsNothing);
+      if (!dark) {
+        expect(
+          tester.getSize(find.byType(PdvSeletorItensWeb)).height,
+          lessThan(500),
+        );
+      }
+      await tester.enterText(busca, 'int-01');
+      await tester.pumpAndSettle();
+      expect(find.text('Fonte'), findsNothing);
+      await tester.tap(find.text('Cabo USB-C'));
+      await tester.tap(find.byKey(const ValueKey('pdv-categoria-SERVICO')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Troca de tela'));
+      await tester.pumpAndSettle();
+      // The web preference also accepts the previous horizontal/vertical values.
+      _preferencias(ModoDeExibicaoUsuario.horizontal);
+      await tester.pumpAndSettle();
+      expect(find.byType(SliverGrid), findsOneWidget);
+      expect(find.text('2 itens selecionados'), findsOneWidget);
+      expect(find.textContaining('139,90'), findsOneWidget);
+      await tester.tap(find.text('2 itens selecionados'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cabo USB-C'), findsOneWidget);
+      await tester.tap(find.byTooltip('Aumentar quantidade · Cabo USB-C'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('179,80'), findsOneWidget);
+      await tester.tap(find.byTooltip('Diminuir quantidade · Troca de tela'));
+      await tester.pumpAndSettle();
+      expect(find.text('Troca de tela'), findsNothing);
+      await tester.tap(find.text('Adicionar à venda'));
+      await tester.pumpAndSettle();
+      expect(venda?.map((p) => p.id), ['p', 'p']);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets(
+    'grade do PDV filtra favoritos e envolve os cartões em novas linhas',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      _preferencias(ModoDeExibicaoUsuario.grade);
+      await tester.pumpWidget(
+        _buildTestApp(
+          products: List.generate(
+            6,
+            (i) => _produto(
+              id: '$i',
+              nome: 'Item $i',
+              codigo: 'SKU$i',
+              categoria: 'Peças',
+              preco: i + 10.0,
+              favorito: i == 1,
+            ),
+          ),
+          child: const Scaffold(
+            body: ProdutoListaBody(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+              apenasAtivosNoBackend: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('Item 3')).dy,
+        greaterThan(tester.getTopLeft(find.text('Item 0')).dy),
+      );
+      await tester.tap(find.text('Filtros'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Todos itens'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Favoritos').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Filtros (1)'), findsOneWidget);
+      expect(find.text('Item 1'), findsOneWidget);
+      expect(find.text('Item 0'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('PDV mobile com catálogo vazio orienta o vendedor sem cadastro', (
     tester,

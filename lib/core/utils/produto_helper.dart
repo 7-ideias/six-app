@@ -56,12 +56,16 @@ class ProdutoHelper {
               .where(
                 (p) =>
                     p.nomeProduto.toLowerCase().contains(termoNormalizado) ||
-                    p.codigoDeBarras.toLowerCase().contains(termoNormalizado),
+                    p.codigoDeBarras.toLowerCase().contains(termoNormalizado) ||
+                    (p.detalhes?.codigoInterno.toLowerCase().contains(
+                          termoNormalizado,
+                        ) ??
+                        false),
               )
               .toList();
     }
 
-    if (ordenacao == 'nome') {
+    if (ordenacao == 'nome' || ordenacao == 'nomeAsc') {
       resultado.sort((a, b) => a.nomeProduto.compareTo(b.nomeProduto));
     } else if (ordenacao == 'preco' || ordenacao == 'precoAsc') {
       resultado.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));

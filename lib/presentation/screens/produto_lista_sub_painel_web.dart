@@ -1,5 +1,6 @@
 import 'package:sixpos/presentation/controllers/pdv_selecao_imagens_controller.dart';
-import 'package:sixpos/presentation/components/pdv_categoria_button.dart';
+import 'package:sixpos/presentation/components/web/pdv_seletor_itens_web.dart';
+import 'package:sixpos/presentation/components/web/six_web_select_field.dart';
 import 'package:sixpos/core/utils/catalogo_selecao_pdv.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:async';
@@ -150,9 +151,12 @@ Future<T?> showProdutoListaSelecaoWebDialog<T>({
                 ),
               ],
             ),
-            child: SizedBox(
+            child: Container(
               width: dialogWidth,
-              height: dialogHeight,
+              constraints: BoxConstraints(
+                minHeight: apenasAtivosNoBackend ? 0 : dialogHeight,
+                maxHeight: dialogHeight,
+              ),
               child: SubPainelWebProdutoLista(
                 isSelecao: true,
                 permitirSelecaoMultipla: permitirSelecaoMultipla,
@@ -250,6 +254,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   bool _isGerandoRelatorio = false;
   bool _carregandoCatalogoEdicao = false;
   bool _salvandoPreferencia = false;
+  bool _filtrosPdvAbertos = false;
+  bool _revisandoPdv = false;
   bool _aplicandoPreferenciasEstoque = false;
   bool _usuarioAlterouFiltrosEstoque = false;
   bool _salvandoFiltrosEstoque = false;
@@ -270,7 +276,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _usuarioProvider
           .usuario
           ?.preferenciasIndividuaisDoUsuario
-          .modoDeExibicaoProdutos ??
+          .modoDeExibicaoProdutosWeb ??
       ModoDeExibicaoUsuario.vertical;
 
   ModoDeExibicaoUsuario get _modoDeExibicaoProdutosWeb {
@@ -638,7 +644,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       setState(() => _catalogoPdv = null);
       final catalogo = await CatalogoSelecaoPdv.carregar(
         context.read<ProdutosListProvider<ProdutoModel>>(),
-        confirmarAcesso: context.read<ColaboradorAutorizacoesProvider?>()?.atualizarAutorizacoesDoPdv,
+        confirmarAcesso:
+            context
+                .read<ColaboradorAutorizacoesProvider?>()
+                ?.atualizarAutorizacoesDoPdv,
       );
       if (!mounted || consulta != _consultaPdv) return;
       _catalogoPdv = catalogo;
@@ -819,6 +828,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       );
       if (!mounted) return;
       setState(() {});
+      if (_selecaoPdv) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -837,11 +847,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Não foi possível salvar a preferência de visualização.',
-          ),
-        ),
+        SnackBar(content: Text(context.t('pdv.selection.preferenceError'))),
       );
     } finally {
       if (mounted) setState(() => _salvandoPreferencia = false);
@@ -891,6 +897,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       final int novaQuantidade = selecionado.quantidade + delta;
       if (novaQuantidade <= 0) {
         _produtosSelecionados.remove(chave);
+        if (_produtosSelecionados.isEmpty) _revisandoPdv = false;
         return;
       }
 
@@ -941,7 +948,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   void _limparSelecaoMultipla() {
     if (_produtosSelecionados.isEmpty) return;
-    setState(_produtosSelecionados.clear);
+    setState(() {
+      _produtosSelecionados.clear();
+      _revisandoPdv = false;
+    });
   }
 
   Future<void> _abrirCadastroParaEdicao(ProdutoModel produto) async {
@@ -1027,6 +1037,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     return ListenableBuilder(
       listenable: _usuarioProvider,
       builder: (BuildContext context, _) {
+        if (_selecaoPdv) {
+          return _buildSeletorPdv(context);
+        }
+
         ProdutosListProvider<ProdutoModel>? provider;
         List<ProdutoModel> itensDaLista = const <ProdutoModel>[];
         _ProdutoCatalogoEdicaoSnapshot? snapshot;
@@ -1038,9 +1052,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   ? todosProdutos
                   : provider.listaDeProdutos;
           itensDaLista =
-              _selecaoPdv
-                  ? produtosFiltrados
-                  : baseProdutos.isEmpty && termoBusca.isEmpty
+              baseProdutos.isEmpty && termoBusca.isEmpty
                   ? provider.listaDeProdutos
                   : produtosFiltrados;
         } else {
@@ -1076,9 +1088,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       ),
                       child: _buildTipoSelector(context, isCompact),
                     ),
-                  if (widget.isSelecao &&
-                      (!_selecaoPdv ||
-                          todosProdutos.isNotEmpty && _catalogoPdv != null))
+                  if (widget.isSelecao)
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
@@ -1152,11 +1162,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         isCompact,
                       ),
                     ),
-                  if (widget.isSelecao &&
-                      widget.permitirSelecaoMultipla &&
-                      (!_selecaoPdv ||
-                          _produtosSelecionados.isNotEmpty ||
-                          todosProdutos.isNotEmpty))
+                  if (widget.isSelecao && widget.permitirSelecaoMultipla)
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
@@ -1170,6 +1176,62 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildSeletorPdv(BuildContext context) {
+    final itens =
+        _revisandoPdv
+            ? [for (final item in _produtosSelecionados.values) item.produto]
+            : produtosFiltrados;
+    final locale = context.watch<LocaleSettingsProvider>();
+    return PdvSeletorItensWeb(
+      tipo: tipoSelecionado,
+      onTipo: _selectTipo,
+      onAtualizar: _recarregar,
+      multipla: widget.permitirSelecaoMultipla,
+      revisando: _revisandoPdv,
+      grade: _usarGrade && !_revisandoPdv,
+      onRevisar: () => setState(() => _revisandoPdv = !_revisandoPdv),
+      onLimpar: _limparSelecaoMultipla,
+      onConfirmar: _confirmarSelecaoMultipla,
+      quantidade: _quantidadeSelecionadaTotal,
+      subtotal: locale.formatCurrency(_totalSelecionado),
+      controles:
+          todosProdutos.isEmpty || _catalogoPdv == null
+              ? null
+              : _buildSearchOrderAndPreference(context, false),
+      estado:
+          _revisandoPdv
+              ? null
+              : _catalogoPdv == null
+              ? SizedBox(height: 150, child: _loadingList(context))
+              : itens.isEmpty
+              ? _vazioPdv()
+              : null,
+      itemCount: itens.length,
+      itemBuilder: (context, index) {
+        final produto = itens[index];
+        final quantidade =
+            _produtosSelecionados[_chaveProduto(produto)]?.quantidade ?? 0;
+        return PdvItemSelecaoWeb(
+          key: ValueKey(_chaveProduto(produto)),
+          grade: _usarGrade && !_revisandoPdv,
+          nome:
+              produto.nomeProduto.trim().isEmpty
+                  ? context.t('produto.webList.itemWithoutName')
+                  : produto.nomeProduto,
+          codigo: _codigoLabel(produto),
+          preco: locale.formatCurrency(produto.precoVenda),
+          imagem: _primeiraImagem(produto),
+          icone: _iconePorTipo(produto),
+          quantidade: quantidade,
+          onSelecionar: () => _selecionarProduto(produto),
+          onEditar: () => _abrirEditorQuantidadeSelecionada(produto),
+          onQuantidade:
+              (delta) => _alterarQuantidadeSelecionada(produto, delta),
         );
       },
     );
@@ -1530,19 +1592,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildTipoSelector(BuildContext context, bool isCompact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    if (_selecaoPdv) {
-      return PdvCategorias(
-        tipo: tipoSelecionado,
-        onChanged: _selectTipo,
-        photoHeight: isCompact ? 80 : 96,
-        spacing: 12,
-        surface: tokens.surfaceMuted,
-        foreground: tokens.primaryText,
-        accent: tokens.info,
-        border: tokens.cardBorder,
-      );
-    }
-
     return Container(
       width: isCompact ? double.infinity : 420,
       padding: const EdgeInsets.all(4),
@@ -1623,13 +1672,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final Color accent = tokens.info;
 
     final search = TextField(
+      autofocus: _selecaoPdv,
       controller: _controllerBusca,
       style: TextStyle(color: tokens.primaryText),
       decoration: InputDecoration(
-        hintText: context.t(
-          'produto.webList.searchHint',
-          fallback: 'Buscar por nome, código ou SKU...',
-        ),
+        hintText: context.t('produto.webList.searchHint'),
         hintStyle: TextStyle(color: tokens.mutedText),
         prefixIcon: Icon(Icons.search_rounded, color: accent),
         suffixIcon:
@@ -1667,38 +1714,26 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final Widget marcacaoFilter = _buildMenuFiltro<_ProdutoMarcacaoFiltro>(
       context: context,
       icon: Icons.auto_awesome_outlined,
-      label: context.t('produto.webList.filter.flags', fallback: 'Marcadores'),
+      label: context.t('produto.webList.filter.flags'),
       value: _marcacaoFiltroLabel(context),
       selectedValue: _marcacaoFiltro,
       minWidth: 184,
       items: <_ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>>[
         _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
           value: _ProdutoMarcacaoFiltro.todos,
-          label: context.t(
-            'produto.webList.filter.flagsAll',
-            fallback: 'Todos itens',
-          ),
+          label: context.t('produto.webList.filter.flagsAll'),
         ),
         _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
           value: _ProdutoMarcacaoFiltro.favoritos,
-          label: context.t(
-            'produto.webList.filter.flagsFavorites',
-            fallback: 'Favoritos',
-          ),
+          label: context.t('produto.webList.filter.flagsFavorites'),
         ),
         _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
           value: _ProdutoMarcacaoFiltro.catalogo,
-          label: context.t(
-            'produto.webList.filter.flagsCatalog',
-            fallback: 'No catálogo',
-          ),
+          label: context.t('produto.webList.filter.flagsCatalog'),
         ),
         _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
           value: _ProdutoMarcacaoFiltro.favoritosECatalogo,
-          label: context.t(
-            'produto.webList.filter.flagsFavoritesCatalog',
-            fallback: 'Favoritos e catálogo',
-          ),
+          label: context.t('produto.webList.filter.flagsFavoritesCatalog'),
         ),
       ],
       onSelected: (_ProdutoMarcacaoFiltro value) {
@@ -1712,31 +1747,22 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final Widget order = _buildMenuFiltro<String>(
       context: context,
       icon: Icons.swap_vert_rounded,
-      label: context.t('produto.webList.sort.label', fallback: 'Ordenação'),
+      label: context.t('produto.webList.sort.label'),
       value: _ordenacaoLabel(context),
       selectedValue: ordenacao,
       minWidth: 184,
       items: <_ProdutoFiltroMenuOpcao<String>>[
         _ProdutoFiltroMenuOpcao<String>(
           value: 'nomeAsc',
-          label: context.t(
-            'produto.webList.sort.name',
-            fallback: 'Ordenar por nome',
-          ),
+          label: context.t('produto.webList.sort.name'),
         ),
         _ProdutoFiltroMenuOpcao<String>(
           value: 'precoAsc',
-          label: context.t(
-            'produto.webList.sort.priceAsc',
-            fallback: 'Menor preço',
-          ),
+          label: context.t('produto.webList.sort.priceAsc'),
         ),
         _ProdutoFiltroMenuOpcao<String>(
           value: 'precoDesc',
-          label: context.t(
-            'produto.webList.sort.priceDesc',
-            fallback: 'Maior preço',
-          ),
+          label: context.t('produto.webList.sort.priceDesc'),
         ),
       ],
       onSelected: (String value) {
@@ -1752,6 +1778,21 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       runSpacing: 10,
       children: <Widget>[marcacaoFilter, order],
     );
+
+    if (_selecaoPdv) {
+      final ativos =
+          (_marcacaoFiltro != _ProdutoMarcacaoFiltro.todos ? 1 : 0) +
+          (ordenacao != 'nomeAsc' ? 1 : 0);
+      return PdvBuscaWeb(
+        busca: search,
+        modos: _buildModoExibicaoSelector(context, expand: false),
+        filtros: filters,
+        abertos: _filtrosPdvAbertos,
+        ativos: ativos,
+        onFiltros:
+            () => setState(() => _filtrosPdvAbertos = !_filtrosPdvAbertos),
+      );
+    }
 
     if (isCompact) {
       return Column(
@@ -1826,16 +1867,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             child: _modoButton(
               context,
               label:
-                  widget.isSelecao
+                  widget.isSelecao && !_selecaoPdv
                       ? context.t(
                         'produto.webList.view.vertical',
                         fallback: 'Vertical',
                       )
-                      : context.t(
-                        'produto.webList.view.list',
-                        fallback: 'Lista',
-                      ),
-              icon: Icons.view_agenda_outlined,
+                      : context.t('produto.webList.view.list'),
+              icon:
+                  _selecaoPdv
+                      ? Icons.view_list_outlined
+                      : Icons.view_agenda_outlined,
               selected: !_usarGrade,
               onTap:
                   () =>
@@ -1847,16 +1888,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             child: _modoButton(
               context,
               label:
-                  widget.isSelecao
+                  widget.isSelecao && !_selecaoPdv
                       ? context.t(
                         'produto.webList.view.horizontal',
                         fallback: 'Horizontal',
                       )
-                      : context.t(
-                        'produto.webList.view.grid',
-                        fallback: 'Grade',
-                      ),
-              icon: Icons.view_carousel_outlined,
+                      : context.t('produto.webList.view.grid'),
+              icon:
+                  _selecaoPdv
+                      ? Icons.grid_view_rounded
+                      : Icons.view_carousel_outlined,
               selected: _usarGrade,
               onTap:
                   () =>
@@ -2429,6 +2470,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     required ValueChanged<T> onSelected,
     double minWidth = 150,
   }) {
+    if (_selecaoPdv) {
+      return SixWebSelectField(
+        label: label,
+        value: value,
+        icon: icon,
+        width: 188,
+        items: [for (final item in items) item.label],
+        onSelected:
+            (label) => onSelected(
+              items.firstWhere((item) => item.label == label).value,
+            ),
+      );
+    }
     return ConstrainedBox(
       constraints: BoxConstraints(minWidth: minWidth, maxWidth: 240),
       child: _ProdutoFiltroMenu<T>(
@@ -3420,46 +3474,25 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String _marcacaoFiltroLabel(BuildContext context) {
     switch (_marcacaoFiltro) {
       case _ProdutoMarcacaoFiltro.todos:
-        return context.t(
-          'produto.webList.filter.flagsAll',
-          fallback: 'Todos itens',
-        );
+        return context.t('produto.webList.filter.flagsAll');
       case _ProdutoMarcacaoFiltro.favoritos:
-        return context.t(
-          'produto.webList.filter.flagsFavorites',
-          fallback: 'Favoritos',
-        );
+        return context.t('produto.webList.filter.flagsFavorites');
       case _ProdutoMarcacaoFiltro.catalogo:
-        return context.t(
-          'produto.webList.filter.flagsCatalog',
-          fallback: 'No catálogo',
-        );
+        return context.t('produto.webList.filter.flagsCatalog');
       case _ProdutoMarcacaoFiltro.favoritosECatalogo:
-        return context.t(
-          'produto.webList.filter.flagsFavoritesCatalog',
-          fallback: 'Favoritos e catálogo',
-        );
+        return context.t('produto.webList.filter.flagsFavoritesCatalog');
     }
   }
 
   String _ordenacaoLabel(BuildContext context) {
     switch (ordenacao) {
       case 'precoAsc':
-        return context.t(
-          'produto.webList.sort.priceAsc',
-          fallback: 'Menor preço',
-        );
+        return context.t('produto.webList.sort.priceAsc');
       case 'precoDesc':
-        return context.t(
-          'produto.webList.sort.priceDesc',
-          fallback: 'Maior preço',
-        );
+        return context.t('produto.webList.sort.priceDesc');
       case 'nomeAsc':
       default:
-        return context.t(
-          'produto.webList.sort.name',
-          fallback: 'Ordenar por nome',
-        );
+        return context.t('produto.webList.sort.name');
     }
   }
 
@@ -3630,8 +3663,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutosListProvider<ProdutoModel> provider,
     List<ProdutoModel> itens,
   ) {
-    if (_selecaoPdv && _catalogoPdv == null) return _loadingList(context);
-    if (_selecaoPdv && itens.isEmpty) return _vazioPdv();
     if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
@@ -3710,14 +3741,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final int totalSelecionados = _quantidadeSelecionadaTotal;
     final bool possuiSelecionados = totalSelecionados > 0;
 
-    final selectedLabel =
-        _selecaoPdv
-            ? context.pdvSelectedItems(totalSelecionados)
-            : switch (totalSelecionados) {
-              0 => 'Nenhum item selecionado ainda.',
-              1 => '1 item selecionado',
-              _ => '$totalSelecionados itens selecionados',
-            };
+    final selectedLabel = switch (totalSelecionados) {
+      0 => 'Nenhum item selecionado ainda.',
+      1 => '1 item selecionado',
+      _ => '$totalSelecionados itens selecionados',
+    };
     final selectionSummary =
         possuiSelecionados
             ? '$selectedLabel • ${_precoFormatado(_totalSelecionado)}'
@@ -3775,9 +3803,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
             label: Text(
-              _selecaoPdv
-                  ? context.t('pdv.selection.addToSale')
-                  : possuiSelecionados
+              possuiSelecionados
                   ? 'Adicionar $totalSelecionados'
                   : 'Adicionar selecionados',
             ),

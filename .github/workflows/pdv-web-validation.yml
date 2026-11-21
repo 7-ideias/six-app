@@ -1,0 +1,29 @@
+name: Seletor de itens do PDV Web
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/presentation/components/web/pdv_seletor_itens_web.dart'
+      - 'lib/presentation/screens/produto_lista_sub_painel_web.dart'
+      - 'lib/core/utils/produto_helper.dart'
+      - 'test/presentation/screens/produto_lista_sub_painel_web_test.dart'
+      - '.github/workflows/pdv-web-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  seletor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart analyze lib/presentation/components/web/pdv_seletor_itens_web.dart
+      - run: flutter test --no-pub --reporter expanded test/presentation/screens/produto_lista_sub_painel_web_test.dart
