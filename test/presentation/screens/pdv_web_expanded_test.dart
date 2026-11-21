@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/domain/services/caixa/caixa_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -48,6 +49,35 @@ void main() {
     expect(find.text('Frente de caixa'), findsOneWidget);
     expect(find.text('Itens da venda'), findsOneWidget);
   });
+  testWidgets(
+    'F4 na frente de caixa abre o painel centralizado e Escape retorna à venda',
+    (tester) async {
+      const viewport = Size(1920, 1000);
+      await tester.binding.setSurfaceSize(viewport);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(const _PdvExpandedTestApp(open: false));
+      await tester.pump();
+      final page = tester.element(find.byType(PaginaPrincipalWeb));
+      expect(acionarPdvFrenteCaixaPeloElemento(page), isTrue);
+      await tester.pump();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.f4);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      final panel = find.byKey(
+        const ValueKey('pdv-identificar-cliente-painel'),
+      );
+      expect(tester.getRect(panel).center, viewport.center(Offset.zero));
+      expect(tester.getSize(panel).width, lessThanOrEqualTo(680));
+      expect(find.text('Cadastrar cliente'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(panel, findsNothing);
+      expect(find.text('Receber depois'), findsOneWidget);
+    },
+  );
+
   for (final brightness in Brightness.values) {
     testWidgets(
       'vendedor pode lançar com caixa fechado e sem ações de recebimento ($brightness)',
@@ -66,7 +96,6 @@ void main() {
         expect(find.byTooltip('Operações de caixa'), findsNothing);
         expect(find.text('Vendas a receber'), findsNothing);
         expect(find.widgetWithText(FilledButton, 'Receber'), findsNothing);
-
       },
     );
   }

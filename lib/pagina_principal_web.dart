@@ -2611,15 +2611,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
     final ClienteIdentificacaoVendaResult? result =
-        await showDialog<ClienteIdentificacaoVendaResult>(
+        await showSixWebCustomerIdentificationDialog(
           context: context,
-          builder: (BuildContext context) {
-            return PdvClienteIdentificacaoDialog(
-              clienteAtual: _clienteIdentificado,
-            );
-          },
+          clienteAtual: _clienteIdentificado,
+          barrierDismissible: true,
         );
-
+    if (!mounted) return;
     if (result == null) {
       _restaurarFocoLeituraRapidaSeCabivel();
       return;
