@@ -323,7 +323,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       }
 
       _adicionarProdutoSelecionado(encontrado);
-      _mostrarSnack('${encontrado.nomeProduto} adicionado à venda.');
     } catch (_) {
       if (mounted) {
         _mostrarSnack('Não foi possível buscar o produto pelo código.');
@@ -431,10 +430,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     await _enviarVenda(
       receberDepois: resultado.parcial,
       formasPagamento: _mapearFormasPagamento(resultado.recebimentos),
-      mensagemSucesso:
-          resultado.parcial
-              ? 'Venda registrada com recebimento parcial.'
-              : 'Venda finalizada com sucesso.',
     );
   }
 
@@ -584,7 +579,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await _enviarVenda(
         receberDepois: true,
         formasPagamento: <FormaPagamentoSelecionada>[],
-        mensagemSucesso: 'Venda registrada para receber depois.',
       );
     }
   }
@@ -592,7 +586,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _enviarVenda({
     required bool receberDepois,
     required List<FormaPagamentoSelecionada> formasPagamento,
-    required String mensagemSucesso,
   }) async {
     if (!_podeVender) {
       return;
@@ -622,13 +615,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         receberDepois: receberDepois,
       );
 
-      final response = await _operacaoService.finalizarVenda(input);
+      await _operacaoService.finalizarVenda(input);
       if (!mounted) return;
       await widget.onSaleCompleted?.call();
       if (!mounted) return;
-      _mostrarSnack(receberDepois && formasPagamento.isEmpty
-          ? '${context.t('pdv.registeredPending')} ${response.uuid}'.trim()
-          : mensagemSucesso);
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
@@ -661,11 +651,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       if (!mounted) return;
       await widget.onSaleCompleted?.call();
       if (!mounted) return;
-      _mostrarSnack(
-        resultado.parcial
-            ? 'Recebimento parcial registrado com sucesso.'
-            : 'Venda recebida com sucesso.',
-      );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));

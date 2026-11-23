@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/six_web_sale_processing.dart';
 import 'package:flutter/foundation.dart';
 import 'presentation/navigation/web_app_router.dart';
 import 'presentation/navigation/web_destination_routes.dart';
@@ -538,6 +539,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       });
 
       _bellAnimationController.forward(from: 0);
+
+      final tipo = json['tipoDeEvento'];
+      final noPdv = _moduloAtual == ModuloCentralPDV.vendas ||
+          _moduloAtual == ModuloCentralPDV.recebimento;
+      if (noPdv && (tipo == 'NOVA_OPERACAO' || tipo == 'NOVA_VENDA')) {
+        return;
+      }
 
       final String mensagem =
           json['mensagem']?.toString() ?? 'Evento recebido do backend';
@@ -2817,13 +2825,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    if (!await _executarProcedimentoAntesDeFinalizarVendaWeb()) {
-      return;
-    }
-
+    if (_registrandoReceberDepois) return;
     setState(() => _registrandoReceberDepois = true);
-
     try {
+      if (!await _executarProcedimentoAntesDeFinalizarVendaWeb() || !mounted) {
+        return;
+      }
+
       final DateTime dataOperacao = DateTime.now().toUtc();
       final String idColaborador = await AuthService().getUserId() ?? '';
 
@@ -2838,7 +2846,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         receberDepois: true,
       );
 
-      final response = await _operacaoService.finalizarVenda(input);
+      await _operacaoService.finalizarVenda(input);
 
       if (!mounted) {
         return;
@@ -2850,13 +2858,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
 
       _limparVendaAposSucessoRecebimento();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${context.t('pdv.registeredPending')} ${response.uuid}'.trim()),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!mounted) {
         return;
@@ -3615,10 +3616,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     if (modoExpandidoAtivo) {
       return PopScope(
-        canPop: kIsWeb,
+        canPop: kIsWeb && !_gravandoVendaPdv,
         child: Scaffold(
           backgroundColor: _pdvTheme.backgroundPage,
-          body: _buildModoExpandidoFrenteCaixaWeb(total),
+          body: _comProgressoVenda(_buildModoExpandidoFrenteCaixaWeb(total)),
         ),
       );
     }
@@ -3650,18 +3651,34 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
 
     return PopScope(
-      canPop: kIsWeb,
+      canPop: kIsWeb && !_gravandoVendaPdv,
       child: Scaffold(
         backgroundColor: webTokens.workspaceBackground,
-        body: Stack(
-          children: <Widget>[
-            Positioned.fill(child: webShell),
-            if (_deveExibirVendaEmAndamentoFlutuante)
-              _buildVendaEmAndamentoFlutuante(regionalizacao, total),
-            if (_assistenteIAMinimizado) _buildAssistenteIAMinimizado(),
-          ],
+        body: _comProgressoVenda(
+          Stack(
+            children: <Widget>[
+              Positioned.fill(child: webShell),
+              if (_deveExibirVendaEmAndamentoFlutuante)
+                _buildVendaEmAndamentoFlutuante(regionalizacao, total),
+              if (_assistenteIAMinimizado) _buildAssistenteIAMinimizado(),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  bool get _gravandoVendaPdv =>
+      _registrandoReceberDepois || _recebendoVendaNaoLiquidada;
+
+  Widget _comProgressoVenda(Widget child) {
+    final l10n = AppLocalizations.of(context);
+    return SixWebSaleProcessing(
+      processing: _gravandoVendaPdv,
+      label: _registrandoReceberDepois
+          ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
+          : (l10n?.pdvWebProcessingReceiveAction ?? 'Processando...'),
+      child: child,
     );
   }
 
