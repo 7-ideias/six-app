@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/models/consulta_vendas_models.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/data/services/vendas/consulta_vendas_api_client.dart';
 import 'package:sixpos/presentation/screens/consulta_vendas_web_page.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -36,11 +40,20 @@ void main() {
     ) async {
       SharedPreferences.setMockInitialValues({});
       final api = _Vendas();
-      await tester.binding.setSurfaceSize(Size(width, 1000));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      UsuarioProvider().setUsuario(UsuarioModel.fromJson({'nome': 'Teste'}));
+      addTearDown(UsuarioProvider().clear);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = Size(width, 1000);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(
         ChangeNotifierProvider(
-          create: (_) => LocaleSettingsProvider(),
+          create:
+              (_) => LocaleSettingsProvider(
+                regionalizacaoService: RegionalizacaoService(
+                  apiClient: HttpRegionalizacaoApiClient(),
+                ),
+              ),
           child: MaterialApp(
             theme: dark ? ThemeData.dark() : ThemeData.light(),
             locale: Locale(locale),
