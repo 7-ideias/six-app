@@ -77,7 +77,8 @@ class _EditorState extends State<_Editor> {
         'codigo': codigo.trim(),
         'categoria': categoria,
         'nome':
-            nome == nomeOriginal && widget.unidade?.dados['nome'] == null
+            nome == nomeOriginal &&
+                    (widget.unidade?.dados['nome'] as String? ?? '').isEmpty
                 ? ''
                 : nome.trim(),
         'ativa': ativa,
