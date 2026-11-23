@@ -884,6 +884,25 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         dark
             ? tokens.surfaceElevated.withValues(alpha: 0.94)
             : tokens.inputBackground;
+    final scaler = MediaQuery.textScalerOf(context);
+    // Mesmas duas linhas de texto e folgas dos seletores Web.
+    final labelStyle = theme.textTheme.labelMedium!;
+    final valueStyle = theme.textTheme.bodyLarge!;
+    final fieldHeight =
+        (30 +
+                scaler.scale(labelStyle.fontSize!) *
+                    (labelStyle.height ?? 1.4) +
+                scaler.scale(valueStyle.fontSize!) * (valueStyle.height ?? 1.5))
+            .ceilToDouble();
+    final currencyPrefix = Align(
+      widthFactor: 1,
+      child: Text(
+        regionalizacao.currencySymbol,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: tokens.secondaryText,
+        ),
+      ),
+    );
     final InputDecoration decoration = InputDecoration(
       filled: true,
       fillColor: inputFillColor,
@@ -898,6 +917,11 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       hintStyle: theme.textTheme.bodyMedium?.copyWith(
         color: tokens.mutedText,
         fontWeight: FontWeight.w500,
+      ),
+      // O prefixo dimensiona também a borda pintada pelo InputDecorator.
+      prefixIconConstraints: BoxConstraints(
+        minWidth: 48,
+        minHeight: fieldHeight,
       ),
       prefixIconColor: Theme.of(context).colorScheme.primary,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
@@ -918,7 +942,6 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           const gap = 12.0;
-          final scaler = MediaQuery.textScalerOf(context);
           final textScale = scaler.scale(16) / 16;
           final minWidth = 252.0 * textScale.clamp(1.0, double.infinity);
           final columns =
@@ -927,16 +950,6 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                   : constraints.maxWidth >= minWidth * 2 + gap
                   ? 2
                   : 1;
-          // Mesmas duas linhas de texto e folgas dos seletores Web.
-          final labelStyle = theme.textTheme.labelMedium!;
-          final valueStyle = theme.textTheme.bodyLarge!;
-          final fieldHeight =
-              (30 +
-                      scaler.scale(labelStyle.fontSize!) *
-                          (labelStyle.height ?? 1.4) +
-                      scaler.scale(valueStyle.fontSize!) *
-                          (valueStyle.height ?? 1.5))
-                  .ceilToDouble();
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1249,6 +1262,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       decimal: true,
                     ),
                     decoration: decoration.copyWith(
+                      prefixIcon: currencyPrefix,
                       labelText: _text(
                         context,
                         'sales.query.minimumValue',
@@ -1265,6 +1279,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       decimal: true,
                     ),
                     decoration: decoration.copyWith(
+                      prefixIcon: currencyPrefix,
                       labelText: _text(
                         context,
                         'sales.query.maximumValue',

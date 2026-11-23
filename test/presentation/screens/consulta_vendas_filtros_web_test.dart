@@ -87,6 +87,14 @@ void main() {
           closeTo(first.top + (i ~/ columns) * (first.height + 12), 0.01),
         );
       }
+      for (final name in ['search', 'min', 'max']) {
+        final editable = find.descendant(
+          of: _campo(name),
+          matching: find.byType(EditableText),
+        );
+        final border = InputDecorator.containerOf(tester.element(editable))!;
+        expect(border.size, first.size, reason: 'Borda visível do campo $name');
+      }
       if (width == 1600) {
         await tester.enterText(_campo('search'), 'Cabo USB');
         await tester.enterText(_campo('min'), '10');
