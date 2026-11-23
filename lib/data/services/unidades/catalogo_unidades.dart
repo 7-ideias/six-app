@@ -5,6 +5,13 @@ import '../../../core/services/http_client_factory.dart';
 
 class Unidade {
   Unidade(this.dados);
+
+  factory Unidade.legada(String codigo, String categoria) => Unidade({
+    'codigo': codigo,
+    'categoria': categoria,
+    'nome': codigo,
+    'ativa': true,
+  });
   final Map<String, dynamic> dados;
   String get codigo => dados['codigo'] as String;
   String get categoria => dados['categoria'] as String;

@@ -2744,7 +2744,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> with Un
     if (c == null || erroUnidades)
       return UnidadesStatus(erro: erroUnidades, recarregar: carregarUnidades);
     final idioma = Localizations.localeOf(context).languageCode;
-    final atual = c.buscar(_unidadeMedidaController.text);
+    final codigoAtual = _unidadeMedidaController.text.trim();
+    final atual = c.buscar(codigoAtual);
+    final editavel =
+        atual ??
+        (_isModoEdicao && codigoAtual.isNotEmpty
+            ? Unidade.legada(codigoAtual, _categoriaUnidadeMedida)
+            : null);
     final opcoes = {
       for (final u in c.unidades.where((u) => u.ativa)) u.label(idioma): u,
     };
@@ -2754,7 +2760,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> with Un
     final itens = [
       ...opcoes.keys,
       if (c.podeEditar) adicionar,
-      if (c.podeEditar && atual != null) editar,
+      if (c.podeEditar && editavel != null) editar,
       if (c.podeConfigurar) gerenciar,
     ];
     final valor = atual?.label(idioma) ?? _unidadeMedidaController.text;
@@ -2785,7 +2791,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> with Un
       final u =
           escolha == adicionar || escolha == editar
               ? await editarOpcao(
-                unidade: escolha == editar ? atual : null,
+                unidade: escolha == editar ? editavel : null,
                 mobile: false,
               )
               : opcoes[escolha];

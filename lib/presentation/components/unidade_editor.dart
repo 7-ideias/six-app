@@ -98,6 +98,8 @@ class _EditorState extends State<_Editor> {
   Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
     final editar = widget.unidade != null;
+    final categoriaEditavel =
+        !editar || widget.catalogo.buscar(widget.unidade!.codigo) == null;
     String titulo(String cat) =>
         context.t('produto.unitCategory.${cat.toLowerCase()}', fallback: cat);
     final categoriaLabel = context.t('produto.fields.unitCategory');
@@ -133,7 +135,7 @@ class _EditorState extends State<_Editor> {
                   label: categoriaLabel,
                   value: titulo(categoria),
                   icon: Icons.straighten,
-                  enabled: !editar,
+                  enabled: categoriaEditavel,
                   onTap: () async {
                     final v = await showSixMobileSelectionSheet<String>(
                       context: context,
@@ -158,7 +160,7 @@ class _EditorState extends State<_Editor> {
                   label: categoriaLabel,
                   value: titulo(categoria),
                   items: categorias.map(titulo).toList(),
-                  enabled: !editar,
+                  enabled: categoriaEditavel,
                   onSelected:
                       (v) => setState(
                         () =>
