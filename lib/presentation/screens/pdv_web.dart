@@ -2495,6 +2495,56 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   Widget _buildAreaVenda(double total) {
+    if (_aguardandoCaixaParaVenda) {
+      final checking = _carregandoSessaoCaixaPdv;
+      final failed = _erroSessaoCaixaPdv;
+      final tokens = WebThemeTokens.of(context);
+      return Expanded(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Card(
+                color: tokens.surfaceElevated,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (checking)
+                        const CircularProgressIndicator()
+                      else
+                        Icon(Icons.point_of_sale_rounded, color: tokens.info, size: 32),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.t(checking ? 'pdv.cashSessionCheckingTitle'
+                            : failed ? 'pdv.cashSessionUnavailableTitle' : 'homeToday.cashClosed'),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (!checking) ...[
+                        if (!failed) ...[
+                          const SizedBox(height: 8),
+                          Text(context.t('pdv.cashSessionRequiredTitle'), textAlign: TextAlign.center),
+                        ],
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: failed ? _carregarSessaoCaixaPdv
+                              : () => _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
+                          icon: Icon(failed ? Icons.refresh : Icons.point_of_sale_rounded),
+                          label: Text(context.t(failed ? 'common.tryAgain' : 'homeToday.openCash')),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Expanded(
       child: Focus(
         autofocus: true,

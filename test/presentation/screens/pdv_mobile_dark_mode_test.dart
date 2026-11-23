@@ -127,6 +127,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('operador só pode selecionar produtos depois de abrir o caixa', (
+    WidgetTester tester,
+  ) async {
+    final session = Completer<CaixaSessao?>();
+    final caixa = _FakeCaixaApiClient(sessionCompleter: session);
+    var aberturas = 0;
+    await _pumpPdv(
+      tester,
+      themeCase: _themeCases.first,
+      caixaApiClient: caixa,
+      cashOperationsLauncher: () async {
+        aberturas++;
+        caixa.session = _openSession();
+      },
+      settle: false,
+    );
+    await tester.pump();
+    expect(find.text('Adicionar produto'), findsNothing);
+    session.complete(null);
+    await tester.pumpAndSettle();
+    expect(find.text('Adicionar produto'), findsNothing);
+    await tester.tap(find.text('Abrir caixa'));
+    await tester.pumpAndSettle();
+    expect(aberturas, 1);
+    expect(find.text('Adicionar produto'), findsWidgets);
+  });
+
   testWidgets('vendedor registra venda sem caixa e sem receber nos dois temas', (
     WidgetTester tester,
   ) async {

@@ -188,8 +188,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
   }
 
+  bool get _aguardandoCaixaParaVenda =>
+      _podeReceber && (_carregandoSessaoCaixa || !_caixaAbertoParaVenda);
+
   bool get _podeVender =>
-      context.read<ColaboradorAutorizacoesProvider>().podeRegistrarVendaPdv;
+      context.read<ColaboradorAutorizacoesProvider>().podeRegistrarVendaPdv &&
+      !_aguardandoCaixaParaVenda;
   bool get _podeReceber =>
       context.read<ColaboradorAutorizacoesProvider>().podeReceberVendaPdv;
 
@@ -823,7 +827,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       initialContentSpacing: 4,
       scrollEffectOffset: 24,
       scrolledSurfaceOpacity: 0.66,
-      actions: <Widget>[
+      actions: _aguardandoCaixaParaVenda ? const <Widget>[] : <Widget>[
         IconButton(
           tooltip: 'Adicionar produto',
           onPressed:
@@ -851,71 +855,66 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             physics: AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16, topInset, 16, bottomPadding),
             children: <Widget>[
-              SixStaggeredEntry(
-                duration: _entryDuration,
-                beginOffset: Offset(0, 0.035),
-                child: AnimatedSwitcher(
-                  duration: _stateTransitionDuration,
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (
-                    Widget child,
-                    Animation<double> animation,
-                  ) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SizeTransition(
-                        sizeFactor: animation,
-                        axisAlignment: -1,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _buildHeader(),
-                ),
-              ),
-              SizedBox(height: temItens ? 12 : 10),
-              if (_podeReceber && !_caixaAbertoParaVenda) ...<Widget>[
+              if (_aguardandoCaixaParaVenda)
+                _buildCaixaObrigatorioNotice()
+              else ...<Widget>[
                 SixStaggeredEntry(
-                  delay: Duration(milliseconds: 40),
                   duration: _entryDuration,
                   beginOffset: Offset(0, 0.035),
-                  child: _buildCaixaObrigatorioNotice(),
-                ),
-                SizedBox(height: 10),
-              ],
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 70),
-                duration: _entryDuration,
-                beginOffset: Offset(0, 0.035),
-                child: _buildQuickActionsCard(vendaIniciada: temItens),
-              ),
-              if (temItens) ...<Widget>[
-                SizedBox(height: 12),
-                AnimatedSwitcher(
-                  duration: Duration(milliseconds: 240),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: Column(
-                    key: ValueKey<String>('pdv-content'),
-                    children: <Widget>[
-                      SixStaggeredEntry(
-                        delay: Duration(milliseconds: 120),
-                        duration: _entryDuration,
-                        beginOffset: Offset(0, 0.035),
-                        child: _buildItensCard(),
-                      ),
-                    ],
+                  child: AnimatedSwitcher(
+                    duration: _stateTransitionDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (
+                      Widget child,
+                      Animation<double> animation,
+                    ) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: animation,
+                          axisAlignment: -1,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _buildHeader(),
                   ),
                 ),
-              ] else ...<Widget>[
-                SizedBox(height: _initialBottomBreathingSpace(context)),
+                SizedBox(height: temItens ? 12 : 10),
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: 70),
+                  duration: _entryDuration,
+                  beginOffset: Offset(0, 0.035),
+                  child: _buildQuickActionsCard(vendaIniciada: temItens),
+                ),
+                if (temItens) ...<Widget>[
+                  SizedBox(height: 12),
+                  AnimatedSwitcher(
+                    duration: Duration(milliseconds: 240),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: Column(
+                      key: ValueKey<String>('pdv-content'),
+                      children: <Widget>[
+                        SixStaggeredEntry(
+                          delay: Duration(milliseconds: 120),
+                          duration: _entryDuration,
+                          beginOffset: Offset(0, 0.035),
+                          child: _buildItensCard(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...<Widget>[
+                  SizedBox(height: _initialBottomBreathingSpace(context)),
+                ],
               ],
             ],
           ),
         );
       },
-      bottomNavigationBar: _itens.isEmpty ? null : _buildBottomActions(),
+      bottomNavigationBar: _aguardandoCaixaParaVenda || _itens.isEmpty ? null : _buildBottomActions(),
     );
   }
 
@@ -952,7 +951,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               'pdv.cashSessionUnavailableMessage',
               'Atualize a sessão ou acesse operações de caixa para conferir a situação.',
             )
-            : context.t('pdv.openForPayment');
+            : context.t('pdv.cashSessionRequiredTitle');
 
     return Container(
       width: double.infinity,
@@ -1028,7 +1027,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
                   icon: Icon(Icons.point_of_sale_rounded),
                   label: Text(
-                    _txt('pdv.openCashOperations', 'Operações de caixa'),
+                    context.t('homeToday.openCash'),
                   ),
                   style: FilledButton.styleFrom(
                     minimumSize: Size.fromHeight(44),
