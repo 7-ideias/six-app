@@ -1358,6 +1358,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível iniciar a configuração',
     'initialOnboarding.loadErrorMessage':
         'Verifique sua conexão e tente novamente.',
+    'caixa.operacoes.openWithoutChangeTitle': 'Abrir caixa sem troco inicial?',
     'caixa.operacoes.openConfirmTitle': 'Confirmar abertura de caixa?',
     'caixa.operacoes.openConfirmMessage':
         'Deseja abrir {cashDesk} com troco inicial de {amount}?',
@@ -4830,6 +4831,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.loadErrorTitle': 'Unable to start setup',
     'initialOnboarding.loadErrorMessage':
         'Check your connection and try again.',
+    'caixa.operacoes.openWithoutChangeTitle': 'Open the register without starting cash?',
     'caixa.operacoes.openConfirmTitle': 'Confirm cash opening?',
     'caixa.operacoes.openConfirmMessage':
         'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
@@ -8029,6 +8031,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No fue posible iniciar la configuración',
     'initialOnboarding.loadErrorMessage':
         'Verifica tu conexión e inténtalo de nuevo.',
+    'caixa.operacoes.openWithoutChangeTitle': '¿Abrir la caja sin cambio inicial?',
     'caixa.operacoes.openConfirmTitle': '¿Confirmar apertura de caja?',
     'caixa.operacoes.openConfirmMessage':
         '¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
