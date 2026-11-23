@@ -395,17 +395,6 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       await _sincronizarTotalVendasAReceber();
       if (!mounted) return;
       _limparVendaAposSucessoRecebimento();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'pdv.openSale.receivedMessage',
-              fallback: 'Venda recebida com sucesso.',
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       _mostrarMensagemVendaNaoLiquidada(

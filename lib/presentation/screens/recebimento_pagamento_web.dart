@@ -878,15 +878,6 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     }
   }
 
-  String _rotuloFormatoImpressao(FormatoImpressaoOperacao formato) {
-    switch (formato) {
-      case FormatoImpressaoOperacao.a4:
-        return 'A4';
-      case FormatoImpressaoOperacao.cupomTermico:
-        return 'Cupom térmico';
-    }
-  }
-
   Future<void> _confirmarOperacao() async {
     if (_salvandoOperacao || _operacaoConcluida || _preparandoResumo) return;
     setState(() {
@@ -1049,15 +1040,15 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             );
 
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  downloadIniciado
-                      ? 'Comprovante gerado e download iniciado (${_rotuloFormatoImpressao(formato)}).'
-                      : 'Comprovante gerado, mas o navegador bloqueou o download.',
+            if (!downloadIniciado) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Comprovante gerado, mas o navegador bloqueou o download.',
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           } catch (e) {
             if (!mounted) return;
             await _mostrarDialogMensagem(

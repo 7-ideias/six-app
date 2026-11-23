@@ -340,7 +340,7 @@ void main() {
       closeTo(190, 0.001),
     );
     expect(completedFeedbackCalls, 1);
-    expect(find.text('Venda finalizada com sucesso.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(find.text(_longProductName), findsNothing);
     expect(tester.takeException(), isNull);
   });

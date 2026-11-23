@@ -540,6 +540,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       _bellAnimationController.forward(from: 0);
 
+      final tipo = json['tipoDeEvento'];
+      final noPdv = _moduloAtual == ModuloCentralPDV.vendas ||
+          _moduloAtual == ModuloCentralPDV.recebimento;
+      if (noPdv && (tipo == 'NOVA_OPERACAO' || tipo == 'NOVA_VENDA')) {
+        return;
+      }
+
       final String mensagem =
           json['mensagem']?.toString() ?? 'Evento recebido do backend';
 
@@ -2839,7 +2846,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         receberDepois: true,
       );
 
-      final response = await _operacaoService.finalizarVenda(input);
+      await _operacaoService.finalizarVenda(input);
 
       if (!mounted) {
         return;
@@ -2851,13 +2858,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
 
       _limparVendaAposSucessoRecebimento();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${context.t('pdv.registeredPending')} ${response.uuid}'.trim()),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!mounted) {
         return;
