@@ -3421,7 +3421,7 @@ class _VendaDetalheMobileSheetState extends State<_VendaDetalheMobileSheet> {
                   content: <Widget>[
                     _DetailBadge(
                       label:
-                          '${_triple(context, 'sales.query.mobile.quantity', 'Quantidade', 'Quantity', 'Cantidad')}: ${_formatQuantity(item.quantidade)}',
+                          '${_triple(context, 'sales.query.mobile.quantity', 'Quantidade', 'Quantity', 'Cantidad')}: ${_formatQuantity(item.quantidade)} ${item.unidadeMedida}'.trim(),
                     ),
                     _DetailBadge(
                       label:
@@ -3429,11 +3429,11 @@ class _VendaDetalheMobileSheetState extends State<_VendaDetalheMobileSheet> {
                     ),
                     _DetailBadge(
                       label:
-                          '${_triple(context, 'sales.query.mobile.returnedQuantity', 'Já devolvida', 'Already returned', 'Ya devuelta')}: ${_formatQuantity(item.quantidadeDevolvida)}',
+                          '${_triple(context, 'sales.query.mobile.returnedQuantity', 'Já devolvida', 'Already returned', 'Ya devuelta')}: ${_formatQuantity(item.quantidadeDevolvida)} ${item.unidadeMedida}'.trim(),
                     ),
                     _DetailBadge(
                       label:
-                          '${_triple(context, 'sales.query.mobile.availableQuantity', 'Ainda devolvível', 'Still returnable', 'Aún devolvible')}: ${_formatQuantity(item.quantidadeDisponivel)}',
+                          '${_triple(context, 'sales.query.mobile.availableQuantity', 'Ainda devolvível', 'Still returnable', 'Aún devolvible')}: ${_formatQuantity(item.quantidadeDisponivel)} ${item.unidadeMedida}'.trim(),
                     ),
                   ],
                 ),

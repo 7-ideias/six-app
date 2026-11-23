@@ -313,6 +313,7 @@ class ItemVendaDetalhe {
     required this.valorUnitario,
     required this.valorTotal,
     required this.quantidadeDevolvida,
+    this.unidadeMedida = '',
     required this.quantidadeDisponivel,
   });
 
@@ -324,6 +325,7 @@ class ItemVendaDetalhe {
   final double valorUnitario;
   final double valorTotal;
   final double quantidadeDevolvida;
+  final String unidadeMedida;
   final double quantidadeDisponivel;
 
   factory ItemVendaDetalhe.fromJson(Map<String, dynamic> json) {
@@ -336,6 +338,7 @@ class ItemVendaDetalhe {
       valorUnitario: _asDouble(json['valorUnitario']),
       valorTotal: _asDouble(json['valorTotal']),
       quantidadeDevolvida: _asDouble(json['quantidadeDevolvida']),
+      unidadeMedida: json['unidadeMedida']?.toString() ?? '',
       quantidadeDisponivel: _asDouble(json['quantidadeDisponivel']),
     );
   }
@@ -452,6 +455,7 @@ class ItemDevolucaoDetalhe {
   const ItemDevolucaoDetalhe({
     required this.idProduto,
     required this.nomeProduto,
+    this.unidadeMedida = '',
     required this.quantidade,
     required this.valorTotal,
     required this.motivo,
@@ -461,6 +465,7 @@ class ItemDevolucaoDetalhe {
 
   final String idProduto;
   final String nomeProduto;
+  final String unidadeMedida;
   final double quantidade;
   final double valorTotal;
   final String motivo;
@@ -470,6 +475,7 @@ class ItemDevolucaoDetalhe {
   factory ItemDevolucaoDetalhe.fromJson(Map<String, dynamic> json) {
     return ItemDevolucaoDetalhe(
       idProduto: json['idProduto']?.toString() ?? '',
+      unidadeMedida: json['unidadeMedida']?.toString() ?? '',
       nomeProduto: json['nomeProduto']?.toString() ?? '',
       quantidade: _asDouble(json['quantidade']),
       valorTotal: _asDouble(json['valorTotal']),
@@ -484,18 +490,21 @@ class ItemTrocaDetalhe {
   const ItemTrocaDetalhe({
     required this.idProduto,
     required this.nomeProduto,
+    this.unidadeMedida = '',
     required this.quantidade,
     required this.valorTotal,
   });
 
   final String idProduto;
   final String nomeProduto;
+  final String unidadeMedida;
   final double quantidade;
   final double valorTotal;
 
   factory ItemTrocaDetalhe.fromJson(Map<String, dynamic> json) {
     return ItemTrocaDetalhe(
       idProduto: json['idProduto']?.toString() ?? '',
+      unidadeMedida: json['unidadeMedida']?.toString() ?? '',
       nomeProduto: json['nomeProduto']?.toString() ?? '',
       quantidade: _asDouble(json['quantidade']),
       valorTotal: _asDouble(json['valorTotal']),

@@ -2169,7 +2169,7 @@ class _VendasNaoLiquidadasMobileScreenState
                       : Icons.inventory_2_outlined,
               title: item.nome,
               subtitle:
-                  '${item.quantidade} x ${_formatarValor(item.valorUnitario)}',
+                  '${[item.quantidade.toString(), if (item.nomeUnidade.isNotEmpty) item.nomeUnidade].join(' ')} x ${_formatarValor(item.valorUnitario)}',
               trailing: _formatarValor(total),
             );
           }),

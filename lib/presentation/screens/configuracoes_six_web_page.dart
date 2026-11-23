@@ -1,3 +1,4 @@
+import '../components/web/catalogo_unidades_web.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import '../../l10n/storage_texts.dart';
 import 'storage_usage_web_page.dart';
@@ -180,44 +181,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       icon: Icons.verified_outlined,
     ),
   ];
-  static const List<_ConfiguracaoChoiceOption> _unidadesDisponiveis =
-      <_ConfiguracaoChoiceOption>[
-        _ConfiguracaoChoiceOption(
-          label: 'Unidade',
-          description: 'Peças, acessórios e itens vendidos individualmente.',
-          icon: Icons.inventory_2_outlined,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Área',
-          description: 'm², cm² e serviços medidos por superfície.',
-          icon: Icons.crop_square_rounded,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Distância',
-          description: 'm, km e cobranças por deslocamento.',
-          icon: Icons.straighten_rounded,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Volume',
-          description: 'ml, l e insumos medidos por capacidade.',
-          icon: Icons.water_drop_outlined,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Tempo',
-          description: 'Hora técnica, diária, mensalidade e assinatura.',
-          icon: Icons.schedule_rounded,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Peso',
-          description: 'g, kg e materiais vendidos por massa.',
-          icon: Icons.scale_rounded,
-        ),
-        _ConfiguracaoChoiceOption(
-          label: 'Moeda',
-          description: 'Valores financeiros tratados como unidade de cobrança.',
-          icon: Icons.paid_outlined,
-        ),
-      ];
 
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _possuiAlteracoesNaoSalvas = false;
@@ -1114,7 +1077,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   bool _notificarVencimentoFiado = true;
   bool _permitirParcelamentoFiado = true;
   bool _exigirAnexoCadastroCliente = false;
-  bool _produtoApenasComUnidadeMedida = true;
   bool _exigirJustificativaDesconto = true;
   bool _aplicarComissaoEmServicos = true;
   bool _aplicarComissaoEmProdutos = false;
@@ -1148,14 +1110,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     'Cor',
     'Tamanho',
     'Modelo',
-  };
-  final Set<String> _unidadesMedidaAutorizadas = <String>{
-    'Unidade',
-    'Área',
-    'Distância',
-    'Volume',
-    'Tempo',
-    'Peso',
   };
 
   final List<String> _statusAssistencia = [
@@ -4725,7 +4679,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           _abrirCaixaObrigatorio,
           _descontoManualPermitido,
           _gerarComissaoColaborador,
-          _produtoApenasComUnidadeMedida,
         ].where((bool value) => value).length;
 
     return Container(
@@ -4765,7 +4718,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Campos locais para preparar catálogo por link, grade de produtos, venda por mesa, cliente, fiado, crédito, estoque, caixa, desconto, comissão e unidades de medida. Nenhuma integração com backend foi adicionada nesta etapa.',
+                  'Campos locais para preparar catálogo por link, grade de produtos, venda por mesa, cliente, fiado, crédito, estoque, caixa, desconto, comissão. As unidades de medida são salvas por comércio.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: tokens.secondaryText,
                     height: 1.4,
@@ -4793,11 +4746,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             icon: Icons.view_module_outlined,
             title: '${_atributosGradeSelecionados.length} atributos',
             subtitle: 'Grade',
-          ),
-          _buildOperationalSummaryPill(
-            icon: Icons.straighten_rounded,
-            title: '${_unidadesMedidaAutorizadas.length} unidades',
-            subtitle: 'Autorizadas',
           ),
         ],
       ),
@@ -5862,27 +5810,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 520,
-            child: _buildSwitchTile(
-              title:
-                  'Permitir cadastro de produto apenas por unidade de medida',
-              subtitle:
-                  'Exige unidade informada e restringe o cadastro às categorias autorizadas abaixo.',
-              value: _produtoApenasComUnidadeMedida,
-              onChanged: (bool value) {
-                setState(() => _produtoApenasComUnidadeMedida = value);
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildOperationalChoiceSection(
-            title: 'Unidades autorizadas para vendas',
-            subtitle:
-                'Categorias disponíveis: unidades, área, distância, volume, tempo, peso e moeda.',
-            options: _unidadesDisponiveis,
-            selectedValues: _unidadesMedidaAutorizadas,
-          ),
+          const CatalogoUnidadesWeb(),
           const SizedBox(height: 22),
           const Divider(height: 1),
           const SizedBox(height: 22),
@@ -6241,7 +6169,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           SizedBox(
             width: 680,
             child: Text(
-              'Pronto para evoluir: a gestão de caixas e guichês já persiste no backend. As demais regras operacionais desta seção continuam como rascunho local nesta etapa.',
+              'Pronto para evoluir: a gestão de unidades de medida, caixas e guichês já persiste no backend. As demais regras operacionais desta seção continuam como rascunho local nesta etapa.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: tokens.secondaryText,
                 height: 1.35,

@@ -1,3 +1,8 @@
+import 'package:sixpos/presentation/screens/preferencias_sub_pedidos_catalogos_sub_07_unidades_medida_mobile_screen.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
+import 'package:sixpos/presentation/components/unidades_status.dart';
+import 'package:sixpos/presentation/components/unidade_selecao_state.dart';
+import 'package:sixpos/data/services/unidades/catalogo_unidades.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -28,6 +33,7 @@ class CadastroProdutoMobileScreen extends StatefulWidget {
     this.tipoInicial = ProdutoCadastroFormUtils.tipoProduto,
     this.produtoService,
     this.categoriaApiClient,
+    this.carregarCatalogoUnidades,
   });
 
   final ValueChanged<ProdutoModel>? onCriado;
@@ -35,6 +41,7 @@ class CadastroProdutoMobileScreen extends StatefulWidget {
   final String tipoInicial;
   final ProdutoService? produtoService;
   final CategoriaCatalogoApiClient? categoriaApiClient;
+  final Future<CatalogoUnidades> Function()? carregarCatalogoUnidades;
 
   @override
   State<CadastroProdutoMobileScreen> createState() =>
@@ -56,7 +63,7 @@ class _ProdutoImagemSlot {
 }
 
 class _CadastroProdutoMobileScreenState
-    extends State<CadastroProdutoMobileScreen> {
+    extends State<CadastroProdutoMobileScreen> with UnidadeSelecaoState<CadastroProdutoMobileScreen> {
   static Color get _backgroundColor => SixMobilePalette.background;
   static Color get _primaryColor => SixMobilePalette.primary;
   static Color get _secondaryColor => SixMobilePalette.secondary;
@@ -216,6 +223,7 @@ class _CadastroProdutoMobileScreenState
       if (acesso.podeCadastrarProduto) _tipoSelecionado = 'PRODUTO';
     }
     _preencherCamposSeModoEdicao();
+    carregarUnidades();
     _carregarCategoriasCatalogo();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -539,6 +547,7 @@ class _CadastroProdutoMobileScreenState
           !permissoes.podeCadastrarTipo(_tipoSelecionado)) {
         throw StateError(context.t('pdv.empty.askAdmin'));
       }
+      if (catalogo == null || erroUnidades) throw StateError(context.t('units.retry'));
       final produto = _montarProduto();
       if (_isModoEdicao) {
         await _produtoService.atualizarProduto(produto);
@@ -1595,6 +1604,8 @@ class _CadastroProdutoMobileScreenState
           _buildTipoField(),
           SizedBox(height: 12),
           _buildCategoriaField(),
+          const SizedBox(height:12),
+          _seletorUnidade(),
           SizedBox(height: 12),
           _buildTextField(
             controller: _modeloController,
@@ -2288,87 +2299,78 @@ class _CadastroProdutoMobileScreenState
     );
   }
 
-  String _categoriaUnidadeLabel(String codigo) {
-    const Map<String, String> fallbacks = <String, String>{
-      'UNIDADE': 'Unidade',
-      'AREA': 'Área',
-      'DISTANCIA': 'Distância',
-      'VOLUME': 'Volume',
-      'TEMPO': 'Tempo',
-      'PESO': 'Peso',
-      'MOEDA': 'Moeda',
-    };
-    return _t(
-      'produto.unitCategory.${codigo.toLowerCase()}',
-      fallbacks[codigo] ?? codigo,
-    );
+  @override
+  Future<CatalogoUnidades> buscarCatalogo() => widget.carregarCatalogoUnidades?.call() ?? super.buscarCatalogo();
+  bool _unidadeInicializada = false;
+  @override
+  void catalogoAlterado(CatalogoUnidades novo) {
+    if (!_unidadeInicializada && !_isModoEdicao) {
+      final u = novo.buscar(novo.padrao)!;
+      _categoriaUnidadeMedida = u.categoria;
+      _unidadeMedidaController.text = u.codigo;
+    }
+    _unidadeInicializada = true;
   }
 
-  Future<void> _abrirSeletorCategoriaUnidade() async {
-    final String? selecionada = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.46),
-      builder: (BuildContext context) {
-        const List<String> categorias = <String>[
-          'UNIDADE',
-          'AREA',
-          'DISTANCIA',
-          'VOLUME',
-          'TEMPO',
-          'PESO',
-          'MOEDA',
-        ];
-        return _MobileBottomSheetFrame(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.78,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const _MobileSheetHandle(),
-                SizedBox(height: 16),
-                _SheetTitleBlock(
-                  icon: Icons.straighten_outlined,
-                  title: _t(
-                    'produto.fields.unitCategory',
-                    'Categoria da unidade',
-                  ),
-                  subtitle: _t(
-                    'produto.fields.unitCategoryHelp',
-                    'Escolha como o item é medido na operação.',
-                  ),
-                ),
-                SizedBox(height: 14),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: categorias.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 8),
-                    itemBuilder: (BuildContext context, int index) {
-                      final String codigo = categorias[index];
-                      return _SelectionOptionTile(
-                        icon: Icons.straighten_outlined,
-                        title: _categoriaUnidadeLabel(codigo),
-                        subtitle: '',
-                        selected: codigo == _categoriaUnidadeMedida,
-                        onTap: () => Navigator.of(context).pop(codigo),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+  Widget _seletorUnidade() {
+    final c = catalogo;
+    if (c == null || erroUnidades)
+      return UnidadesStatus(erro: erroUnidades, recarregar: carregarUnidades);
+    final idioma = Localizations.localeOf(context).languageCode;
+    final atual = c.buscar(_unidadeMedidaController.text);
+    final opcoes = {
+      for (final u in c.unidades.where((u) => u.ativa)) u.label(idioma): u,
+    };
+    final adicionar = context.t('units.add');
+    final editar = context.t('units.edit');
+    final gerenciar = context.t('units.manage');
+    final itens = [
+      ...opcoes.keys,
+      if (c.podeEditar) adicionar,
+      if (c.podeEditar && atual != null) editar,
+      if (c.podeConfigurar) gerenciar,
+    ];
+    final valor = atual?.label(idioma) ?? _unidadeMedidaController.text;
+    Future<void> selecionar(String escolha) async {
+      if (escolha == gerenciar) {
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const UnidadesMedidaMobileScreen()),
         );
+        if (mounted) await carregarUnidades();
+        return;
+      }
+      final u =
+          escolha == adicionar || escolha == editar
+              ? await editarOpcao(
+                unidade: escolha == editar ? atual : null,
+                mobile: true,
+              )
+              : opcoes[escolha];
+      if (u != null && mounted && (u.ativa || u.codigo == atual?.codigo))
+        setState(() {
+          _categoriaUnidadeMedida = u.categoria;
+          _unidadeMedidaController.text = u.codigo;
+        });
+    }
+
+    return SixMobileSelectionField(
+      label: context.t('units.title'),
+      value: valor,
+      icon: Icons.straighten,
+      onTap: () async {
+        final escolha = await showSixMobileSelectionSheet<String>(
+          context: context,
+          title: context.t('units.title'),
+          selectedValue: valor,
+          emptyTitle: context.t('units.title'),
+          options:
+              itens
+                  .map((v) => SixMobileSelectionOption(value: v, title: v))
+                  .toList(),
+        );
+        if (escolha != null && mounted) await selecionar(escolha);
       },
     );
-    if (!mounted || selecionada == null) return;
-    setState(() => _categoriaUnidadeMedida = selecionada);
   }
 
   Widget _buildRegrasOperacionaisCard() {
@@ -2381,27 +2383,13 @@ class _CadastroProdutoMobileScreenState
       icon: Icons.tune_outlined,
       child: Column(
         children: <Widget>[
-          _MobileSelectorField(
-            label: _t('produto.fields.unitCategory', 'Categoria da unidade'),
-            value: _categoriaUnidadeLabel(_categoriaUnidadeMedida),
-            icon: Icons.straighten_outlined,
-            onTap: _abrirSeletorCategoriaUnidade,
-          ),
-          SizedBox(height: 12),
-          _buildFieldPair(
-            first: _buildTextField(
-              controller: _unidadeMedidaController,
-              label: _t('produto.fields.unitCode', 'Unidade de medida'),
-              hintText: _t('produto.fields.unitCodeHint', 'Ex.: UN, KG, M'),
-            ),
-            second: _buildTextField(
+          _buildTextField(
               controller: _quantidadeMinimaVendaController,
               label: _t(
                 'produto.fields.minimumSaleQuantity',
                 'Quantidade mínima',
               ),
               keyboardType: TextInputType.numberWithOptions(decimal: true),
-            ),
           ),
           SizedBox(height: 12),
           _SwitchCard(
@@ -2538,9 +2526,7 @@ class _CadastroProdutoMobileScreenState
           ),
           _ProdutoReviewRowMobile(
             label: _t('produto.fields.unitCode', 'Unidade de medida'),
-            value: _unidadeMedidaController.text.trim().isEmpty
-                ? 'UN'
-                : _unidadeMedidaController.text.trim().toUpperCase(),
+            value: catalogo?.buscar(_unidadeMedidaController.text)?.label(Localizations.localeOf(context).languageCode) ?? _unidadeMedidaController.text,
           ),
           _ProdutoReviewRowMobile(
             label: _t('produto.journey.modeLabel', 'Tipo de cadastro'),

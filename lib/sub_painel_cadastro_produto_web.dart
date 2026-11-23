@@ -1,3 +1,8 @@
+import 'package:sixpos/presentation/components/web/catalogo_unidades_web.dart';
+import 'package:sixpos/presentation/components/web/six_web_select_field.dart';
+import 'package:sixpos/presentation/components/unidades_status.dart';
+import 'package:sixpos/presentation/components/unidade_selecao_state.dart';
+import 'package:sixpos/data/services/unidades/catalogo_unidades.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
@@ -160,6 +165,7 @@ class CadastroProdutoWebBody extends StatefulWidget {
     this.produtoService,
     this.imagemSugestaoApiClient,
     this.categoriaApiClient,
+    this.carregarCatalogoUnidades,
   });
 
   final ValueChanged<ProdutoModel>? onCriado;
@@ -169,6 +175,7 @@ class CadastroProdutoWebBody extends StatefulWidget {
   final ProdutoService? produtoService;
   final ImagemSugestaoApiClient? imagemSugestaoApiClient;
   final CategoriaCatalogoApiClient? categoriaApiClient;
+  final Future<CatalogoUnidades> Function()? carregarCatalogoUnidades;
 
   @override
   State<CadastroProdutoWebBody> createState() => _CadastroProdutoWebBodyState();
@@ -188,7 +195,7 @@ class _ProdutoImagemSlot {
   }
 }
 
-class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
+class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> with UnidadeSelecaoState<CadastroProdutoWebBody> {
   static const String _categoriaSemCategoriaMenuId = '__sem_categoria__';
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -375,6 +382,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       if (acesso.podeCadastrarProduto) _tipoSelecionado = 'PRODUTO';
     }
     _preencherCamposSeModoEdicao();
+    carregarUnidades();
     _carregarCategoriasCatalogo();
     _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
     _grupoProdutoController.addListener(_onCamposSugestoesAlterados);
@@ -1066,6 +1074,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           !permissoes.podeCadastrarTipo(_tipoSelecionado)) {
         throw StateError(context.t('pdv.empty.askAdmin'));
       }
+      if (catalogo == null || erroUnidades) throw StateError(context.t('units.retry'));
       final produto = _montarProduto();
       if (_isModoEdicao) {
         await _produtoService.atualizarProduto(produto);
@@ -1932,6 +1941,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 ? '-'
                 : _modeloProdutoController.text.trim(),
           ),
+          _buildInfoRow(context, context.t('units.title'), catalogo?.buscar(_unidadeMedidaController.text)?.label(Localizations.localeOf(context).languageCode) ?? _unidadeMedidaController.text),
           _buildInfoRow(context, _t('produto.web.priceLabel', 'Preço'), preco),
           _buildInfoRow(
             context,
@@ -2716,19 +2726,82 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
   }
 
-  String _categoriaUnidadeLabel(String codigo) {
-    const Map<String, String> fallbacks = <String, String>{
-      'UNIDADE': 'Unidade',
-      'AREA': 'Área',
-      'DISTANCIA': 'Distância',
-      'VOLUME': 'Volume',
-      'TEMPO': 'Tempo',
-      'PESO': 'Peso',
-      'MOEDA': 'Moeda',
+  @override
+  Future<CatalogoUnidades> buscarCatalogo() => widget.carregarCatalogoUnidades?.call() ?? super.buscarCatalogo();
+  bool _unidadeInicializada = false;
+  @override
+  void catalogoAlterado(CatalogoUnidades novo) {
+    if (!_unidadeInicializada && !_isModoEdicao) {
+      final u = novo.buscar(novo.padrao)!;
+      _categoriaUnidadeMedida = u.categoria;
+      _unidadeMedidaController.text = u.codigo;
+    }
+    _unidadeInicializada = true;
+  }
+
+  Widget _seletorUnidade() {
+    final c = catalogo;
+    if (c == null || erroUnidades)
+      return UnidadesStatus(erro: erroUnidades, recarregar: carregarUnidades);
+    final idioma = Localizations.localeOf(context).languageCode;
+    final atual = c.buscar(_unidadeMedidaController.text);
+    final opcoes = {
+      for (final u in c.unidades.where((u) => u.ativa)) u.label(idioma): u,
     };
-    return _t(
-      'produto.unitCategory.${codigo.toLowerCase()}',
-      fallbacks[codigo] ?? codigo,
+    final adicionar = context.t('units.add');
+    final editar = context.t('units.edit');
+    final gerenciar = context.t('units.manage');
+    final itens = [
+      ...opcoes.keys,
+      if (c.podeEditar) adicionar,
+      if (c.podeEditar && atual != null) editar,
+      if (c.podeConfigurar) gerenciar,
+    ];
+    final valor = atual?.label(idioma) ?? _unidadeMedidaController.text;
+    Future<void> selecionar(String escolha) async {
+      if (escolha == gerenciar) {
+        await showDialog<void>(
+          context: context,
+          builder:
+              (dialogContext) => AlertDialog(
+                title: Text(gerenciar),
+                content: const SizedBox(
+                  width: 520,
+                  child: SingleChildScrollView(child: CatalogoUnidadesWeb()),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: Text(
+                      MaterialLocalizations.of(dialogContext).closeButtonLabel,
+                    ),
+                  ),
+                ],
+              ),
+        );
+        if (mounted) await carregarUnidades();
+        return;
+      }
+      final u =
+          escolha == adicionar || escolha == editar
+              ? await editarOpcao(
+                unidade: escolha == editar ? atual : null,
+                mobile: false,
+              )
+              : opcoes[escolha];
+      if (u != null && mounted && (u.ativa || u.codigo == atual?.codigo))
+        setState(() {
+          _categoriaUnidadeMedida = u.categoria;
+          _unidadeMedidaController.text = u.codigo;
+        });
+    }
+
+    return SixWebSelectField(
+      label: context.t('units.title'),
+      value: valor,
+      items: itens,
+      icon: Icons.straighten,
+      onSelected: selecionar,
     );
   }
 
@@ -2737,15 +2810,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     required bool telaGrande,
     required bool telaMedia,
   }) {
-    const List<String> categorias = <String>[
-      'UNIDADE',
-      'AREA',
-      'DISTANCIA',
-      'VOLUME',
-      'TEMPO',
-      'PESO',
-      'MOEDA',
-    ];
     return _buildSectionCard(
       context: context,
       title: _t('produto.journey.operationalRulesTitle', 'Regras operacionais'),
@@ -2760,38 +2824,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             spacing: 16,
             runSpacing: 16,
             children: <Widget>[
-              SizedBox(
-                width: telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
-                child: _SixWebDropdownField(
-                  label: _t(
-                    'produto.fields.unitCategory',
-                    'Categoria da unidade',
-                  ),
-                  value: _categoriaUnidadeMedida,
-                  icon: Icons.straighten_outlined,
-                  options: categorias
-                      .map(
-                        (String codigo) => _SixWebDropdownOption(
-                          value: codigo,
-                          label: _categoriaUnidadeLabel(codigo),
-                          icon: Icons.straighten_outlined,
-                        ),
-                      )
-                      .toList(growable: false),
-                  onSelected:
-                      (String value) =>
-                          setState(() => _categoriaUnidadeMedida = value),
-                ),
-              ),
-              SizedBox(
-                width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
-                child: _buildTextField(
-                  context: context,
-                  controller: _unidadeMedidaController,
-                  label: _t('produto.fields.unitCode', 'Unidade de medida'),
-                  hintText: _t('produto.fields.unitCodeHint', 'Ex.: UN, KG, M'),
-                ),
-              ),
               SizedBox(
                 width: telaGrande ? 230 : (telaMedia ? 230 : double.infinity),
                 child: _buildTextField(
@@ -3086,6 +3118,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 context,
                 telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
               ),
+              SizedBox(width: telaGrande ? 280 : (telaMedia ? 240 : double.infinity),child:_seletorUnidade()),
               SizedBox(
                 width: telaGrande ? 180 : (telaMedia ? 160 : double.infinity),
                 child: _buildTextField(
