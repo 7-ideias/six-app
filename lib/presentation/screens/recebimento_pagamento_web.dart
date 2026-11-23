@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/web/six_web_sale_processing.dart';
 import 'package:sixpos/data/models/venda_descricao_padrao.dart';
 import 'dart:convert';
 import 'package:sixpos/data/models/recebimento_forma_input.dart';
@@ -888,11 +889,19 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   Future<void> _confirmarOperacao() async {
     if (_salvandoOperacao || _operacaoConcluida || _preparandoResumo) return;
-    setState(() => _preparandoResumo = true);
+    setState(() {
+      _preparandoResumo = true;
+      _salvandoOperacao = !widget.somenteSelecao && _exibirResumo;
+    });
     try {
       await _processarConfirmacao();
     } finally {
-      if (mounted) setState(() => _preparandoResumo = false);
+      if (mounted) {
+        setState(() {
+          _preparandoResumo = false;
+          _salvandoOperacao = false;
+        });
+      }
     }
   }
 
@@ -989,14 +998,11 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       return;
     }
 
-    if (!await _executarProcedimentoAntesDeFinalizarVenda()) {
-      return;
-    }
-
-    if (!mounted) return;
-    setState(() => _salvandoOperacao = true);
-
     try {
+      if (!await _executarProcedimentoAntesDeFinalizarVenda() || !mounted) {
+        return;
+      }
+
       final DateTime dataOperacao =
           context.read<LocaleSettingsProvider>().calendarNow;
       final OperacaoVendaInput input = OperacaoVendaInput(
@@ -1081,13 +1087,6 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         titulo: 'Erro ao enviar operação',
         mensagem: e.toString(),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _salvandoOperacao = false;
-          _preparandoResumo = false;
-        });
-      }
     }
   }
 
@@ -1854,47 +1853,42 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             child: Material(
               color: tokens.surfaceElevated,
               surfaceTintColor: Colors.transparent,
-              child: Stack(
-                children: <Widget>[
-                  Column(
-                    children: <Widget>[
-                      _buildCabecalhoCompacto(),
-                      Divider(height: 1, color: tokens.divider),
-                      Expanded(child: _exibirResumo
-                          ? _buildResumoRecebimento()
-                          : _buildPainelPrincipal(),),
-                      _buildBarraAcoes(),
-                    ],
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 3,
-                      color:
-                          !_tipoRecebimentoEscolhido
-                              ? Theme.of(context).colorScheme.primary
-                              : (_recebimentoParcial
-                                  ? _partialReceiptColor
-                                  : _totalReceiptColor),
+              child: SixWebSaleProcessing(
+                processing: _salvandoOperacao,
+                label: AppLocalizations.of(context)?.pdvWebProcessingReceiveAction ??
+                    'Processando recebimento',
+                description: _txt(
+                  'vendasAReceber.processingSubtitle',
+                  'Aguarde enquanto a operação financeira é sincronizada.',
+                ),
+                child: Stack(
+                  children: <Widget>[
+                    Column(
+                      children: <Widget>[
+                        _buildCabecalhoCompacto(),
+                        Divider(height: 1, color: tokens.divider),
+                        Expanded(child: _exibirResumo
+                            ? _buildResumoRecebimento()
+                            : _buildPainelPrincipal(),),
+                        _buildBarraAcoes(),
+                      ],
                     ),
-                  ),
-                  if (_salvandoOperacao)
-                    Positioned.fill(
-                      child: _RecebimentoPagamentoProcessingOverlay(
-                        title:
-                            AppLocalizations.of(
-                              context,
-                            )?.pdvWebProcessingReceiveAction ??
-                            'Processando recebimento',
-                        subtitle: _txt(
-                          'vendasAReceber.processingSubtitle',
-                          'Aguarde enquanto a operação financeira é sincronizada.',
-                        ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 3,
+                        color:
+                            !_tipoRecebimentoEscolhido
+                                ? Theme.of(context).colorScheme.primary
+                                : (_recebimentoParcial
+                                    ? _partialReceiptColor
+                                    : _totalReceiptColor),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2014,114 +2008,6 @@ class _RecebimentoPagamentoRouteSurface extends StatelessWidget {
             );
           },
           child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _RecebimentoPagamentoProcessingOverlay extends StatelessWidget {
-  const _RecebimentoPagamentoProcessingOverlay({
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF60A5FA)
-            : theme.colorScheme.primary;
-
-    return IgnorePointer(
-      child: Container(
-        color: const Color(0xFF081120).withValues(alpha: 0.34),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: tokens.surfaceElevated,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: tokens.cardBorder),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: const Color(0xFF020617).withValues(alpha: 0.30),
-                  blurRadius: 32,
-                  offset: const Offset(0, 18),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.4,
-                              valueColor: AlwaysStoppedAnimation<Color>(accent),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: tokens.primaryText,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              subtitle,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.secondaryText,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 5,
-                      backgroundColor: accent.withValues(alpha: 0.12),
-                      valueColor: AlwaysStoppedAnimation<Color>(accent),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
