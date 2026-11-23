@@ -700,7 +700,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                     SixWebPageShell.sectionGap,
                     _buildResumo(context, tokens, regionalizacao),
                     SixWebPageShell.sectionGap,
-                    _buildFiltros(context, tokens, regionalizacao, compacto),
+                    _buildFiltros(context, tokens, regionalizacao),
                     SixWebPageShell.sectionGap,
                     _buildResultados(context, tokens, regionalizacao, compacto),
                   ],
@@ -877,7 +877,6 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     BuildContext context,
     WebThemeTokens tokens,
     LocaleSettingsProvider regionalizacao,
-    bool compacto,
   ) {
     final ThemeData theme = Theme.of(context);
     final bool dark = theme.brightness == Brightness.dark;
@@ -885,6 +884,25 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         dark
             ? tokens.surfaceElevated.withValues(alpha: 0.94)
             : tokens.inputBackground;
+    final scaler = MediaQuery.textScalerOf(context);
+    // Mesmas duas linhas de texto e folgas dos seletores Web.
+    final labelStyle = theme.textTheme.labelMedium!;
+    final valueStyle = theme.textTheme.bodyLarge!;
+    final fieldHeight =
+        (30 +
+                scaler.scale(labelStyle.fontSize!) *
+                    (labelStyle.height ?? 1.4) +
+                scaler.scale(valueStyle.fontSize!) * (valueStyle.height ?? 1.5))
+            .ceilToDouble();
+    final currencyPrefix = Align(
+      widthFactor: 1,
+      child: Text(
+        regionalizacao.currencySymbol,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: tokens.secondaryText,
+        ),
+      ),
+    );
     final InputDecoration decoration = InputDecoration(
       filled: true,
       fillColor: inputFillColor,
@@ -899,6 +917,11 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       hintStyle: theme.textTheme.bodyMedium?.copyWith(
         color: tokens.mutedText,
         fontWeight: FontWeight.w500,
+      ),
+      // O prefixo dimensiona também a borda pintada pelo InputDecorator.
+      prefixIconConstraints: BoxConstraints(
+        minWidth: 48,
+        minHeight: fieldHeight,
       ),
       prefixIconColor: Theme.of(context).colorScheme.primary,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
@@ -918,13 +941,15 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       padding: const EdgeInsets.all(18),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final bool larguraCompacta = compacto || constraints.maxWidth < 1040;
-          final double campoBuscaLargura =
-              larguraCompacta ? constraints.maxWidth : 360;
-          final double campoMedioLargura =
-              larguraCompacta ? constraints.maxWidth : 220;
-          final double campoPequenoLargura =
-              larguraCompacta ? constraints.maxWidth : 170;
+          const gap = 12.0;
+          final textScale = scaler.scale(16) / 16;
+          final minWidth = 252.0 * textScale.clamp(1.0, double.infinity);
+          final columns =
+              constraints.maxWidth >= minWidth * 4 + gap * 3
+                  ? 4
+                  : constraints.maxWidth >= minWidth * 2 + gap
+                  ? 2
+                  : 1;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,31 +1004,36 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                 ],
               ),
               const SizedBox(height: 14),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.end,
+              GridView(
+                shrinkWrap: true,
+                primary: false,
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisExtent: fieldHeight,
+                  mainAxisSpacing: gap,
+                  crossAxisSpacing: gap,
+                ),
                 children: <Widget>[
-                  SizedBox(
-                    width: campoBuscaLargura,
-                    child: TextField(
-                      controller: _buscaController,
-                      decoration: decoration.copyWith(
-                        labelText: _text(
-                          context,
-                          'sales.query.search',
-                          pt: 'Venda, cliente, documento ou produto',
-                          en: 'Sale, customer, document or product',
-                          es: 'Venta, cliente, documento o producto',
-                        ),
-                        prefixIcon: const Icon(Icons.search_rounded),
+                  TextField(
+                    key: const ValueKey('sales-filter-search'),
+                    controller: _buscaController,
+                    decoration: decoration.copyWith(
+                      labelText: _text(
+                        context,
+                        'sales.query.search',
+                        pt: 'Venda, cliente, documento ou produto',
+                        en: 'Sale, customer, document or product',
+                        es: 'Venta, cliente, documento o producto',
                       ),
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (_) => _carregar(pagina: 0),
+                      prefixIcon: const Icon(Icons.search_rounded),
                     ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _carregar(pagina: 0),
                   ),
                   SixWebSelectField(
-                    width: campoMedioLargura,
+                    key: const ValueKey('sales-filter-period'),
                     label: _text(
                       context,
                       'sales.query.period',
@@ -1029,8 +1059,40 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       );
                     },
                   ),
+                  if (_usaPeriodoPersonalizado) ...[
+                    _DateFilterButton(
+                      key: const ValueKey('sales-filter-from'),
+                      tokens: tokens,
+                      label: _text(
+                        context,
+                        'sales.query.startDate',
+                        pt: 'Data inicial',
+                        en: 'Start date',
+                        es: 'Fecha inicial',
+                      ),
+                      value: regionalizacao.formatDate(
+                        _dataInicioPersonalizada,
+                      ),
+                      onPressed:
+                          () => _selecionarDataPersonalizada(inicial: true),
+                    ),
+                    _DateFilterButton(
+                      key: const ValueKey('sales-filter-to'),
+                      tokens: tokens,
+                      label: _text(
+                        context,
+                        'sales.query.endDate',
+                        pt: 'Data final',
+                        en: 'End date',
+                        es: 'Fecha final',
+                      ),
+                      value: regionalizacao.formatDate(_dataFimPersonalizada),
+                      onPressed:
+                          () => _selecionarDataPersonalizada(inicial: false),
+                    ),
+                  ],
                   SixWebMultiSelectField(
-                    width: campoMedioLargura,
+                    key: const ValueKey('sales-filter-sellers'),
                     label: _text(
                       context,
                       'sales.query.sellers',
@@ -1097,7 +1159,34 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                     },
                   ),
                   SixWebSelectField(
-                    width: campoMedioLargura,
+                    key: const ValueKey('sales-filter-order'),
+                    label: _text(
+                      context,
+                      'sales.query.order',
+                      pt: 'Ordenar por',
+                      en: 'Sort by',
+                      es: 'Ordenar por',
+                    ),
+                    value: _ordenacaoLabel(context, _ordenacao),
+                    items: <String>[
+                      for (final String value in const <String>[
+                        'MAIS_RECENTES',
+                        'MAIS_ANTIGAS',
+                        'MAIOR_VALOR',
+                        'MENOR_VALOR',
+                      ])
+                        _ordenacaoLabel(context, value),
+                    ],
+                    icon: Icons.swap_vert_rounded,
+                    onSelected: (String selected) {
+                      setState(() {
+                        _ordenacao = _orderValueFromLabel(context, selected);
+                      });
+                      _onFiltroAlterado(salvarImediatamente: true);
+                    },
+                  ),
+                  SixWebSelectField(
+                    key: const ValueKey('sales-filter-finances'),
                     label: _text(
                       context,
                       'sales.query.financialStatus',
@@ -1134,7 +1223,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                     },
                   ),
                   SixWebSelectField(
-                    width: campoMedioLargura,
+                    key: const ValueKey('sales-filter-returns'),
                     label: _text(
                       context,
                       'sales.query.returnStatus',
@@ -1166,152 +1255,81 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       _onFiltroAlterado(salvarImediatamente: true);
                     },
                   ),
+                  TextField(
+                    key: const ValueKey('sales-filter-min'),
+                    controller: _valorMinimoController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: decoration.copyWith(
+                      prefixIcon: currencyPrefix,
+                      labelText: _text(
+                        context,
+                        'sales.query.minimumValue',
+                        pt: 'Valor mínimo',
+                        en: 'Minimum value',
+                        es: 'Valor mínimo',
+                      ),
+                    ),
+                  ),
+                  TextField(
+                    key: const ValueKey('sales-filter-max'),
+                    controller: _valorMaximoController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: decoration.copyWith(
+                      prefixIcon: currencyPrefix,
+                      labelText: _text(
+                        context,
+                        'sales.query.maximumValue',
+                        pt: 'Valor máximo',
+                        en: 'Maximum value',
+                        es: 'Valor máximo',
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              if (_usaPeriodoPersonalizado) ...<Widget>[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+              const SizedBox(height: 14),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 10,
+                  runSpacing: 10,
                   children: <Widget>[
-                    _DateFilterButton(
-                      tokens: tokens,
-                      width: campoMedioLargura,
-                      label: _text(
-                        context,
-                        'sales.query.startDate',
-                        pt: 'Data inicial',
-                        en: 'Start date',
-                        es: 'Fecha inicial',
-                      ),
-                      value: regionalizacao.formatDate(
-                        _dataInicioPersonalizada,
-                      ),
-                      onPressed:
-                          () => _selecionarDataPersonalizada(inicial: true),
-                    ),
-                    _DateFilterButton(
-                      tokens: tokens,
-                      width: campoMedioLargura,
-                      label: _text(
-                        context,
-                        'sales.query.endDate',
-                        pt: 'Data final',
-                        en: 'End date',
-                        es: 'Fecha final',
-                      ),
-                      value: regionalizacao.formatDate(_dataFimPersonalizada),
-                      onPressed:
-                          () => _selecionarDataPersonalizada(inicial: false),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.end,
-                children: <Widget>[
-                  SizedBox(
-                    width: campoPequenoLargura,
-                    child: TextField(
-                      controller: _valorMinimoController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: decoration.copyWith(
-                        labelText: _text(
-                          context,
-                          'sales.query.minimumValue',
-                          pt: 'Valor mínimo',
-                          en: 'Minimum value',
-                          es: 'Valor mínimo',
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: campoPequenoLargura,
-                    child: TextField(
-                      controller: _valorMaximoController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: decoration.copyWith(
-                        labelText: _text(
-                          context,
-                          'sales.query.maximumValue',
-                          pt: 'Valor máximo',
-                          en: 'Maximum value',
-                          es: 'Valor máximo',
-                        ),
-                      ),
-                    ),
-                  ),
-                  SixWebSelectField(
-                    width: campoMedioLargura,
-                    label: _text(
-                      context,
-                      'sales.query.order',
-                      pt: 'Ordenar por',
-                      en: 'Sort by',
-                      es: 'Ordenar por',
-                    ),
-                    value: _ordenacaoLabel(context, _ordenacao),
-                    items: <String>[
-                      for (final String value in const <String>[
-                        'MAIS_RECENTES',
-                        'MAIS_ANTIGAS',
-                        'MAIOR_VALOR',
-                        'MENOR_VALOR',
-                      ])
-                        _ordenacaoLabel(context, value),
-                    ],
-                    icon: Icons.swap_vert_rounded,
-                    onSelected: (String selected) {
-                      setState(() {
-                        _ordenacao = _orderValueFromLabel(context, selected);
-                      });
-                      _onFiltroAlterado(salvarImediatamente: true);
-                    },
-                  ),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: <Widget>[
-                      if (_temFiltrosAtivos)
-                        OutlinedButton.icon(
-                          style: SixWebActionStyles.secondary(context),
-                          onPressed: _carregando ? null : _limparFiltros,
-                          icon: const Icon(Icons.filter_alt_off_outlined),
-                          label: Text(
-                            _text(
-                              context,
-                              'common.clear',
-                              pt: 'Limpar',
-                              en: 'Clear',
-                              es: 'Limpiar',
-                            ),
-                          ),
-                        ),
-                      FilledButton.icon(
-                        onPressed:
-                            _carregando ? null : () => _carregar(pagina: 0),
-                        icon: const Icon(Icons.search_rounded),
+                    if (_temFiltrosAtivos)
+                      OutlinedButton.icon(
+                        style: SixWebActionStyles.secondary(context),
+                        onPressed: _carregando ? null : _limparFiltros,
+                        icon: const Icon(Icons.filter_alt_off_outlined),
                         label: Text(
                           _text(
                             context,
-                            'sales.query.applyFilters',
-                            pt: 'Aplicar filtros',
-                            en: 'Apply filters',
-                            es: 'Aplicar filtros',
+                            'common.clear',
+                            pt: 'Limpar',
+                            en: 'Clear',
+                            es: 'Limpiar',
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    FilledButton.icon(
+                      onPressed:
+                          _carregando ? null : () => _carregar(pagina: 0),
+                      icon: const Icon(Icons.search_rounded),
+                      label: Text(
+                        _text(
+                          context,
+                          'sales.query.applyFilters',
+                          pt: 'Aplicar filtros',
+                          en: 'Apply filters',
+                          es: 'Aplicar filtros',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           );
@@ -1575,15 +1593,14 @@ class _KpiCard extends StatelessWidget {
 
 class _DateFilterButton extends StatelessWidget {
   const _DateFilterButton({
+    super.key,
     required this.tokens,
-    required this.width,
     required this.label,
     required this.value,
     required this.onPressed,
   });
 
   final WebThemeTokens tokens;
-  final double width;
   final String label;
   final String value;
   final VoidCallback onPressed;
@@ -1591,43 +1608,41 @@ class _DateFilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return SizedBox(
-      width: width,
-      child: OutlinedButton(
-        style: SixWebActionStyles.secondary(context),
-        onPressed: onPressed,
-        child: Row(
-          children: <Widget>[
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: tokens.mutedText,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return OutlinedButton(
+      style: SixWebActionStyles.secondary(context),
+      onPressed: onPressed,
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.calendar_today_outlined,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: tokens.mutedText,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w800,
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

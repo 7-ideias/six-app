@@ -7,6 +7,8 @@ on:
       - 'lib/presentation/components/web/pdv_seletor_itens_web.dart'
       - 'lib/presentation/screens/produto_lista_sub_painel_web.dart'
       - 'lib/core/utils/produto_helper.dart'
+      - 'lib/presentation/screens/consulta_vendas_web_page.dart'
+      - 'test/presentation/screens/consulta_vendas_filtros_web_test.dart'
       - 'test/presentation/screens/produto_lista_sub_painel_web_test.dart'
       - '.github/workflows/pdv-web-validation.yml'
 
@@ -31,3 +33,5 @@ jobs:
           flutter test --no-pub --reporter expanded
           --name 'PDV|seletor|selecao web|dialogo de selecao'
           test/presentation/screens/produto_lista_sub_painel_web_test.dart
+      - name: Testar filtros da consulta de vendas em larguras e temas diferentes
+        run: flutter test --no-pub --reporter expanded test/presentation/screens/consulta_vendas_filtros_web_test.dart
