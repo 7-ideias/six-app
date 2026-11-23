@@ -113,6 +113,23 @@ void main() {
     },
   );
 
+  testWidgets('opening without change highlights zero before submitting', (
+    WidgetTester tester,
+  ) async {
+    final fake = _FakeCaixaApiClient(startClosed: true);
+    await _pumpCash(tester, themeCase: _darkTheme, fake: fake);
+    final open = find.widgetWithText(FilledButton, 'Abrir caixa');
+    await tester.ensureVisible(open);
+    await tester.tap(open);
+    await tester.pumpAndSettle();
+    expect(find.text('Abrir caixa sem troco inicial?'), findsOneWidget);
+    expect(find.textContaining('0,00'), findsWidgets);
+    expect(fake.openCalls, 0);
+    await tester.tap(open.last);
+    await tester.pumpAndSettle();
+    expect(fake.lastOpenRequest?.valorAbertura, 0);
+  });
+
   testWidgets('opening cash sends selected cash and initial balance once', (
     WidgetTester tester,
   ) async {
@@ -130,6 +147,9 @@ void main() {
         find.widgetWithText(FilledButton, 'Abrir caixa'),
         warnIfMissed: false,
       );
+      await tester.pumpAndSettle();
+      expect(find.text('Abrir caixa sem troco inicial?'), findsNothing);
+      await tester.tap(find.widgetWithText(FilledButton, 'Abrir caixa').last);
       await tester.pump();
       expect(fake.openCalls, 1);
 
@@ -162,6 +182,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Abrir caixa'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.widgetWithText(FilledButton, 'Abrir caixa').last);
+    await tester.pumpAndSettle();
     expect(errorFake.openCalls, 1);
     expect(errorFake.session, isNull);
     expect(

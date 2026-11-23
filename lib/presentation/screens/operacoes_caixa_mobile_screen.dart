@@ -3632,10 +3632,9 @@ class _OperacoesCaixaMobileScreenState
     bool confirmou = false;
     try {
       confirmou = await _confirmarAcao(
-        title: _txt(
-          'caixa.operacoes.openConfirmTitle',
-          'Confirmar abertura de caixa?',
-        ),
+        title: valorAbertura == 0
+              ? context.t('caixa.operacoes.openWithoutChangeTitle')
+              : context.t('caixa.operacoes.openConfirmTitle'),
         message: _mensagemConfirmacaoAbertura(
           caixa: caixaSelecionado,
           valorAbertura: valorAbertura,
@@ -3657,6 +3656,8 @@ class _OperacoesCaixaMobileScreenState
           valorAbertura: valorAbertura,
         ),
       );
+      if (!mounted) return;
+      _trocoInicialController.clear();
       await _carregarDadosIniciais(idCaixaPreferencial: caixaSelecionado.id);
       if (!mounted) return;
       _snack(

@@ -61,9 +61,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   final CaixaService _caixaService = CaixaModule.caixaService;
   final ScrollController _scrollController = ScrollController();
 
-  final TextEditingController _trocoInicialController = TextEditingController(
-    text: '200,00',
-  );
+  final TextEditingController _trocoInicialController = TextEditingController();
   final TextEditingController _fechamentoDinheiroController =
       TextEditingController();
   final TextEditingController _fechamentoPixController =
@@ -923,7 +921,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 child: _buildTextField(
                   theme,
                   controller: _trocoInicialController,
-                  hint: '0,00',
+                  hint: context.read<LocaleSettingsProvider>().formatDecimal(0),
                   prefix: _currencyInputPrefix(),
                 ),
               ),
@@ -2577,6 +2575,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           valorAbertura: valorAbertura,
         ),
       );
+      if (!mounted) return;
+      _trocoInicialController.clear();
       await _carregarDadosIniciais();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2618,10 +2618,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
           builder:
               (context) => _buildConfirmDialog(
-                title: _txt(
-                  'caixa.operacoes.openConfirmTitle',
-                  'Confirmar abertura de caixa?',
-                ),
+                title: valorAbertura == 0
+                      ? context.t('caixa.operacoes.openWithoutChangeTitle')
+                      : context.t('caixa.operacoes.openConfirmTitle'),
                 message: _mensagemConfirmacaoAbertura(
                   caixa: caixa,
                   valorAbertura: valorAbertura,

@@ -1737,6 +1737,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         setState(() {
           _carregandoSessaoCaixaPdv = false;
         });
+        if (_podeReceberPdv && _pdvTemSessaoCaixaAberta) {
+          _restaurarFocoLeituraRapidaSeCabivel();
+        }
       }
     }
   }
@@ -1839,8 +1842,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   bool get _pdvPodeLancarVenda {
-    return context.read<ColaboradorAutorizacoesProvider>().podeRegistrarVendaPdv;
+    return context.read<ColaboradorAutorizacoesProvider>().podeRegistrarVendaPdv &&
+        !_aguardandoCaixaParaVenda;
   }
+
+  bool get _aguardandoCaixaParaVenda =>
+      _podeReceberPdv &&
+      (_carregandoSessaoCaixaPdv || !_pdvTemSessaoCaixaAberta);
 
   bool get _podeReceberPdv =>
       context.read<ColaboradorAutorizacoesProvider>().podeReceberVendaPdv;
@@ -1857,33 +1865,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
     }
 
-    if (!mounted) {
-      return false;
-    }
-
-    _mostrarAvisoSessaoCaixaObrigatoriaPdv();
     return false;
-  }
-
-  void _mostrarAvisoSessaoCaixaObrigatoriaPdv() {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.t('pdv.openForPayment'),
-        ),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: context.t(
-            'pdv.openCashOperations',
-            fallback: 'Operações de caixa',
-          ),
-          onPressed: () {
-            _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas);
-          },
-        ),
-      ),
-    );
   }
 
   bool get _atalhosContextuaisDisponiveis {
@@ -2608,6 +2590,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _focarCodigoBarras() {
+    if (!_pdvPodeLancarVenda) return;
     if (_vendaNaoLiquidadaEmConsulta != null &&
         !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
@@ -2616,6 +2599,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _abrirDialogClienteRapido() async {
+    if (!_pdvPodeLancarVenda) return;
     if (_vendaNaoLiquidadaEmConsulta != null) {
       return;
     }
@@ -2654,7 +2638,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return KeyEventResult.ignored;
     }
 
-    if (_overlayRecebimentoAberto) {
+    if (_aguardandoCaixaParaVenda || _overlayRecebimentoAberto) {
       return KeyEventResult.handled;
     }
 

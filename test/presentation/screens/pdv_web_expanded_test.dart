@@ -78,6 +78,23 @@ void main() {
     },
   );
 
+  testWidgets('operador com recebimento precisa abrir o caixa antes de buscar itens', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1366, 768));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const _PdvExpandedTestApp(open: false, receber: true));
+    await tester.pump();
+    final page = tester.element(find.byType(PaginaPrincipalWeb));
+    acionarPdvFrenteCaixaPeloElemento(page);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Abrir caixa'), findsOneWidget);
+    expect(find.text('Buscar item'), findsNothing);
+    expect(find.text('Receber depois'), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.f4);
+    await tester.pump();
+    expect(find.byKey(const ValueKey('pdv-identificar-cliente-painel')), findsNothing);
+  });
+
   for (final brightness in Brightness.values) {
     testWidgets(
       'vendedor pode lançar com caixa fechado e sem ações de recebimento ($brightness)',
@@ -113,10 +130,12 @@ class _FakeCaixaService extends Fake implements CaixaService {
 class _PdvExpandedTestApp extends StatelessWidget {
   const _PdvExpandedTestApp({
     this.open = true,
+    this.receber,
     this.brightness = Brightness.light,
   });
   final bool open;
   final Brightness brightness;
+  final bool? receber;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +143,7 @@ class _PdvExpandedTestApp extends StatelessWidget {
       providers: <SingleChildWidget>[
         ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
         ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
-          create: (_) => PermissoesPdvTeste(receber: open),
+          create: (_) => PermissoesPdvTeste(receber: receber ?? open),
         ),
         ChangeNotifierProvider<StreakProvider>(
           create:
