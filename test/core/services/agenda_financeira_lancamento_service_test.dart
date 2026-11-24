@@ -11,6 +11,15 @@ import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('cadastro preserva o ID do lançamento para a baixa', () {
+    final resposta = LancamentoAgendaFinanceiraResponse.fromJson({
+      'idLancamento': 'conta-123',
+      'mensagem': 'Lançamento criado',
+    });
+    expect(resposta.id, 'conta-123');
+    expect(LancamentoAgendaFinanceiraResponse.fromJson({'id': '42'}).id, '42');
+  });
+
   test(
     'edição cadastral envia PATCH no espaço correto sem campos financeiros',
     () async {
