@@ -1178,7 +1178,16 @@ class _AgendaFinanceiraMobileScreenState
       if (!mounted) return;
     }
     if (item['registrarPagamento'] == true) {
-      await _liquidarComFormas(item, parcialInicial: false);
+      if ((item['id']?.toString().trim() ?? '').isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.t('agenda.saved.openFromList')),
+        ));
+        await _consultar();
+        return;
+      }
+      await _liquidarComFormas(item, parcialInicial: false, recemSalvo: true);
+      if (mounted) await _consultar();
+      return;
     }
     if (!mounted) return;
     await _consultar(mostrarFeedback: true);
@@ -1338,9 +1347,28 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _confirmarTotal(Map<String, dynamic> item, String label) =>
       _liquidarComFormas(item, parcialInicial: false);
 
+  void _oferecerRetomada(Map<String, dynamic> item) {
+    final espaco = _service.espacoFinanceiro;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text(context.t('agenda.saved.checkSettlement')),
+      action: SnackBarAction(
+        label: context.t('agenda.saved.resume'),
+        onPressed: () async {
+          if (!mounted || ModalRoute.of(context)?.isCurrent != true ||
+              _service.espacoFinanceiro != espaco) return;
+          await _liquidarComFormas(item, parcialInicial: false, recemSalvo: true);
+          if (mounted) await _consultar();
+        },
+      ),
+    ));
+  }
+
   Future<void> _liquidarComFormas(
     Map<String, dynamic> item, {
     required bool parcialInicial,
+    bool recemSalvo = false,
   }) async {
     if (_executandoAcao) return;
     final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
@@ -1361,8 +1389,16 @@ class _AgendaFinanceiraMobileScreenState
         if (mounted) await _abrirFaturaMobile(faturaId);
         return;
       }
+      if (AgendaBaixaDados.encerrada(detalhe)) {
+        if (mounted && !recemSalvo) await _consultar();
+        return;
+      }
       dadosBaixa = AgendaBaixaDados.fromDetalhe(detalhe, item);
     } catch (_) {
+      if (recemSalvo && mounted) {
+        _oferecerRetomada(item);
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -1397,6 +1433,7 @@ class _AgendaFinanceiraMobileScreenState
           : SixMobileRecebimentoTipo.total,
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
+      fecharAoFalhar: recemSalvo,
       onConfirm: (resultado) async {
         final dataLiquidacao = resultado.dataLiquidacao ??
             context.read<LocaleSettingsProvider>().calendarNow;
@@ -1443,8 +1480,12 @@ class _AgendaFinanceiraMobileScreenState
         }
       },
     );
-    if (resultado == null || !mounted) return;
-    await _consultar();
+    if (!mounted) return;
+    if (resultado == null) {
+      if (recemSalvo) _oferecerRetomada(item);
+      return;
+    }
+    if (!recemSalvo) await _consultar();
     if (mounted)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.t('agenda.settlement.success'))),

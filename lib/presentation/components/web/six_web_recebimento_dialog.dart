@@ -72,6 +72,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     this.dadosBaixa,
     this.agendaService,
     this.onConfirm,
+    this.fecharAoFalhar = false,
     this.permitirParcial = true,
     this.pagamento = false,
     this.permitirAjustes = false,
@@ -92,6 +93,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final String? contato;
   final AgendaBaixaDados? dadosBaixa;
   final AgendaFinanceiraLancamentoService? agendaService;
+  final bool fecharAoFalhar;
   final Future<void> Function(SixWebRecebimentoResultado)? onConfirm;
   final bool permitirParcial;
   final bool pagamento;
@@ -114,6 +116,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     AgendaBaixaDados? dadosBaixa,
     AgendaFinanceiraLancamentoService? agendaService,
     Future<void> Function(SixWebRecebimentoResultado)? onConfirm,
+    bool fecharAoFalhar = false,
     bool permitirParcial = true,
     bool pagamento = false,
     bool permitirAjustes = false,
@@ -153,6 +156,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
                 dadosBaixa: dadosBaixa,
                 agendaService: agendaService,
                 onConfirm: onConfirm,
+                fecharAoFalhar: fecharAoFalhar,
                 permitirParcial: permitirParcial,
                 pagamento: pagamento,
                 permitirAjustes: permitirAjustes,
@@ -576,6 +580,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       );
       if (mounted) Navigator.of(context).pop(resultado);
     } catch (_) {
+      if (mounted && widget.fecharAoFalhar) {
+        Navigator.of(context).pop();
+        return;
+      }
       if (mounted)
         setState(() {
           _processando = false;

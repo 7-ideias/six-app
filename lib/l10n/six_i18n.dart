@@ -77,6 +77,9 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.saved.openFromList': 'Conta salva. Abra o lançamento na agenda para conferir a baixa.',
+    'agenda.saved.checkSettlement': 'Conta salva. Consulte a situação da baixa antes de continuar.',
+    'agenda.saved.resume': 'Retomar baixa',
     'pdv.empty.products': 'Ainda não há produtos cadastrados.',
     'pdv.empty.services': 'Ainda não há serviços cadastrados.',
     'pdv.empty.inactiveProducts': 'Nenhum produto ativo para venda.',
@@ -3463,6 +3466,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.saved.openFromList': 'Entry saved. Open it in the agenda to check its settlement.',
+    'agenda.saved.checkSettlement': 'Entry saved. Check the settlement status before continuing.',
+    'agenda.saved.resume': 'Resume settlement',
     'pdv.empty.products': 'No products have been added yet.',
     'pdv.empty.services': 'No services have been added yet.',
     'pdv.empty.inactiveProducts': 'No active products are available to sell.',
@@ -6622,6 +6628,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.saved.openFromList': 'Cuenta guardada. Abre el movimiento en la agenda para consultar su liquidación.',
+    'agenda.saved.checkSettlement': 'Cuenta guardada. Consulta el estado de la liquidación antes de continuar.',
+    'agenda.saved.resume': 'Retomar liquidación',
     'pdv.empty.products': 'Aún no hay productos registrados.',
     'pdv.empty.services': 'Aún no hay servicios registrados.',
     'pdv.empty.inactiveProducts': 'No hay productos activos para la venta.',
