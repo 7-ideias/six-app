@@ -263,7 +263,7 @@ class LancamentoAgendaFinanceiraResponse {
     Map<String, dynamic> json,
   ) {
     return LancamentoAgendaFinanceiraResponse(
-      id: json['id']?.toString() ?? '',
+      id: (json['idLancamento'] ?? json['id'])?.toString().trim() ?? '',
       status: json['status']?.toString() ?? 'CRIADO',
       mensagem: json['mensagem']?.toString(),
     );
