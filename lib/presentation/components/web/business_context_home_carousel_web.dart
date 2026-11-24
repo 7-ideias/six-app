@@ -3,7 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/perfil_negocio_model.dart';
 import '../../../l10n/perfil_negocio_texts.dart';
+import '../../../providers/colaborador_autorizacoes_provider.dart';
 import '../../../providers/home_banners_provider.dart';
+import '../../navigation/web_destination_routes.dart';
+import '../../navigation/web_navigation_item.dart';
+import '../../navigation/web_navigation_registry.dart';
+import '../../navigation/web_navigation_permission_adapter.dart';
 import '../../theme/web_theme_tokens.dart';
 import '../perfil_negocio_icons.dart';
 import '../six_backend_loading.dart';
@@ -12,13 +17,30 @@ class BusinessContextHomeCarouselWeb extends StatelessWidget {
   const BusinessContextHomeCarouselWeb({
     super.key,
     required this.onConfigure,
+    required this.onOpen,
   });
 
   final Future<void> Function() onConfigure;
 
+  final ValueChanged<WebNavigationDestination> onOpen;
+
+  static const _destinations = {
+    'FINANCEIRO': WebNavigationDestination.financialAgenda,
+    'VENDAS': WebNavigationDestination.operationsSales,
+    'REPAROS': WebNavigationDestination.operationsTechnicalServices,
+    'COMUNICACAO': WebNavigationDestination.peopleCustomers,
+  };
+
   @override
   Widget build(BuildContext context) {
     final HomeBannersProvider provider = context.watch<HomeBannersProvider>();
+    final access = context.watch<ColaboradorAutorizacoesProvider>();
+    final visible = WebNavigationRegistry.activeItemsForPermissions(
+      WebNavigationPermissionAdapter.permissionsFor(access),
+      includeUnresolved: WebNavigationPermissionAdapter.includeUnresolvedFor(
+        access,
+      ),
+    ).expand((item) => item.flatten()).map((item) => item.destination).toSet();
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final HomeBannersModel? dados = provider.dados;
 
@@ -89,16 +111,28 @@ class BusinessContextHomeCarouselWeb extends StatelessWidget {
             return Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: dados.banners.map((BannerHomeModel banner) {
-                return SizedBox(
-                  width: width,
-                  height: 225,
-                  child: _BannerCard(
-                    banner: banner,
-                    imageUrl: banner.imagemPara(physicalWidth),
-                  ),
-                );
-              }).toList(growable: false),
+              children: dados.banners
+                  .map((BannerHomeModel banner) {
+                    final target = _destinations[banner.tema];
+                    final destination = visible.contains(target)
+                        ? target
+                        : null;
+                    return SizedBox(
+                      width: width,
+                      height: 225,
+                      child: _BannerCard(
+                        onTap: destination != null
+                            ? () => onOpen(destination)
+                            : null,
+                        url: destination != null
+                            ? Uri.parse(webDestinationRoutes[destination]!)
+                            : null,
+                        banner: banner,
+                        imageUrl: banner.imagemPara(physicalWidth),
+                      ),
+                    );
+                  })
+                  .toList(growable: false),
             );
           },
         ),
@@ -108,7 +142,14 @@ class BusinessContextHomeCarouselWeb extends StatelessWidget {
 }
 
 class _BannerCard extends StatelessWidget {
-  const _BannerCard({required this.banner, required this.imageUrl});
+  const _BannerCard({
+    required this.banner,
+    required this.imageUrl,
+    required this.onTap,
+    required this.url,
+  });
+  final VoidCallback? onTap;
+  final Uri? url;
   final BannerHomeModel banner;
   final String? imageUrl;
 
@@ -185,6 +226,19 @@ class _BannerCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (onTap != null)
+              Material(
+                type: MaterialType.transparency,
+                child: Semantics(
+                  link: true,
+                  linkUrl: url,
+                  label: perfilNegocioText(
+                    context,
+                    'banner.${banner.tema}.title',
+                  ),
+                  child: InkWell(onTap: onTap),
+                ),
+              ),
           ],
         ),
       ),

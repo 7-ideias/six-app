@@ -6,6 +6,8 @@ import 'package:sixpos/presentation/components/mobile/workspace_today_mobile.dar
 import 'agenda_financeira_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 import 'atendimentos_tecnicos_mobile_screen.dart';
+import 'clientes_usuario_mobile_screen.dart';
+import 'consulta_vendas_mobile_screen.dart';
 import 'estoque_mobile_screen.dart';
 import 'operacoes_caixa_mobile_screen.dart';
 import 'receber_mobile_screen.dart';
@@ -752,6 +754,28 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   value: _homeBannersProvider,
                   child: BusinessContextHomeCarouselMobile(
                     onConfigure: _abrirPerfilNegocio,
+                    actions: {
+                      if (ehAdmin || autorizacoes.podeVerQuantoVendeu)
+                        'FINANCEIRO': () =>
+                            _openTodaySection(WorkspaceHomeSection.financial),
+                      if (ehAdmin ||
+                          autorizacoes.podeFazerVenda ||
+                          autorizacoes.podeVerQuantoVendeu)
+                        'VENDAS': () => _navigateTo(
+                          context,
+                          const ConsultaVendasMobileScreen(),
+                        ),
+                      if (ehAdmin ||
+                          autorizacoes.podeAcompanharAssistenciaTecnica)
+                        'REPAROS': () => _openTodaySection(
+                          WorkspaceHomeSection.technicalServices,
+                        ),
+                      if (ehAdmin || autorizacoes.podeEditarCliente)
+                        'COMUNICACAO': () => _navigateTo(
+                          context,
+                          const ClientesUsuarioMobileScreen(),
+                        ),
+                    },
                   ),
                 ),
               ),

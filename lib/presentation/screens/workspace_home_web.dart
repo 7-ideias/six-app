@@ -308,6 +308,8 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                         SixWebPageShell.sectionGap,
                         if (isAdminUser || isCollaborator) ...<Widget>[
                           BusinessContextHomeCarouselWeb(
+                            onOpen: (destination) =>
+                                _resolve(context, destination),
                             onConfigure: () async {
                               final bool updated =
                                   await showPerfilNegocioWebDialog(context);
