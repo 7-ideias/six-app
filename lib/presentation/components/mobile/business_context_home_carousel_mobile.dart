@@ -13,9 +13,12 @@ class BusinessContextHomeCarouselMobile extends StatelessWidget {
   const BusinessContextHomeCarouselMobile({
     super.key,
     required this.onConfigure,
+    required this.actions,
   });
 
   final Future<void> Function() onConfigure;
+
+  final Map<String, VoidCallback> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +98,7 @@ class BusinessContextHomeCarouselMobile extends StatelessWidget {
               return SizedBox(
                 width: MediaQuery.sizeOf(context).width.clamp(280, 338).toDouble(),
                 child: _BannerCard(
+                  onTap: actions[banner.tema],
                   banner: banner,
                   imageUrl: banner.imagemPara(physicalWidth),
                 ),
@@ -144,7 +148,12 @@ class _HomeBannersShimmer extends StatelessWidget {
 }
 
 class _BannerCard extends StatelessWidget {
-  const _BannerCard({required this.banner, required this.imageUrl});
+  const _BannerCard({
+    required this.banner,
+    required this.imageUrl,
+    required this.onTap,
+  });
+  final VoidCallback? onTap;
   final BannerHomeModel banner;
   final String? imageUrl;
 
@@ -225,6 +234,18 @@ class _BannerCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (onTap != null)
+              Material(
+                type: MaterialType.transparency,
+                child: Semantics(
+                  link: true,
+                  label: perfilNegocioText(
+                    context,
+                    'banner.${banner.tema}.title',
+                  ),
+                  child: InkWell(onTap: onTap),
+                ),
+              ),
           ],
         ),
       ),
