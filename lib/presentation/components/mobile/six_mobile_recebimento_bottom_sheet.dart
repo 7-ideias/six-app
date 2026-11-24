@@ -86,6 +86,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     this.dadosBaixa,
     this.agendaService,
     this.onConfirm,
+    this.fecharAoFalhar = false,
   });
 
   final String titulo;
@@ -109,6 +110,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final CaixaApiClient? caixaApiClient;
   final AgendaBaixaDados? dadosBaixa;
   final AgendaFinanceiraLancamentoService? agendaService;
+  final bool fecharAoFalhar;
   final Future<void> Function(SixMobileRecebimentoResultado)? onConfirm;
 
   static Future<SixMobileRecebimentoResultado?> show(
@@ -135,6 +137,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     AgendaBaixaDados? dadosBaixa,
     AgendaFinanceiraLancamentoService? agendaService,
     Future<void> Function(SixMobileRecebimentoResultado)? onConfirm,
+    bool fecharAoFalhar = false,
   }) {
     return showModalBottomSheet<SixMobileRecebimentoResultado>(
       context: context,
@@ -169,6 +172,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
         dadosBaixa: dadosBaixa,
         agendaService: agendaService,
         onConfirm: onConfirm,
+        fecharAoFalhar: fecharAoFalhar,
       ),
     );
   }
@@ -559,6 +563,10 @@ class _SixMobileRecebimentoBottomSheetState
       try {
         await widget.onConfirm!(resultado);
       } catch (_) {
+        if (mounted && widget.fecharAoFalhar) {
+          Navigator.of(context).pop();
+          return;
+        }
         if (mounted)
           setState(() {
             _salvando = false;

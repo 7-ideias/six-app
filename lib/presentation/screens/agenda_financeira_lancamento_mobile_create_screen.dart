@@ -1119,7 +1119,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           .cadastrarLancamento(request);
       if (!mounted) return;
       _mostrarSnack('Lançamento salvo com sucesso.');
-      final String idRetorno = response.id.isEmpty
+      final String idRetorno = response.id.isEmpty && !_registrarPagamento
           ? request.uuidOperacaoApp
           : response.id;
       Navigator.of(context).pop({

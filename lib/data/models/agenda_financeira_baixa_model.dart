@@ -43,6 +43,13 @@ class AgendaBaixaDados {
   final bool contatoEditavel;
   final double valorOriginal, valorAberto;
   final DateTime? vencimento, competencia, dataInicial;
+  static bool encerrada(Map<String, dynamic> detalhe) {
+    final status = detalhe['status']?.toString().toUpperCase();
+    final saldo = num.tryParse('${detalhe['valorAberto']}');
+    return const {'PAGO', 'RECEBIDO', 'CANCELADO'}.contains(status) ||
+        (saldo != null && saldo <= 0);
+  }
+
   factory AgendaBaixaDados.fromDetalhe(
     Map<String, dynamic> detalhe,
     Map<String, dynamic> item,

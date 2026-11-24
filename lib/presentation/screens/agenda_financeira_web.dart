@@ -1503,9 +1503,28 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _confirmarTotal(Map<String, dynamic> item, String label) =>
       _liquidarComFormas(item, parcialInicial: false);
 
+  void _oferecerRetomada(Map<String, dynamic> item) {
+    final espaco = _service.espacoFinanceiro;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text(context.t('agenda.saved.checkSettlement')),
+      action: SnackBarAction(
+        label: context.t('agenda.saved.resume'),
+        onPressed: () async {
+          if (!mounted || ModalRoute.of(context)?.isCurrent != true ||
+              _service.espacoFinanceiro != espaco) return;
+          await _liquidarComFormas(item, parcialInicial: false, recemSalvo: true);
+          if (mounted) await _consultar();
+        },
+      ),
+    ));
+  }
+
   Future<void> _liquidarComFormas(
     Map<String, dynamic> item, {
     required bool parcialInicial,
+    bool recemSalvo = false,
   }) async {
     if (_executandoAcao) return;
     final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
@@ -1521,9 +1540,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         item['id'].toString(),
       );
       if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      if (AgendaBaixaDados.encerrada(detalhe)) {
+        if (mounted && !recemSalvo) await _consultar();
+        return;
+      }
       dadosBaixa = AgendaBaixaDados.fromDetalhe(detalhe, item);
       contaInicial = dadosBaixa.contaPrevistaId;
     } catch (_) {
+      if (recemSalvo && mounted) {
+        _oferecerRetomada(item);
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -1557,6 +1584,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       caixaApiClient: _caixaApiClient,
       dadosBaixa: dadosBaixa,
       agendaService: _service,
+      fecharAoFalhar: recemSalvo,
       onConfirm: (resultado) async {
         final dataLiquidacao = resultado.dataLiquidacao ??
             context.read<LocaleSettingsProvider>().calendarNow;
@@ -1603,8 +1631,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         }
       },
     );
-    if (resultado == null || !mounted) return;
-    await _consultar();
+    if (!mounted) return;
+    if (resultado == null) {
+      if (recemSalvo) _oferecerRetomada(item);
+      return;
+    }
+    if (!recemSalvo) await _consultar();
   }
 
   Future<String?> _buscarIdSessaoCaixaAberta() async {
@@ -1667,7 +1699,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (!mounted) return;
     }
     if (item['registrarPagamento'] == true) {
-      await _confirmarTotal(item, 'Liquidar');
+      if ((item['id']?.toString().trim() ?? '').isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.t('agenda.saved.openFromList')),
+        ));
+        await _consultar();
+        return;
+      }
+      await _liquidarComFormas(item, parcialInicial: false, recemSalvo: true);
+      if (mounted) await _consultar();
+      return;
     }
     if (!mounted) return;
     await _consultar(mostrarFeedback: true);
