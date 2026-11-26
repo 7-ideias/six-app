@@ -195,7 +195,7 @@ class ProdutoCadastroFormUtils {
 
   static const String tipoProduto = 'PRODUTO';
   static const String tipoServico = 'SERVICO';
-  static const String modeloPadrao = 'UNIDADE';
+  static const String modeloPadrao = '';
 
   // Campos opcionais devem seguir vazios no payload; labels de ausência são
   // resolvidas na apresentação conforme o idioma ativo.
@@ -396,7 +396,7 @@ class ProdutoCadastroFormUtils {
             : data.categoriaUnidadeMedida.trim().toUpperCase(),
         unidadeMedida: data.unidadeMedida.trim().isEmpty
             ? 'UN'
-            : data.unidadeMedida.trim().toUpperCase(),
+            : data.unidadeMedida.trim(),
         controlaEstoque: data.controlaEstoque,
         permiteVendaFracionada: data.permiteVendaFracionada,
         permiteEstoqueNegativo: data.permiteEstoqueNegativo,

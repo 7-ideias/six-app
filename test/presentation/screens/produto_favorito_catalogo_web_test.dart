@@ -1,3 +1,4 @@
+import 'package:sixpos/data/services/unidades/catalogo_unidades.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,7 @@ void main() {
               modoEdicao: true,
               produtoParaEdicao: _produto(),
               produtoService: service,
+              carregarCatalogoUnidades: () async => CatalogoUnidades({'catalogo':{'empresa':'empresa-test','padrao':'UN','unidades':[{'codigo':'UN','categoria':'UNIDADE','pt':'Unidade','ativa':true}]}}),
               categoriaApiClient: _FakeCategoriaCatalogoApiClient(),
               imagemSugestaoApiClient: _FakeImagemSugestaoApiClient(),
             ),

@@ -258,6 +258,7 @@ class VendaNaoLiquidadaItemModel {
     required this.nome,
     required this.quantidade,
     required this.valorUnitario,
+    this.nomeUnidade = '',
     required this.ehServico,
   });
 
@@ -265,6 +266,7 @@ class VendaNaoLiquidadaItemModel {
   final String nome;
   final int quantidade;
   final double valorUnitario;
+  final String nomeUnidade;
   final bool ehServico;
 
   factory VendaNaoLiquidadaItemModel.fromJson(Map<String, dynamic> json) {
@@ -273,6 +275,7 @@ class VendaNaoLiquidadaItemModel {
       nome: (json['nome'] ?? 'Item da venda').toString(),
       quantidade: _toInt(json['quantidade']),
       valorUnitario: _toDouble(json['valorUnitario']),
+      nomeUnidade: json['nomeUnidade']?.toString() ?? '',
       ehServico: json['ehServico'] == true,
     );
   }

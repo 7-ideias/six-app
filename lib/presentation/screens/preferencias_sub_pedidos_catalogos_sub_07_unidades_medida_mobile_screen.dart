@@ -1,133 +1,71 @@
 import 'package:flutter/material.dart';
+import '../../l10n/six_i18n.dart';
+import '../components/unidade_selecao_state.dart';
+import '../components/unidades_status.dart';
+import '../components/mobile/six_mobile_page_shell.dart';
 
 class UnidadesMedidaMobileScreen extends StatefulWidget {
-  const UnidadesMedidaMobileScreen({Key? key}) : super(key: key);
-
+  const UnidadesMedidaMobileScreen({super.key});
   @override
-  State<UnidadesMedidaMobileScreen> createState() =>
-      _UnidadesMedidaMobileScreenState();
+  State<UnidadesMedidaMobileScreen> createState() => _UnidadesState();
 }
 
-class _UnidadesMedidaMobileScreenState
-    extends State<UnidadesMedidaMobileScreen> {
-  final Map<String, List<_UnidadeItem>> grupos = {
-    'Unidades': [_UnidadeItem(sigla: 'un.', descricao: 'unidades')],
-    'Área': [
-      _UnidadeItem(sigla: 'm²', descricao: 'metros quadrados'),
-      _UnidadeItem(sigla: 'km²', descricao: 'quilômetros quadrados'),
-      _UnidadeItem(sigla: 'ha', descricao: 'hectares'),
-    ],
-    'Distância': [
-      _UnidadeItem(sigla: 'mm', descricao: 'milímetros'),
-      _UnidadeItem(sigla: 'cm', descricao: 'centímetros'),
-      _UnidadeItem(sigla: 'm', descricao: 'metros'),
-      _UnidadeItem(sigla: 'km', descricao: 'quilômetros'),
-    ],
-    'Volume': [
-      _UnidadeItem(sigla: 'mL', descricao: 'mililitros'),
-      _UnidadeItem(sigla: 'L', descricao: 'litros'),
-      _UnidadeItem(sigla: 'm³', descricao: 'metros cúbicos'),
-    ],
-    'Tempo': [
-      _UnidadeItem(sigla: 'min', descricao: 'minutos'),
-      _UnidadeItem(sigla: 'h', descricao: 'horas'),
-      _UnidadeItem(sigla: 'dias', descricao: 'dias'),
-      _UnidadeItem(sigla: 'semanas', descricao: 'semanas'),
-      _UnidadeItem(sigla: 'meses', descricao: 'meses'),
-    ],
-    'Peso': [
-      _UnidadeItem(sigla: 'g', descricao: 'gramas'),
-      _UnidadeItem(sigla: 'kg', descricao: 'quilogramas'),
-    ],
-  };
+class _UnidadesState extends State<UnidadesMedidaMobileScreen>
+    with UnidadeSelecaoState<UnidadesMedidaMobileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    carregarUnidades();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Unidade de medida"),
-        leading: const BackButton(),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Como você mede serviços e peças pra definir preços?',
-            style: TextStyle(fontSize: 14),
+    final cores = Theme.of(context).colorScheme;
+    final c = catalogo;
+    final lang = Localizations.localeOf(context).languageCode;
+    return SixMobilePageShell(
+      title: context.t('units.title'),
+      backgroundColor: cores.surface,
+      primaryColor: cores.surface,
+      secondaryColor: cores.surfaceContainer,
+      accentColor: cores.primary,
+      actions: [
+        if (c?.podeEditar == true)
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: context.t('units.add'),
+            onPressed: () => editarOpcao(mobile: true),
           ),
-          const SizedBox(height: 16),
-          ...grupos.entries.map((grupo) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  grupo.key,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+      ],
+      bodyBuilder:
+          (context, scroll, top) => ListView(
+            controller: scroll,
+            padding: EdgeInsets.fromLTRB(16, top, 16, 24),
+            children: [
+              if (c == null || erroUnidades)
+                UnidadesStatus(erro: erroUnidades, recarregar: carregarUnidades)
+              else
+                for (final u in c.unidades)
+                  ListTile(
+                    title: Text(u.label(lang)),
+                    leading: Icon(
+                      u.ativa
+                          ? Icons.check_circle_outline
+                          : Icons.circle_outlined,
+                    ),
+                    subtitle:
+                        u.codigo == c.padrao
+                            ? Text(context.t('units.default'))
+                            : null,
+                    trailing:
+                        c.podeEditar ? const Icon(Icons.edit_outlined) : null,
+                    onTap:
+                        c.podeEditar
+                            ? () => editarOpcao(unidade: u, mobile: true)
+                            : null,
                   ),
-                ),
-                const SizedBox(height: 8),
-                ...grupo.value.map((item) {
-                  return CheckboxListTile(
-                    value: item.selecionado,
-                    onChanged: (val) {
-                      setState(() {
-                        item.selecionado = val ?? false;
-                      });
-                    },
-                    title: Text(item.sigla),
-                    subtitle: Text(item.descricao),
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  );
-                }).toList(),
-                const Divider(),
-              ],
-            );
-          }).toList(),
-          const SizedBox(height: 80),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Ajuda, dica ou tooltip
-        },
-        backgroundColor: const Color(0xFFDAE529),
-        child: const Icon(Icons.lightbulb_outline, color: Colors.black),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              foregroundColor:
-                  Theme.of(context).colorScheme.onPrimaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () {
-              // salvar unidades selecionadas
-            },
-            child: const Text("salvar"),
+            ],
           ),
-        ),
-      ),
     );
   }
-}
-
-class _UnidadeItem {
-  final String sigla;
-  final String descricao;
-  bool selecionado = true;
-
-  _UnidadeItem({
-    required this.sigla,
-    required this.descricao,
-  });
 }

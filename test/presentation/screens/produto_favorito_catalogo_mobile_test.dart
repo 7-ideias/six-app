@@ -1,3 +1,4 @@
+import 'package:sixpos/data/services/unidades/catalogo_unidades.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -475,7 +476,8 @@ Future<void> _pumpMobileForm(
         home: CadastroProdutoMobileScreen(
           produtoParaEdicao: produto,
           produtoService: produtoService,
-          categoriaApiClient: _FakeCategoriaCatalogoApiClient(),
+          carregarCatalogoUnidades: () async => CatalogoUnidades({'catalogo':{'empresa':'empresa-test','padrao':'UN','unidades':[{'codigo':'UN','categoria':'UNIDADE','pt':'Unidade','ativa':true}]}}),
+              categoriaApiClient: _FakeCategoriaCatalogoApiClient(),
         ),
       ),
     ),

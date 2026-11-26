@@ -3165,7 +3165,7 @@ class _ItensDetalheTab extends StatelessWidget {
           children: <Widget>[
             _DetailMiniMetric(
               label: _t(context, 'Quantidade', 'Quantity', 'Cantidad'),
-              value: _formatQuantity(item.quantidade),
+              value: '${_formatQuantity(item.quantidade)} ${item.unidadeMedida}'.trim(),
             ),
             _DetailMiniMetric(
               label: _t(
@@ -3183,7 +3183,7 @@ class _ItensDetalheTab extends StatelessWidget {
                 'Already returned',
                 'Ya devuelta',
               ),
-              value: _formatQuantity(item.quantidadeDevolvida),
+              value: '${_formatQuantity(item.quantidadeDevolvida)} ${item.unidadeMedida}'.trim(),
             ),
             _DetailMiniMetric(
               label: _t(
@@ -3192,7 +3192,7 @@ class _ItensDetalheTab extends StatelessWidget {
                 'Still returnable',
                 'Aún devolvible',
               ),
-              value: _formatQuantity(item.quantidadeDisponivel),
+              value: '${_formatQuantity(item.quantidadeDisponivel)} ${item.unidadeMedida}'.trim(),
             ),
           ],
         );
@@ -3393,7 +3393,7 @@ class _DevolucoesDetalheTab extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 5),
                     child: Text(
-                      '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} · ${item.condicao}${item.retornouAoEstoque ? ' · ${_t(context, 'retornou ao estoque', 'returned to stock', 'volvió al stock')}' : ''}',
+                      '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} ${item.unidadeMedida} · ${item.condicao}${item.retornouAoEstoque ? ' · ${_t(context, 'retornou ao estoque', 'returned to stock', 'volvió al stock')}' : ''}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.secondaryText,
                       ),
@@ -3419,7 +3419,7 @@ class _DevolucoesDetalheTab extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 5),
                     child: Text(
-                      '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} · ${regionalizacao.formatCurrency(item.valorTotal)}',
+                      '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} ${item.unidadeMedida} · ${regionalizacao.formatCurrency(item.valorTotal)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.secondaryText,
                       ),

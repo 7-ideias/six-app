@@ -1,3 +1,4 @@
+import '../components/web/catalogo_unidades_web.dart';
 import 'package:flutter/material.dart';
 
 import '../components/web/six_web_select_field.dart';
@@ -42,7 +43,6 @@ class _RegrasOperacionaisConfiguracaoContentState
   bool _concederDescontoNaVenda = true;
   bool _aberturaCaixaObrigatoria = true;
   bool _gerarComissaoColaborador = true;
-  bool _produtoApenasComUnidadeMedida = true;
   bool _exigirJustificativaDesconto = true;
   bool _aplicarComissaoEmServicos = true;
   bool _aplicarComissaoEmProdutos = false;
@@ -82,14 +82,6 @@ class _RegrasOperacionaisConfiguracaoContentState
     'Modelo',
   };
 
-  final Set<String> _unidadesMedidaAutorizadas = <String>{
-    'Unidade',
-    'Área',
-    'Distância',
-    'Volume',
-    'Tempo',
-    'Peso',
-  };
 
   static const List<String> _visibilidadesCatalogo = <String>[
     'Público com link',
@@ -192,44 +184,6 @@ class _RegrasOperacionaisConfiguracaoContentState
     ),
   ];
 
-  static const List<_OpcaoOperacional> _unidadesDisponiveis =
-      <_OpcaoOperacional>[
-        _OpcaoOperacional(
-          label: 'Unidade',
-          description: 'Peças, acessórios e itens vendidos individualmente.',
-          icon: Icons.inventory_2_outlined,
-        ),
-        _OpcaoOperacional(
-          label: 'Área',
-          description: 'm², cm² e serviços medidos por superfície.',
-          icon: Icons.crop_square_rounded,
-        ),
-        _OpcaoOperacional(
-          label: 'Distância',
-          description: 'm, km e cobranças por deslocamento.',
-          icon: Icons.straighten_rounded,
-        ),
-        _OpcaoOperacional(
-          label: 'Volume',
-          description: 'ml, l e insumos medidos por capacidade.',
-          icon: Icons.water_drop_outlined,
-        ),
-        _OpcaoOperacional(
-          label: 'Tempo',
-          description: 'Hora técnica, diária, mensalidade e assinatura.',
-          icon: Icons.schedule_rounded,
-        ),
-        _OpcaoOperacional(
-          label: 'Peso',
-          description: 'g, kg e materiais vendidos por massa.',
-          icon: Icons.scale_rounded,
-        ),
-        _OpcaoOperacional(
-          label: 'Moeda',
-          description: 'Valores financeiros tratados como unidade de cobrança.',
-          icon: Icons.paid_outlined,
-        ),
-      ];
 
   @override
   void dispose() {
@@ -309,7 +263,6 @@ class _RegrasOperacionaisConfiguracaoContentState
           _concederDescontoNaVenda,
           _aberturaCaixaObrigatoria,
           _gerarComissaoColaborador,
-          _produtoApenasComUnidadeMedida,
         ].where((bool value) => value).length;
 
     return Container(
@@ -356,7 +309,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Esta tela prepara campos para catálogo por link, grade de produtos, venda por mesa, cliente, fiado, aprovação de crédito, estoque, caixa, desconto, comissão e unidades de medida. Nenhuma integração com backend foi adicionada nesta etapa.',
+                  'Esta tela prepara campos para catálogo por link, grade de produtos, venda por mesa, cliente, fiado, aprovação de crédito, estoque, caixa, desconto, comissão. As unidades de medida são salvas por comércio.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
@@ -388,12 +341,6 @@ class _RegrasOperacionaisConfiguracaoContentState
             icon: Icons.view_module_outlined,
             title: '${_atributosGradeSelecionados.length} atributos',
             subtitle: 'Grade',
-          ),
-          _buildSummaryPill(
-            theme,
-            icon: Icons.straighten_rounded,
-            title: '${_unidadesMedidaAutorizadas.length} unidades',
-            subtitle: 'Autorizadas',
           ),
         ],
       ),
@@ -1172,68 +1119,7 @@ class _RegrasOperacionaisConfiguracaoContentState
       subtitle:
           'Campos sugeridos para limitar cadastro e venda de produtos às unidades aceitas pela empresa.',
       icon: Icons.category_outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: <Widget>[
-              _buildRuleSwitch(
-                theme: theme,
-                title:
-                    'Permitir cadastro de produto apenas por unidade de medida',
-                subtitle:
-                    'Exige unidade informada e restringe o cadastro às categorias autorizadas abaixo.',
-                value: _produtoApenasComUnidadeMedida,
-                onChanged: (bool value) {
-                  setState(() => _produtoApenasComUnidadeMedida = value);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Unidades autorizadas para vendas',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Categorias disponíveis: unidades, área, distância, volume, tempo, peso e moeda.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children:
-                _unidadesDisponiveis.map((_OpcaoOperacional unidade) {
-                  final bool selected = _unidadesMedidaAutorizadas.contains(
-                    unidade.label,
-                  );
-                  return _buildChoiceCard(
-                    theme,
-                    option: unidade,
-                    selected: selected,
-                    onTap: () {
-                      setState(() {
-                        if (selected) {
-                          _unidadesMedidaAutorizadas.remove(unidade.label);
-                        } else {
-                          _unidadesMedidaAutorizadas.add(unidade.label);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-          ),
-        ],
-      ),
+      child: const CatalogoUnidadesWeb(),
     );
   }
 
