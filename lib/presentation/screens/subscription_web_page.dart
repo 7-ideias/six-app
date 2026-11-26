@@ -126,9 +126,10 @@ class SubscriptionOfferWebCard extends StatelessWidget {
           ],
           Text(
             offer.name,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           if (offer.description.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -148,6 +149,7 @@ class SubscriptionOfferWebCard extends StatelessWidget {
               name: offer.currency,
             ).format(offer.amountMinor / 100),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w800,
               letterSpacing: -1,
             ),
@@ -243,7 +245,7 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
     final tokens = WebThemeTokens.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.cardBackground,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: tokens.cardBorder),
       ),
@@ -266,6 +268,7 @@ class _SubscriptionWebPanelState extends State<SubscriptionWebPanel> {
             Text(
               billingText(context, 'subscriptionDetails'),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.8,
               ),
