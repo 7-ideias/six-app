@@ -10,7 +10,6 @@ import '../../l10n/storage_texts.dart';
 import '../controllers/billing_access_controller.dart';
 import '../components/six_backend_loading.dart';
 import '../theme/web_theme_tokens.dart';
-import '../theme/subscription_visuals.dart';
 
 Future<void> showBillingAccessWeb(
   BuildContext context,
@@ -86,16 +85,6 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.admin) {
-      return Theme(
-        data: SubscriptionVisuals.theme(context),
-        child: Builder(builder: _content),
-      );
-    }
-    return _content(context);
-  }
-
-  Widget _content(BuildContext context) {
     final colors = WebThemeTokens.of(context);
     final canViewPlans = context.watch<ColaboradorAutorizacoesProvider>().podeConsultarPlanoEConsumo;
     return AnimatedBuilder(
@@ -103,9 +92,7 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
       builder: (context, _) => PopScope(
         canPop: widget.admin && !controller.busy,
         child: Material(
-          color: widget.admin
-              ? colors.workspaceBackground
-              : SubscriptionVisuals.background,
+          color: colors.workspaceBackground,
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: widget.admin ? 680 : 1152),
@@ -123,7 +110,9 @@ class _BillingAccessWebPageState extends State<BillingAccessWebPage> {
                             context,
                             widget.admin ? 'title' : 'blocked',
                           ),
-                          style: Theme.of(context).textTheme.headlineSmall,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: colors.primaryText,
+                          ),
                         ),
                       ),
                       if (widget.admin)

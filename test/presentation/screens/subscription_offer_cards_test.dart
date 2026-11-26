@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/subscription_billing.dart';
+import 'package:sixpos/presentation/screens/billing_access_web_page.dart';
 import 'package:sixpos/presentation/screens/subscription_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/subscription_web_page.dart';
@@ -92,6 +93,29 @@ void main() {
     }
   });
   for (final theme in [ThemeData.light(), ThemeData.dark()]) {
+    testWidgets('billing gate inherits the ${theme.brightness} workspace', (
+      tester,
+    ) async {
+      final themed = WebThemeTokens.applyTo(theme);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>(
+          create: (_) => AccountPermissions('COLABORADOR'),
+          child: MaterialApp(
+            theme: themed,
+            home: const BillingAccessWebPage(companyId: 'test'),
+          ),
+        ),
+      );
+      final title = find.text('Restore business access');
+      final context = tester.element(title);
+      expect(Theme.of(context).brightness, theme.brightness);
+      final tokens = WebThemeTokens.resolve(theme);
+      expect(
+        context.findAncestorWidgetOfExactType<Material>()!.color,
+        tokens.workspaceBackground,
+      );
+      expect(tester.widget<Text>(title).style?.color, tokens.primaryText);
+    });
     testWidgets(
       'Account dialog shows usage and returns to opener in ${theme.brightness}',
       (tester) async {
@@ -178,6 +202,17 @@ void main() {
           );
           expect(tester.takeException(), isNull);
           expect(find.text('Professional'), findsOneWidget);
+          if (!mobile) {
+            final primary = WebThemeTokens.resolve(theme).primaryText;
+            expect(
+              tester.widget<Text>(find.text('Professional')).style?.color,
+              primary,
+            );
+            expect(
+              tester.widget<Text>(find.textContaining('1.00')).style?.color,
+              primary,
+            );
+          }
           expect(find.text('Your business'), findsOneWidget);
           expect(find.text('Inventory'), findsOneWidget);
           expect(
