@@ -24,16 +24,20 @@ void main() {
       expect(mainSource, contains("fallbackRoute: '/login/flutter'"));
     });
 
-    test('logout Web usa navegacao completa para login publico', () {
-      final String source = File('lib/pagina_principal_web.dart').readAsStringSync();
+    test('menu e bloqueio de cobrança usam o mesmo logout público', () {
+      final shell = File('lib/pagina_principal_web.dart').readAsStringSync();
+      final main = File('lib/main.dart').readAsStringSync();
+      final logout =
+          File(
+            'lib/presentation/navigation/web_logout.dart',
+          ).readAsStringSync();
 
-      expect(source, contains("replaceBrowserLocation('/login')"));
-      expect(
-        source,
-        isNot(
-          contains('MaterialPageRoute<void>(builder: (_) => const LoginPageWeb())'),
-        ),
-      );
+      expect(shell, contains('confirmWebLogout(context)'));
+      expect(main, contains('onExit: () => _exitWebBilling(context, company)'));
+      expect(main, contains('await confirmWebLogout('));
+      expect(logout, contains('await showSixWebLogoutDialog('));
+      expect(logout, contains("replaceBrowserLocation('/login')"));
+      expect(logout, isNot(contains('LoginPageWeb')));
     });
 
     test('sessao invalida no WebAuthGate usa navegacao completa', () {

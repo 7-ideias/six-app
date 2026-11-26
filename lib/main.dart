@@ -2,6 +2,7 @@ import 'presentation/screens/admin_push_campaigns_web_page.dart';
 import 'dart:async';
 
 import 'presentation/navigation/web_app_router.dart';
+import 'presentation/navigation/web_logout.dart';
 import 'presentation/navigation/web_destination_routes.dart';
 
 import 'core/services/auth_service.dart';
@@ -142,6 +143,49 @@ class _MyAppState extends State<MyApp> {
   late final _webRouteInformationProvider = PlatformRouteInformationProvider(
     initialRouteInformation: RouteInformation(uri: Uri.base),
   );
+
+  String? _billingLogoutCompany;
+
+  Future<void> _exitWebBilling(BuildContext context, String company) async {
+    if (_billingLogoutCompany != null) return;
+    // Logout clears the billing notifier before the confirmation dialog closes.
+    setState(() => _billingLogoutCompany = company);
+    var leavingDocument = false;
+    try {
+      leavingDocument = await confirmWebLogout(
+        context,
+        loginNavigator: _webRouter.navigatorKey.currentState,
+      );
+    } finally {
+      if (mounted && !leavingDocument) {
+        setState(() => _billingLogoutCompany = null);
+      }
+    }
+  }
+
+  Widget _webBillingGate(String company) {
+    // The billing gate sits above the app navigator. Give its dialogs a
+    // navigator in the same layer so the blocker cannot cover them.
+    return HeroControllerScope.none(
+      child: Navigator(
+        key: ValueKey(company),
+        pages: [
+          MaterialPage<void>(
+            child: Builder(
+              builder:
+                  (context) => BillingAccessWebPage(
+                    key: ValueKey('$company:$paymentRequiredCampaignId'),
+                    campaignId: paymentRequiredCampaignId,
+                    companyId: company,
+                    onExit: () => _exitWebBilling(context, company),
+                  ),
+            ),
+          ),
+        ],
+        onDidRemovePage: (_) {},
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -516,38 +560,42 @@ class _MyAppState extends State<MyApp> {
             : child ?? const SizedBox.shrink();
         return ValueListenableBuilder<String?>(
           valueListenable: paymentRequiredCompany,
-          builder: (context, company, _) => Stack(
-            children: [
-              ExcludeSemantics(
-                excluding: company != null,
-                child: FocusScope(
-                  descendantsAreFocusable: company == null,
-                  child: IgnorePointer(
-                    ignoring: company != null,
-                    child: kIsWeb
-                        ? resolvedChild
-                        : SixMobileThemeTransitionOverlay(child: resolvedChild),
+          builder: (context, requiredCompany, _) {
+            final company = _billingLogoutCompany ?? requiredCompany;
+            return Stack(
+              children: [
+                ExcludeSemantics(
+                  excluding: company != null,
+                  child: FocusScope(
+                    descendantsAreFocusable: company == null,
+                    child: IgnorePointer(
+                      ignoring: company != null,
+                      child:
+                          kIsWeb
+                              ? resolvedChild
+                              : SixMobileThemeTransitionOverlay(
+                                child: resolvedChild,
+                              ),
+                    ),
                   ),
                 ),
-              ),
-              if (company != null)
-                Positioned.fill(
-                  child: kIsWeb
-                      ? BillingAccessWebPage(
-                          key: ValueKey('$company:$paymentRequiredCampaignId'),
-                          campaignId: paymentRequiredCampaignId,
-                          companyId: company,
-                          onExit: _exitBilling,
-                        )
-                      : BillingAccessMobileScreen(
-                          key: ValueKey('$company:$paymentRequiredCampaignId'),
-                          campaignId: paymentRequiredCampaignId,
-                          companyId: company,
-                          onExit: _exitBilling,
-                        ),
-                ),
-            ],
-          ),
+                if (company != null)
+                  Positioned.fill(
+                    child:
+                        kIsWeb
+                            ? _webBillingGate(company)
+                            : BillingAccessMobileScreen(
+                              key: ValueKey(
+                                '$company:$paymentRequiredCampaignId',
+                              ),
+                              campaignId: paymentRequiredCampaignId,
+                              companyId: company,
+                              onExit: _exitMobileBilling,
+                            ),
+                  ),
+              ],
+            );
+          },
         );
       },
       locale: localeProvider.currentLocale,
@@ -631,12 +679,10 @@ class CatalogoPage extends StatelessWidget {
   }
 }
 
-Future<void> _exitBilling() async {
+Future<void> _exitMobileBilling() async {
   await AuthService().logout();
   PushNavigationService.navigatorKey.currentState?.pushAndRemoveUntil(
-    MaterialPageRoute<void>(
-      builder: (_) => kIsWeb ? const LoginPageWeb() : const SplashScreen(),
-    ),
+    MaterialPageRoute<void>(builder: (_) => const SplashScreen()),
     (_) => false,
   );
 }

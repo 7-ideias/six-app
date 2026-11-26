@@ -42,7 +42,7 @@ import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'presentation/screens/subscription_web_page.dart';
-import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
+import 'package:sixpos/presentation/navigation/web_logout.dart';
 import 'package:sixpos/presentation/components/web/six_web_pdv_clear_sale_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_pdv_quantity_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
@@ -50,7 +50,6 @@ import 'package:sixpos/presentation/components/web/six_web_theme_menu_entry.dart
 import 'package:sixpos/presentation/components/web/venda_em_andamento_fab_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
-import 'package:sixpos/presentation/services/web_authenticated_bootstrap_service.dart';
 import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
@@ -80,7 +79,6 @@ import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
-import 'core/utils/browser_location.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
@@ -1083,7 +1081,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   );
                   return;
                 case _WebHeaderUserAction.logout:
-                  _confirmarLogout();
+                  confirmWebLogout(context);
                   return;
               }
             },
@@ -1219,33 +1217,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         );
       },
     );
-  }
-
-  Future<void> _confirmarLogout() async {
-    final bool confirmar = await showSixWebLogoutDialog(
-      context: context,
-      onConfirm: _executarLogout,
-    );
-
-    if (!confirmar) return;
-    _redirecionarParaLoginPublico();
-  }
-
-  Future<void> _executarLogout() async {
-    await AuthService().logout();
-    WebAuthenticatedBootstrapService().clearInMemorySession(
-      mounted ? context : null,
-    );
-  }
-
-  void _redirecionarParaLoginPublico() {
-    if (replaceBrowserLocation('/login')) {
-      return;
-    }
-    if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
   }
 
   String _badgeNotificacaoTexto() {
