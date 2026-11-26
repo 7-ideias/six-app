@@ -315,7 +315,13 @@ class GoogleAuthService {
     cancelWebSignIn();
     _pendingCredentials = null;
     try {
-      await _googleSignIn.signOut();
+      final signOut = _googleSignIn.signOut();
+      if (kIsWeb) {
+        // The browser SDK can wait indefinitely if its script is blocked.
+        await signOut.timeout(const Duration(seconds: 2));
+      } else {
+        await signOut;
+      }
     } catch (_) {}
   }
 
